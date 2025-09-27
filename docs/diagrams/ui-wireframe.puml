@@ -1,0 +1,37 @@
+@startuml
+!include <tupadr3/font-awesome-6/login>
+!include <tupadr3/font-awesome-6/table>
+!include <office/Servers/application_server>
+
+skinparam shadowing false
+skinparam handwritten true
+skinparam backgroundColor #f8f9fb
+
+rectangle "Login View" as Login {
+  frame "Header" as H1 {
+    label "MMO Trader Market"
+  }
+  frame "Form" as F1 {
+    label "[username] [password] [Login]"
+  }
+}
+
+rectangle "Dashboard View" as Dashboard {
+  frame "Navigation" as Nav {
+    label "Dashboard | Products | Logout"
+  }
+  frame "Highlight cards" as Cards {
+    label "Product name\nDescription\nPrice"
+  }
+}
+
+rectangle "Product List View" as Products {
+  frame "Table" as Table {
+    label "# | Name | Description | Price | Status"
+  }
+}
+
+Login -down-> Dashboard : successful login
+Dashboard -right-> Products : "View products"
+Products -left-> Dashboard : "Back"
+@enduml
