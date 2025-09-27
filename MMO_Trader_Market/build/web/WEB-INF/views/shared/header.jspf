@@ -1,0 +1,34 @@
+<%
+    String headerModifier = (String) request.getAttribute("headerModifier");
+    if (headerModifier == null) {
+        headerModifier = "";
+    }
+    String headerTitle = (String) request.getAttribute("headerTitle");
+    if (headerTitle == null) {
+        headerTitle = "MMO Trader Market";
+    }
+    String headerSubtitle = (String) request.getAttribute("headerSubtitle");
+    java.util.List<java.util.Map<String, String>> navItems =
+            (java.util.List<java.util.Map<String, String>>) request.getAttribute("navItems");
+%>
+<header class="layout__header <%= headerModifier %>">
+    <div>
+        <h1><%= headerTitle %></h1>
+        <% if (headerSubtitle != null && !headerSubtitle.trim().isEmpty()) { %>
+        <p class="subtitle"><%= headerSubtitle %></p>
+        <% } %>
+    </div>
+    <% if (navItems != null && !navItems.isEmpty()) { %>
+    <nav class="menu menu--horizontal">
+        <% for (java.util.Map<String, String> item : navItems) {
+               String itemClass = "menu__item";
+               String extra = item.get("modifier");
+               if (extra != null && !extra.trim().isEmpty()) {
+                   itemClass += " " + extra.trim();
+               }
+        %>
+        <a class="<%= itemClass %>" href="<%= item.get("href") %>"><%= item.get("label") %></a>
+        <% } %>
+    </nav>
+    <% } %>
+</header>
