@@ -8,7 +8,7 @@
         headerTitle = "MMO Trader Market";
     }
     String headerSubtitle = (String) request.getAttribute("headerSubtitle");
-    java.util.List<java.util.Map<String, String>> navItems =
+    java.util.List<java.util.Map<String, String>> headerNavigationItems =
             (java.util.List<java.util.Map<String, String>>) request.getAttribute("navItems");
 %>
 <header class="layout__header <%= headerModifier %>">
@@ -18,9 +18,9 @@
         <p class="subtitle"><%= headerSubtitle %></p>
         <% } %>
     </div>
-    <% if (navItems != null && !navItems.isEmpty()) { %>
+    <% if (headerNavigationItems != null && !headerNavigationItems.isEmpty()) { %>
     <nav class="menu menu--horizontal">
-        <% for (java.util.Map<String, String> item : navItems) {
+        <% for (java.util.Map<String, String> item : headerNavigationItems) {
                String itemClass = "menu__item";
                String extra = item.get("modifier");
                if (extra != null && !extra.trim().isEmpty()) {
