@@ -1,0 +1,64 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+
+title MMO Trader Market - Package Diagram
+
+package "com.mmo.trader.controller" {
+  class BaseController
+  class AuthController
+  class DashboardController
+  class ProductController
+}
+
+package "com.mmo.trader.service" {
+  class UserService
+  class ProductService
+}
+
+package "com.mmo.trader.dao" {
+  class BaseDAO
+  class UserDAO
+  class ProductDAO
+}
+
+package "com.mmo.trader.model" {
+  class User
+  class Product
+  enum Role
+  enum ProductStatus
+}
+
+package "com.mmo.trader.util" {
+  class AppConfig
+  class ViewResolver
+}
+
+package "WEB-INF.views" {
+  class "auth/login.jsp"
+  class "dashboard/index.jsp"
+  class "product/list.jsp"
+}
+
+BaseController <|-- AuthController
+BaseController <|-- DashboardController
+BaseController <|-- ProductController
+
+AuthController --> UserService
+DashboardController --> ProductService
+ProductController --> ProductService
+
+UserService --> UserDAO
+ProductService --> ProductDAO
+
+UserDAO --> User
+UserDAO --> Role
+ProductDAO --> Product
+ProductDAO --> ProductStatus
+
+ViewResolver ..> "auth/login.jsp"
+ViewResolver ..> "dashboard/index.jsp"
+ViewResolver ..> "product/list.jsp"
+
+AppConfig ..> BaseDAO
+@enduml

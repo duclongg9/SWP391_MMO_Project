@@ -1,0 +1,128 @@
+:root {
+    --primary-color: #005b96;
+    --accent-color: #ffcc00;
+    --danger-color: #c0392b;
+    --bg-color: #f5f7fa;
+    --text-color: #1f2d3d;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.layout__header,
+.layout__footer {
+    background: #fff;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.layout__header h1 {
+    margin: 0;
+}
+
+.layout__header nav a {
+    margin-right: 1rem;
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.layout__content {
+    padding: 2rem;
+}
+
+form {
+    max-width: 420px;
+    margin: 0 auto;
+    display: grid;
+    gap: 1rem;
+}
+
+label {
+    font-weight: 600;
+}
+
+input,
+button {
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #dfe3e8;
+    font-size: 1rem;
+}
+
+button {
+    background: var(--primary-color);
+    color: #fff;
+    cursor: pointer;
+    border: none;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: #003f6b;
+}
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.alert--error {
+    background: rgba(192, 57, 43, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(192, 57, 43, 0.3);
+}
+
+.product-grid {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.product-card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.product-card__price {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.table th,
+.table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+}
+
+.table thead {
+    background: var(--primary-color);
+    color: #fff;
+}
