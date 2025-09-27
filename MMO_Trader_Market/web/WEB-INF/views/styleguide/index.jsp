@@ -27,7 +27,7 @@
             <ol class="guide__steps">
                 <li>Sử dụng class <code>layout</code> để tạo khung trang cơ bản gồm header, nội dung và footer.</li>
                 <li>Mọi thành phần UI chính đều có class bắt đầu bằng <code>layout__</code>, <code>menu__</code>, <code>search-bar__</code>, <code>table__</code>... giúp tái sử dụng.</li>
-                <li>Copy nguyên block HTML trong từng ví dụ bên dưới và điều chỉnh nội dung động bằng EL (<code>${}</code>) hoặc scriptlet.</li>
+                <li>Copy nguyên block HTML trong từng ví dụ bên dưới và điều chỉnh nội dung động bằng EL (<code>&#36;{}</code>) hoặc scriptlet.</li>
                 <li>Icon sử dụng emoji hoặc thư viện ngoài (Material Symbols, FontAwesome) thông qua class <code>icon</code> để canh giữa.</li>
             </ol>
         </div>
