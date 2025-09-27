@@ -1,7 +1,7 @@
-package com.mmo.trader.service;
+package service;
 
-import com.mmo.trader.dao.UserDAO;
-import com.mmo.trader.model.User;
+import dao.user.UserDAO;
+import model.User;
 
 /**
  * Business operations around user accounts and authentication.

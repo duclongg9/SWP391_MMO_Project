@@ -1,4 +1,4 @@
-package com.mmo.trader.model;
+package model;
 
 /**
  * Possible moderation states for a product listing.

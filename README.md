@@ -10,12 +10,17 @@ MMO_Trader_Market/
 ├── src/
 │   ├── conf/
 │   │   └── database.properties
-│   └── java/com/mmo/trader/
+│   └── java/
+│       ├── conf/
 │       ├── controller/
-│       ├── service/
+│       │   ├── auth/
+│       │   ├── dashboard/
+│       │   └── product/
 │       ├── dao/
+│       │   ├── product/
+│       │   └── user/
 │       ├── model/
-│       └── util/
+│       └── service/
 ├── web/
 │   ├── WEB-INF/
 │   │   ├── web.xml
@@ -40,9 +45,9 @@ MMO_Trader_Market/
 
 ## MVC walkthrough
 
-* **Controllers** (`com.mmo.trader.controller`) receive HTTP requests and forward to views using the shared `BaseController` helper.
-* **Services** (`com.mmo.trader.service`) encapsulate business logic and orchestrate calls to DAOs.
-* **DAOs** (`com.mmo.trader.dao`) are ready for MySQL integration via the shared `BaseDAO` class. For now they expose an in-memory stubbed dataset so the UI can render without a database.
+* **Controllers** (`controller` and its subpackages) receive HTTP requests and forward to views using the shared `BaseController` helper.
+* **Services** (`service`) encapsulate business logic and orchestrate calls to DAOs.
+* **DAOs** (`dao` and its subpackages) are ready for MySQL integration via the shared `BaseDAO` class. For now they expose an in-memory stubbed dataset so the UI can render without a database.
 * **Views** live under `web/WEB-INF/views` and are resolved via `ViewResolver`, keeping JSP files protected from direct access while still being easy to reference from controllers.
 
 ## Diagrams

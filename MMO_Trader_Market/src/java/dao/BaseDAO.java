@@ -1,6 +1,6 @@
-package com.mmo.trader.dao;
+package dao;
 
-import com.mmo.trader.util.AppConfig;
+import conf.AppConfig;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

@@ -1,4 +1,4 @@
-package com.mmo.trader.util;
+package conf;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,6 +1,7 @@
-package com.mmo.trader.controller;
+package controller.product;
 
-import com.mmo.trader.service.ProductService;
+import controller.BaseController;
+import service.ProductService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;

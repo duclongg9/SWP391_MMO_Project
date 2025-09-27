@@ -1,7 +1,8 @@
-package com.mmo.trader.dao;
+package dao.user;
 
-import com.mmo.trader.model.Role;
-import com.mmo.trader.model.User;
+import dao.BaseDAO;
+import model.Role;
+import model.User;
 import java.util.Arrays;
 import java.util.List;
 

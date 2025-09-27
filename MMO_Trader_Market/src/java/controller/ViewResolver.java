@@ -1,4 +1,4 @@
-package com.mmo.trader.util;
+package controller;
 
 /**
  * Resolves logical view names to JSP paths. Keeping the mapping in a single

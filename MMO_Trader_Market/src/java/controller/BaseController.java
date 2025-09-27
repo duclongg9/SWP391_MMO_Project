@@ -1,6 +1,4 @@
-package com.mmo.trader.controller;
-
-import com.mmo.trader.util.ViewResolver;
+package controller;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

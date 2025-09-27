@@ -1,7 +1,8 @@
-package com.mmo.trader.dao;
+package dao.product;
 
-import com.mmo.trader.model.Product;
-import com.mmo.trader.model.ProductStatus;
+import dao.BaseDAO;
+import model.Product;
+import model.ProductStatus;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;

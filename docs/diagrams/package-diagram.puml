@@ -4,34 +4,49 @@ skinparam defaultTextAlignment center
 
 title MMO Trader Market - Package Diagram
 
-package "com.mmo.trader.controller" {
+package "controller" {
   class BaseController
-  class AuthController
-  class DashboardController
-  class ProductController
+  class ViewResolver
+
+  package "auth" {
+    class AuthController
+  }
+
+  package "dashboard" {
+    class DashboardController
+  }
+
+  package "product" {
+    class ProductController
+  }
 }
 
-package "com.mmo.trader.service" {
+package "service" {
   class UserService
   class ProductService
 }
 
-package "com.mmo.trader.dao" {
+package "dao" {
   class BaseDAO
-  class UserDAO
-  class ProductDAO
+
+  package "user" {
+    class UserDAO
+  }
+
+  package "product" {
+    class ProductDAO
+  }
 }
 
-package "com.mmo.trader.model" {
+package "model" {
   class User
   class Product
   enum Role
   enum ProductStatus
 }
 
-package "com.mmo.trader.util" {
+package "conf" {
   class AppConfig
-  class ViewResolver
 }
 
 package "WEB-INF.views" {

@@ -1,7 +1,8 @@
-package com.mmo.trader.controller;
+package controller.auth;
 
-import com.mmo.trader.model.User;
-import com.mmo.trader.service.UserService;
+import controller.BaseController;
+import model.User;
+import service.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;

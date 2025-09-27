@@ -1,4 +1,4 @@
-package com.mmo.trader.model;
+package model;
 
 import java.io.Serializable;
 

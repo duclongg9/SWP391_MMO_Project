@@ -1,4 +1,4 @@
-package com.mmo.trader.model;
+package model;
 
 /**
  * Roles supported by the MMO trader marketplace.

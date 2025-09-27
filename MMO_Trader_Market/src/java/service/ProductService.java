@@ -1,7 +1,7 @@
-package com.mmo.trader.service;
+package service;
 
-import com.mmo.trader.dao.ProductDAO;
-import com.mmo.trader.model.Product;
+import dao.product.ProductDAO;
+import model.Product;
 import java.util.List;
 
 /**
