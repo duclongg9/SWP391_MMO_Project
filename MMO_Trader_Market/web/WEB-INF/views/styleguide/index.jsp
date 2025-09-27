@@ -1,23 +1,38 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Thư viện giao diện - MMO Trader Market</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css">
-</head>
-<body class="layout">
-<header class="layout__header layout__header--split">
-    <div>
-        <h1>Thư viện giao diện</h1>
-        <p class="subtitle">Template UI cho dự án Servlet + JSP (MVC)</p>
-    </div>
-    <nav class="menu menu--horizontal">
-        <a class="menu__item" href="${pageContext.request.contextPath}/dashboard">Dashboard</a>
-        <a class="menu__item" href="${pageContext.request.contextPath}/products">Sản phẩm</a>
-        <a class="menu__item menu__item--ghost" href="${pageContext.request.contextPath}/auth">Đăng nhập</a>
-    </nav>
-</header>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%
+    request.setAttribute("pageTitle", "Thư viện giao diện - MMO Trader Market");
+    request.setAttribute("bodyClass", "layout");
+    request.setAttribute("headerTitle", "Thư viện giao diện");
+    request.setAttribute("headerSubtitle", "Template UI cho dự án Servlet + JSP (MVC)");
+    request.setAttribute("headerModifier", "layout__header--split");
+
+    List<Map<String, String>> navItems = new ArrayList<>();
+    String contextPath = request.getContextPath();
+
+    Map<String, String> dashboardLink = new HashMap<>();
+    dashboardLink.put("href", contextPath + "/dashboard");
+    dashboardLink.put("label", "Dashboard");
+    navItems.add(dashboardLink);
+
+    Map<String, String> productLink = new HashMap<>();
+    productLink.put("href", contextPath + "/products");
+    productLink.put("label", "Sản phẩm");
+    navItems.add(productLink);
+
+    Map<String, String> loginLink = new HashMap<>();
+    loginLink.put("href", contextPath + "/auth");
+    loginLink.put("label", "Đăng nhập");
+    loginLink.put("modifier", "menu__item--ghost");
+    navItems.add(loginLink);
+
+    request.setAttribute("navItems", navItems);
+%>
+<%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
+<%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content guide">
     <section class="panel">
         <div class="panel__header">
@@ -118,15 +133,7 @@
             <pre class="code-block"><code>&lt;table class="table table--interactive"&gt;
     &lt;thead&gt;...&lt;/thead&gt;
     &lt;tbody&gt;
-    &lt;% for (Product product : products) { %&gt;
-        &lt;tr&gt;
-            &lt;td&gt;&lt;%= product.getId() %&gt;&lt;/td&gt;
-            &lt;td&gt;&lt;%= product.getName() %&gt;&lt;/td&gt;
-            &lt;td&gt;&lt;%= product.getDescription() %&gt;&lt;/td&gt;
-            &lt;td&gt;&lt;%= product.getPrice() %&gt; đ&lt;/td&gt;
-            &lt;td&gt;&lt;span class="badge"&gt;&lt;%= product.getStatus() %&gt;&lt;/span&gt;&lt;/td&gt;
-        &lt;/tr&gt;
-    &lt;% } %&gt;
+        &lt;!-- Render từng dòng bằng scriptlet hoặc JSTL --&gt;
     &lt;/tbody&gt;
 &lt;/table&gt;</code></pre>
         </div>
@@ -145,8 +152,8 @@
                 <a class="pagination__item" href="#">3</a>
                 <a class="pagination__item" href="#">»</a>
             </nav>
-            <pre class="code-block"><code>&lt;nav class="pagination" aria-label="Phân trang"&gt;
-    &lt;a class="pagination__item pagination__item--disabled" href="#"&gt;«&lt;/a&gt;
+            <pre class="code-block"><code>&lt;nav class="pagination" aria-label="Phân trang sản phẩm"&gt;
+    &lt;a class="pagination__item pagination__item--disabled" href="#" aria-disabled="true"&gt;«&lt;/a&gt;
     &lt;a class="pagination__item pagination__item--active" href="#"&gt;1&lt;/a&gt;
     &lt;a class="pagination__item" href="#"&gt;2&lt;/a&gt;
     &lt;a class="pagination__item" href="#"&gt;3&lt;/a&gt;
@@ -157,24 +164,18 @@
 
     <section class="panel">
         <div class="panel__header">
-            <h2 class="panel__title">Icon và badge</h2>
-            <code class="panel__tag">.icon / .badge</code>
+            <h2 class="panel__title">Thẻ trạng thái &amp; icon</h2>
+            <code class="panel__tag">.badge, .icon</code>
         </div>
-        <div class="panel__body icon-showcase">
-            <div class="icon icon--primary">📈</div>
-            <div class="icon icon--accent">⭐</div>
-            <div class="icon icon--danger">⚠️</div>
-            <div class="icon icon--muted">ℹ️</div>
+        <div class="panel__body badges">
             <span class="badge">ACTIVE</span>
             <span class="badge badge--warning">PENDING</span>
-            <span class="badge badge--danger">BLOCKED</span>
+            <span class="badge badge--danger">BANNED</span>
+            <div class="icon icon--primary">⚡</div>
+            <div class="icon icon--accent">✨</div>
+            <div class="icon icon--muted">🛈</div>
         </div>
-        <pre class="code-block"><code>&lt;div class="icon icon--primary"&gt;📈&lt;/div&gt;
-&lt;span class="badge badge--warning"&gt;PENDING&lt;/span&gt;</code></pre>
     </section>
 </main>
-<footer class="layout__footer">
-    <small>&copy; 2024 MMO Trader Market</small>
-</footer>
-</body>
-</html>
+<%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

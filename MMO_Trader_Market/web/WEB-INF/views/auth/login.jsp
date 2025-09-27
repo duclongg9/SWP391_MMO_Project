@@ -1,16 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>MMO Trader Market - Đăng nhập</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css">
-</head>
-<body class="layout layout--center">
-<header class="layout__header">
-    <h1>MMO Trader Market</h1>
-    <p>Đăng nhập để quản lý giao dịch</p>
-</header>
+<%
+    request.setAttribute("pageTitle", "MMO Trader Market - Đăng nhập");
+    request.setAttribute("bodyClass", "layout layout--center");
+    request.setAttribute("headerTitle", "MMO Trader Market");
+    request.setAttribute("headerSubtitle", "Đăng nhập để quản lý giao dịch");
+%>
+<%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
+<%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content">
     <%
         String errorMessage = (String) request.getAttribute("error");
@@ -20,7 +16,7 @@
     <%
         }
     %>
-    <form method="post" action="${pageContext.request.contextPath}/auth" class="form-card">
+    <form method="post" action="<%= request.getContextPath() %>/auth" class="form-card">
         <label class="form-card__label" for="username">Tên đăng nhập</label>
         <input class="form-card__input" id="username" name="username" type="text" placeholder="nhập email hoặc username" required>
 
@@ -31,11 +27,8 @@
     </form>
     <section class="guide-link">
         <p>Mới tham gia dự án?</p>
-        <a class="button button--ghost" href="${pageContext.request.contextPath}/styleguide">Xem thư viện giao diện</a>
+        <a class="button button--ghost" href="<%= request.getContextPath() %>/styleguide">Xem thư viện giao diện</a>
     </section>
 </main>
-<footer class="layout__footer">
-    <small>&copy; 2024 MMO Trader Market</small>
-</footer>
-</body>
-</html>
+<%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

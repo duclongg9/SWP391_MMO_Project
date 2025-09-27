@@ -1,29 +1,38 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="model.Product" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Danh sách sản phẩm - MMO Trader Market</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css">
-</head>
-<body class="layout">
-<header class="layout__header layout__header--split">
-    <div>
-        <h1>Danh sách sản phẩm</h1>
-        <p class="subtitle">Quản lý sản phẩm theo mô hình MVC</p>
-    </div>
-    <nav class="menu menu--horizontal">
-        <a class="menu__item" href="${pageContext.request.contextPath}/dashboard">Bảng điều khiển</a>
-        <a class="menu__item" href="${pageContext.request.contextPath}/styleguide">Thư viện giao diện</a>
-    </nav>
-</header>
+<%
+    request.setAttribute("pageTitle", "Danh sách sản phẩm - MMO Trader Market");
+    request.setAttribute("bodyClass", "layout");
+    request.setAttribute("headerTitle", "Danh sách sản phẩm");
+    request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
+    request.setAttribute("headerModifier", "layout__header--split");
+
+    List<Map<String, String>> navItems = new ArrayList<>();
+    String contextPath = request.getContextPath();
+
+    Map<String, String> dashboardLink = new HashMap<>();
+    dashboardLink.put("href", contextPath + "/dashboard");
+    dashboardLink.put("label", "Bảng điều khiển");
+    navItems.add(dashboardLink);
+
+    Map<String, String> guideLink = new HashMap<>();
+    guideLink.put("href", contextPath + "/styleguide");
+    guideLink.put("label", "Thư viện giao diện");
+    navItems.add(guideLink);
+
+    request.setAttribute("navItems", navItems);
+%>
+<%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
+<%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content">
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Bộ lọc nhanh</h2>
-            <form class="search-bar" method="get" action="${pageContext.request.contextPath}/products">
+            <form class="search-bar" method="get" action="<%= request.getContextPath() %>/products">
                 <label class="search-bar__icon" for="keyword">🔎</label>
                 <input class="search-bar__input" type="search" id="keyword" name="keyword" placeholder="Nhập từ khóa...">
                 <button class="button button--ghost" type="submit">Lọc</button>
@@ -72,8 +81,5 @@
         </nav>
     </section>
 </main>
-<footer class="layout__footer">
-    <small>&copy; 2024 MMO Trader Market</small>
-</footer>
-</body>
-</html>
+<%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

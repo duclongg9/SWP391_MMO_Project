@@ -29,6 +29,7 @@ MMO_Trader_Market/
 │   │       ├── auth/
 │   │       ├── dashboard/
 │   │       ├── product/
+│   │       ├── shared/   # header, footer, layout fragment JSPF files
 │   │       └── styleguide/
 │   ├── assets/css/
 │   ├── login.jsp
@@ -57,6 +58,7 @@ MMO_Trader_Market/
 ## UI template & style guide
 
 * Đã bổ sung trang `/styleguide` tổng hợp cách sử dụng layout, menu, thanh tìm kiếm, bảng dữ liệu, phân trang, icon/badge và button.
+* Các phần HTML dùng chung như header, footer và phần mở/đóng tài liệu đã được tách vào thư mục `WEB-INF/views/shared` (`page-start.jspf`, `header.jspf`, `footer.jspf`, `page-end.jspf`) để tái sử dụng bằng `<%@ include %>`.
 * Tất cả component sử dụng chung file `web/assets/css/main.css`. Có thể tận dụng lại class đã khai báo để giữ giao diện đồng nhất trong toàn bộ dự án.
 * Xem thêm hướng dẫn chi tiết trong [`docs/ui-template-guide.md`](docs/ui-template-guide.md) để hiểu ý nghĩa từng class và các mẹo tùy chỉnh nhanh.
 
