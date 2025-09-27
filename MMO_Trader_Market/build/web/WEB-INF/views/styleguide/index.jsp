@@ -177,6 +177,13 @@
         </div>
     </section>
 </main>
+<<<<<<< Updated upstream
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
-
+=======
+<footer class="layout__footer">
+    <small>&copy; 2025 MMO Trader Market</small>
+</footer>
+</body>
+</html>
+>>>>>>> Stashed changes
