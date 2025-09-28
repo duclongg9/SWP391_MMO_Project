@@ -1,0 +1,38 @@
+' MMO Trader Market simplified architecture diagram
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+
+title MMO Trader Market — Simplified MVC Architecture
+
+package "Presentation Layer" {
+  [JSP Views]
+  component "Controllers" as Controllers
+}
+
+package "Application Layer" {
+  component "Services" as Services
+  component "Validation" as Validation
+}
+
+package "Data Layer" {
+  component "DAOs" as DAOs
+  component "Models" as Models
+}
+
+package "Configuration" {
+  component "AppConfig" as AppConfig
+}
+
+[JSP Views] --> Controllers : render
+Controllers --> Validation : check input
+Controllers --> Services : handle requests
+Services --> Validation : reuse rules
+Services --> DAOs : fetch & persist
+DAOs --> Models : map records
+AppConfig --> Controllers : servlet settings
+AppConfig --> Services : service wiring
+AppConfig --> DAOs : datasource info
+
+@enduml
