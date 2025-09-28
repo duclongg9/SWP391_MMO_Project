@@ -1,79 +1,212 @@
+' MMO Trader Market package diagrams (conceptual)
+' Includes overall view, subsystem packages, and naming conventions.
+
+' Overall conceptual package diagram
 @startuml
 skinparam packageStyle rectangle
-skinparam defaultTextAlignment center
+skinparam defaultTextAlignment left
+skinparam shadowing false
+skinparam linetype ortho
 
-title MMO Trader Market - Package Diagram
+title MMO Trader Market — Overall Conceptual Package Diagram
 
-package "controller" {
-  class BaseController
-  class ViewResolver
+package auth
+package user
+package marketplace
+package store
+package admin
+package service_core
+package infra
 
-  package "auth" {
-    class AuthController
-  }
-
-  package "dashboard" {
-    class DashboardController
-  }
-
-  package "product" {
-    class ProductController
-  }
+package external {
+  [google_sso]
+  [vnpay_gateway]
+  [mail_gateway]
 }
 
-package "service" {
-  class UserService
-  class ProductService
+auth ..> service_core : session_api
+user ..> service_core : account_api
+marketplace ..> service_core : order_api
+store ..> service_core : listing_api
+admin ..> service_core : moderation_api
+
+user ..> marketplace : browse_purchase
+store ..> marketplace : publish_inventory
+
+service_core ..> infra
+infra ..> external
+
+@enduml
+
+' auth subsystem conceptual view
+@startuml
+title auth (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package auth {
+  package login
+  package registration
+  package password_recovery
+  package sso
 }
 
-package "dao" {
-  class BaseDAO
+login ..> sso : optional_google_link
+login ..> password_recovery : trigger_reset
+registration ..> sso : bind_external_id
+auth ..> service_core : token_service
+@enduml
 
-  package "user" {
-    class UserDAO
-  }
+' user subsystem conceptual view
+@startuml
+title user (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
 
-  package "product" {
-    class ProductDAO
-  }
+package user {
+  package profile
+  package wallet
+  package kyc
+  package complaint
+  package support
 }
 
-package "model" {
-  class User
-  class Product
-  enum Role
-  enum ProductStatus
+wallet ..> kyc : withdraw_requires_kyc
+complaint ..> support : follow_up
+user ..> service_core : account_api, wallet_api, notification_api
+@enduml
+
+' marketplace subsystem conceptual view
+@startuml
+title marketplace (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package marketplace {
+  package catalog
+  package product_detail
+  package checkout
+  package order_history
 }
 
-package "conf" {
-  class AppConfig
+catalog ..> product_detail
+checkout ..> product_detail
+marketplace ..> service_core : order_api, payment_api, review_api
+@enduml
+
+' store subsystem conceptual view
+@startuml
+title store (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package store {
+  package store_dashboard
+  package product_management
+  package store_request
+  package flag_store
 }
 
-package "WEB-INF.views" {
-  class "auth/login.jsp"
-  class "dashboard/index.jsp"
-  class "product/list.jsp"
+product_management ..> store_dashboard
+store_request ..> store_dashboard
+flag_store ..> store_dashboard
+store ..> service_core : listing_api, moderation_api
+@enduml
+
+' admin subsystem conceptual view
+@startuml
+title admin (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package admin {
+  package dashboard
+  package user_approval
+  package kyc_review
+  package complaint_review
+  package product_approval
+  package store_approval
+  package payment_review
 }
 
-BaseController <|-- AuthController
-BaseController <|-- DashboardController
-BaseController <|-- ProductController
+dashboard ..> user_approval
 
-AuthController --> UserService
-DashboardController --> ProductService
-ProductController --> ProductService
+dashboard ..> kyc_review
 
-UserService --> UserDAO
-ProductService --> ProductDAO
+dashboard ..> complaint_review
 
-UserDAO --> User
-UserDAO --> Role
-ProductDAO --> Product
-ProductDAO --> ProductStatus
+dashboard ..> product_approval
 
-ViewResolver ..> "auth/login.jsp"
-ViewResolver ..> "dashboard/index.jsp"
-ViewResolver ..> "product/list.jsp"
+dashboard ..> store_approval
 
-AppConfig ..> BaseDAO
+dashboard ..> payment_review
+
+admin ..> service_core : approvals_api, audit_api, reporting_api
+@enduml
+
+' service_core subsystem conceptual view
+@startuml
+title service_core (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package service_core {
+  package auth_appservice
+  package catalog_appservice
+  package order_payment_appservice
+  package wallet_appservice
+  package kyc_appservice
+  package complaint_appservice
+  package store_appservice
+  package admin_ops_appservice
+  package notification_appservice
+  package configuration
+}
+
+order_payment_appservice ..> wallet_appservice
+order_payment_appservice ..> notification_appservice : receipt_events
+admin_ops_appservice ..> configuration
+notification_appservice ..> configuration
+
+service_core ..> infra : persistence, integrations
+@enduml
+
+' infra subsystem conceptual view
+@startuml
+title infra (conceptual)
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package infra {
+  package persistence
+  package integrations
+}
+
+integrations ..> [google_sso]
+integrations ..> [vnpay_gateway]
+integrations ..> [mail_gateway]
+@enduml
+
+' Naming conventions and module descriptions
+@startuml
+title MMO Trader Market — Package Naming Conventions
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+salt
+{
+{T
++ Scope | Package | Responsibility | Naming Guideline
+"Overall" | auth | User authentication flows (login, registration, recovery, SSO) | Prefix concrete components with Auth* (e.g., AuthController)
+"Overall" | user | Manage profile, wallet, KYC, complaint, and support features | Use User*, Wallet*, Kyc* for sub-packages and artifacts
+"Overall" | marketplace | Buyer-facing browsing, checkout, and order history | Use Market*, Catalog*, Order* naming for controllers/services
+"Overall" | store | Seller operations (dashboard, listings, store requests) | Use Store* prefix for seller tools and request handlers
+"Overall" | admin | Administrative dashboards, approvals, and audits | Use Admin* prefix and suffix with function (e.g., AdminApprovalService)
+service_core | *_appservice | Application service coordination per domain (auth, catalog, order, etc.) | snake_case package name with CamelCase class names (AuthAppService)
+infra | persistence | Database repositories and ORM adapters | Use <Domain>Repository naming
+infra | integrations | Adapters for third-party gateways (SSO, payments, mail) | Use <Provider>Client naming
+}
+}
+
 @enduml
