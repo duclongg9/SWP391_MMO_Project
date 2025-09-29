@@ -3,6 +3,7 @@ package controller.auth;
 import controller.BaseController;
 import model.User;
 import service.UserService;
+import validation.CredentialsValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,12 @@ public class AuthController extends BaseController {
             throws ServletException, IOException {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
+        if (!CredentialsValidator.isValid(username, password)) {
+            request.setAttribute("error", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu");
+            forward(request, response, "auth/login");
+            return;
+        }
+
         User user = userService.authenticate(username, password);
         if (user == null) {
             request.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
