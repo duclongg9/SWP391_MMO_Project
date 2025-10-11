@@ -35,19 +35,112 @@
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content grid-2">
-    <section class="panel" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
-       <li class="product-card">
-               <div class="panel__header">
-            <h2 class="panel__title">Thông tin người dùng</h2>
-            
-               </div>
-       </li>
-       <li class="product-card">
-               <div class="panel__header">
-            <h2 class="panel__title">Thông tin người dùng</h2>
-            
-               </div>
-       </li>
+    <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+ <!-- ========== Form cập nhật thông tin ========== -->
+<form id="profileForm" class="card" method="post"
+      action="${pageContext.request.contextPath}/account/profile/update">
+  <div class="panel__header">
+    <h2 class="panel__title">Thông tin người dùng</h2>
+  </div>
+
+  <table class="table table--interactive" role="presentation">
+    <tbody>
+      <tr>
+        <th scope="row"><label>Ảnh đại diện</label></th>
+        <td>
+          <img src="${pageContext.request.contextPath}/assets/img/user-placeholder.svg"
+               alt="Ảnh đại diện" class="avatar">
+        </td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="uid">ID người dùng</label></th>
+        <td><input id="uid" name="userId" type="text" value="1234" readonly></td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="fullName">Họ và tên</label></th>
+        <td>
+          <input id="fullName" name="fullName" type="text" required maxlength="100"
+                 autocomplete="name" placeholder="Nguyễn Văn A">
+        </td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="email">Email</label></th>
+        <td>
+            <input id="email" name="email" type="email" autocomplete="email"
+                 placeholder="name@example.com"readonly>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="2" class="actions">
+          <input type="hidden" name="csrfToken" value="${csrf}">
+          <button type="submit" class="button button--primary">Update</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+<!-- ========== Form đổi mật khẩu ========== -->
+<form id="passwordForm" class="card" method="post"
+      action="${pageContext.request.contextPath}/account/password/change" novalidate>
+  <div class="panel__header">
+    <h2 class="panel__title">Đổi mật khẩu</h2>
+  </div>
+
+  <table class="table table--interactive" role="presentation">
+    <tbody>
+      <tr>
+        <th scope="row"><label for="accEmail">Tài khoản </label></th>
+        <td><input id="accEmail" name="email" type="email" value="name@example.com" readonly></td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="oldPass">Mật khẩu cũ</label></th>
+        <td><input id="oldPass" name="oldPassword" type="password" required
+                   autocomplete="current-password" minlength="8"></td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="newPass">Mật khẩu mới</label></th>
+        <td><input id="newPass" name="newPassword" type="password" required
+                   autocomplete="new-password" minlength="8"
+                   pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp"><br>
+            <a style="color: red">Tối thiểu 8 ký tự, có chữ và số.</a>
+        </td>
+   
+      </tr>
+
+      <tr>
+       
+          
+       
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
+        <td><input id="confirmPass" name="confirmPassword" type="password" required
+                   autocomplete="new-password"></td>
+      </tr>
+
+      <tr>
+        <th scope="row"><label for="captcha">Nhập captcha</label></th>
+        <td><input id="captcha" name="captcha" type="text" inputmode="numeric" autocomplete="off" required></td>
+      </tr>
+
+      <tr>
+        <td colspan="2" class="actions">
+          <input type="hidden" name="csrfToken" value="${csrf}">
+          <button type="submit" class="button button--primary">Change password</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
         
     </section>
    
