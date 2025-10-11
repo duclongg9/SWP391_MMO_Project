@@ -3,7 +3,7 @@ package controller.auth;
 import controller.BaseController;
 import model.User;
 import service.UserService;
-import validation.CredentialsValidator;
+import units.CredentialsValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
