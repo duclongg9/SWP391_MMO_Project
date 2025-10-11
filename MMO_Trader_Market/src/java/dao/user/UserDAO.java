@@ -70,4 +70,18 @@ public class UserDAO extends BaseDAO {
         }
         return null;
     }
+    
+    public int updateUserProfile(User user) throws SQLException{
+        final String sql = """
+                           Update users
+                           Set name = ?,hashed_password = ?, updated_at = CURRENT_TIMESTAMP
+                           WHERE id = ? AND status = 1
+                           """;
+        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getHashPassword());
+            ps.setInt(3, user.getId());
+            return ps.executeUpdate();
+        }
+    }
 }
