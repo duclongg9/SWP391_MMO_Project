@@ -12,6 +12,11 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.User;
+import service.UserService;
 
 /**
  *
@@ -20,21 +25,13 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet(name="ProfileController", urlPatterns={"/profile"})
 public class ProfileController extends HttpServlet {
    
+    private UserService viewProfileService;
    
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet ProfileController</title>");  
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet ProfileController at " + request.getContextPath () + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+           
         }
     } 
 
@@ -43,7 +40,32 @@ public class ProfileController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
-        request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+        
+        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
+        Integer user = (Integer)request.getSession().getAttribute("userId");
+        if(user == null){
+           response.sendRedirect(request.getContextPath() + "/login.jsp");
+           return;
+        }
+        
+        try {
+            User myProfile = viewProfileService.viewMyProfile(user);
+            request.setAttribute("myProfile", myProfile);
+            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+            return;
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("emg", e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+            return;
+        }catch(RuntimeException e){
+            request.setAttribute("emg","Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
+            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+            return;
+        } catch (SQLException ex) {
+            Logger.getLogger(ProfileController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+       
     } 
 
     @Override

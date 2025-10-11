@@ -44,6 +44,9 @@ public class UserDAO extends BaseDAO {
                     LIMIT 1
                     """;
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, id);
+            
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 User user = new User();
@@ -71,16 +74,28 @@ public class UserDAO extends BaseDAO {
         return null;
     }
     
-    public int updateUserProfile(User user) throws SQLException{
+    public int updateUserProfileBasic(int id,String name) throws SQLException{
         final String sql = """
                            Update users
-                           Set name = ?,hashed_password = ?, updated_at = CURRENT_TIMESTAMP
+                           Set name = ?, updated_at = CURRENT_TIMESTAMP
                            WHERE id = ? AND status = 1
                            """;
         try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
-            ps.setString(1, user.getUsername());
-            ps.setString(2, user.getHashPassword());
-            ps.setInt(3, user.getId());
+            ps.setString(1, name);
+            ps.setInt(2, id);
+            return ps.executeUpdate();
+        }
+    }
+    
+    public int updateUserPassword(int id,String hashedPassword) throws SQLException{
+        final String sql = """
+                           Update users
+                           Set hashed_password = ?, updated_at = CURRENT_TIMESTAMP
+                           WHERE id = ? AND status = 1
+                           """;
+        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+            ps.setString(1, hashedPassword);
+            ps.setInt(2, id);
             return ps.executeUpdate();
         }
     }
