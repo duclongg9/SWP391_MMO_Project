@@ -47,13 +47,13 @@ public class AuthController extends BaseController {
             return;
         }
 
-        User user = userService.authenticate(username, password);
-        if (user == null) {
-            request.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
-            forward(request, response, "auth/login");
-            return;
-        }
-        request.getSession().setAttribute("currentUser", user);
+//        User user = userService.authenticate(username, password);
+//        if (user == null) {
+//            request.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
+//            forward(request, response, "auth/login");
+//            return;
+//        }
+//        request.getSession().setAttribute("currentUser", user);
         response.sendRedirect(request.getContextPath() + "/dashboard");
     }
 }
