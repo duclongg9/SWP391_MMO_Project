@@ -24,5 +24,12 @@ public class UserDAO extends BaseDAO {
     private static final String COL_CREATED_AT = "created_at";
     private static final String COL_UPDATED_AT = "updated_at";
 
-    
+   public User getUserByUserId(int id){
+       String sql = """
+                    SELECT * FROM  users
+                    WHERE id = ? AND status = 1
+                    LIMIT 1
+                    """;
+       
+   } 
 }
