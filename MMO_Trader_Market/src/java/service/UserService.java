@@ -10,7 +10,5 @@ public class UserService {
 
     private final UserDAO userDAO = new UserDAO();
 
-    public User authenticate(String username, String password) {
-        return userDAO.findByCredentials(username, password);
-    }
+  
 }
