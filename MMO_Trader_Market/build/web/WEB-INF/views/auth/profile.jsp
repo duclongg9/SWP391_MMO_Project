@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -55,14 +56,14 @@
 
       <tr>
         <th scope="row"><label for="uid">ID người dùng</label></th>
-        <td><input id="uid" name="userId" type="text" value="1234" readonly></td>
+        <td><input id="uid" name="userId" type="text" value="${myProfile.id}" readonly></td>
       </tr>
 
       <tr>
         <th scope="row"><label for="fullName">Họ và tên</label></th>
         <td>
           <input id="fullName" name="fullName" type="text" required maxlength="100"
-                 autocomplete="name" placeholder="Nguyễn Văn A">
+                 autocomplete="name" placeholder="${myProfile.username}">
         </td>
       </tr>
 
@@ -70,7 +71,7 @@
         <th scope="row"><label for="email">Email</label></th>
         <td>
             <input id="email" name="email" type="email" autocomplete="email"
-                 placeholder="name@example.com"readonly>
+                 placeholder="${myProfile.email}"readonly>
         </td>
       </tr>
 
@@ -95,7 +96,7 @@
     <tbody>
       <tr>
         <th scope="row"><label for="accEmail">Tài khoản </label></th>
-        <td><input id="accEmail" name="email" type="email" value="name@example.com" readonly></td>
+        <td><input id="accEmail" name="email" type="email" value="${myProfile.email}" readonly></td>
       </tr>
 
       <tr>
@@ -103,7 +104,7 @@
         <td><input id="oldPass" name="oldPassword" type="password" required
                    autocomplete="current-password" minlength="8"></td>
       </tr>
-
+      
       <tr>
         <th scope="row"><label for="newPass">Mật khẩu mới</label></th>
         <td><input id="newPass" name="newPassword" type="password" required
@@ -113,24 +114,11 @@
         </td>
    
       </tr>
-
-      <tr>
-       
-          
-       
-      </tr>
-
       <tr>
         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
         <td><input id="confirmPass" name="confirmPassword" type="password" required
                    autocomplete="new-password"></td>
       </tr>
-
-      <tr>
-        <th scope="row"><label for="captcha">Nhập captcha</label></th>
-        <td><input id="captcha" name="captcha" type="text" inputmode="numeric" autocomplete="off" required></td>
-      </tr>
-
       <tr>
         <td colspan="2" class="actions">
           <input type="hidden" name="csrfToken" value="${csrf}">

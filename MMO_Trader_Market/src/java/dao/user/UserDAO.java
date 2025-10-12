@@ -31,7 +31,7 @@ public class UserDAO extends BaseDAO {
     private static final String COL_ROLE = "role_id";
     private static final String COL_HASH_PASSWORD = "hashed_password";
     private static final String COL_GOOGLE_ID = "google_id";
-    private static final String COL_AVATA = "avata_url";
+    private static final String COL_AVATA = "avatar_url";
     private static final String COL_STATUS = "status";
     private static final String COL_CREATED_AT = "created_at";
     private static final String COL_UPDATED_AT = "updated_at";
@@ -99,4 +99,6 @@ public class UserDAO extends BaseDAO {
             return ps.executeUpdate();
         }
     }
+    
+   
 }
