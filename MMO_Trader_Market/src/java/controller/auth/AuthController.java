@@ -19,7 +19,7 @@ public class AuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
 
-    private final UserService userService = new UserService();
+    
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
