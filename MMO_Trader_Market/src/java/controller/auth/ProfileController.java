@@ -27,6 +27,7 @@ public class ProfileController extends HttpServlet {
    
     private UserService viewProfileService;
    
+    
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -41,12 +42,12 @@ public class ProfileController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         
-        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
-        Integer user = (Integer)request.getSession().getAttribute("userId");
-        if(user == null){
-           response.sendRedirect(request.getContextPath() + "/login.jsp");
-           return;
-        }
+//        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
+//        Integer user = (Integer)request.getSession().getAttribute("userId");
+//        if(user == null){
+//           response.sendRedirect(request.getContextPath() + "/login.jsp");
+//           return;
+//        }
         
         try {
             User myProfile = viewProfileService.viewMyProfile(user);
