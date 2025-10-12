@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnect {
-    private static final String URL = "jdbc:mysql://localhost:3306/cocoland_schema";
+    private static final String URL = "jdbc:mysql://localhost:3306/mmo_schema";
     private static final String USER = "root"; 
     private static final String PASSWORD = "123456"; 
 

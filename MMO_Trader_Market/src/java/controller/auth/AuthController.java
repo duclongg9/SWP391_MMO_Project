@@ -3,7 +3,7 @@ package controller.auth;
 import controller.BaseController;
 import model.User;
 import service.UserService;
-import validation.CredentialsValidator;
+import units.CredentialsValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +19,7 @@ public class AuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
 
-    private final UserService userService = new UserService();
+    
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -47,13 +47,13 @@ public class AuthController extends BaseController {
             return;
         }
 
-        User user = userService.authenticate(username, password);
-        if (user == null) {
-            request.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
-            forward(request, response, "auth/login");
-            return;
-        }
-        request.getSession().setAttribute("currentUser", user);
+//        User user = userService.authenticate(username, password);
+//        if (user == null) {
+//            request.setAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
+//            forward(request, response, "auth/login");
+//            return;
+//        }
+//        request.getSession().setAttribute("currentUser", user);
         response.sendRedirect(request.getContextPath() + "/dashboard");
     }
 }
