@@ -46,4 +46,17 @@ public class UserService {
             throw new RuntimeException("DB gặp sự cố khi cập nhật dữ liệu người dùng", e);
         }
     }
+
+    /*Cập nhật mật khẩu mới*/
+    public int updatePassword(int id, String hashedPassword) {
+        try {
+            int updated = udao.updateUserPassword(id, hashedPassword);
+            if (updated < 1) {
+                throw new IllegalArgumentException("Tài khoản của bạn không tồn tại hoặc đã bị khóa");
+            }
+            return updated;
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi cập nhật mật khẩu người dùng", e);
+        }
+    }
 }
