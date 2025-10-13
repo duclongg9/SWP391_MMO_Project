@@ -24,9 +24,7 @@ import service.UserService;
 @WebServlet(name = "ProfileController", urlPatterns = {"/profile"})
 public class ProfileController extends HttpServlet {
 
-   private final UserService viewProfileService = new UserService(new dao.user.UserDAO());
-
- 
+    private final UserService viewProfileService = new UserService(new dao.user.UserDAO());
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -69,7 +67,25 @@ public class ProfileController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
+//        Integer user = (Integer)request.getSession().getAttribute("userId");
+//        if(user == null){
+//           response.sendRedirect(request.getContextPath() + "/login.jsp");
+//           return;
+//        }
+
+        String oldPass = request.getParameter("oldPass");
+        String newPass = request.getParameter("newPass");
+        try {
+            int update = viewProfileService.updatePassword(1, oldPass, newPass);//đang test với id = 1;
+            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("emg", e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+        } catch(RuntimeException e){
+            request.setAttribute("emg","Có lỗi hệ thông xảy ra.Vui lòng thử lại.");
+        }
+
     }
 
     /**
