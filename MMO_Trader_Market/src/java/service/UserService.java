@@ -78,7 +78,7 @@ public class UserService {
             }
 
             //So khớp mật khẩu cũ
-            if (currentHash.equals(HashPassword.toSHA1(oldPassword))) {
+            if (!currentHash.equals(HashPassword.toSHA1(oldPassword))) {
                 throw new IllegalArgumentException("Mật khẩu cũ không đúng");
             }
 

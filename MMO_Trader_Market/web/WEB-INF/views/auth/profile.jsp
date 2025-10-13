@@ -40,6 +40,7 @@
  <!-- ========== Form cập nhật thông tin ========== -->
 <form id="profileForm" class="card" method="post"
       action="${pageContext.request.contextPath}/account/profile/update">
+    <input type="hidden" name="action" value="updateProfile">
   <div class="panel__header">
     <h2 class="panel__title">Thông tin người dùng</h2>
   </div>
@@ -88,6 +89,7 @@
 <!-- ========== Form đổi mật khẩu ========== -->
 <form id="passwordForm" class="card" method="post"
       action="${pageContext.request.contextPath}/account/password/change" novalidate>
+    <input type="hidden" name="action" value="updatePassword">
   <div class="panel__header">
     <h2 class="panel__title">Đổi mật khẩu</h2>
   </div>
