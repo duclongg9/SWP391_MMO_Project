@@ -11,6 +11,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,13 +75,33 @@ public class ProfileController extends HttpServlet {
 //           return;
 //        }
 
-        String oldPass = request.getParameter("oldPass");
-        String newPass = request.getParameter("newPass");
-        try {
-            int update = viewProfileService.updatePassword(1, oldPass, newPass);//đang test với id = 1;
-            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+        /*Phần phân chia 2 hành động cập nhật mật khẩu và cập nhật lại thông tin người dùng*/
+        String action = request.getParameter("action");
+        if(action == null){
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Thiếu action");
+        }
+        action = action.trim();
+        HttpSession session = request.getSession();
+        try{
+            switch(action){
+                case "updateProfile":{
+                    String name = request.getParameter("fullName");
+                    viewProfileService.updateMyProfile(1, name); //đang test với Id = 1
+                    session.setAttribute("msg", "Thông tin đã được cập nhật.");
+                    response.sendRedirect(request.getContextPath() + "/profile");
+                    break;
+                }
+                case "updatePassword":{
+                    String oldPass = request.getParameter("oldPass");
+                    String newPass = request.getParameter("newPass");
+                    viewProfileService.updatePassword(1, oldPass, newPass); //đang test với id = 1
+                    session.setAttribute("msg", "Mật khẩu đã được cập nhật.");
+                    response.sendRedirect(request.getContextPath() + "/profile");
+                    break;
+                }
+            }
         } catch (IllegalArgumentException e) {
-            request.setAttribute("emg", e.getMessage());
+            session.setAttribute("emg", e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
         } catch(RuntimeException e){
             request.setAttribute("emg","Có lỗi hệ thông xảy ra.Vui lòng thử lại.");
