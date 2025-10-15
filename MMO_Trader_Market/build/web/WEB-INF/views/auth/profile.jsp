@@ -37,7 +37,18 @@
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content grid-2">
     <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
- <!-- ========== Form cập nhật thông tin ========== -->
+ 
+        <!--Alerts dùng chung cho cả 2 form-->
+  <div style="grid-column: 1 / -1;">
+    <c:if test="${not empty msg}">
+      <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
+    </c:if>
+    <c:if test="${not empty emg}">
+      <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
+    </c:if>
+  </div>
+        
+        <!--Form cập nhật thông tin -->
 <form id="profileForm" class="card" method="post"
       action="${pageContext.request.contextPath}/profile">
     <input type="hidden" name="action" value="updateProfile">
@@ -103,13 +114,13 @@
 
       <tr>
         <th scope="row"><label for="oldPass">Mật khẩu cũ</label></th>
-        <td><input id="oldPass" name="oldPassword" type="password" required
+        <td><input id="oldPass" name="oldPass" type="password" required
                    autocomplete="current-password" minlength="8"></td>
       </tr>
       
       <tr>
         <th scope="row"><label for="newPass">Mật khẩu mới</label></th>
-        <td><input id="newPass" name="newPassword" type="password" required
+        <td><input id="newPass" name="newPass" type="password" required
                    autocomplete="new-password" minlength="8"
                    pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp"><br>
             <a style="color: red">Tối thiểu 8 ký tự, có chữ và số.</a>

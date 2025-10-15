@@ -40,4 +40,6 @@ public class SendMail {
         // gửi
         Transport.send(msg);
     }
+    
+   
 }
