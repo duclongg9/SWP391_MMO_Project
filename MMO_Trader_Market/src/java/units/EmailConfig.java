@@ -13,7 +13,7 @@ public class EmailConfig {
     private static final Properties props = new Properties();
 
     static {
-        try (InputStream input = EmailConfig.class.getClassLoader().getResourceAsStream("email.properties")) {
+        try (InputStream input = EmailConfig.class.getClassLoader().getResourceAsStream("units/email.properties")) {
             props.load(input);
         } catch (Exception e) {
             e.printStackTrace();
