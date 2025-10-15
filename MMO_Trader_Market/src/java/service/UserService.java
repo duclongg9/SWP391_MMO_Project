@@ -8,6 +8,7 @@ import dao.user.UserDAO;
 import java.sql.SQLException;
 import model.User;
 import units.HashPassword;
+import units.SendMail;
 
 /**
  *
@@ -50,6 +51,9 @@ public class UserService {
 
     /*Cập nhật mật khẩu mới*/
     public int updatePassword(int id, String oldPassword, String newPassword) {
+        //Gọi thông tin liên quan
+        UserDAO udao = new UserDAO();
+
         //Validate input
         if (oldPassword == null || oldPassword.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu cũ");
@@ -68,21 +72,38 @@ public class UserService {
                 throw new IllegalArgumentException("Tài khoản không tồn tại hoặc đã bị khóa");
             }
 
-            String currentHash = user.getHashPassword(); // hoặc getHashPassword()
+            String currentHash = user.getHashPassword();
             if (currentHash == null || currentHash.isBlank()) {
                 throw new IllegalStateException("Tài khoản chưa thiết lập mật khẩu");
             }
 
-            // 3) So khớp mật khẩu cũ
-            if (currentHash.equals(HashPassword.toSHA1(oldPassword))) {
+            //So khớp mật khẩu cũ
+            if (!currentHash.equals(HashPassword.toSHA1(oldPassword))) {
                 throw new IllegalArgumentException("Mật khẩu cũ không đúng");
             }
 
-            // 4) Băm mật khẩu mới và cập nhật
+            //Băm mật khẩu mới và cập nhật
             String newHash = HashPassword.toSHA1(newPassword);
             int updated = udao.updateUserPassword(id, newHash);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại.");
+            }
+
+            //Gửi email
+            if (updated > 0) {
+                String subject = "[Thông báo quan trọng]-Thông tin tài khoản của bạn";
+                String messageText = "Chào Kiệt,\n\n"
+                        + "Bạn đã thay đổi mật khẩu thành công trên hệ thống sàn thương mại điện tử MMO Trader System \n\n"
+                        + "Vui lòng kiểm tra lại tài khoản nếu bạn không thực hiện hành động này\n\n"
+                        + "Trân trọng,\nAdmin MMO Trader System"; // đang test fig cứng tên
+
+                try {
+                    String userEmail = udao.getUserByUserId(id).getEmail();
+                    SendMail.sendMail(userEmail, subject, messageText);
+                } catch (Exception e) {
+                    e.printStackTrace(); // log lỗi gửi mail (không làm hỏng luồng chính)
+                }
+
             }
 
             return updated;
