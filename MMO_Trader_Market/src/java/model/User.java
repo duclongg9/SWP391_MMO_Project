@@ -2,6 +2,7 @@ package model;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Date;
 
 /**
  * Represents a user in the system.
@@ -121,7 +122,12 @@ public class User implements Serializable {
         this.updatedAt = updatedAt;
     }
 
-   
-    
-  
+    public Date getUpdatedAtDate() {
+        return updatedAt == null ? null : Date.from(updatedAt);
+    }
+
+    public Date getCreatedAtDate() {
+        return createdAt == null ? null : Date.from(createdAt);
+    }
+
 }
