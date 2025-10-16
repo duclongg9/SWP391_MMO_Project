@@ -4,6 +4,7 @@
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="model.Product" %>
+<%@ page import="model.Products" %>
 <%
     request.setAttribute("pageTitle", "Danh sách sản phẩm - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
@@ -51,9 +52,9 @@
             </thead>
             <tbody>
             <%
-                List<Product> products = (List<Product>) request.getAttribute("products");
+                List<Products> products = (List<Products>) request.getAttribute("products");
                 if (products != null) {
-                    for (Product product : products) {
+                    for (Products product : products) {
             %>
             <tr>
                 <td><%= product.getId() %></td>
