@@ -33,20 +33,25 @@ public class OrderService {
     private final WalletService walletService = new WalletService();
     private final OrderQueueProducer orderQueueProducer = OrderQueueProducer.getInstance();
 
-    public PaginatedResult<Order> listOrders(int page, int pageSize) {
+    public PaginatedResult<Order> listOrders(int buyerId, int page, int pageSize, OrderStatus status) {
+        if (buyerId <= 0) {
+            throw new IllegalArgumentException("Người dùng không hợp lệ.");
+        }
         if (pageSize <= 0) {
             throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");
         }
         if (page < 1) {
             throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1.");
         }
-        int totalItems = orderDAO.countAll();
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
-        int currentPage = Math.min(page, totalPages);
+        int totalItems = orderDAO.countByBuyer(buyerId, status);
+        int totalPages = totalItems == 0
+                ? 0
+                : (int) Math.ceil((double) totalItems / pageSize);
+        int currentPage = totalPages == 0 ? 1 : Math.min(page, totalPages);
         int offset = (currentPage - 1) * pageSize;
         List<Order> items = totalItems == 0
                 ? List.of()
-                : orderDAO.findAll(pageSize, offset);
+                : orderDAO.findByBuyer(buyerId, status, pageSize, offset);
         return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
     }
 

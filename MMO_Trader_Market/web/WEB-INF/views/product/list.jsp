@@ -51,12 +51,12 @@
                                            value="${not empty product.status ? fn:toUpperCase(product.status) : ''}" />
                                     <c:choose>
                                         <c:when test="${statusUpper eq 'APPROVED'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
-                                                  style="display:inline;">
-                                                <input type="hidden" name="productId" value="${product.id}" />
-                                                <input type="hidden" name="quantity" value="1" />
-                                                <button class="button button--primary" type="submit">Mua ngay</button>
-                                            </form>
+                                            <c:url var="buyUrl" value="/orders/buy">
+                                                <c:param name="productId" value="${product.id}" />
+                                            </c:url>
+                                            <c:url var="ordersUrl" value="/orders/my" />
+                                            <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
+                                            <a class="button button--ghost" href="${ordersUrl}">Đơn đã mua</a>
                                         </c:when>
                                         <c:otherwise>
                                             <button class="button button--ghost" type="button" disabled>Đang chờ duyệt</button>

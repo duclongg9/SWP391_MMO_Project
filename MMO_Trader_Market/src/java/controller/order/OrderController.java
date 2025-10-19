@@ -6,23 +6,28 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.OrderStatus;
+import model.Order;
+import model.PaginatedResult;
 import model.Products;
-import model.Users;
+import model.OrderStatus;
 import service.OrderService;
 import service.dto.OrderPlacementResult;
 import service.dto.OrderStatusView;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Objects;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Servlet responsible for handling the asynchronous checkout entry point and
  * the polling endpoint used by the client to keep track of the background
  * processing performed by {@code OrderWorker}.
  */
-@WebServlet(name = "OrderController", urlPatterns = {"/order/buy-now", "/order/status"})
+@WebServlet(name = "OrderController", urlPatterns = {"/orders/my", "/orders/buy"})
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
@@ -83,10 +88,33 @@ public class OrderController extends BaseController {
         }
     }
 
-    private void renderProcessingView(HttpServletRequest request, HttpServletResponse response,
-            OrderPlacementResult placement) throws ServletException, IOException {
-        Products product = placement.getProduct();
-        OrderStatus status = placement.getStatus();
+    private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Integer userId = resolveUserId(request);
+        if (userId == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        int page = resolvePage(request.getParameter("page"));
+        int size = resolveSize(request.getParameter("size"));
+        OrderStatus status = parseStatus(request.getParameter("status"));
+        prepareNavigation(request);
+        request.setAttribute("pageTitle", "Đơn hàng đã mua");
+        request.setAttribute("headerTitle", "Lịch sử đơn mua");
+        request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
+        PaginatedResult<Order> result = orderService.listOrders(userId, page, size, status);
+        List<Order> orders = result.getItems();
+        request.setAttribute("items", orders);
+        request.setAttribute("statusClasses", buildStatusClassMap(orders));
+        request.setAttribute("statusLabels", buildStatusLabelMap(orders));
+        request.setAttribute("statusOptions", buildStatusOptions());
+        request.setAttribute("statusFilter", status == null ? "" : status.name());
+        request.setAttribute("page", result.getCurrentPage());
+        request.setAttribute("totalPages", result.getTotalPages());
+        request.setAttribute("size", result.getPageSize());
+        request.setAttribute("total", result.getTotalItems());
+        forward(request, response, "order/list");
+    }
 
         applyPageDefaults(request);
         request.setAttribute("orderPlacement", placement);
@@ -169,8 +197,25 @@ public class OrderController extends BaseController {
 
     private String buildPollUrl(HttpServletRequest request, OrderPlacementResult placement) {
         String contextPath = request.getContextPath();
-        return contextPath + "/order/status?orderId=" + placement.getOrderId()
-                + "&token=" + placement.getOrderToken();
+        List<Map<String, String>> navItems = new ArrayList<>();
+
+        request.setAttribute("bodyClass", BODY_CLASS);
+        Map<String, String> homeLink = new HashMap<>();
+        homeLink.put("href", contextPath + "/home");
+        homeLink.put("label", "Trang chủ");
+        navItems.add(homeLink);
+
+        Map<String, String> productLink = new HashMap<>();
+        productLink.put("href", contextPath + "/products");
+        productLink.put("label", "Sản phẩm");
+        navItems.add(productLink);
+
+        Map<String, String> orderLink = new HashMap<>();
+        orderLink.put("href", contextPath + "/orders/my");
+        orderLink.put("label", "Đơn đã mua");
+        navItems.add(orderLink);
+
+        request.setAttribute("navItems", navItems);
     }
 
     private void writeStatusResponse(HttpServletResponse response, OrderStatusView statusView) throws IOException {
@@ -213,5 +258,44 @@ public class OrderController extends BaseController {
         request.setAttribute("pageTitle", "Xử lý đơn hàng");
         request.setAttribute("headerTitle", "Đơn hàng đang được xử lý");
         request.setAttribute("headerSubtitle", "Chúng tôi sẽ hoàn tất đơn trong giây lát, vui lòng đợi...");
+    }
+
+    private int resolveSize(String sizeParam) {
+        if (sizeParam == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        try {
+            int size = Integer.parseInt(sizeParam);
+            return size > 0 ? size : DEFAULT_PAGE_SIZE;
+        } catch (NumberFormatException ex) {
+            return DEFAULT_PAGE_SIZE;
+        }
+    }
+
+    private Integer resolveUserId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        return (Integer) session.getAttribute("userId");
+    }
+
+    private OrderStatus parseStatus(String statusParam) {
+        if (statusParam == null || statusParam.isBlank()) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(statusParam.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return OrderStatus.fromDatabaseValue(statusParam.trim());
+        }
+    }
+
+    private Map<String, String> buildStatusOptions() {
+        Map<String, String> options = new LinkedHashMap<>();
+        for (OrderStatus status : OrderStatus.values()) {
+            options.put(status.name(), orderService.getFriendlyStatus(status));
+        }
+        return options;
     }
 }
