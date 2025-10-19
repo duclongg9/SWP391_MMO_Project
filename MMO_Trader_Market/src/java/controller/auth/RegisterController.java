@@ -40,9 +40,17 @@ public class RegisterController extends BaseController {
         String name = request.getParameter("name");
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
+        boolean acceptedTerms = request.getParameter("acceptTerms") != null;
 
         request.setAttribute("email", email == null ? null : email.trim());
         request.setAttribute("name", name == null ? null : name.trim());
+        request.setAttribute("acceptTermsChecked", acceptedTerms);
+
+        if (!acceptedTerms) {
+            request.setAttribute("error", "Vui lòng đồng ý với Điều khoản sử dụng để tiếp tục.");
+            forward(request, response, "auth/register");
+            return;
+        }
 
         try {
             Users createdUser = userService.registerNewUser(email, name, password, confirmPassword);

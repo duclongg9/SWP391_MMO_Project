@@ -7,6 +7,7 @@ import service.UserService;
 import units.RoleHomeResolver;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -50,6 +51,21 @@ public class AuthController extends BaseController {
             moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
         }
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            boolean hasPrefill = request.getAttribute("prefillEmail") != null;
+            for (Cookie cookie : cookies) {
+                if ("rememberedEmail".equals(cookie.getName()) && cookie.getValue() != null
+                        && !cookie.getValue().isBlank()) {
+                    if (!hasPrefill) {
+                        request.setAttribute("prefillEmail", cookie.getValue());
+                    }
+                    request.setAttribute("rememberMeChecked", true);
+                    break;
+                }
+            }
+        }
         forward(request, response, "auth/login");
     }
 
@@ -59,9 +75,11 @@ public class AuthController extends BaseController {
         String email = request.getParameter("email");
         String normalizedEmail = email == null ? null : email.trim();
         String password = request.getParameter("password");
+        boolean rememberMe = request.getParameter("rememberMe") != null;
         if (normalizedEmail == null || normalizedEmail.isBlank() || password == null || password.isBlank()) {
             request.setAttribute("error", "Vui lòng nhập đầy đủ email và mật khẩu");
             request.setAttribute("prefillEmail", normalizedEmail);
+            request.setAttribute("rememberMeChecked", rememberMe);
             forward(request, response, "auth/login");
             return;
         }
@@ -72,16 +90,19 @@ public class AuthController extends BaseController {
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
+            handleRememberMeCookie(request, response, normalizedEmail, rememberMe);
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail);
+            request.setAttribute("rememberMeChecked", rememberMe);
             forward(request, response, "auth/login");
         } catch (RuntimeException e) {
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error during login, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
             request.setAttribute("prefillEmail", normalizedEmail);
+            request.setAttribute("rememberMeChecked", rememberMe);
             forward(request, response, "auth/login");
         }
     }
@@ -107,5 +128,20 @@ public class AuthController extends BaseController {
             request.setAttribute(requestKey, value);
             session.removeAttribute(sessionKey);
         }
+    }
+
+    private void handleRememberMeCookie(HttpServletRequest request, HttpServletResponse response,
+            String email, boolean rememberMe) {
+        String contextPath = request.getContextPath();
+        if (contextPath == null || contextPath.isEmpty()) {
+            contextPath = "/";
+        }
+
+        Cookie cookie = new Cookie("rememberedEmail", rememberMe ? email : "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(request.isSecure());
+        cookie.setPath(contextPath);
+        cookie.setMaxAge(rememberMe ? 60 * 60 * 24 * 30 : 0);
+        response.addCookie(cookie);
     }
 }
