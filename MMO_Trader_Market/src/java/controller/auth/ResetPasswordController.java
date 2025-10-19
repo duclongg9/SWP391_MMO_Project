@@ -7,59 +7,52 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Users;
-import service.UserService;
-
 import java.io.IOException;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import service.UserService;
 
-/**
- * Handles registration flow for new users.
- */
-@WebServlet(name = "RegisterController", urlPatterns = {"/register"})
-public class RegisterController extends BaseController {
+@WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
+public class ResetPasswordController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-
-    private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ResetPasswordController.class.getName());
 
     private final UserService userService = new UserService(new UserDAO());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        forward(request, response, "auth/register");
+        String token = request.getParameter("token");
+        if (token == null || token.isBlank()) {
+            request.setAttribute("error", "Link đặt lại mật khẩu không hợp lệ");
+        } else {
+            request.setAttribute("token", token);
+        }
+        forward(request, response, "auth/reset-password");
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String email = request.getParameter("email");
-        String name = request.getParameter("name");
+        String token = request.getParameter("token");
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
-
-        request.setAttribute("email", email == null ? null : email.trim());
-        request.setAttribute("name", name == null ? null : name.trim());
-
         try {
-            Users createdUser = userService.registerNewUser(email, name, password, confirmPassword);
-
+            userService.resetPassword(token, password, confirmPassword);
             HttpSession session = request.getSession();
-            session.setAttribute("registerSuccess", "Tạo tài khoản thành công! Vui lòng đăng nhập.");
-            session.setAttribute("newUserEmail", createdUser.getEmail());
+            session.setAttribute("resetSuccess", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại");
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
-            forward(request, response, "auth/register");
         } catch (RuntimeException e) {
             String errorId = UUID.randomUUID().toString();
-            LOGGER.log(Level.SEVERE, "Unexpected error during registration, errorId=" + errorId, e);
+            LOGGER.log(Level.SEVERE, "Unexpected error when resetting password, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
-            forward(request, response, "auth/register");
         }
+        request.setAttribute("token", token);
+        forward(request, response, "auth/reset-password");
     }
 }
