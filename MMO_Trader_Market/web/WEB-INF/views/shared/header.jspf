@@ -10,14 +10,19 @@
     String headerSubtitle = (String) request.getAttribute("headerSubtitle");
     java.util.List<java.util.Map<String, String>> headerNavigationItems =
             (java.util.List<java.util.Map<String, String>>) request.getAttribute("navItems");
+    String brandName = "MMO Trader Market";
+    String homeHref = request.getContextPath() + "/home";
 %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <header class="layout__header <%= headerModifier %>">
-    <div>
-        <h1><%= headerTitle %></h1>
-        <% if (headerSubtitle != null && !headerSubtitle.trim().isEmpty()) { %>
-        <p class="subtitle"><%= headerSubtitle %></p>
-        <% } %>
+    <div class="layout__brand">
+        <a class="layout__logo" href="<%= homeHref %>" title="<%= brandName %>"><%= brandName %></a>
+        <div class="layout__heading">
+            <h1><%= headerTitle %></h1>
+            <% if (headerSubtitle != null && !headerSubtitle.trim().isEmpty()) { %>
+            <p class="subtitle"><%= headerSubtitle %></p>
+            <% } %>
+        </div>
     </div>
     <% if (headerNavigationItems != null && !headerNavigationItems.isEmpty()) { %>
     <nav class="menu menu--horizontal">
@@ -27,8 +32,24 @@
                if (extra != null && !extra.trim().isEmpty()) {
                    itemClass += " " + extra.trim();
                }
+               String icon = item.get("icon");
+               String text = item.get("text");
+               if ((text == null || text.trim().isEmpty()) && item.get("label") != null) {
+                   text = item.get("label");
+               }
+               String srText = item.get("srText");
         %>
-        <a class="<%= itemClass %>" href="<%= item.get("href") %>"><%= item.get("label") %></a>
+        <a class="<%= itemClass %>" href="<%= item.get("href") %>">
+            <% if (icon != null && !icon.isEmpty()) { %>
+            <span class="menu__icon" aria-hidden="true"><%= icon %></span>
+            <% } %>
+            <% if (text != null && !text.isEmpty()) { %>
+            <span class="menu__text"><%= text %></span>
+            <% } %>
+            <% if (srText != null && !srText.isEmpty()) { %>
+            <span class="sr-only"><%= srText %></span>
+            <% } %>
+        </a>
         <% } %>
     </nav>
     <% } %>
