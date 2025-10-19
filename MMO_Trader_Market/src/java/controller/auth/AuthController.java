@@ -31,6 +31,21 @@ public class AuthController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
         }
+        
+               HttpSession session = request.getSession(false); // không tạo session mới nếu chưa có
+        if (session != null) {
+            String successMessage = (String) session.getAttribute("registerSuccess"); // 1) Flash message sau khi đăng ký
+            if (successMessage != null) {
+                request.setAttribute("success", successMessage);
+                session.removeAttribute("registerSuccess");// chỉ hiện đúng 1 lần
+            }
+// 2) Prefill email vào ô username ở trang login
+            String emailFromRegister = (String) session.getAttribute("newUserEmail");
+            if (emailFromRegister != null) {
+                request.setAttribute("prefillUsername", emailFromRegister);
+                session.removeAttribute("newUserEmail"); // không lưu lại cho lần sau
+            }
+        }
         forward(request, response, "auth/login");
     }
 
