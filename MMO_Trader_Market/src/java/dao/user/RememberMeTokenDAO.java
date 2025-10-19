@@ -2,8 +2,10 @@ package dao.user;
 
 import dao.BaseDAO;
 import dao.connect.DBConnect;
+import java.lang.System.Logger.Level;
 import model.RememberMeToken;
 
+import java.util.logging.Logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,14 +26,15 @@ public class RememberMeTokenDAO extends BaseDAO {
     private static final String COL_CREATED_AT = "created_at";
     private static final String COL_LAST_USED_AT = "last_used_at";
 
+    private static final Logger LOGGER = Logger.getLogger(RememberMeTokenDAO.class.getName());
+
     public RememberMeToken createToken(int userId, String selector, String hashedValidator, Timestamp expiresAt)
             throws SQLException {
         final String sql = """
                 INSERT INTO remember_me_tokens (user_id, selector, hashed_validator, expires_at, last_used_at)
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, userId);
             ps.setString(2, selector);
             ps.setString(3, hashedValidator);
@@ -62,8 +65,7 @@ public class RememberMeTokenDAO extends BaseDAO {
                 WHERE selector = ?
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, selector);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -82,8 +84,7 @@ public class RememberMeTokenDAO extends BaseDAO {
                 SET hashed_validator = ?, expires_at = ?, last_used_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, hashedValidator);
             ps.setTimestamp(2, expiresAt);
             ps.setInt(3, id);
@@ -93,8 +94,7 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     public void deleteById(int id) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE id = ?";
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
         }
@@ -102,8 +102,7 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     public void deleteBySelector(String selector) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE selector = ?";
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, selector);
             ps.executeUpdate();
         }
@@ -111,8 +110,7 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     public void deleteAllForUser(int userId) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE user_id = ?";
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ps.executeUpdate();
         }
@@ -128,5 +126,19 @@ public class RememberMeTokenDAO extends BaseDAO {
         token.setCreatedAt(rs.getTimestamp(COL_CREATED_AT));
         token.setLastUsedAt(rs.getTimestamp(COL_LAST_USED_AT));
         return token;
+    }
+
+    private void logSqlError(String findBySelector, SQLException e) {
+        LOGGER.log(java.util.logging.Level.SEVERE,
+                String.format("[RememberMeTokenDAO] SQL error during %s: %s (SQLState=%s, ErrorCode=%d)",
+                        findBySelector, e.getMessage(), e.getSQLState(), e.getErrorCode()),
+                e);
+
+        for (SQLException next = e.getNextException(); next != null; next = next.getNextException()) {
+            LOGGER.log(java.util.logging.Level.SEVERE,
+                    String.format("[RememberMeTokenDAO] NextException during %s: %s (SQLState=%s, ErrorCode=%d)",
+                            findBySelector, next.getMessage(), next.getSQLState(), next.getErrorCode()),
+                    next);
+        }
     }
 }
