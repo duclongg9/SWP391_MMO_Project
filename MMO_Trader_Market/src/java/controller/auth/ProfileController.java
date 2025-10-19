@@ -15,7 +15,8 @@ import jakarta.servlet.http.HttpSession;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import model.User;
+
+import model.Users;
 import service.UserService;
 
 /**
@@ -62,7 +63,7 @@ public class ProfileController extends HttpServlet {
 //           return;
 //        }
         try {
-            User myProfile = viewProfileService.viewMyProfile(1);
+            Users myProfile = viewProfileService.viewMyProfile(1);
             request.setAttribute("myProfile", myProfile);
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
             return;
@@ -74,8 +75,6 @@ public class ProfileController extends HttpServlet {
             request.setAttribute("emg", "Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
             return;
-        } catch (SQLException ex) {
-            Logger.getLogger(ProfileController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
