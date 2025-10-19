@@ -321,7 +321,103 @@ ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_order_id` FOREIGN KEY 
 
 
 -- =================================================================
--- Section 7: Indexes for Performance Optimization
+-- Section 7: Sample Seed Data
+-- =================================================================
+
+-- Seed roles used by the authorization layer
+INSERT INTO `roles` (`id`, `name`) VALUES
+    (1, 'ADMIN'),
+    (2, 'SELLER'),
+    (3, 'BUYER');
+
+-- Demo users for admin, seller and buyer personas
+INSERT INTO `users` (`id`, `role_id`, `email`, `name`, `avatar_url`, `hashed_password`, `google_id`, `status`, `created_at`, `updated_at`) VALUES
+    (1, 1, 'admin@mmo.local', 'MMO Control Center', NULL, '$2a$10$0wTNO3YKItPp4SOXGguoe.p5lWFhX.GacF6nwLxgPLZld0dfzpOw6', NULL, 1, '2024-01-10 09:00:00', '2024-01-10 09:00:00'),
+    (2, 2, 'seller@mmo.local', 'Cyber Gear Seller', 'https://cdn.mmo.local/avatar/seller.png', '$2a$10$wx.3AZT4vEvSTQ8zbJk1QuVY6YwHzSgA0J8woMVgLvs9ceIRiuXXS', NULL, 1, '2024-01-12 08:00:00', '2024-01-20 09:30:00'),
+    (3, 3, 'buyer@mmo.local', 'Pro Gamer Buyer', 'https://cdn.mmo.local/avatar/buyer.png', '$2a$10$5q8ZP2Y1fnQdQ/9pJ6GJ5e2o6syKQnR6kHdF63N5NfKbG65v1kW6S', NULL, 1, '2024-01-15 07:45:00', '2024-01-27 07:45:00');
+
+-- Sample KYC statuses and requests
+INSERT INTO `kyc_request_statuses` (`id`, `status_name`) VALUES
+    (1, 'Pending'),
+    (2, 'Approved'),
+    (3, 'Rejected');
+
+INSERT INTO `kyc_requests` (`id`, `user_id`, `status_id`, `front_image_url`, `back_image_url`, `selfie_image_url`, `id_number`, `admin_feedback`, `created_at`, `reviewed_at`) VALUES
+    (1, 2, 2, 'https://cdn.mmo.local/kyc/seller_front.jpg', 'https://cdn.mmo.local/kyc/seller_back.jpg', 'https://cdn.mmo.local/kyc/seller_selfie.jpg', '079123456789', 'Hồ sơ hợp lệ', '2024-01-13 10:30:00', '2024-01-15 10:00:00'),
+    (2, 3, 1, 'https://cdn.mmo.local/kyc/buyer_front.jpg', 'https://cdn.mmo.local/kyc/buyer_back.jpg', 'https://cdn.mmo.local/kyc/buyer_selfie.jpg', '092987654321', NULL, '2024-01-25 09:10:00', NULL);
+
+-- Seller shop and inventory
+INSERT INTO `shops` (`id`, `owner_id`, `name`, `description`, `status`, `created_at`) VALUES
+    (1, 2, 'Cyber Gear Store', 'Chuyên cung cấp tài khoản game & phần mềm bản quyền', 'Active', '2024-01-12 08:30:00');
+
+INSERT INTO `products` (`id`, `shop_id`, `name`, `description`, `price`, `inventory_count`, `status`, `created_at`, `updated_at`) VALUES
+    (1001, 1, 'Gmail Business 50GB', 'Tài khoản Gmail doanh nghiệp dung lượng 50GB kèm hướng dẫn đổi mật khẩu.', 250000.0000, 19, 'Available', '2024-01-14 11:00:00', '2024-01-20 12:00:00'),
+    (1002, 1, 'Spotify Premium 12 tháng', 'Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày.', 185000.0000, 7, 'Available', '2024-01-18 09:15:00', '2024-01-26 08:30:00'),
+    (1003, 1, 'Windows 11 Pro key', 'Key bản quyền Windows 11 Pro, kích hoạt online trọn đời.', 390000.0000, 50, 'Unlisted', '2024-01-19 15:45:00', '2024-01-19 15:45:00');
+
+INSERT INTO `product_credentials` (`id`, `product_id`, `order_id`, `encrypted_value`, `is_sold`, `created_at`) VALUES
+    (1, 1001, 5001, 'ENCRYPTED-CODE-001', 1, '2024-01-20 12:05:00'),
+    (2, 1001, NULL, 'ENCRYPTED-CODE-002', 0, '2024-01-21 10:20:00'),
+    (3, 1002, NULL, 'ENCRYPTED-CODE-201', 0, '2024-01-26 08:30:00');
+
+-- Wallets & financial flows
+INSERT INTO `wallets` (`id`, `user_id`, `balance`, `status`, `created_at`, `updated_at`) VALUES
+    (1, 1, 0.0000, 1, '2024-01-11 09:00:00', '2024-01-11 09:00:00'),
+    (2, 2, 330000.0000, 1, '2024-01-12 08:40:00', '2024-01-26 09:45:00'),
+    (3, 3, 50000.0000, 1, '2024-01-15 08:00:00', '2024-01-20 12:10:00');
+
+INSERT INTO `deposit_requests` (`id`, `user_id`, `amount`, `qr_content`, `idempotency_key`, `status`, `expires_at`, `admin_note`, `created_at`) VALUES
+    (1, 3, 300000.0000, 'VietQR|MMO|INV-20240120', 'DEPOSIT-UUID-1', 'Completed', '2024-01-20 12:00:00', 'Đối soát thành công', '2024-01-20 10:15:00'),
+    (2, 3, 150000.0000, 'VietQR|MMO|INV-20240127', 'DEPOSIT-UUID-2', 'Pending', '2024-01-27 12:00:00', NULL, '2024-01-27 09:00:00');
+
+INSERT INTO `wallet_transactions` (`id`, `wallet_id`, `related_entity_id`, `transaction_type`, `amount`, `balance_before`, `balance_after`, `note`, `created_at`) VALUES
+    (1, 3, 1, 'Deposit', 300000.0000, 0.0000, 300000.0000, 'Nạp tiền qua VietQR', '2024-01-20 10:16:00'),
+    (2, 3, 5001, 'Purchase', -250000.0000, 300000.0000, 50000.0000, 'Thanh toán đơn hàng #5001', '2024-01-20 12:00:00'),
+    (3, 2, 5001, 'Payout', 250000.0000, 200000.0000, 450000.0000, 'Doanh thu đơn #5001', '2024-01-20 12:01:00'),
+    (4, 2, 1, 'Withdrawal', -120000.0000, 450000.0000, 330000.0000, 'Rút tiền về Vietcombank', '2024-01-26 09:40:00');
+
+INSERT INTO `orders` (`id`, `buyer_id`, `product_id`, `payment_transaction_id`, `total_amount`, `status`, `idempotency_key`, `hold_until`, `created_at`, `updated_at`) VALUES
+    (5001, 3, 1001, 2, 250000.0000, 'Completed', 'ORDER-5001-KEY', '2024-01-23 12:00:00', '2024-01-20 10:45:00', '2024-01-20 12:05:00'),
+    (5002, 3, 1002, NULL, 185000.0000, 'Disputed', 'ORDER-5002-KEY', '2024-02-01 00:00:00', '2024-01-26 09:00:00', '2024-01-27 08:10:00');
+
+INSERT INTO `withdrawal_rejection_reasons` (`id`, `reason_code`, `description`, `is_active`) VALUES
+    (1, 'ACCOUNT_ERROR', 'Thông tin tài khoản ngân hàng không khớp', 1),
+    (2, 'SUSPICIOUS_ACTIVITY', 'Giao dịch bị nghi ngờ gian lận, cần xác minh thêm', 1);
+
+INSERT INTO `withdrawal_requests` (`id`, `user_id`, `amount`, `bank_account_info`, `status`, `admin_proof_url`, `created_at`, `processed_at`) VALUES
+    (1, 2, 120000.0000, '{"bank":"VCB","account":"0123456789","name":"Tran Van Seller"}', 'Completed', 'https://cdn.mmo.local/withdrawals/receipt-1.png', '2024-01-26 09:00:00', '2024-01-26 09:45:00'),
+    (2, 2, 80000.0000, '{"bank":"ACB","account":"9876543210","name":"Tran Van Seller"}', 'Rejected', NULL, '2024-02-03 09:00:00', '2024-02-03 10:00:00');
+
+INSERT INTO `withdrawal_request_reasons_map` (`request_id`, `reason_id`) VALUES
+    (2, 2);
+
+-- Support operations
+INSERT INTO `disputes` (`id`, `order_id`, `reporter_id`, `resolved_by_admin_id`, `reason`, `status`, `created_at`, `updated_at`) VALUES
+    (1, 5002, 3, NULL, 'Tài khoản không đăng nhập được', 'Open', '2024-01-27 08:10:00', '2024-01-27 08:10:00');
+
+INSERT INTO `conversations` (`id`, `related_order_id`, `related_product_id`, `created_at`) VALUES
+    (1, 5002, 1002, '2024-01-27 08:00:00');
+
+INSERT INTO `conversation_participants` (`conversation_id`, `user_id`) VALUES
+    (1, 2),
+    (1, 3);
+
+INSERT INTO `messages` (`id`, `conversation_id`, `sender_id`, `content`, `created_at`) VALUES
+    (1, 1, 3, 'Shop ơi, tài khoản Spotify không hoạt động.', '2024-01-27 08:05:00'),
+    (2, 1, 2, 'Bên mình đang kiểm tra lại thông tin giúp bạn.', '2024-01-27 08:07:00');
+
+-- Operational configuration
+INSERT INTO `inventory_logs` (`id`, `product_id`, `related_order_id`, `change_amount`, `reason`, `created_at`) VALUES
+    (1, 1001, 5001, -1, 'Sale', '2024-01-20 12:00:00'),
+    (2, 1002, 5002, -1, 'Sale', '2024-01-26 09:05:00'),
+    (3, 1002, NULL, 5, 'ManualRestock', '2024-01-29 10:00:00');
+
+INSERT INTO `system_configs` (`id`, `config_key`, `config_value`, `description`, `created_at`, `updated_at`) VALUES
+    (1, 'escrow.release.hours', '72', 'Thời gian giữ tiền trước khi tự động giải ngân', '2024-01-10 09:00:00', '2024-01-10 09:00:00'),
+    (2, 'support.email', 'support@mmo.local', 'Email bộ phận hỗ trợ khách hàng', '2024-01-10 09:00:00', '2024-01-10 09:00:00');
+
+-- =================================================================
+-- Section 8: Indexes for Performance Optimization
 -- =================================================================
 
 CREATE INDEX `idx_users_email` ON `users`(`email`);
