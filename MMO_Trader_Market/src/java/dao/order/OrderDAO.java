@@ -196,7 +196,6 @@ public class OrderDAO extends BaseDAO {
                 return true;
             }
         }
-        return false;
     }
 
     private void updateOrderStatus(Connection connection, int orderId, OrderStatus status) throws SQLException {
