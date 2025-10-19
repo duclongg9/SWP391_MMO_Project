@@ -36,8 +36,8 @@ public class RegisterController extends BaseController {
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
 
-        request.setAttribute("email", email);
-        request.setAttribute("name", name);
+        request.setAttribute("email", email == null ? null : email.trim());
+        request.setAttribute("name", name == null ? null : name.trim());
 
         try {
             Users createdUser = userService.registerNewUser(email, name, password, confirmPassword);
@@ -47,10 +47,7 @@ public class RegisterController extends BaseController {
             session.setAttribute("newUserEmail", createdUser.getEmail());
 
             response.sendRedirect(request.getContextPath() + "/auth");
-        } catch (IllegalArgumentException e) {
-            request.setAttribute("error", e.getMessage());
-            forward(request, response, "auth/register");
-        } catch (IllegalStateException e) {
+              } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
             forward(request, response, "auth/register");
         } catch (RuntimeException e) {

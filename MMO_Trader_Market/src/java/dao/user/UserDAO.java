@@ -90,24 +90,6 @@ public class UserDAO extends BaseDAO {
             return ps.executeUpdate();
         }
     }
-    /**
-    Kiểm tra xem địa chỉ email được cung cấp đã tồn tại trong bảng người dùng (users) hay chưa
-     */
-    public boolean isEmailExists(String email) throws SQLException {
-        final String sql = """
-                SELECT 1 FROM users
-                WHERE email = ?
-                LIMIT 1
-                """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, email);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
-    }
 
     /**
      lưu tài khoản mới
