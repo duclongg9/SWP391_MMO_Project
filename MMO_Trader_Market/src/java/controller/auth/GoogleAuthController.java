@@ -17,12 +17,14 @@ import service.GoogleOAuthService.GoogleProfile;
 import service.UserService;
 import units.RoleHomeResolver;
 
-@WebServlet(name = "GoogleAuthController", urlPatterns = {"/auth/google"})
+@WebServlet(name = "GoogleAuthController", urlPatterns = {"/oauth2/google/login", "/oauth2/google/callback"})
 public class GoogleAuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(GoogleAuthController.class.getName());
     private static final String SESSION_STATE = "googleOauthState";
+    private static final String LOGIN_PATH = "/oauth2/google/login";
+    private static final String CALLBACK_PATH = "/oauth2/google/callback";
 
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
     private final UserService userService = new UserService(new UserDAO());
@@ -30,13 +32,22 @@ public class GoogleAuthController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String code = request.getParameter("code");
-        String state = request.getParameter("state");
-        if (code == null || code.isBlank()) {
+        String servletPath = request.getServletPath();
+        if (LOGIN_PATH.equals(servletPath)) {
             startAuthentication(request, response);
             return;
         }
-        handleCallback(request, response, code, state);
+        if (CALLBACK_PATH.equals(servletPath)) {
+            String code = request.getParameter("code");
+            String state = request.getParameter("state");
+            if (code == null || code.isBlank()) {
+                sendErrorFlash(request, response, "Google không cung cấp mã xác thực. Vui lòng thử lại.");
+                return;
+            }
+            handleCallback(request, response, code, state);
+            return;
+        }
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void startAuthentication(HttpServletRequest request, HttpServletResponse response) throws IOException {
