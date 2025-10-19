@@ -6,6 +6,29 @@
 <c:set var="headerSubtitle" value="Đăng nhập để quản lý giao dịch" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+<style>
+  /* Thu gọn khoảng cách giữa các nút hướng dẫn dưới form */
+  .auth-page .guide-link { 
+    margin-top: 10px;           /* giảm khoảng cách giữa các khối */
+  }
+  .auth-page .guide-link:first-of-type { 
+    margin-top: 16px;           /* cách form 1 chút */
+  }
+  .auth-page .guide-link p {
+    margin: 0 0 6px 0;          /* thu gọn dòng “Chưa có tài khoản?” */
+    text-align: center;
+  }
+  .auth-page .guide-link .button {
+    display: block;
+    width: 100%;
+    max-width: 540px;           /* đồng nhất bề ngang nút */
+    margin: 0 auto;             /* căn giữa */
+  }
+
+  /* Tùy chọn: thu gọn form cho đều mắt */
+  .form-card { gap: 12px; }
+  .form-card__field { margin-bottom: 10px; }
+</style>
 <main class="layout__content auth-page">
     <c:if test="${not empty error}">
         <div class="alert alert--error"><c:out value="${error}" /></div>
