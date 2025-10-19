@@ -4,10 +4,19 @@
         headerModifier = "";
     }
     String headerTitle = (String) request.getAttribute("headerTitle");
-    if (headerTitle == null) {
-        headerTitle = "MMO Trader Market";
+    if (headerTitle != null) {
+        headerTitle = headerTitle.trim();
+        if (headerTitle.isEmpty()) {
+            headerTitle = null;
+        }
     }
     String headerSubtitle = (String) request.getAttribute("headerSubtitle");
+    if (headerSubtitle != null) {
+        headerSubtitle = headerSubtitle.trim();
+        if (headerSubtitle.isEmpty()) {
+            headerSubtitle = null;
+        }
+    }
     java.util.List<java.util.Map<String, String>> headerNavigationItems =
             (java.util.List<java.util.Map<String, String>>) request.getAttribute("navItems");
     String brandName = "MMO Trader Market";
@@ -17,12 +26,16 @@
 <header class="layout__header <%= headerModifier %>">
     <div class="layout__brand">
         <a class="layout__logo" href="<%= homeHref %>" title="<%= brandName %>"><%= brandName %></a>
+        <% if (headerTitle != null || headerSubtitle != null) { %>
         <div class="layout__heading">
+            <% if (headerTitle != null) { %>
             <h1><%= headerTitle %></h1>
-            <% if (headerSubtitle != null && !headerSubtitle.trim().isEmpty()) { %>
+            <% } %>
+            <% if (headerSubtitle != null) { %>
             <p class="subtitle"><%= headerSubtitle %></p>
             <% } %>
         </div>
+        <% } %>
     </div>
     <% if (headerNavigationItems != null && !headerNavigationItems.isEmpty()) { %>
     <nav class="menu menu--horizontal">
