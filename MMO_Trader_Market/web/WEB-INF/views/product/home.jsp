@@ -1,15 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
-<%@ page import="model.Product" %>
-<%@ page import="model.ProductCategory" %>
-<%@ page import="model.ProductStatus" %>
-<%@ page import="model.CustomerProfile" %>
-<%@ page import="model.Review" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="model.Products" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%
-    List<ProductCategory> categories = (List<ProductCategory>) request.getAttribute("categories");
-    List<Product> featuredProducts = (List<Product>) request.getAttribute("featuredProducts");
-    CustomerProfile profile = (CustomerProfile) request.getAttribute("customerProfile");
-    List<Review> reviews = (List<Review>) request.getAttribute("reviews");
+    List<Map<String, String>> categories = (List<Map<String, String>>) request.getAttribute("categories");
+    List<Products> featuredProducts = (List<Products>) request.getAttribute("featuredProducts");
+    List<Map<String, String>> reviews = (List<Map<String, String>>) request.getAttribute("reviews");
     List<String> buyerTips = (List<String>) request.getAttribute("buyerTips");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
@@ -61,7 +58,7 @@
 
         <div class="landing__products">
             <% if (featuredProducts != null) { %>
-                <% for (Product product : featuredProducts) { %>
+                <% for (Products product : featuredProducts) { %>
                     <article class="product-card">
                         <header class="product-card__header">
                             <h4><%= product.getName() %></h4>
@@ -75,7 +72,7 @@
                         </ul>
                         <footer class="product-card__footer">
                             <a class="button button--ghost" href="#">Xem chi tiết demo</a>
-                            <% if (product.getStatus() == ProductStatus.APPROVED) { %>
+                            <% if ("APPROVED".equalsIgnoreCase(product.getStatus())) { %>
                             <a class="button button--primary" href="<%= request.getContextPath() %>/orders/buy?productId=<%= product.getId() %>">Mua ngay</a>
                             <% } else { %>
                             <span class="badge badge--warning">Đang chờ duyệt</span>

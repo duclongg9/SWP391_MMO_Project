@@ -1,19 +1,19 @@
 package service;
 
 import dao.order.OrderDAO;
-import java.util.List;
-import java.util.Optional;
 import model.Order;
 import model.OrderStatus;
 import model.Products;
-import model.ProductStatus;
+
+import java.util.List;
 
 /**
  * Contains the business rules for processing a buyer checkout request.
  * @version 1.0 21/05/2024
- * @author gpt-5-codex
  */
 public class OrderService {
+
+    private static final String APPROVED_STATUS = "APPROVED";
 
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProductService productService = new ProductService();
@@ -32,10 +32,9 @@ public class OrderService {
      * @return the validated product
      */
     public Products validatePurchasableProduct(int productId) {
-        Optional<Products> productOptional = productService.findById(productId);
-        Products product = productOptional.orElseThrow(() ->
-                new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
-        if (product.getStatus() != ProductStatus.APPROVED) {
+        Products product = productService.findOptionalById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
+        if (product.getStatus() == null || !APPROVED_STATUS.equalsIgnoreCase(product.getStatus())) {
             throw new IllegalStateException("Sản phẩm hiện chưa sẵn sàng để bán.");
         }
         return product;
@@ -55,7 +54,7 @@ public class OrderService {
         if (paymentMethod == null || paymentMethod.isBlank()) {
             throw new IllegalArgumentException("Vui lòng chọn phương thức thanh toán.");
         }
-        Product product = validatePurchasableProduct(productId);
+        Products product = validatePurchasableProduct(productId);
         Order order = orderDAO.save(product, buyerEmail.trim(), paymentMethod.trim());
         String activationCode = orderDAO.generateActivationCode(order);
         String deliveryLink = orderDAO.generateDeliveryLink(order);
