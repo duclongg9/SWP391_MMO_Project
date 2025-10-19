@@ -139,6 +139,13 @@ public class OrderDAO extends BaseDAO {
         return 0;
     }
 
+    public int countByBuyer(int buyerId, OrderStatus status) {
+        if (status == null) {
+            return (int) countByBuyer(buyerId);
+        }
+        return (int) countByBuyerAndStatus(buyerId, status);
+    }
+
     public List<Order> findAll(int limit, int offset) {
         final String sql = BASE_SELECT + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
         try (Connection connection = getConnection();
@@ -154,6 +161,33 @@ public class OrderDAO extends BaseDAO {
             return orders;
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tải danh sách đơn hàng", ex);
+            return List.of();
+        }
+    }
+
+    public List<Order> findByBuyer(int buyerId, OrderStatus status, int limit, int offset) {
+        StringBuilder sql = new StringBuilder(BASE_SELECT)
+                .append("WHERE o.buyer_id = ? ")
+                .append(status == null ? "" : "AND o.status = ? ")
+                .append("ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            statement.setInt(index++, buyerId);
+            if (status != null) {
+                statement.setString(index++, status.toDatabaseValue());
+            }
+            statement.setInt(index++, limit);
+            statement.setInt(index, offset);
+            List<Order> orders = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapRow(rs));
+                }
+            }
+            return orders;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách đơn hàng theo người mua", ex);
             return List.of();
         }
     }

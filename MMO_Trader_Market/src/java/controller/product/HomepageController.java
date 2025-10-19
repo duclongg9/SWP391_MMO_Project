@@ -60,7 +60,7 @@ public class HomepageController extends BaseController {
         navItems.add(productLink);
 
         Map<String, String> orderLink = new HashMap<>();
-        orderLink.put("href", contextPath + "/orders");
+        orderLink.put("href", contextPath + "/orders/my");
         orderLink.put("label", "Đơn đã mua");
         navItems.add(orderLink);
 
