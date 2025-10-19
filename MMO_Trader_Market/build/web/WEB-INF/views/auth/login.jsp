@@ -20,6 +20,11 @@
                value="<c:out value='${prefillEmail}'/>" required>
         <label class="form-card__label" for="password">Mật khẩu</label>
         <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
+        <div class="form-card__option">
+            <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
+                   <c:if test="${rememberMeChecked}">checked</c:if>>
+            <label class="form-card__option-text" for="rememberMe">Ghi nhớ đăng nhập</label>
+        </div>
 
         <button class="button button--primary" type="submit">Đăng nhập</button>
     </form>
