@@ -4,6 +4,7 @@
  */
 package model;
 import java.time.Instant;
+import java.util.Date;
 
 /**
  *
@@ -107,6 +108,10 @@ public class WalletTransactions {
         this.createdAt = createdAt;
     }
 
+    public Date getCreatedAtDate() {
+        return createdAt == null ? null : Date.from(createdAt);
+    }
+    
     @Override
     public String toString() {
         return "WalletTransactions{" + "id=" + id + ", walletId=" + walletId + ", relatedEntityId=" + relatedEntityId + ", transactionType=" + transactionType + ", amount=" + amount + ", balanceBefore=" + balanceBefore + ", balanceAfter=" + balanceAfter + ", note=" + note + ", createdAt=" + createdAt + '}';

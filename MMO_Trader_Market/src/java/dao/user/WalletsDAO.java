@@ -31,7 +31,7 @@ public class WalletsDAO {
     /*Phần mapping database với các biến tự tạo trong java*/
     private static final String COL_ID = "id";
     private static final String COL_USER_ID = "user_id";
-    private static final String COL_BALANCE = "balance  ";
+    private static final String COL_BALANCE = "balance";
     private static final String COL_STATUS = "status";
     private static final String COL_CREATED_AT = "created_at";
     private static final String COL_UPDATED_AT = "updated_at";

@@ -110,9 +110,9 @@ public class WalletTransactionDAO {
         String sql;
         sql = """
               SELECT * FROM wallet_transactions
-              WHERE id = ?
+              WHERE wallet_id = ?
               ORDER BY created_at DESC
-              LIMIT ? OFFSET?
+              LIMIT ? OFFSET ?
               """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -127,7 +127,8 @@ public class WalletTransactionDAO {
                     //map từ ENUM java --> enum DB
                     String s = rs.getString(COL_TRANSACTION_TYPE); //"Deposit" | "Purchase" |
                     TransactionType type = TransactionType.fromDbValue(s);
-
+                    
+                    wt.setTransactionType(type);
                     wt.setAmount(rs.getDouble(COL_AMOUNT));
                     wt.setBalanceBefore(rs.getDouble(COL_BALANCE_BEFORE));
                     wt.setBalanceAfter(rs.getDouble(COL_BALANCE_AFTER));
