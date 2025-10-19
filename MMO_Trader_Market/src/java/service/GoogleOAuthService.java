@@ -23,8 +23,11 @@ public class GoogleOAuthService {
     private final Gson gson = new Gson();
 
     public String buildAuthorizationUrl(String state) {
+        if (state == null || state.isBlank()) {
+            throw new IllegalArgumentException("Thiếu thông tin xác thực phiên Google OAuth");
+        }
         String clientId = requireConfig("google.clientId");
-        String redirectUri = requireConfig("google.redirectUri");
+        String redirectUri = requireConfig("google.callbackUri");
         String scope = urlEncode("openid email profile");
         return AUTH_ENDPOINT +
                 "?response_type=code" +
@@ -65,7 +68,7 @@ public class GoogleOAuthService {
     private JsonObject exchangeCodeForTokens(String code) {
         String clientId = requireConfig("google.clientId");
         String clientSecret = requireConfig("google.clientSecret");
-        String redirectUri = requireConfig("google.redirectUri");
+        String redirectUri = requireConfig("google.callbackUri");
         String body = "code=" + urlEncode(code)
                 + "&client_id=" + urlEncode(clientId)
                 + "&client_secret=" + urlEncode(clientSecret)

@@ -9,17 +9,19 @@
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Bộ lọc nhanh</h2>
-            <form class="search-bar" method="get" action="${pageContext.request.contextPath}/products">
+            <c:url var="searchAction" value="/products" />
+            <form class="search-bar" method="get" action="${searchAction}">
                 <label class="search-bar__icon" for="keyword">🔎</label>
-                <input class="search-bar__input" type="search" id="keyword" name="keyword"
-                       placeholder="Nhập từ khóa..." value="${fn:escapeXml(searchKeyword)}">
+                <input class="search-bar__input" type="search" id="keyword" name="q"
+                       placeholder="Nhập từ khóa..." value="${fn:escapeXml(keyword)}">
+                <input type="hidden" name="size" value="${pageSize}" />
                 <button class="button button--ghost" type="submit">Lọc</button>
             </form>
         </div>
         <div class="panel__body">
-            <p class="profile-card__note">Tìm thấy ${totalItems} sản phẩm phù hợp.</p>
+            <p class="profile-card__note">Tìm thấy <c:out value="${total}" /> sản phẩm phù hợp.</p>
             <c:choose>
-                <c:when test="${not empty products}">
+                <c:when test="${total > 0}">
                     <table class="table table--interactive">
                         <thead>
                         <tr>
@@ -32,28 +34,29 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <c:forEach var="product" items="${products}">
+                        <c:forEach var="product" items="${items}">
                             <tr>
                                 <td>#<c:out value="${product.id}" /></td>
                                 <td><c:out value="${product.name}" /></td>
                                 <td><c:out value="${product.description}" /></td>
                                 <td>
-                                    <fmt:formatNumber value="${product.price}" type="number" minFractionDigits="0"
-                                                     maxFractionDigits="0" /> đ
+                                    <fmt:formatNumber value="${product.price}" type="currency" currencySymbol="đ"
+                                                     minFractionDigits="0" maxFractionDigits="0" />
                                 </td>
                                 <td>
                                     <span class="badge"><c:out value="${product.status}" /></span>
                                 </td>
                                 <td class="table__actions">
-                                    <c:set var="statusUpper" value="${not empty product.status ? fn:toUpperCase(product.status) : ''}" />
+                                    <c:set var="statusUpper"
+                                           value="${not empty product.status ? fn:toUpperCase(product.status) : ''}" />
                                     <c:choose>
                                         <c:when test="${statusUpper eq 'APPROVED'}">
-                                            <c:url var="buyUrl" value="/orders/buy">
-                                                <c:param name="productId" value="${product.id}" />
-                                            </c:url>
-                                            <c:url var="ordersUrl" value="/orders" />
-                                            <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
-                                            <a class="button button--ghost" href="${ordersUrl}">Đơn đã mua</a>
+                                            <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
+                                                  style="display:inline;">
+                                                <input type="hidden" name="productId" value="${product.id}" />
+                                                <input type="hidden" name="quantity" value="1" />
+                                                <button class="button button--primary" type="submit">Mua ngay</button>
+                                            </form>
                                         </c:when>
                                         <c:otherwise>
                                             <button class="button button--ghost" type="button" disabled>Đang chờ duyệt</button>
@@ -71,14 +74,15 @@
             </c:choose>
             <nav class="pagination" aria-label="Phân trang sản phẩm">
                 <c:choose>
-                    <c:when test="${currentPage == 1}">
+                    <c:when test="${page <= 1}">
                         <span class="pagination__item pagination__item--disabled" aria-disabled="true">«</span>
                     </c:when>
                     <c:otherwise>
                         <c:url var="prevUrl" value="/products">
-                            <c:param name="page" value="${currentPage - 1}" />
-                            <c:if test="${not empty searchKeyword}">
-                                <c:param name="keyword" value="${searchKeyword}" />
+                            <c:param name="page" value="${page - 1}" />
+                            <c:param name="size" value="${pageSize}" />
+                            <c:if test="${not empty keyword}">
+                                <c:param name="q" value="${keyword}" />
                             </c:if>
                         </c:url>
                         <a class="pagination__item" href="${prevUrl}">«</a>
@@ -87,12 +91,13 @@
                 <c:forEach var="pageNumber" begin="1" end="${totalPages}">
                     <c:url var="pageUrl" value="/products">
                         <c:param name="page" value="${pageNumber}" />
-                        <c:if test="${not empty searchKeyword}">
-                            <c:param name="keyword" value="${searchKeyword}" />
+                        <c:param name="size" value="${pageSize}" />
+                        <c:if test="${not empty keyword}">
+                            <c:param name="q" value="${keyword}" />
                         </c:if>
                     </c:url>
                     <c:choose>
-                        <c:when test="${pageNumber == currentPage}">
+                        <c:when test="${pageNumber == page}">
                             <a class="pagination__item pagination__item--active" href="${pageUrl}" aria-current="page">
                                 ${pageNumber}
                             </a>
@@ -103,14 +108,15 @@
                     </c:choose>
                 </c:forEach>
                 <c:choose>
-                    <c:when test="${currentPage >= totalPages}">
+                    <c:when test="${page >= totalPages || totalPages == 0}">
                         <span class="pagination__item pagination__item--disabled" aria-disabled="true">»</span>
                     </c:when>
                     <c:otherwise>
                         <c:url var="nextUrl" value="/products">
-                            <c:param name="page" value="${currentPage + 1}" />
-                            <c:if test="${not empty searchKeyword}">
-                                <c:param name="keyword" value="${searchKeyword}" />
+                            <c:param name="page" value="${page + 1}" />
+                            <c:param name="size" value="${pageSize}" />
+                            <c:if test="${not empty keyword}">
+                                <c:param name="q" value="${keyword}" />
                             </c:if>
                         </c:url>
                         <a class="pagination__item" href="${nextUrl}">»</a>

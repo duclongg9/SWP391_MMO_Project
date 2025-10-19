@@ -7,12 +7,17 @@ import model.OrderStatus;
 import model.PaginatedResult;
 import model.Products;
 import model.Users;
+import queue.OrderQueueProducer;
+import service.dto.OrderPlacementResult;
+import service.dto.OrderStatusView;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Contains the business rules for processing a buyer checkout request.
@@ -25,6 +30,8 @@ public class OrderService {
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProductService productService = new ProductService();
     private final BuyerDAO buyerDAO = new BuyerDAO();
+    private final WalletService walletService = new WalletService();
+    private final OrderQueueProducer orderQueueProducer = OrderQueueProducer.getInstance();
 
     public PaginatedResult<Order> listOrders(int buyerId, int page, int pageSize, OrderStatus status) {
         if (buyerId <= 0) {
@@ -62,6 +69,48 @@ public class OrderService {
         return product;
     }
 
+    public OrderPlacementResult placeOrder(Users buyer, int productId, int quantity) {
+        if (buyer == null || buyer.getId() == null) {
+            throw new IllegalStateException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng mua phải lớn hơn 0.");
+        }
+
+        Products product = validatePurchasableProduct(productId);
+        if (product.getInventoryCount() != null && product.getInventoryCount() < quantity) {
+            throw new IllegalStateException("Sản phẩm không đủ tồn kho.");
+        }
+
+        int sellerId = productService.findOwnerIdByProduct(productId)
+                .orElseThrow(() -> new IllegalStateException("Không xác định được chủ shop của sản phẩm."));
+        if (buyer.getId().equals(sellerId)) {
+            throw new IllegalStateException("Bạn không thể mua sản phẩm do chính mình bán.");
+        }
+
+        BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+        BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
+        String orderToken = UUID.randomUUID().toString();
+
+        Order pending;
+        try {
+            pending = orderDAO.insertPendingOrder(buyer.getId(), productId, quantity, total, orderToken);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể khởi tạo đơn hàng mới.", ex);
+        }
+
+        try {
+            walletService.hold(buyer.getId(), sellerId, total, pending.getId(), orderToken);
+        } catch (RuntimeException ex) {
+            orderDAO.updateStatus(pending.getId(), orderToken, OrderStatus.FAILED);
+            throw new IllegalStateException("Không thể giữ tiền thanh toán. Vui lòng thử lại sau.", ex);
+        }
+
+        orderQueueProducer.publish(pending.getId(), orderToken);
+
+        return new OrderPlacementResult(pending.getId(), orderToken, product, quantity, pending.getStatus());
+    }
+
     /**
      * Creates a new order after validating the buyer information and generates delivery assets.
      * @param productId the product that the buyer wants to purchase
@@ -83,6 +132,17 @@ public class OrderService {
         } catch (SQLException ex) {
             throw new IllegalStateException("Không thể tạo đơn hàng. Vui lòng thử lại sau.", ex);
         }
+    }
+
+    public OrderStatusView getOrderStatus(int orderId, String orderToken, Users currentUser) {
+        if (orderToken == null || orderToken.isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã theo dõi đơn hàng.");
+        }
+        Order order = orderDAO.findByIdAndToken(orderId, orderToken)
+                .orElseThrow(() -> new IllegalArgumentException("Đơn hàng không tồn tại hoặc đã hết hạn."));
+        ensureOrderAccessibility(order, currentUser);
+        return new OrderStatusView(order.getId(), orderToken, order.getStatus(),
+                order.hasDeliveryInformation(), order.getActivationCode(), order.getDeliveryLink());
     }
 
     /**
@@ -138,5 +198,22 @@ public class OrderService {
             return false;
         }
         return PURCHASABLE_STATUSES.contains(status.trim().toUpperCase(Locale.ROOT));
+    }
+
+    private void ensureOrderAccessibility(Order order, Users currentUser) {
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new IllegalStateException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+        if (order.getBuyerId() != null && currentUser.getId().equals(order.getBuyerId())) {
+            return;
+        }
+        int productId = order.getProduct() == null ? -1 : order.getProduct().getId();
+        if (productId > 0) {
+            Optional<Integer> ownerId = productService.findOwnerIdByProduct(productId);
+            if (ownerId.isPresent() && ownerId.get().equals(currentUser.getId())) {
+                return;
+            }
+        }
+        throw new SecurityException("Bạn không có quyền truy cập đơn hàng này.");
     }
 }

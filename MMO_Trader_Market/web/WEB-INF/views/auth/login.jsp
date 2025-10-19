@@ -24,7 +24,7 @@
         <button class="button button--primary" type="submit">Đăng nhập</button>
     </form>
     <section class="guide-link">
-        <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng nhập bằng Google</a>
+        <a class="button button--secondary" href="<c:url value='/oauth2/google/login' />">Đăng nhập bằng Google</a>
     </section>
     <section class="guide-link">
         <a class="button button--ghost" href="<c:url value='/forgot-password' />">Quên mật khẩu</a>

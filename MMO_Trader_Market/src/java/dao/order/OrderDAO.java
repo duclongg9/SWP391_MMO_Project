@@ -15,15 +15,19 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OrderDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(OrderDAO.class.getName());
+    private static final ConcurrentMap<Integer, Integer> PENDING_QUANTITIES = new ConcurrentHashMap<>();
 
     private static final String BASE_SELECT = "SELECT "
             + "o.id AS order_id, o.product_id, o.buyer_id, o.total_amount, o.status AS order_status, o.created_at AS order_created_at, "
+            + "o.idempotency_key AS order_token, "
             + "p.shop_id, p.name AS product_name, p.description AS product_description, p.price AS product_price, "
             + "p.inventory_count AS product_inventory, p.status AS product_status, p.created_at AS product_created_at, "
             + "p.updated_at AS product_updated_at, u.email AS buyer_email, "
@@ -232,6 +236,88 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    public Order insertPendingOrder(int buyerId, int productId, int quantity, BigDecimal totalAmount, String orderToken)
+            throws SQLException {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng sản phẩm phải lớn hơn 0");
+        }
+        final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            connection.setAutoCommit(false);
+            try {
+                statement.setInt(1, buyerId);
+                statement.setInt(2, productId);
+                statement.setBigDecimal(3, totalAmount);
+                statement.setString(4, OrderStatus.PENDING.toDatabaseValue());
+                statement.setString(5, orderToken);
+                statement.executeUpdate();
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        int orderId = keys.getInt(1);
+                        PENDING_QUANTITIES.put(orderId, quantity);
+                        connection.commit();
+                        return findById(orderId)
+                                .orElseThrow(() -> new SQLException("Không thể tải lại đơn hàng mới tạo"));
+                    }
+                }
+                connection.rollback();
+                throw new SQLException("Không thể tạo đơn hàng mới");
+            } catch (SQLException ex) {
+                connection.rollback();
+                throw ex;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
+    public Optional<Order> findByIdAndToken(int orderId, String orderToken) {
+        final String sql = BASE_SELECT + "WHERE o.id = ? AND o.idempotency_key = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            statement.setString(2, orderToken);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tìm đơn hàng theo token", ex);
+        }
+        return Optional.empty();
+    }
+
+    public boolean updateStatus(int orderId, String orderToken, OrderStatus status) {
+        final String sql = "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND idempotency_key = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status.toDatabaseValue());
+            statement.setInt(2, orderId);
+            statement.setString(3, orderToken);
+            int updated = statement.executeUpdate();
+            if (updated > 0) {
+                if (status != OrderStatus.PENDING) {
+                    PENDING_QUANTITIES.remove(orderId);
+                }
+                return true;
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái đơn hàng", ex);
+        }
+        return false;
+    }
+
+    public int getRememberedQuantity(int orderId) {
+        return PENDING_QUANTITIES.getOrDefault(orderId, 0);
+    }
+
+    public void clearRememberedQuantity(int orderId) {
+        PENDING_QUANTITIES.remove(orderId);
+    }
+
     private int insertOrder(Connection connection, Products product, int buyerId)
             throws SQLException {
         final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, created_at, updated_at) "
@@ -317,8 +403,16 @@ public class OrderDAO extends BaseDAO {
         String activationCode = rs.getString("activation_code");
         String paymentMethod = resolvePaymentMethod(rs.getString("transaction_type"));
 
-        return new Order(rs.getInt("order_id"), product, rs.getString("buyer_email"), paymentMethod,
-                status, createdAt, activationCode, null);
+        Integer buyerId = rs.getInt("buyer_id");
+        if (rs.wasNull()) {
+            buyerId = null;
+        }
+        int orderId = rs.getInt("order_id");
+        String orderToken = rs.getString("order_token");
+        Integer quantity = PENDING_QUANTITIES.get(orderId);
+
+        return new Order(orderId, product, rs.getString("buyer_email"), paymentMethod,
+                status, createdAt, activationCode, null, buyerId, orderToken, quantity);
     }
 
     private String resolvePaymentMethod(String transactionType) {
@@ -338,7 +432,8 @@ public class OrderDAO extends BaseDAO {
             return order;
         }
         return new Order(order.getId(), order.getProduct(), order.getBuyerEmail(), paymentMethod,
-                order.getStatus(), order.getCreatedAt(), order.getActivationCode(), order.getDeliveryLink());
+                order.getStatus(), order.getCreatedAt(), order.getActivationCode(), order.getDeliveryLink(),
+                order.getBuyerId(), order.getOrderToken(), order.getQuantity());
     }
 }
 

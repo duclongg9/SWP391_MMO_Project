@@ -132,6 +132,26 @@ public class ProductDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    public Optional<Integer> findOwnerIdByProduct(int productId) {
+        final String sql = "SELECT s.owner_id FROM products p JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    int ownerId = rs.getInt("owner_id");
+                    if (rs.wasNull()) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(ownerId);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "findOwnerIdByProduct failed", ex);
+        }
+        return Optional.empty();
+    }
+
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
         final String sql = "SELECT " + PRODUCT_COLUMNS
