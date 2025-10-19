@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import model.Order;
 import model.OrderStatus;
-import model.Product;
+import model.Products;
 
 /**
  * Provides persistence-like operations for buyer orders using an in-memory store.
@@ -36,12 +36,13 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Persists a new order into the in-memory store.
-     * @param product product being purchased
+     * @param product
+     * @param products product being purchased
      * @param buyerEmail email used for delivery
      * @param paymentMethod selected payment channel
      * @return created order entity
      */
-    public Order save(Product product, String buyerEmail, String paymentMethod) {
+    public Order save(Products product, String buyerEmail, String paymentMethod) {
         int id = SEQUENCE.incrementAndGet();
         Order order = new Order(id, product, buyerEmail, paymentMethod,
                 OrderStatus.PROCESSING, LocalDateTime.now());
@@ -64,7 +65,7 @@ public class OrderDAO extends BaseDAO {
         if (!ORDERS.isEmpty()) {
             return;
         }
-        List<Product> products = productDAO.findAll();
+        List<ProductDAO> products = productDAO.findAll();
         if (products.isEmpty()) {
             return;
         }

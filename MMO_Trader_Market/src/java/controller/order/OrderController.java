@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import model.Order;
-import model.Product;
+import model.Products;
 import service.OrderService;
 
 /**
@@ -54,7 +54,7 @@ public class OrderController extends BaseController {
         String productIdParam = request.getParameter("productId");
         try {
             int productId = Integer.parseInt(productIdParam);
-            Product product = orderService.validatePurchasableProduct(productId);
+            Products product = orderService.validatePurchasableProduct(productId);
             prepareNavigation(request);
             request.setAttribute("pageTitle", "Mua ngay sản phẩm");
             request.setAttribute("headerTitle", "Hoàn tất đơn hàng");

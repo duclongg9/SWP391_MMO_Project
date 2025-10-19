@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import model.Order;
 import model.OrderStatus;
-import model.Product;
+import model.Products;
 import model.ProductStatus;
 
 /**
@@ -31,9 +31,9 @@ public class OrderService {
      * @param productId identifier coming from the UI
      * @return the validated product
      */
-    public Product validatePurchasableProduct(int productId) {
-        Optional<Product> productOptional = productService.findById(productId);
-        Product product = productOptional.orElseThrow(() ->
+    public Products validatePurchasableProduct(int productId) {
+        Optional<Products> productOptional = productService.findById(productId);
+        Products product = productOptional.orElseThrow(() ->
                 new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
         if (product.getStatus() != ProductStatus.APPROVED) {
             throw new IllegalStateException("Sản phẩm hiện chưa sẵn sàng để bán.");
