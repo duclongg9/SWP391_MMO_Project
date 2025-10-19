@@ -3,7 +3,6 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="model.Product" %>
 <%@ page import="model.Products" %>
 <%
     request.setAttribute("pageTitle", "Danh sách sản phẩm - MMO Trader Market");
@@ -24,6 +23,11 @@
     guideLink.put("href", contextPath + "/styleguide");
     guideLink.put("label", "Thư viện giao diện");
     navItems.add(guideLink);
+
+    Map<String, String> orderLink = new HashMap<>();
+    orderLink.put("href", contextPath + "/orders");
+    orderLink.put("label", "Đơn đã mua");
+    navItems.add(orderLink);
 
     request.setAttribute("navItems", navItems);
 %>
