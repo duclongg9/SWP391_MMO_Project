@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="MMO Trader Market - Đăng ký" />
 <c:set var="bodyClass" value="layout layout--center" />
-<c:set var="headerTitle" value="MMO Trader Market" />
+<c:set var="headerTitle" value="Đăng ký" />
 <c:set var="headerSubtitle" value="Tạo tài khoản mới" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
