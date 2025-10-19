@@ -20,37 +20,38 @@ public class UserService {
 
     /** Đăng ký tài khoản mới */
     public Users registerNewUser(String email, String name, String password, String confirmPassword) {
-        if (email == null || email.isBlank()) {
+         String normalizedEmail = email == null ? "" : email.trim();
+        if (normalizedEmail.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập email");
         }
-        email = email.trim();
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
+                if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
             throw new IllegalArgumentException("Email không hợp lệ");
         }
 
-        if (name == null || name.isBlank()) {
+        String normalizedName = name == null ? "" : name.trim();
+        if (normalizedName.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập tên hiển thị");
         }
-        name = name.trim();
-
-        if (password == null || password.isBlank()) {
+        String rawPassword = password == null ? "" : password.trim();
+        if (rawPassword.isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu");
         }
-        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+        if (!PASSWORD_PATTERN.matcher(rawPassword).matches()) {
             throw new IllegalArgumentException("Mật khẩu phải ≥ 8 ký tự và bao gồm cả chữ và số");
         }
 
-        if (confirmPassword == null || !password.equals(confirmPassword)) {
+        String normalizedConfirmPassword = confirmPassword == null ? "" : confirmPassword.trim();
+        if (normalizedConfirmPassword.isEmpty() || !rawPassword.equals(normalizedConfirmPassword)) {
             throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
         }
 
         try {
-            if (udao.emailExists(email)) {
+            if (udao.emailExists(normalizedEmail)) {
                 throw new IllegalArgumentException("Email đã được sử dụng");
             }
 
-            String hashedPassword = HashPassword.toSHA1(password);
-            Users created = udao.createUser(email, name, hashedPassword, DEFAULT_ROLE_ID);
+            String hashedPassword = HashPassword.toSHA1(rawPassword);
+            Users created = udao.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID);
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
@@ -90,7 +91,6 @@ public class UserService {
     public int updatePassword(int id, String oldPassword, String newPassword) {
         // 1) Validate input
         //Gọi thông tin liên quan
-        UserDAO udao = new UserDAO();
         if (oldPassword == null || oldPassword.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu cũ");
         }

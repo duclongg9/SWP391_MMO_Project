@@ -34,7 +34,7 @@
         <button class="button button--primary" type="submit">Đăng nhập</button>
     </form>
     <section class="guide-link">
-        <p>Mới tham gia dự án?</p>
+
         <a class="button button--ghost" href="<%= request.getContextPath() %>/styleguide">Xem thư viện giao diện</a>
     </section>
     <section class="guide-link">
