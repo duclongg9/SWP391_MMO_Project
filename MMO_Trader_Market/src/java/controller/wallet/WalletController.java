@@ -30,6 +30,8 @@ public class WalletController extends HttpServlet {
 
     private final WalletService walletService = new WalletService(new dao.user.WalletsDAO(), new dao.user.WalletTransactionDAO());
 
+    private static final int PAGE_SIZE = 5;
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -72,21 +74,48 @@ public class WalletController extends HttpServlet {
 //           response.sendRedirect(request.getContextPath() + "/login.jsp");
 //           return;
 //        }
-
-        //Tham số từ DB
-        int index = 1;
-        String indexParam = request.getParameter("index"); // kiểm tra tham số nhận từ DB, nếu 0 có tham số luôn luôn ở trang 1
-        if(indexParam.isBlank()||indexParam.isEmpty()){
-            index = Integer.parseInt(indexParam);
+        // Đọc param page (index) an toàn
+        int currentPage = 1;
+        String idxParam = request.getParameter("index");
+        if (idxParam != null) {
+            try {
+                currentPage = Integer.parseInt(idxParam);
+            } catch (NumberFormatException ex) {
+                currentPage = 1;
+            }
         }
-        
-        
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
+
         try {
-            Wallets wallet = walletService.viewUserWallet(1); // đang test với user = 1
-            List<WalletTransactions> walletTransaction = walletService.viewUserTransactionList(1, index);
+            // Tổng số transaction (items) — đảm bảo method service trả total items
+            int totalItems = walletService.totalPage(1); // đổi tên nếu khác
+            // Tính tổng số trang
+            int totalPages = (int) Math.ceil(totalItems / PAGE_SIZE);
+            if (totalPages < 1) {
+                totalPages = 1;
+            }
+
+            // Clamp currentPage vào [1..totalPages]
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            // Lấy dữ liệu cho trang hiện tại
+            Wallets wallet = walletService.viewUserWallet(1);
+            List<WalletTransactions> walletTransaction = walletService.viewUserTransactionList(1, currentPage);
+
+            // Thiết lập attributes cho JSP
             request.setAttribute("wallet", wallet);
             request.setAttribute("listTransaction", walletTransaction);
-            request.getRequestDispatcher("WEB-INF/views/wallet/wallet.jsp").forward(request, response);
+            request.setAttribute("currentPage", currentPage);
+            request.setAttribute("totalPages", totalPages);
+            request.setAttribute("pageSize", PAGE_SIZE);
+            request.setAttribute("totalItems", totalItems);
+
+            // Forward
+            request.getRequestDispatcher("/WEB-INF/views/wallet/wallet.jsp").forward(request, response);
             return;
         } catch (IllegalArgumentException e) {
             request.setAttribute("emg", e);
@@ -94,7 +123,7 @@ public class WalletController extends HttpServlet {
             return;
         } catch (RuntimeException e) {
             request.setAttribute("emg", "Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
-            request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+            request.getRequestDispatcher("WEB-INF/views/wallet/wallet.jsp").forward(request, response);
             return;
         }
 

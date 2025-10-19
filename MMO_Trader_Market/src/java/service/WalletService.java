@@ -43,7 +43,7 @@ public class WalletService {
     /*Xem lịch sử giao dịch trong ví*/
     public List<WalletTransactions> viewUserTransactionList(int userId, int index) {
         int page = Math.max(1, index);
-        
+
         // Kiểm quyền trước khi đọc giao dịch (chặn IDOR)
         Wallets wallet = wdao.getUserWallet(index);
         if (wallet == null) {
@@ -58,5 +58,9 @@ public class WalletService {
             throw new IllegalArgumentException("Ví này chưa có một giao dịch nào");
         }
         return list;
+    }
+    
+    public int totalPage(int userId){
+        return wtdao.totalTransaction(userId);
     }
 }
