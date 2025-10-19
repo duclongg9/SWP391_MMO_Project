@@ -1,8 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="model.Product" %>
+<%@ page import="model.Products" %>
 <%
     request.setAttribute("bodyClass", "layout");
-    Product product = (Product) request.getAttribute("product");
+    Products product = (Products) request.getAttribute("product");
     String errorMessage = (String) request.getAttribute("error");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
