@@ -6,7 +6,7 @@ import units.HashPassword;
 import units.SendMail;
 
 import java.sql.SQLException;
-
+import java.util.regex.Pattern;
 public class UserService {
 
     private final UserDAO udao;
@@ -14,7 +14,52 @@ public class UserService {
     public UserService(UserDAO udao) {
         this.udao = udao;
     }
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
+    private static final int DEFAULT_ROLE_ID = 2;
 
+    /** Đăng ký tài khoản mới */
+    public Users registerNewUser(String email, String name, String password, String confirmPassword) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập email");
+        }
+        email = email.trim();
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Email không hợp lệ");
+        }
+
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập tên hiển thị");
+        }
+        name = name.trim();
+
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mật khẩu");
+        }
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException("Mật khẩu phải ≥ 8 ký tự và bao gồm cả chữ và số");
+        }
+
+        if (confirmPassword == null || !password.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
+        }
+
+        try {
+            if (udao.emailExists(email)) {
+                throw new IllegalArgumentException("Email đã được sử dụng");
+            }
+
+            String hashedPassword = HashPassword.toSHA1(password);
+            Users created = udao.createUser(email, name, hashedPassword, DEFAULT_ROLE_ID);
+            if (created == null) {
+                throw new IllegalStateException("Không thể tạo tài khoản mới.");
+            }
+            return created;
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
+        }
+    }
+    
     /** Xem thông tin cá nhân */
     public Users viewMyProfile(int id) {
         try {

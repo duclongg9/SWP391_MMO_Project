@@ -267,6 +267,11 @@ code {
     color: var(--danger-color);
     border: 1px solid rgba(192, 57, 43, 0.3);
 }
+.alert--success {
+    background: rgba(46, 204, 113, 0.12);
+    color: #1e8449;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
 
 /* Menu */
 .menu {

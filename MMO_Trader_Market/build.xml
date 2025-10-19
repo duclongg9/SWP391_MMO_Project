@@ -32,5 +32,5 @@
         <echo>Log: ${basedir}/mbg.out.log</echo>
         <echo>Err: ${basedir}/mbg.err.log</echo>
     </target>
-
+ <import file="nbproject/build-impl.xml"/>
 </project>

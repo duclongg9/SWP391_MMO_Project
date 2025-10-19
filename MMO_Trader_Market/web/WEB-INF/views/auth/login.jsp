@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%
     request.setAttribute("pageTitle", "MMO Trader Market - Đăng nhập");
     request.setAttribute("bodyClass", "layout layout--center");
@@ -16,9 +17,16 @@
     <%
         }
     %>
+    <c:if test="${not empty requestScope.error}">
+        <div class="alert alert--error"><c:out value="${requestScope.error}" /></div>
+    </c:if>
+    <c:if test="${not empty requestScope.success}">
+        <div class="alert alert--success"><c:out value="${requestScope.success}" /></div>
+    </c:if>
     <form method="post" action="<%= request.getContextPath() %>/auth" class="form-card">
         <label class="form-card__label" for="username">Tên đăng nhập</label>
-        <input class="form-card__input" id="username" name="username" type="text" placeholder="nhập email hoặc username" required>
+        
+        <input class="form-card__input" id="username" name="username" type="text" placeholder="nhập email hoặc username" value="${not empty prefillUsername ? prefillUsername : ''}" required>
 
         <label class="form-card__label" for="password">Mật khẩu</label>
         <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
@@ -29,8 +37,11 @@
         <p>Mới tham gia dự án?</p>
         <a class="button button--ghost" href="<%= request.getContextPath() %>/styleguide">Xem thư viện giao diện</a>
     </section>
+    <section class="guide-link">
+        <p>Chưa có tài khoản?</p>
+        <a class="button button--ghost" href="<%= request.getContextPath() %>/register">Đăng ký ngay</a>
+    </section>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
-
