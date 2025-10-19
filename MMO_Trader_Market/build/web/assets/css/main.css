@@ -343,7 +343,7 @@ code {
 
 .table thead {
     background: var(--primary-color);
-    color: #fff;
+    color: #f3f4f6;
 }
 
 .table th,

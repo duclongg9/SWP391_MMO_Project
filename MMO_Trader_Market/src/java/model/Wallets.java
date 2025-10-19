@@ -11,10 +11,11 @@ import java.time.Instant;
  */
 public class Wallets {
     private int id;
+    private User userId;
     private double balance;
     private int status;
-    private Instant created_at;
-    private Instant updated_at;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public Wallets() {
     }
@@ -23,8 +24,8 @@ public class Wallets {
         this.id = id;
         this.balance = balance;
         this.status = status;
-        this.created_at = created_at;
-        this.updated_at = updated_at;
+        this.createdAt = created_at;
+        this.updatedAt = updated_at;
     }
 
     public int getId() {
@@ -51,25 +52,35 @@ public class Wallets {
         this.status = status;
     }
 
-    public Instant getCreated_at() {
-        return created_at;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(Instant created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public Instant getUpdated_at() {
-        return updated_at;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setUpdated_at(Instant updated_at) {
-        this.updated_at = updated_at;
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
+
+    public User getUserId() {
+        return userId;
+    }
+
+    public void setUserId(User userId) {
+        this.userId = userId;
+    }
+    
+    
 
     @Override
     public String toString() {
-        return "Wallets{" + "id=" + id + ", balance=" + balance + ", status=" + status + ", created_at=" + created_at + ", updated_at=" + updated_at + '}';
+        return "Wallets{" + "id=" + id + ", balance=" + balance + ", status=" + status + ", created_at=" + createdAt + ", updated_at=" + updatedAt + '}';
     }
     
     
