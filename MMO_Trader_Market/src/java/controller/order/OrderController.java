@@ -10,6 +10,7 @@ import model.Products;
 import service.OrderService;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,9 @@ import java.util.Map;
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
+    private static final String BODY_CLASS = "layout";
+    private static final DateTimeFormatter ORDER_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final OrderService orderService = new OrderService();
 
@@ -72,33 +76,13 @@ public class OrderController extends BaseController {
         String buyerEmail = request.getParameter("buyerEmail");
         String paymentMethod = request.getParameter("paymentMethod");
         try {
-            int productId = Integer.parseInt(productIdParam);
-            Order order = orderService.createOrder(productId, buyerEmail, paymentMethod);
-            prepareNavigation(request);
-            request.setAttribute("pageTitle", "Thanh toán thành công");
-            request.setAttribute("headerTitle", "Đơn hàng đã tạo");
-            request.setAttribute("headerSubtitle", "Bước 2: Nhận thông tin bàn giao sản phẩm");
-            request.setAttribute("badgeHelper", orderService);
-            request.setAttribute("order", order);
-            forward(request, response, "order/confirmation");
+            Order order = createOrder(productIdParam, buyerEmail, paymentMethod);
+            showConfirmation(request, response, order);
         } catch (NumberFormatException ex) {
             request.setAttribute("error", "Mã sản phẩm không hợp lệ");
             showOrderHistory(request, response);
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            int productId = parseProductIdSafely(productIdParam);
-            if (productId > 0) {
-                Products product = null;
-                try {
-                    product = orderService.validatePurchasableProduct(productId);
-                } catch (IllegalArgumentException | IllegalStateException ignored) {
-                    // giữ nguyên thông báo lỗi ban đầu
-                }
-                prepareCheckoutPage(request, product, ex.getMessage());
-                forward(request, response, "order/checkout");
-            } else {
-                request.setAttribute("error", ex.getMessage());
-                showOrderHistory(request, response);
-            }
+            handleCheckoutValidationError(request, response, productIdParam, ex.getMessage());
         }
     }
 
@@ -108,8 +92,10 @@ public class OrderController extends BaseController {
         request.setAttribute("pageTitle", "Đơn hàng đã mua");
         request.setAttribute("headerTitle", "Lịch sử đơn mua");
         request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
-        request.setAttribute("orders", orderService.findAll());
-        request.setAttribute("badgeHelper", orderService);
+        List<Order> orders = orderService.findAll();
+        request.setAttribute("orders", orders);
+        request.setAttribute("statusClasses", buildStatusClassMap(orders));
+        request.setAttribute("statusLabels", buildStatusLabelMap(orders));
         forward(request, response, "order/list");
     }
 
@@ -125,6 +111,42 @@ public class OrderController extends BaseController {
         }
     }
 
+    private Order createOrder(String productIdParam, String buyerEmail, String paymentMethod) {
+        int productId = Integer.parseInt(productIdParam);
+        return orderService.createOrder(productId, buyerEmail, paymentMethod);
+    }
+
+    private void showConfirmation(HttpServletRequest request, HttpServletResponse response, Order order)
+            throws ServletException, IOException {
+        prepareNavigation(request);
+        request.setAttribute("pageTitle", "Thanh toán thành công");
+        request.setAttribute("headerTitle", "Đơn hàng đã tạo");
+        request.setAttribute("headerSubtitle", "Bước 2: Nhận thông tin bàn giao sản phẩm");
+        request.setAttribute("orderStatusClass", orderService.getStatusBadgeClass(order.getStatus()));
+        request.setAttribute("orderStatusLabel", orderService.getFriendlyStatus(order.getStatus()));
+        request.setAttribute("orderCreatedAt", formatOrderDate(order));
+        request.setAttribute("order", order);
+        forward(request, response, "order/confirmation");
+    }
+
+    private void handleCheckoutValidationError(HttpServletRequest request, HttpServletResponse response,
+            String productIdParam, String errorMessage) throws ServletException, IOException {
+        int productId = parseProductIdSafely(productIdParam);
+        if (productId <= 0) {
+            request.setAttribute("error", errorMessage);
+            showOrderHistory(request, response);
+            return;
+        }
+        Products product = null;
+        try {
+            product = orderService.validatePurchasableProduct(productId);
+        } catch (IllegalArgumentException | IllegalStateException ignored) {
+            // giữ nguyên thông báo lỗi ban đầu
+        }
+        prepareCheckoutPage(request, product, errorMessage);
+        forward(request, response, "order/checkout");
+    }
+
     private int parseProductIdSafely(String productIdParam) {
         try {
             return Integer.parseInt(productIdParam);
@@ -137,6 +159,7 @@ public class OrderController extends BaseController {
         String contextPath = request.getContextPath();
         List<Map<String, String>> navItems = new ArrayList<>();
 
+        request.setAttribute("bodyClass", BODY_CLASS);
         Map<String, String> homeLink = new HashMap<>();
         homeLink.put("href", contextPath + "/home");
         homeLink.put("label", "Trang chủ");
@@ -153,5 +176,25 @@ public class OrderController extends BaseController {
         navItems.add(orderLink);
 
         request.setAttribute("navItems", navItems);
+    }
+
+    private Map<Integer, String> buildStatusClassMap(List<Order> orders) {
+        Map<Integer, String> statusClasses = new HashMap<>();
+        for (Order order : orders) {
+            statusClasses.put(order.getId(), orderService.getStatusBadgeClass(order.getStatus()));
+        }
+        return statusClasses;
+    }
+
+    private Map<Integer, String> buildStatusLabelMap(List<Order> orders) {
+        Map<Integer, String> statusLabels = new HashMap<>();
+        for (Order order : orders) {
+            statusLabels.put(order.getId(), orderService.getFriendlyStatus(order.getStatus()));
+        }
+        return statusLabels;
+    }
+
+    private String formatOrderDate(Order order) {
+        return ORDER_TIME_FORMATTER.format(order.getCreatedAt());
     }
 }
