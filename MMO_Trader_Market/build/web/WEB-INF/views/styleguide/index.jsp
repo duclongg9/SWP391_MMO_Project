@@ -1,35 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
 <%
     request.setAttribute("pageTitle", "Thư viện giao diện - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerTitle", "Thư viện giao diện");
     request.setAttribute("headerSubtitle", "Template UI cho dự án Servlet + JSP (MVC)");
     request.setAttribute("headerModifier", "layout__header--split");
-
-    List<Map<String, String>> navItems = new ArrayList<>();
-    String contextPath = request.getContextPath();
-
-    Map<String, String> dashboardLink = new HashMap<>();
-    dashboardLink.put("href", contextPath + "/dashboard");
-    dashboardLink.put("label", "Dashboard");
-    navItems.add(dashboardLink);
-
-    Map<String, String> productLink = new HashMap<>();
-    productLink.put("href", contextPath + "/products");
-    productLink.put("label", "Sản phẩm");
-    navItems.add(productLink);
-
-    Map<String, String> loginLink = new HashMap<>();
-    loginLink.put("href", contextPath + "/auth");
-    loginLink.put("label", "Đăng nhập");
-    loginLink.put("modifier", "menu__item--ghost");
-    navItems.add(loginLink);
-
-    request.setAttribute("navItems", navItems);
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
