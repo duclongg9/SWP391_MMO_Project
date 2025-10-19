@@ -4,8 +4,10 @@ import dao.BaseDAO;
 import model.Product;
 import model.ProductStatus;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -22,12 +24,18 @@ public class ProductDAO extends BaseDAO {
     );
 
     public List<Product> findAll() {
-        return SAMPLE_PRODUCTS;
+        return new ArrayList<>(SAMPLE_PRODUCTS);
     }
 
     public List<Product> findHighlighted() {
         return SAMPLE_PRODUCTS.stream()
                 .filter(product -> product.getStatus() == ProductStatus.APPROVED)
                 .collect(Collectors.toList());
+    }
+
+    public Optional<Product> findById(int id) {
+        return SAMPLE_PRODUCTS.stream()
+                .filter(product -> product.getId() == id)
+                .findFirst();
     }
 }
