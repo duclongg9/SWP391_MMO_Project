@@ -96,10 +96,12 @@
                                 <c:set var="statusUpper" value="${fn:toUpperCase(product.status)}" />
                                 <c:choose>
                                     <c:when test="${statusUpper eq 'AVAILABLE'}">
-                                        <c:url var="buyUrl" value="/orders/buy">
-                                            <c:param name="productId" value="${product.id}" />
-                                        </c:url>
-                                        <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
+                                        <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
+                                              style="display:inline;">
+                                            <input type="hidden" name="productId" value="${product.id}" />
+                                            <input type="hidden" name="quantity" value="1" />
+                                            <button class="button button--primary" type="submit">Mua ngay</button>
+                                        </form>
                                     </c:when>
                                     <c:otherwise>
                                         <span class="badge badge--warning">Chưa sẵn sàng</span>
