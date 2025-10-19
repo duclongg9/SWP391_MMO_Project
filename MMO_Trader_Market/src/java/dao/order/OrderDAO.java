@@ -40,8 +40,7 @@ public class OrderDAO extends BaseDAO {
         if (status != null) {
             sql.append(" AND status = ?");
         }
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             statement.setInt(1, buyerId);
             if (status != null) {
                 statement.setString(2, status.toDatabaseValue());
@@ -67,8 +66,7 @@ public class OrderDAO extends BaseDAO {
 
     public long countByStatus(OrderStatus status) {
         String sql = "SELECT COUNT(*) FROM orders WHERE status = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, status.toDatabaseValue());
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -81,6 +79,25 @@ public class OrderDAO extends BaseDAO {
         return 0L;
     }
 
+    public long countPendingByOwner(int ownerId) {
+        final String sql = "SELECT COUNT(*) FROM orders o "
+                + "JOIN products p ON p.id = o.product_id "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE s.owner_id = ? AND o.status = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            statement.setString(2, OrderStatus.PENDING.toDatabaseValue());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "countPendingByOwner failed", ex);
+        }
+        return 0L;
+    }
+
     public List<Order> findByBuyer(int buyerId, OrderStatus status, int limit, int offset) {
         StringBuilder sql = new StringBuilder(ORDER_SELECT)
                 .append("WHERE o.buyer_id = ? ");
@@ -88,8 +105,7 @@ public class OrderDAO extends BaseDAO {
             sql.append("AND o.status = ? ");
         }
         sql.append("ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
             statement.setInt(index++, buyerId);
             if (status != null) {
@@ -112,8 +128,7 @@ public class OrderDAO extends BaseDAO {
 
     public Optional<Order> findByIdAndToken(int orderId, String orderToken) {
         String sql = ORDER_SELECT + "WHERE o.id = ? AND o.idempotency_key = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             statement.setString(2, orderToken);
             try (ResultSet rs = statement.executeQuery()) {
@@ -129,8 +144,7 @@ public class OrderDAO extends BaseDAO {
 
     public Optional<Order> findByTokenAndBuyer(String orderToken, int buyerId) {
         String sql = ORDER_SELECT + "WHERE o.idempotency_key = ? AND o.buyer_id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, orderToken);
             statement.setInt(2, buyerId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -146,8 +160,7 @@ public class OrderDAO extends BaseDAO {
 
     public Optional<Order> findByIdAndBuyer(int orderId, int buyerId) {
         String sql = ORDER_SELECT + "WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             statement.setInt(2, buyerId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -165,8 +178,7 @@ public class OrderDAO extends BaseDAO {
             throws SQLException {
         String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
                 + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             connection.setAutoCommit(false);
             try {
                 statement.setInt(1, buyerId);
@@ -196,8 +208,7 @@ public class OrderDAO extends BaseDAO {
 
     public Optional<Order> findById(int orderId) {
         String sql = ORDER_SELECT + "WHERE o.id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -210,10 +221,38 @@ public class OrderDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    public BigDecimal sumMonthlyRevenueByOwner(int ownerId, int year, int month) {
+        int safeYear = Math.max(year, 1970);
+        int safeMonth = Math.min(Math.max(month, 1), 12);
+        final String sql = "SELECT SUM(o.total_amount) FROM orders o "
+                + "JOIN products p ON p.id = o.product_id "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE s.owner_id = ? AND o.status IN (?, ?) "
+                + "AND YEAR(o.created_at) = ? AND MONTH(o.created_at) = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            statement.setString(2, OrderStatus.CONFIRMED.toDatabaseValue());
+            statement.setString(3, OrderStatus.DELIVERED.toDatabaseValue());
+            statement.setInt(4, safeYear);
+            statement.setInt(5, safeMonth);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal total = rs.getBigDecimal(1);
+                    if (rs.wasNull()) {
+                        return null;
+                    }
+                    return total;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "sumMonthlyRevenueByOwner failed", ex);
+        }
+        return null;
+    }
+
     public boolean updateStatus(int orderId, String orderToken, OrderStatus status) {
         String sql = "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND idempotency_key = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, status.toDatabaseValue());
             statement.setInt(2, orderId);
             statement.setString(3, orderToken);
@@ -227,8 +266,7 @@ public class OrderDAO extends BaseDAO {
 
     public boolean updateStatus(int orderId, OrderStatus status) {
         String sql = "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, status.toDatabaseValue());
             statement.setInt(2, orderId);
             int updated = statement.executeUpdate();
@@ -241,8 +279,7 @@ public class OrderDAO extends BaseDAO {
 
     public boolean updatePaymentTransaction(int orderId, long transactionId) {
         String sql = "UPDATE orders SET payment_transaction_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, transactionId);
             statement.setInt(2, orderId);
             return statement.executeUpdate() > 0;
@@ -254,8 +291,7 @@ public class OrderDAO extends BaseDAO {
 
     public List<String> findCredentials(int orderId) {
         String sql = "SELECT key_or_link FROM order_item_credentials WHERE order_id = ? ORDER BY id ASC";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
                 List<String> credentials = new ArrayList<>();
