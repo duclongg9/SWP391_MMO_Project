@@ -6,12 +6,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.Products;
-import service.ProductService;
+import model.Shops;
+import model.SystemConfigs;
+import model.view.ConversationMessageView;
+import model.view.CustomerProfileView;
+import model.view.MarketplaceSummary;
+import service.HomepageService;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,7 @@ public class HomepageController extends BaseController {
 
     private static final long serialVersionUID = 1L;
 
-    private final ProductService productService = new ProductService();
+    private final HomepageService homepageService = new HomepageService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -70,66 +72,31 @@ public class HomepageController extends BaseController {
     }
 
     private void populateHomepageData(HttpServletRequest request) {
-        request.setAttribute("categories", buildCategories());
-        request.setAttribute("featuredProducts", loadFeaturedProducts());
-        request.setAttribute("customerProfile", buildCustomerProfile());
-        request.setAttribute("reviews", buildReviews());
-        request.setAttribute("buyerTips", buildBuyerTips());
+        MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
+        request.setAttribute("summary", summary);
+
+        List<Products> featuredProducts = homepageService.loadFeaturedProducts();
+        request.setAttribute("featuredProducts", featuredProducts);
+
+        List<Shops> shops = homepageService.loadActiveShops();
+        request.setAttribute("shops", shops);
+        request.setAttribute("shopIcons", buildShopIconMap());
+
+        CustomerProfileView profile = homepageService.loadHighlightedBuyer();
+        request.setAttribute("customerProfile", profile);
+
+        List<ConversationMessageView> messages = homepageService.loadRecentMessages();
+        request.setAttribute("recentMessages", messages);
+
+        List<SystemConfigs> systemNotes = homepageService.loadSystemNotes();
+        request.setAttribute("systemNotes", systemNotes);
     }
 
-    private List<Map<String, String>> buildCategories() {
-        List<Map<String, String>> categories = new ArrayList<>();
-        categories.add(createCategory("🎮", "Tài khoản game", "Nick game phổ biến, bảo hành rõ ràng"));
-        categories.add(createCategory("📧", "Email doanh nghiệp", "Tên miền riêng cho doanh nghiệp vừa và nhỏ"));
-        categories.add(createCategory("💼", "Phần mềm bản quyền", "Các gói Office, Windows chính hãng"));
-        categories.add(createCategory("🛡️", "Bảo mật", "Công cụ bảo vệ tài khoản, 2FA"));
-        return categories;
-    }
-
-    private Map<String, String> createCategory(String icon, String name, String description) {
-        Map<String, String> category = new HashMap<>();
-        category.put("icon", icon);
-        category.put("name", name);
-        category.put("description", description);
-        return category;
-    }
-
-    private List<Products> loadFeaturedProducts() {
-        return productService.homepageHighlights();
-    }
-
-    private Map<String, Object> buildCustomerProfile() {
-        Map<String, Object> profile = new HashMap<>();
-        profile.put("displayName", "Nguyễn Minh Trí");
-        profile.put("membershipLevel", "Thành viên hạng Platinum");
-        profile.put("joinDate", LocalDate.now().minusYears(2).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        profile.put("successfulOrders", 128);
-        profile.put("satisfactionScore", 4.9);
-        return profile;
-    }
-
-    private List<Map<String, String>> buildReviews() {
-        List<Map<String, String>> reviews = new ArrayList<>();
-        reviews.add(createReview("Trần Anh", "5", "Giao key Netflix trong 2 phút, support nhiệt tình", "Netflix UHD 1 năm"));
-        reviews.add(createReview("Lê Phương", "4.5", "Tài khoản Spotify dùng ổn định, giá hợp lý", "Spotify Premium 12 tháng"));
-        reviews.add(createReview("Phạm Duy", "4.8", "Key Windows kích hoạt thành công ngay", "Windows 11 Pro key"));
-        return reviews;
-    }
-
-    private Map<String, String> createReview(String reviewer, String rating, String comment, String productName) {
-        Map<String, String> review = new HashMap<>();
-        review.put("reviewerName", reviewer);
-        review.put("rating", rating);
-        review.put("comment", comment);
-        review.put("productName", productName);
-        return review;
-    }
-
-    private List<String> buildBuyerTips() {
-        List<String> tips = new ArrayList<>();
-        tips.add("Luôn đổi mật khẩu sau khi nhận tài khoản từ người bán");
-        tips.add("Kích hoạt xác thực hai lớp ngay khi có thể");
-        tips.add("Liên hệ hỗ trợ trong 24h nếu có vấn đề phát sinh");
-        return tips;
+    private Map<String, String> buildShopIconMap() {
+        Map<String, String> icons = new HashMap<>();
+        icons.put("Active", "🛍️");
+        icons.put("Pending", "⏳");
+        icons.put("Suspended", "⚠️");
+        return icons;
     }
 }
