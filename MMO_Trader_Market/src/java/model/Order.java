@@ -13,7 +13,7 @@ public class Order implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final int id;
-    private final Product product;
+    private final Products product;
     private final String buyerEmail;
     private final String paymentMethod;
     private final LocalDateTime createdAt;
@@ -21,7 +21,7 @@ public class Order implements Serializable {
     private String activationCode;
     private String deliveryLink;
 
-    public Order(int id, Product product, String buyerEmail, String paymentMethod,
+    public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt) {
         this.id = id;
         this.product = product;
@@ -35,7 +35,7 @@ public class Order implements Serializable {
         return id;
     }
 
-    public Product getProduct() {
+    public Products getProduct() {
         return product;
     }
 

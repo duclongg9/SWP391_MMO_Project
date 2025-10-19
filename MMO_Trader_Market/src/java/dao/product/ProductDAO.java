@@ -1,7 +1,9 @@
 package dao.product;
 
+import com.sun.jdi.connect.spi.Connection;
 import dao.BaseDAO;
-import model.Product;
+import dao.connect.DBConnect;
+import model.Products;
 import model.ProductStatus;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,7 +31,7 @@ public class ProductDAO extends BaseDAO {
             COL_STATUS, COL_DESCRIPTION, COL_CREATED_AT, COL_UPDATED_AT
     );
 
-    public List<Product> findAll() {
+    public List<ProductDAO> findAll() {
         return new ArrayList<>(SAMPLE_PRODUCTS);
     }
 
@@ -47,7 +49,7 @@ public class ProductDAO extends BaseDAO {
         return result;
     }
 
-    public Optional<Product> findById(int id) {
+    public Optional<Products> findById(int id) {
         return SAMPLE_PRODUCTS.stream()
                 .filter(product -> product.getId() == id)
                 .findFirst();
