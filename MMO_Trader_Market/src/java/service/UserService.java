@@ -6,7 +6,7 @@ import units.HashPassword;
 import units.SendMail;
 
 import java.sql.SQLException;
-
+import java.util.regex.Pattern;
 public class UserService {
 
     private final UserDAO udao;
@@ -14,7 +14,53 @@ public class UserService {
     public UserService(UserDAO udao) {
         this.udao = udao;
     }
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
+    private static final int DEFAULT_ROLE_ID = 2;
 
+    /** Đăng ký tài khoản mới */
+    public Users registerNewUser(String email, String name, String password, String confirmPassword) {
+         String normalizedEmail = email == null ? "" : email.trim();
+        if (normalizedEmail.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập email");
+        }
+                if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
+            throw new IllegalArgumentException("Email không hợp lệ");
+        }
+
+        String normalizedName = name == null ? "" : name.trim();
+        if (normalizedName.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập tên hiển thị");
+        }
+        String rawPassword = password == null ? "" : password.trim();
+        if (rawPassword.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập mật khẩu");
+        }
+        if (!PASSWORD_PATTERN.matcher(rawPassword).matches()) {
+            throw new IllegalArgumentException("Mật khẩu phải ≥ 8 ký tự và bao gồm cả chữ và số");
+        }
+
+        String normalizedConfirmPassword = confirmPassword == null ? "" : confirmPassword.trim();
+        if (normalizedConfirmPassword.isEmpty() || !rawPassword.equals(normalizedConfirmPassword)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
+        }
+
+        try {
+            if (udao.emailExists(normalizedEmail)) {
+                throw new IllegalArgumentException("Email đã được sử dụng");
+            }
+
+            String hashedPassword = HashPassword.toSHA1(rawPassword);
+            Users created = udao.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID);
+            if (created == null) {
+                throw new IllegalStateException("Không thể tạo tài khoản mới.");
+            }
+            return created;
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
+        }
+    }
+    
     /** Xem thông tin cá nhân */
     public Users viewMyProfile(int id) {
         try {
@@ -45,7 +91,6 @@ public class UserService {
     public int updatePassword(int id, String oldPassword, String newPassword) {
         // 1) Validate input
         //Gọi thông tin liên quan
-        UserDAO udao = new UserDAO();
         if (oldPassword == null || oldPassword.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu cũ");
         }
