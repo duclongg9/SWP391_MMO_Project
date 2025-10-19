@@ -46,8 +46,8 @@ public class ProductController extends BaseController {
     private void prepareLayout(HttpServletRequest request) {
         request.setAttribute("pageTitle", "Danh sách sản phẩm - MMO Trader Market");
         request.setAttribute("bodyClass", BODY_CLASS);
-        request.setAttribute("headerTitle", "Danh sách sản phẩm");
-        request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
+//        request.setAttribute("headerTitle", "Danh sách sản phẩm");
+//        request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
         request.setAttribute("headerModifier", HEADER_MODIFIER);
     }
 
