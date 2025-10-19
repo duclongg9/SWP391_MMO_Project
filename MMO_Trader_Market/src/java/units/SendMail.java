@@ -32,14 +32,12 @@ public class SendMail {
         });
 
         // tạo message
-        Message msg = new MimeMessage(session);
-        msg.setFrom(new InternetAddress(fromEmail, "Admin Material Management", StandardCharsets.UTF_8.name()));
-        msg.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
+        MimeMessage msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress(fromEmail, "MMO_ADMIN", StandardCharsets.UTF_8.name()));
+        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+        msg.setSubject(subject);
         msg.setSubject(subject, StandardCharsets.UTF_8.name());
         msg.setText(messageText, StandardCharsets.UTF_8.name());
-        msg.setHeader("Content-Type", "text/plain; charset=UTF-8");
-
-        // gửi
         Transport.send(msg);
     }
     
