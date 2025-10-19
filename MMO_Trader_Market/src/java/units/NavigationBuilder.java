@@ -94,7 +94,13 @@ public final class NavigationBuilder {
 
     private static Map<String, String> createLogoutItem(String contextPath) {
         Map<String, String> item = createNavItem(contextPath + "/auth?action=logout", "Đăng xuất", false);
-        item.put("modifier", (item.containsKey("modifier") ? item.get("modifier") + " " : "") + "menu__item--danger");
+        String existingModifier = item.get("modifier");
+        StringBuilder modifierBuilder = new StringBuilder();
+        if (existingModifier != null && !existingModifier.isBlank()) {
+            modifierBuilder.append(existingModifier.trim()).append(' ');
+        }
+        modifierBuilder.append("menu__item--danger menu__item--logout");
+        item.put("modifier", modifierBuilder.toString());
         return item;
     }
 

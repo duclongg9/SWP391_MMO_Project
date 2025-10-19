@@ -82,6 +82,12 @@ code {
     gap: 1rem;
 }
 
+.layout__header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
 .layout__brand {
     display: flex;
     align-items: center;
@@ -458,6 +464,10 @@ code {
 
 .menu__item--danger {
     color: var(--danger-color);
+}
+
+.menu__item--logout {
+    margin-left: auto;
 }
 
 .menu__item--ghost {
