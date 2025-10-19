@@ -42,6 +42,11 @@ public class HomepageController extends BaseController {
         productLink.put("label", "Quản lý sản phẩm");
         navItems.add(productLink);
 
+        Map<String, String> orderLink = new HashMap<>();
+        orderLink.put("href", contextPath + "/orders");
+        orderLink.put("label", "Đơn đã mua");
+        navItems.add(orderLink);
+
         Map<String, String> guideLink = new HashMap<>();
         guideLink.put("href", contextPath + "/styleguide");
         guideLink.put("label", "Styleguide");

@@ -25,6 +25,11 @@
     guideLink.put("label", "Thư viện giao diện");
     navItems.add(guideLink);
 
+    Map<String, String> orderLink = new HashMap<>();
+    orderLink.put("href", contextPath + "/orders");
+    orderLink.put("label", "Đơn đã mua");
+    navItems.add(orderLink);
+
     request.setAttribute("navItems", navItems);
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
