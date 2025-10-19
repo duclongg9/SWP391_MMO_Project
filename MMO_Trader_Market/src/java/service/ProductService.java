@@ -17,13 +17,16 @@ public class ProductService {
         return productDAO.findHighlighted();
     }
 
-    public Products detail(int id) {
-        Products p = productDAO.findById(id);
-        if (p == null) throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã bị xoá");
-        return p;
+    public List<Products> findAll() {
+        return productDAO.findAll();
     }
 
-    public Optional<Product> findById(int id) {
+    public Products detail(int id) {
+        return productDAO.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã bị xoá"));
+    }
+
+    public Optional<Products> findOptionalById(int id) {
         return productDAO.findById(id);
     }
 }
