@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package units;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
@@ -32,10 +33,11 @@ public class SendMail {
 
         // tạo message
         Message msg = new MimeMessage(session);
-        msg.setFrom(new InternetAddress(fromEmail, "Admin Material Management"));
+        msg.setFrom(new InternetAddress(fromEmail, "Admin Material Management", StandardCharsets.UTF_8.name()));
         msg.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
-        msg.setSubject(subject);
-        msg.setText(messageText);
+        msg.setSubject(subject, StandardCharsets.UTF_8.name());
+        msg.setText(messageText, StandardCharsets.UTF_8.name());
+        msg.setHeader("Content-Type", "text/plain; charset=UTF-8");
 
         // gửi
         Transport.send(msg);
