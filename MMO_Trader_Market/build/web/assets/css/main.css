@@ -196,6 +196,21 @@ code {
     gap: 1rem;
 }
 
+.form-card__grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-card__grid--two-cols {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    column-gap: 1.25rem;
+}
+
+.form-card__field {
+    display: grid;
+    gap: 0.4rem;
+}
+
 .form-card__label {
     font-weight: 600;
 }
@@ -212,6 +227,36 @@ code {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 91, 150, 0.15);
+}
+
+.form-card__option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.form-card__checkbox {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-top: 0.15rem;
+    accent-color: var(--primary-color);
+}
+
+.form-card__option-text {
+    line-height: 1.5;
+}
+
+.form-card__option-text a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.form-card__option-text a:hover,
+.form-card__option-text a:focus {
+    text-decoration: underline;
 }
 
 /* Buttons */
