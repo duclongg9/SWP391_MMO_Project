@@ -3,6 +3,7 @@ package service;
 import dao.product.ProductDAO;
 import model.Product;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Contains business logic related to products.
@@ -17,5 +18,9 @@ public class ProductService {
 
     public List<Product> getHighlightedProducts() {
         return productDAO.findHighlighted();
+    }
+
+    public Optional<Product> findById(int id) {
+        return productDAO.findById(id);
     }
 }
