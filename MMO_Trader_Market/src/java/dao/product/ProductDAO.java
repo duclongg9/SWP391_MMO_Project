@@ -3,123 +3,142 @@ package dao.product;
 import dao.BaseDAO;
 import model.Products;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Provides read-only access to marketplace products.
- *
- * <p>The real project will connect to the database, however for the purpose of
- * testing the checkout flow we keep an in-memory catalogue that is seeded on
- * application start.</p>
+ * Data access object for the {@code products} table.
  */
 public class ProductDAO extends BaseDAO {
 
-    private static final List<Products> SAMPLE_PRODUCTS = new ArrayList<>();
+    private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
 
-    static {
-        seedSampleProducts();
+    private static final String PRODUCT_COLUMNS = "id, shop_id, name, description, price, "
+            + "inventory_count, status, created_at, updated_at";
+
+    public Optional<Products> findById(int id) {
+        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo id", ex);
+        }
+        return Optional.empty();
     }
 
-    private static void seedSampleProducts() {
-        if (!SAMPLE_PRODUCTS.isEmpty()) {
+    public int countByKeyword(String keyword) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products");
+        List<String> parameters = new ArrayList<>();
+        appendSearchClause(keyword, sql, parameters);
+        try (Connection connection = getConnection();
+             PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng sản phẩm", ex);
+        }
+        return 0;
+    }
+
+    public List<Products> search(String keyword, int limit, int offset) {
+        StringBuilder sql = new StringBuilder("SELECT ");
+        sql.append(PRODUCT_COLUMNS)
+                .append(" FROM products");
+        List<String> parameters = new ArrayList<>();
+        appendSearchClause(keyword, sql, parameters);
+        sql.append(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
+        try (Connection connection = getConnection();
+             PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
+            statement.setInt(parameters.size() + 1, limit);
+            statement.setInt(parameters.size() + 2, offset);
+            List<Products> products = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+            return products;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tìm kiếm sản phẩm", ex);
+            return List.of();
+        }
+    }
+
+    public List<Products> findHighlighted(int limit) {
+        int resolvedLimit = limit > 0 ? limit : 3;
+        final String sql = "SELECT " + PRODUCT_COLUMNS
+                + " FROM products ORDER BY updated_at DESC LIMIT ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, resolvedLimit);
+            List<Products> products = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+            return products;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách sản phẩm nổi bật", ex);
+            return List.of();
+        }
+    }
+
+    private void appendSearchClause(String keyword, StringBuilder sql, List<String> parameters) {
+        if (keyword == null || keyword.isBlank()) {
             return;
         }
-        Date now = Date.from(Instant.now());
-        SAMPLE_PRODUCTS.add(new Products(
-                1001,
-                10,
-                "Gmail Business 50GB",
-                new BigDecimal("250000"),
-                12,
-                "APPROVED",
-                Date.from(Instant.now().minus(14, ChronoUnit.DAYS)),
-                now,
-                "Tài khoản Gmail doanh nghiệp dung lượng 50GB kèm hướng dẫn đổi mật khẩu."
-        ));
-        SAMPLE_PRODUCTS.add(new Products(
-                1002,
-                11,
-                "Spotify Premium 12 tháng",
-                new BigDecimal("185000"),
-                30,
-                "APPROVED",
-                Date.from(Instant.now().minus(5, ChronoUnit.DAYS)),
-                now,
-                "Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày."
-        ));
-        SAMPLE_PRODUCTS.add(new Products(
-                1003,
-                12,
-                "Netflix UHD 1 năm",
-                new BigDecimal("650000"),
-                8,
-                "DISPUTED",
-                Date.from(Instant.now().minus(20, ChronoUnit.DAYS)),
-                Date.from(Instant.now().minus(1, ChronoUnit.DAYS)),
-                "Tài khoản Netflix gói Ultra HD, hỗ trợ đăng nhập 4 thiết bị."
-        ));
-        SAMPLE_PRODUCTS.add(new Products(
-                1004,
-                13,
-                "Windows 11 Pro key",
-                new BigDecimal("390000"),
-                50,
-                "PENDING",
-                Date.from(Instant.now().minus(3, ChronoUnit.DAYS)),
-                now,
-                "Key bản quyền Windows 11 Pro, kích hoạt online trọn đời."
-        ));
+        sql.append(" WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ?");
+        String pattern = '%' + keyword.toLowerCase(Locale.ROOT) + '%';
+        parameters.add(pattern);
+        parameters.add(pattern);
     }
 
-    /**
-     * Returns all products sorted by the latest update time.
-     */
-    public List<Products> findAll() {
-        return SAMPLE_PRODUCTS.stream()
-                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
-                .collect(Collectors.toList());
+    private PreparedStatement prepareSearchStatement(Connection connection, String sql, List<String> parameters)
+            throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(sql);
+        for (int i = 0; i < parameters.size(); i++) {
+            statement.setString(i + 1, parameters.get(i));
+        }
+        return statement;
     }
 
-    /**
-     * Returns products to be displayed on the homepage dashboard.
-     */
-    public List<Products> findHighlighted() {
-        List<Products> sorted = findAll();
-        return sorted.subList(0, Math.min(3, sorted.size()));
-    }
-
-    /**
-     * Finds a product by id from the sample catalogue.
-     */
-    public Optional<Products> findById(int id) {
-        return SAMPLE_PRODUCTS.stream()
-                .filter(product -> product.getId() != null && product.getId() == id)
-                .findFirst();
-    }
-
-    /**
-     * Searches products by keyword across name and description.
-     * @param keyword optional keyword provided by the user
-     * @return filtered product list sorted by latest update time
-     */
-    public List<Products> search(String keyword) {
-        String normalized = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
-        return findAll().stream()
-                .filter(product -> normalized.isEmpty() || matchesKeyword(product, normalized))
-                .collect(Collectors.toList());
-    }
-
-    private boolean matchesKeyword(Products product, String normalizedKeyword) {
-        String name = product.getName() == null ? "" : product.getName().toLowerCase(Locale.ROOT);
-        String description = product.getDescription() == null ? "" : product.getDescription().toLowerCase(Locale.ROOT);
-        return name.contains(normalizedKeyword) || description.contains(normalizedKeyword);
+    private Products mapRow(ResultSet rs) throws SQLException {
+        Products product = new Products();
+        product.setId(rs.getInt("id"));
+        product.setShopId(rs.getInt("shop_id"));
+        product.setName(rs.getString("name"));
+        product.setDescription(rs.getString("description"));
+        product.setPrice(rs.getBigDecimal("price"));
+        product.setInventoryCount(rs.getInt("inventory_count"));
+        product.setStatus(rs.getString("status"));
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (createdAt != null) {
+            product.setCreatedAt(new java.util.Date(createdAt.getTime()));
+        }
+        if (updatedAt != null) {
+            product.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
+        }
+        return product;
     }
 }
+
