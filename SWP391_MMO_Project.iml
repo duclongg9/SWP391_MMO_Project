@@ -120,5 +120,9 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="bootstrap" level="application" />
+    <orderEntry type="library" name="font-awesome" level="application" />
+    <orderEntry type="library" name="chart.js" level="application" />
+    <orderEntry type="library" name="bootstrap-icons" level="application" />
   </component>
 </module>
