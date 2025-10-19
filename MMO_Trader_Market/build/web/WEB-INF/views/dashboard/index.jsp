@@ -1,37 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="model.Products" %>
-<%
-    request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
-    request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Bảng điều khiển");
-    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
-    request.setAttribute("headerModifier", "layout__header--split");
-
-    List<Map<String, String>> navItems = new ArrayList<>();
-    String contextPath = request.getContextPath();
-
-    Map<String, String> productLink = new HashMap<>();
-    productLink.put("href", contextPath + "/products");
-    productLink.put("label", "Danh sách sản phẩm");
-    navItems.add(productLink);
-
-    Map<String, String> guideLink = new HashMap<>();
-    guideLink.put("href", contextPath + "/styleguide");
-    guideLink.put("label", "Thư viện giao diện");
-    navItems.add(guideLink);
-
-    Map<String, String> logoutLink = new HashMap<>();
-    logoutLink.put("href", contextPath + "/auth?action=logout");
-    logoutLink.put("label", "Đăng xuất");
-    logoutLink.put("modifier", "menu__item--danger");
-    navItems.add(logoutLink);
-
-    request.setAttribute("navItems", navItems);
-%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content dashboard">
@@ -40,55 +10,58 @@
             <div class="icon icon--primary">📦</div>
             <div>
                 <p class="stat-card__label">Tổng sản phẩm</p>
-                <p class="stat-card__value">128</p>
+                <p class="stat-card__value"><c:out value="${totalProducts}" /></p>
             </div>
         </article>
         <article class="stat-card">
             <div class="icon icon--accent">💰</div>
             <div>
                 <p class="stat-card__label">Doanh thu tháng</p>
-                <p class="stat-card__value">86.500.000 đ</p>
+                <p class="stat-card__value">
+                    <fmt:formatNumber value="${monthlyRevenue}" type="currency" currencySymbol="đ"
+                                      maxFractionDigits="0" minFractionDigits="0" />
+                </p>
             </div>
         </article>
         <article class="stat-card">
             <div class="icon icon--muted">⏳</div>
             <div>
                 <p class="stat-card__label">Đơn chờ duyệt</p>
-                <p class="stat-card__value">12</p>
+                <p class="stat-card__value"><c:out value="${pendingOrders}" /></p>
             </div>
         </article>
     </section>
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Sản phẩm nổi bật</h2>
-            <form class="search-bar" method="get" action="<%= request.getContextPath() %>/products">
+            <c:url var="productsUrl" value="/products" />
+            <form class="search-bar" method="get" action="${productsUrl}">
                 <label class="search-bar__icon" for="keyword">🔍</label>
-                <input class="search-bar__input" type="text" id="keyword" name="keyword" placeholder="Tìm sản phẩm...">
+                <input class="search-bar__input" type="text" id="keyword" name="q" placeholder="Tìm sản phẩm...">
                 <button class="button button--primary" type="submit">Tìm kiếm</button>
             </form>
         </div>
         <ul class="product-grid">
-            <%
-                List<Products> products = (List<Products>) request.getAttribute("products");
-                if (products == null || products.isEmpty()) {
-            %>
-            <li class="product-card product-card--empty">
-                <p>Chưa có sản phẩm nào được duyệt.</p>
-            </li>
-            <%
-                } else {
-                    for (Products product : products) {
-            %>
-            <li class="product-card">
-                <h3><%= product.getName() %></h3>
-                <p><%= product.getDescription() %></p>
-                <span class="product-card__price"><%= product.getPrice() %> đ</span>
-                <span class="badge"><%= product.getStatus() %></span>
-            </li>
-            <%
-                    }
-                }
-            %>
+            <c:choose>
+                <c:when test="${not empty featuredProducts}">
+                    <c:forEach var="p" items="${featuredProducts}">
+                        <li class="product-card">
+                            <h3><c:out value="${p.name}" /></h3>
+                            <p><c:out value="${p.description}" /></p>
+                            <span class="product-card__price">
+                                <fmt:formatNumber value="${p.price}" type="currency" currencySymbol="đ"
+                                                  maxFractionDigits="0" minFractionDigits="0" />
+                            </span>
+                            <span class="badge"><c:out value="${p.status}" /></span>
+                        </li>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <li class="product-card product-card--empty">
+                        <p>Chưa có sản phẩm nào được duyệt.</p>
+                    </li>
+                </c:otherwise>
+            </c:choose>
         </ul>
     </section>
 </main>
