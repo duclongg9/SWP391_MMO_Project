@@ -66,7 +66,7 @@
                     </table>
                 </c:when>
                 <c:otherwise>
-                    <p>Bạn chưa có sản phẩm nào khớp từ khóa. Vui lòng thử bộ lọc khác.</p>
+                    <p>Chưa có dữ liệu.</p>
                 </c:otherwise>
             </c:choose>
             <nav class="pagination" aria-label="Phân trang sản phẩm">

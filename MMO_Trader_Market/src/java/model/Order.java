@@ -23,12 +23,19 @@ public class Order implements Serializable {
 
     public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt) {
+        this(id, product, buyerEmail, paymentMethod, status, createdAt, null, null);
+    }
+
+    public Order(int id, Products product, String buyerEmail, String paymentMethod,
+            OrderStatus status, LocalDateTime createdAt, String activationCode, String deliveryLink) {
         this.id = id;
         this.product = product;
         this.buyerEmail = buyerEmail;
         this.paymentMethod = paymentMethod;
         this.status = status;
         this.createdAt = createdAt;
+        this.activationCode = activationCode;
+        this.deliveryLink = deliveryLink;
     }
 
     public int getId() {
@@ -55,12 +62,24 @@ public class Order implements Serializable {
         return status;
     }
 
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     public String getActivationCode() {
         return activationCode;
     }
 
+    public void setActivationCode(String activationCode) {
+        this.activationCode = activationCode;
+    }
+
     public String getDeliveryLink() {
         return deliveryLink;
+    }
+
+    public void setDeliveryLink(String deliveryLink) {
+        this.deliveryLink = deliveryLink;
     }
 
     /**
@@ -68,6 +87,8 @@ public class Order implements Serializable {
      */
     public void markProcessing() {
         this.status = OrderStatus.PROCESSING;
+        this.activationCode = null;
+        this.deliveryLink = null;
     }
 
     /**

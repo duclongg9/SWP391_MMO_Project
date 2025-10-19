@@ -12,14 +12,12 @@ import java.util.Optional;
  */
 public class ProductService {
 
+    private static final int HIGHLIGHT_LIMIT = 3;
+
     private final ProductDAO productDAO = new ProductDAO();
 
     public List<Products> homepageHighlights() {
-        return productDAO.findHighlighted();
-    }
-
-    public List<Products> findAll() {
-        return productDAO.findAll();
+        return productDAO.findHighlighted(HIGHLIGHT_LIMIT);
     }
 
     public Products detail(int id) {
@@ -38,13 +36,17 @@ public class ProductService {
         if (page < 1) {
             throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1.");
         }
-        List<Products> filtered = productDAO.search(keyword);
-        int totalItems = filtered.size();
+
+        String normalizedKeyword = keyword == null ? null : keyword.trim();
+        int totalItems = productDAO.countByKeyword(normalizedKeyword);
         int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
         int currentPage = Math.min(page, totalPages);
-        int fromIndex = Math.min((currentPage - 1) * pageSize, totalItems);
-        int toIndex = Math.min(fromIndex + pageSize, totalItems);
-        List<Products> pageItems = filtered.subList(fromIndex, toIndex);
-        return new PaginatedResult<>(pageItems, currentPage, totalPages, pageSize, totalItems);
+        int offset = (currentPage - 1) * pageSize;
+
+        List<Products> items = totalItems == 0
+                ? List.of()
+                : productDAO.search(normalizedKeyword, pageSize, offset);
+
+        return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
     }
 }
