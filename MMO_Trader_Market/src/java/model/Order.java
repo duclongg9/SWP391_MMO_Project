@@ -17,17 +17,26 @@ public class Order implements Serializable {
     private final String buyerEmail;
     private final String paymentMethod;
     private final LocalDateTime createdAt;
+    private final Integer buyerId;
+    private final String orderToken;
+    private final Integer quantity;
     private OrderStatus status;
     private String activationCode;
     private String deliveryLink;
 
     public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt) {
-        this(id, product, buyerEmail, paymentMethod, status, createdAt, null, null);
+        this(id, product, buyerEmail, paymentMethod, status, createdAt, null, null, null, null, null);
     }
 
     public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt, String activationCode, String deliveryLink) {
+        this(id, product, buyerEmail, paymentMethod, status, createdAt, activationCode, deliveryLink, null, null, null);
+    }
+
+    public Order(int id, Products product, String buyerEmail, String paymentMethod,
+            OrderStatus status, LocalDateTime createdAt, String activationCode, String deliveryLink,
+            Integer buyerId, String orderToken, Integer quantity) {
         this.id = id;
         this.product = product;
         this.buyerEmail = buyerEmail;
@@ -36,6 +45,9 @@ public class Order implements Serializable {
         this.createdAt = createdAt;
         this.activationCode = activationCode;
         this.deliveryLink = deliveryLink;
+        this.buyerId = buyerId;
+        this.orderToken = orderToken;
+        this.quantity = quantity;
     }
 
     public int getId() {
@@ -56,6 +68,18 @@ public class Order implements Serializable {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Integer getBuyerId() {
+        return buyerId;
+    }
+
+    public String getOrderToken() {
+        return orderToken;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
     }
 
     public OrderStatus getStatus() {

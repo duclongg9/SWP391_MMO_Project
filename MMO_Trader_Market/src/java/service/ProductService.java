@@ -37,6 +37,10 @@ public class ProductService {
         return productDAO.findById(id);
     }
 
+    public Optional<Integer> findOwnerIdByProduct(int productId) {
+        return productDAO.findOwnerIdByProduct(productId);
+    }
+
     public ProductSearchResult search(int ownerId, String keyword, int page, int pageSize) {
         if (pageSize <= 0) {
             throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");

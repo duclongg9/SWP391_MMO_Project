@@ -61,10 +61,12 @@
                                     </c:choose>
                                 </td>
                                 <td class="table__actions">
-                                    <c:url var="buyAgainUrl" value="/orders/buy">
-                                        <c:param name="productId" value="${order.product.id}" />
-                                    </c:url>
-                                    <a class="button button--ghost" href="${buyAgainUrl}">Mua lại</a>
+                                    <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
+                                          style="display:inline;">
+                                        <input type="hidden" name="productId" value="${order.product.id}" />
+                                        <input type="hidden" name="quantity" value="1" />
+                                        <button class="button button--ghost" type="submit">Mua lại</button>
+                                    </form>
                                 </td>
                             </tr>
                         </c:forEach>
