@@ -134,6 +134,26 @@ public class UserDAO extends BaseDAO {
         }
         return null;
     }
+
+    /** Tìm user theo google_id */
+    public Users getUserByGoogleId(String googleId) {
+        final String sql = """
+                SELECT * FROM users
+                WHERE google_id = ? AND status = 1
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, googleId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(UserDAO.class.getName())
+                    .log(Level.SEVERE, "Lỗi lấy user theo google id", e);
+        }
+        return null;
+    }
         /** Kiểm tra email đã tồn tại hay chưa */
     public boolean emailExists(String email) throws SQLException {
         final String sql = """
@@ -180,6 +200,60 @@ public class UserDAO extends BaseDAO {
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     * Tạo user mới đăng nhập bằng Google.
+     */
+    public Users createUserWithGoogle(String email, String name, String googleId,
+            String hashedPassword, int roleId) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, name, hashed_password, google_id, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, roleId);
+            ps.setString(2, email);
+            ps.setString(3, name);
+            ps.setString(4, hashedPassword);
+            ps.setString(5, googleId);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                return null;
+            }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    Users created = new Users();
+                    created.setId(rs.getInt(1));
+                    created.setRoleId(roleId);
+                    created.setEmail(email);
+                    created.setName(name);
+                    created.setGoogleId(googleId);
+                    created.setHashedPassword(hashedPassword);
+                    created.setStatus(true);
+                    return created;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Liên kết tài khoản Google với user hiện tại.
+     */
+    public int updateGoogleId(int userId, String googleId) throws SQLException {
+        final String sql = """
+                UPDATE users
+                SET google_id = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status = 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, googleId);
+            ps.setInt(2, userId);
+            return ps.executeUpdate();
         }
     }
 }
