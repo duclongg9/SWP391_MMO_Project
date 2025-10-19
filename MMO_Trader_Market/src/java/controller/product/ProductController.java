@@ -10,10 +10,6 @@ import model.Products;
 import service.ProductService;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Controller hiển thị danh sách sản phẩm trong marketplace.
@@ -53,23 +49,6 @@ public class ProductController extends BaseController {
         request.setAttribute("headerTitle", "Danh sách sản phẩm");
         request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
         request.setAttribute("headerModifier", HEADER_MODIFIER);
-        request.setAttribute("navItems", buildNavigation(request.getContextPath()));
-    }
-
-    private List<Map<String, String>> buildNavigation(String contextPath) {
-        List<Map<String, String>> items = new ArrayList<>();
-        items.add(createNavItem(contextPath + "/home", "Trang chủ"));
-        items.add(createNavItem(contextPath + "/products", "Sản phẩm"));
-        items.add(createNavItem(contextPath + "/orders", "Đơn đã mua"));
-        items.add(createNavItem(contextPath + "/styleguide", "Styleguide"));
-        return items;
-    }
-
-    private Map<String, String> createNavItem(String href, String label) {
-        Map<String, String> item = new HashMap<>();
-        item.put("href", href);
-        item.put("label", label);
-        return item;
     }
 
     private String normalizeKeyword(String keywordParam) {

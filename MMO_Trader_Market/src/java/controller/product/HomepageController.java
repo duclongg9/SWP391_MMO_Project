@@ -38,38 +38,9 @@ public class HomepageController extends BaseController {
         request.setAttribute("headerTitle", "MMO Trader Market");
         request.setAttribute("headerSubtitle", "Nền tảng demo mua bán tài khoản an toàn");
 
-        populateNavigation(request);
         populateHomepageData(request);
 
         forward(request, response, "product/home");
-    }
-
-    private void populateNavigation(HttpServletRequest request) {
-        String contextPath = request.getContextPath();
-        List<Map<String, String>> navItems = new ArrayList<>();
-
-        Map<String, String> loginLink = new HashMap<>();
-        loginLink.put("href", contextPath + "/login.jsp");
-        loginLink.put("label", "Đăng nhập");
-        loginLink.put("modifier", "button button--primary");
-        navItems.add(loginLink);
-
-        Map<String, String> productLink = new HashMap<>();
-        productLink.put("href", contextPath + "/products");
-        productLink.put("label", "Quản lý sản phẩm");
-        navItems.add(productLink);
-
-        Map<String, String> orderLink = new HashMap<>();
-        orderLink.put("href", contextPath + "/orders");
-        orderLink.put("label", "Đơn đã mua");
-        navItems.add(orderLink);
-
-        Map<String, String> guideLink = new HashMap<>();
-        guideLink.put("href", contextPath + "/styleguide");
-        guideLink.put("label", "Styleguide");
-        navItems.add(guideLink);
-
-        request.setAttribute("navItems", navItems);
     }
 
     private void populateHomepageData(HttpServletRequest request) {
@@ -91,6 +62,9 @@ public class HomepageController extends BaseController {
 
         List<SystemConfigs> systemNotes = homepageService.loadSystemNotes();
         request.setAttribute("systemNotes", systemNotes);
+
+        request.setAttribute("productTypes", buildProductTypeList());
+        request.setAttribute("faqs", buildFaqEntries());
     }
 
     private Map<String, String> buildShopIconMap() {
@@ -99,5 +73,38 @@ public class HomepageController extends BaseController {
         icons.put("Pending", "⏳");
         icons.put("Suspended", "⚠️");
         return icons;
+    }
+
+    private List<Map<String, String>> buildProductTypeList() {
+        List<Map<String, String>> types = new ArrayList<>();
+
+        types.add(createEntry("Tài khoản game", "Tài khoản đã được xác minh và đảm bảo an toàn."));
+        types.add(createEntry("Dịch vụ nâng hạng", "Gói hỗ trợ tăng cấp nhanh chóng cho nhiều tựa game."));
+        types.add(createEntry("Vật phẩm số", "Mã nạp, skin hiếm và vật phẩm sự kiện giới hạn."));
+        types.add(createEntry("Gian hàng doanh nghiệp", "Gói tuỳ chỉnh cho studio và nhà phát hành."));
+
+        return types;
+    }
+
+    private List<Map<String, String>> buildFaqEntries() {
+        List<Map<String, String>> faqs = new ArrayList<>();
+
+        faqs.add(createEntry("Làm sao để mua tài khoản an toàn?",
+                "Hãy kiểm tra trạng thái duyệt và chỉ thanh toán qua kênh được hỗ trợ trong hệ thống."));
+        faqs.add(createEntry("Tôi có thể yêu cầu hoàn tiền không?",
+                "Người mua có thể mở khiếu nại trong vòng 24 giờ sau khi nhận tài khoản."));
+        faqs.add(createEntry("Ví điện tử hoạt động như thế nào?",
+                "Ví cho phép nạp tiền nhanh, thanh toán tức thì và theo dõi lịch sử giao dịch."));
+        faqs.add(createEntry("Seller cần chuẩn bị gì để đăng bán?",
+                "Hãy xác minh danh tính KYC và cung cấp mô tả chi tiết cho từng sản phẩm."));
+
+        return faqs;
+    }
+
+    private Map<String, String> createEntry(String title, String description) {
+        Map<String, String> entry = new HashMap<>();
+        entry.put("title", title);
+        entry.put("description", description);
+        return entry;
     }
 }
