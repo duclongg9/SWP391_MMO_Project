@@ -1,8 +1,10 @@
 package controller.auth;
 
 import controller.BaseController;
+import dao.user.RememberMeTokenDAO;
 import dao.user.UserDAO;
 import model.Users;
+import service.RememberMeService;
 import service.UserService;
 import units.RoleHomeResolver;
 import jakarta.servlet.ServletException;
@@ -30,7 +32,9 @@ public class AuthController extends BaseController {
     private static final String FLASH_EMAIL = "newUserEmail";
     private static final String FLASH_ERROR = "oauthError";
 
-    private final UserService userService = new UserService(new UserDAO());
+    private final UserDAO userDAO = new UserDAO();
+    private final UserService userService = new UserService(userDAO);
+    private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
     
 
@@ -40,11 +44,17 @@ public class AuthController extends BaseController {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
             invalidateSession(request);
+            rememberMeService.clearRememberMe(request, response);
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
 
         HttpSession session = request.getSession(false);
+        Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser");
+        if (currentUser != null) {
+            response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(currentUser));
+            return;
+        }
         if (session != null) {
             moveFlash(session, request, FLASH_SUCCESS, "success");
             moveFlash(session, request, FLASH_RESET_SUCCESS, "success");
@@ -90,7 +100,12 @@ public class AuthController extends BaseController {
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
-            handleRememberMeCookie(request, response, normalizedEmail, rememberMe);
+            handleRememberEmailCookie(request, response, normalizedEmail, rememberMe);
+            if (rememberMe) {
+                rememberMeService.createRememberMeCookie(request, response, user.getId());
+            } else {
+                rememberMeService.clearRememberMe(request, response);
+            }
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
@@ -130,7 +145,7 @@ public class AuthController extends BaseController {
         }
     }
 
-    private void handleRememberMeCookie(HttpServletRequest request, HttpServletResponse response,
+    private void handleRememberEmailCookie(HttpServletRequest request, HttpServletResponse response,
             String email, boolean rememberMe) {
         String contextPath = request.getContextPath();
         if (contextPath == null || contextPath.isEmpty()) {
