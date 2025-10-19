@@ -1,17 +1,15 @@
 package model;
 
 /**
- * Enumeration that describes the current lifecycle state of a buyer order.
- * @version 1.0 21/05/2024
- * @author gpt-5-codex
+ * Order states supported by the asynchronous checkout pipeline.
  */
 public enum OrderStatus {
     PENDING,
-    PROCESSING,
-    COMPLETED,
+    CONFIRMED,
     FAILED,
+    DELIVERED,
     REFUNDED,
-    DISPUTED;
+    CANCELLED;
 
     public static OrderStatus fromDatabaseValue(String value) {
         if (value == null) {
@@ -19,23 +17,23 @@ public enum OrderStatus {
         }
         return switch (value.toUpperCase()) {
             case "PENDING" -> PENDING;
-            case "PROCESSING" -> PROCESSING;
-            case "COMPLETED" -> COMPLETED;
+            case "CONFIRMED" -> CONFIRMED;
             case "FAILED" -> FAILED;
+            case "DELIVERED" -> DELIVERED;
             case "REFUNDED" -> REFUNDED;
-            case "DISPUTED" -> DISPUTED;
+            case "CANCELLED" -> CANCELLED;
             default -> null;
         };
     }
 
     public String toDatabaseValue() {
         return switch (this) {
-            case PENDING -> "Pending";
-            case PROCESSING -> "Processing";
-            case COMPLETED -> "Completed";
-            case FAILED -> "Failed";
-            case REFUNDED -> "Refunded";
-            case DISPUTED -> "Disputed";
+            case PENDING -> "PENDING";
+            case CONFIRMED -> "CONFIRMED";
+            case FAILED -> "FAILED";
+            case DELIVERED -> "DELIVERED";
+            case REFUNDED -> "REFUNDED";
+            case CANCELLED -> "CANCELLED";
         };
     }
 }

@@ -1,36 +1,34 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package units;
 
-import java.security.MessageDigest;
-
 /**
- *
- * @author admin
+ * Legacy facade kept for backward compatibility. Internally delegates to the
+ * {@link PasswordHasher} which provides salted SHA-256 hashing.
  */
-public class HashPassword {
-    // md5
-    // sha-1 => thường được sử dụng
-    public static String toSHA1(String str) {
-        String salt = "asjrlkmcoewj@tjle;oxqskjhdjksjf1jurVn";// Làm cho mật khẩu phức tap
-        String result = null;
+public final class HashPassword {
 
-        str = str + salt;
-        try {
-            byte[] dataBytes = str.getBytes("UTF-8");
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            result = java.util.Base64.getEncoder().encodeToString(md.digest(dataBytes));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
+    private HashPassword() {
     }
-    
-    public static void main(String[] args) {
-        String test = "admin";
-        System.out.println(toSHA1(test));
+
+    /**
+     * @deprecated Prefer {@link PasswordHasher#hash(String)}. This method is
+     * provided to avoid breaking older code paths.
+     */
+    @Deprecated
+    public static String toSHA1(String str) {
+        return PasswordHasher.hash(str);
+    }
+
+    /**
+     * Generates a salted hash for the provided password.
+     */
+    public static String hash(String str) {
+        return PasswordHasher.hash(str);
+    }
+
+    /**
+     * Verifies a raw password against the stored hash.
+     */
+    public static boolean matches(String rawPassword, String storedHash) {
+        return PasswordHasher.matches(rawPassword, storedHash);
     }
 }
-

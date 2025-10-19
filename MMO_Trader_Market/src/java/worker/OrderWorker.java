@@ -115,7 +115,7 @@ public final class OrderWorker implements Runnable {
             return true;
         }
 
-        int quantity = Math.max(1, orderDAO.getRememberedQuantity(order.getId()));
+        int quantity = order.getQuantity() == null || order.getQuantity() <= 0 ? 1 : order.getQuantity();
         int productId = order.getProduct() == null ? -1 : order.getProduct().getId();
         if (productId <= 0) {
             LOGGER.log(Level.WARNING, "Order {0} is missing product information", order.getId());
@@ -144,8 +144,9 @@ public final class OrderWorker implements Runnable {
 
         try {
             walletService.capture(message.orderToken());
-            if (!orderDAO.updateStatus(order.getId(), message.orderToken(), OrderStatus.COMPLETED)) {
-                throw new RuntimeException("Failed to update order status to completed");
+            orderDAO.assignCredentialToOrder(order.getId(), productId);
+            if (!orderDAO.updateStatus(order.getId(), message.orderToken(), OrderStatus.CONFIRMED)) {
+                throw new RuntimeException("Failed to update order status to confirmed");
             }
             return true;
         } catch (IllegalStateException ex) {
@@ -164,7 +165,7 @@ public final class OrderWorker implements Runnable {
 
     private void safeReleaseHold(String orderToken) {
         try {
-            if (walletService.hasHold(orderToken)) {
+            if (walletService.hasActiveHold(orderToken)) {
                 walletService.release(orderToken);
             }
         } catch (RuntimeException ex) {

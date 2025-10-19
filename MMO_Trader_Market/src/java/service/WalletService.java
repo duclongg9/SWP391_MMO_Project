@@ -2,15 +2,14 @@ package service;
 
 import dao.wallet.WalletDAO;
 import dao.wallet.WalletDAO.WalletHoldRecord;
+import dao.wallet.WalletDAO.WalletHoldStatus;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.Objects;
 
 /**
- * Encapsulates wallet operations used during the checkout flow. The service
- * delegates to {@link WalletDAO} which currently stores the hold state in
- * memory, keeping the API similar to a real implementation backed by a
- * database.
+ * Encapsulates wallet operations used during the checkout flow.
  */
 public class WalletService {
 
@@ -25,25 +24,40 @@ public class WalletService {
     }
 
     public WalletHoldRecord hold(int buyerId, int sellerId, BigDecimal amount, int orderId, String orderToken) {
-        if (amount == null || amount.signum() < 0) {
-            throw new IllegalArgumentException("Số tiền giữ phải không âm");
+        try {
+            return walletDAO.createHold(buyerId, sellerId, amount, orderId, orderToken);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể giữ tiền trong ví. Vui lòng nạp thêm hoặc thử lại.", ex);
         }
-        return walletDAO.createHold(buyerId, sellerId, amount, orderId, orderToken);
     }
 
     public void capture(String orderToken) {
-        walletDAO.capture(orderToken);
+        try {
+            walletDAO.capture(orderToken);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể ghi nhận thanh toán từ ví.", ex);
+        }
     }
 
     public void release(String orderToken) {
-        walletDAO.release(orderToken);
+        try {
+            walletDAO.release(orderToken);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể giải phóng số tiền tạm giữ.", ex);
+        }
     }
 
     public void refund(String orderToken) {
-        walletDAO.refund(orderToken);
+        try {
+            walletDAO.refund(orderToken);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể hoàn tiền cho ví.", ex);
+        }
     }
 
-    public boolean hasHold(String orderToken) {
-        return walletDAO.findHold(orderToken).isPresent();
+    public boolean hasActiveHold(String orderToken) {
+        return walletDAO.findHold(orderToken)
+                .map(record -> record.status() == WalletHoldStatus.HOLD)
+                .orElse(false);
     }
 }
