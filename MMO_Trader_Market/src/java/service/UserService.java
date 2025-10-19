@@ -5,8 +5,14 @@
 package service;
 
 import dao.user.UserDAO;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import model.User;
+import model.WalletTransactions;
+import model.Wallets;
 import units.HashPassword;
 import units.SendMail;
 
@@ -16,6 +22,7 @@ import units.SendMail;
  */
 public class UserService {
 
+    //Khai báo các model liên quan
     private final UserDAO udao;
 
     public UserService(UserDAO udao) {
@@ -112,4 +119,5 @@ public class UserService {
             throw new RuntimeException("DB gặp sự cố khi cập nhật mật khẩu người dùng", e);
         }
     }
+
 }
