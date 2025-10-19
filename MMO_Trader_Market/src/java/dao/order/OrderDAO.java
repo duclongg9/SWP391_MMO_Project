@@ -34,6 +34,48 @@ public class OrderDAO extends BaseDAO {
             + "LEFT JOIN wallet_transactions wt ON wt.id = o.payment_transaction_id "
             + "LEFT JOIN product_credentials pc ON pc.order_id = o.id ";
 
+    public long countPendingByOwner(int ownerId) {
+        final String sql = "SELECT COUNT(*) FROM orders o "
+                + "JOIN products p ON p.id = o.product_id "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE s.owner_id = ? AND o.status = 'PENDING'";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "countPendingByOwner failed", ex);
+        }
+        return 0L;
+    }
+
+    public BigDecimal sumMonthlyRevenueByOwner(int ownerId, int year, int month) {
+        final String sql = "SELECT COALESCE(SUM(o.total_amount), 0) FROM orders o "
+                + "JOIN products p ON p.id = o.product_id "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE s.owner_id = ? AND o.status = 'PAID' "
+                + "AND YEAR(o.paid_at) = ? AND MONTH(o.paid_at) = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            statement.setInt(2, year);
+            statement.setInt(3, month);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal value = rs.getBigDecimal(1);
+                    return value != null ? value : BigDecimal.ZERO;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "sumMonthlyRevenueByOwner failed", ex);
+        }
+        return BigDecimal.ZERO;
+    }
+
     public int countAll() {
         final String sql = "SELECT COUNT(*) FROM orders";
         try (Connection connection = getConnection();

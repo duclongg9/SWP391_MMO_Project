@@ -11,6 +11,7 @@ public class Products {
     private BigDecimal price;
     private Integer inventoryCount;
     private String status;
+    private Boolean featured;
     private Date createdAt;
     private Date updatedAt;
     private String description;
@@ -29,6 +30,7 @@ public class Products {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.description = description;
+        this.featured = null;
     }
 
     // Getters & Setters
@@ -50,6 +52,9 @@ public class Products {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public Boolean getFeatured() { return featured; }
+    public void setFeatured(Boolean featured) { this.featured = featured; }
+
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
 
@@ -68,6 +73,7 @@ public class Products {
                 ", price=" + price +
                 ", inventoryCount=" + inventoryCount +
                 ", status='" + status + '\'' +
+                ", featured=" + featured +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 ", description='" + description + '\'' +
