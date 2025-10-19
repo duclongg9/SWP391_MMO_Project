@@ -26,8 +26,8 @@ public class WalletController extends BaseController {
             throws ServletException, IOException {
         request.setAttribute("pageTitle", "Ví điện tử - MMO Trader Market");
         request.setAttribute("bodyClass", "layout");
-        request.setAttribute("headerTitle", "Ví điện tử");
-        request.setAttribute("headerSubtitle", "Theo dõi số dư và giao dịch gần đây");
+//        request.setAttribute("headerTitle", "Ví điện tử");
+//        request.setAttribute("headerSubtitle", "Theo dõi số dư và giao dịch gần đây");
         request.setAttribute("headerModifier", "layout__header--split");
 
         request.setAttribute("walletBalance", new BigDecimal("1250000"));
