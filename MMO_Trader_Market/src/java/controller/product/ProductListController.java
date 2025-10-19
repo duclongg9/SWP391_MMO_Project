@@ -10,10 +10,6 @@ import service.ProductService;
 import service.dto.ProductSearchResult;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Controller hiển thị danh sách sản phẩm của chủ shop.
@@ -72,6 +68,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("headerTitle", "Danh sách sản phẩm");
         request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
         request.setAttribute("headerModifier", HEADER_MODIFIER);
+<<<<<<< HEAD:MMO_Trader_Market/src/java/controller/product/ProductListController.java
         request.setAttribute("navItems", buildNavigation(request.getContextPath()));
     }
 
@@ -89,6 +86,8 @@ public class ProductListController extends BaseController {
         item.put("href", href);
         item.put("label", label);
         return item;
+=======
+>>>>>>> origin/hoa:MMO_Trader_Market/src/java/controller/product/ProductController.java
     }
 
     private String normalizeKeyword(String keywordParam) {

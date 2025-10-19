@@ -17,8 +17,12 @@ import service.dto.OrderPlacementResult;
 import service.dto.OrderStatusView;
 
 import java.io.IOException;
+<<<<<<< HEAD
 import java.io.PrintWriter;
 import java.util.ArrayList;
+=======
+import java.time.format.DateTimeFormatter;
+>>>>>>> origin/hoa
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,6 +120,7 @@ public class OrderController extends BaseController {
             return;
         }
         int page = resolvePage(request.getParameter("page"));
+<<<<<<< HEAD
         int size = resolveSize(request.getParameter("size"));
         OrderStatus status = parseStatus(request.getParameter("status"));
         prepareNavigation(request);
@@ -130,6 +135,9 @@ public class OrderController extends BaseController {
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("size", result.getPageSize());
         request.setAttribute("total", result.getTotalItems());
+=======
+        request.setAttribute("bodyClass", BODY_CLASS);
+>>>>>>> origin/hoa
         request.setAttribute("pageTitle", "Đơn hàng đã mua");
         request.setAttribute("headerTitle", "Lịch sử đơn mua");
         request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
@@ -137,10 +145,49 @@ public class OrderController extends BaseController {
         forward(request, response, "order/list");
     }
 
+<<<<<<< HEAD
     private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Users currentUser = requireAuthenticatedUser(request, response);
         if (currentUser == null) {
+=======
+    private void prepareCheckoutPage(HttpServletRequest request, Products product, String error)
+            throws ServletException {
+        request.setAttribute("bodyClass", BODY_CLASS);
+        request.setAttribute("pageTitle", "Mua ngay sản phẩm");
+        request.setAttribute("headerTitle", "Hoàn tất đơn hàng");
+        request.setAttribute("headerSubtitle", "Bước 1: Kiểm tra thông tin trước khi thanh toán");
+        request.setAttribute("product", product);
+        if (error != null) {
+            request.setAttribute("error", error);
+        }
+    }
+
+    private Order createOrder(String productIdParam, String buyerEmail, String paymentMethod) {
+        int productId = Integer.parseInt(productIdParam);
+        return orderService.createOrder(productId, buyerEmail, paymentMethod);
+    }
+
+    private void showConfirmation(HttpServletRequest request, HttpServletResponse response, Order order)
+            throws ServletException, IOException {
+        request.setAttribute("bodyClass", BODY_CLASS);
+        request.setAttribute("pageTitle", "Thanh toán thành công");
+        request.setAttribute("headerTitle", "Đơn hàng đã tạo");
+        request.setAttribute("headerSubtitle", "Bước 2: Nhận thông tin bàn giao sản phẩm");
+        request.setAttribute("orderStatusClass", orderService.getStatusBadgeClass(order.getStatus()));
+        request.setAttribute("orderStatusLabel", orderService.getFriendlyStatus(order.getStatus()));
+        request.setAttribute("orderCreatedAt", formatOrderDate(order));
+        request.setAttribute("order", order);
+        forward(request, response, "order/confirmation");
+    }
+
+    private void handleCheckoutValidationError(HttpServletRequest request, HttpServletResponse response,
+            String productIdParam, String errorMessage) throws ServletException, IOException {
+        int productId = parseProductIdSafely(productIdParam);
+        if (productId <= 0) {
+            request.setAttribute("error", errorMessage);
+            showOrderHistory(request, response);
+>>>>>>> origin/hoa
             return;
         }
         int orderId;
@@ -345,6 +392,7 @@ public class OrderController extends BaseController {
         return options;
     }
 
+<<<<<<< HEAD
     private void prepareNavigation(HttpServletRequest request) {
         String contextPath = request.getContextPath();
         List<Map<String, String>> navItems = new ArrayList<>();
@@ -365,5 +413,37 @@ public class OrderController extends BaseController {
         navItems.add(orderLink);
 
         request.setAttribute("navItems", navItems);
+=======
+    private Map<Integer, String> buildStatusClassMap(List<Order> orders) {
+        Map<Integer, String> statusClasses = new HashMap<>();
+        for (Order order : orders) {
+            statusClasses.put(order.getId(), orderService.getStatusBadgeClass(order.getStatus()));
+        }
+        return statusClasses;
+    }
+
+    private Map<Integer, String> buildStatusLabelMap(List<Order> orders) {
+        Map<Integer, String> statusLabels = new HashMap<>();
+        for (Order order : orders) {
+            statusLabels.put(order.getId(), orderService.getFriendlyStatus(order.getStatus()));
+        }
+        return statusLabels;
+    }
+
+    private String formatOrderDate(Order order) {
+        return ORDER_TIME_FORMATTER.format(order.getCreatedAt());
+    }
+
+    private int resolvePage(String pageParam) {
+        if (pageParam == null) {
+            return 1;
+        }
+        try {
+            int page = Integer.parseInt(pageParam);
+            return page >= 1 ? page : 1;
+        } catch (NumberFormatException ex) {
+            return 1;
+        }
+>>>>>>> origin/hoa
     }
 }
