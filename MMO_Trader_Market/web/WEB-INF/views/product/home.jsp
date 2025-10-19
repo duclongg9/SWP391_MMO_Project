@@ -95,11 +95,11 @@
                                 <a class="button button--ghost" href="${pageContext.request.contextPath}/products">Chi tiết</a>
                                 <c:set var="statusUpper" value="${fn:toUpperCase(product.status)}" />
                                 <c:choose>
-                                    <c:when test="${statusUpper eq 'AVAILABLE'}">
+                                <c:when test="${statusUpper eq 'APPROVED'}">
                                         <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
                                               style="display:inline;">
                                             <input type="hidden" name="productId" value="${product.id}" />
-                                            <input type="hidden" name="quantity" value="1" />
+                                            <input type="hidden" name="qty" value="1" />
                                             <button class="button button--primary" type="submit">Mua ngay</button>
                                         </form>
                                     </c:when>

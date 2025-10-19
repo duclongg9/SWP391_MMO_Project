@@ -7,30 +7,37 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Order;
+import model.OrderStatus;
 import model.PaginatedResult;
 import model.Products;
-import model.OrderStatus;
+import model.Users;
 import service.OrderService;
+import service.dto.OrderDetailView;
 import service.dto.OrderPlacementResult;
 import service.dto.OrderStatusView;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
- * Servlet responsible for handling the asynchronous checkout entry point and
- * the polling endpoint used by the client to keep track of the background
- * processing performed by {@code OrderWorker}.
+ * Servlet responsible for order placement, polling and listing.
  */
-@WebServlet(name = "OrderController", urlPatterns = {"/orders/my", "/orders/buy"})
+@WebServlet(name = "OrderController", urlPatterns = {
+        "/order/buy-now", "/order/status", "/orders/my", "/orders/detail"
+})
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(OrderController.class.getName());
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final String BODY_CLASS = "layout";
 
     private final OrderService orderService = new OrderService();
 
@@ -49,60 +56,70 @@ public class OrderController extends BaseController {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String servletPath = request.getServletPath();
-        if ("/order/status".equals(servletPath)) {
-            handleStatusPoll(request, response);
-            return;
+        switch (servletPath) {
+            case "/order/status" -> handleStatusPoll(request, response);
+            case "/orders/my" -> showOrderHistory(request, response);
+            case "/orders/detail" -> showOrderDetail(request, response);
+            default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
     }
 
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Users currentUser;
-        try {
-            currentUser = requireAuthenticatedUser(request);
-        } catch (IllegalStateException ex) {
-            response.sendRedirect(request.getContextPath() + "/auth");
+        Users currentUser = requireAuthenticatedUser(request, response);
+        if (currentUser == null) {
             return;
         }
-
-        applyPageDefaults(request);
 
         int productId;
         int quantity;
         try {
             productId = parseIntegerParameter(request, "productId");
-            quantity = parseQuantity(request.getParameter("quantity"));
+            quantity = parseQuantity(request.getParameter("qty"));
         } catch (IllegalArgumentException ex) {
             request.setAttribute("orderError", ex.getMessage());
+            applyPageDefaults(request);
             forward(request, response, "order/processing");
             return;
         }
 
+        String orderToken = request.getParameter("orderToken");
+
         try {
-            OrderPlacementResult placement = orderService.placeOrder(currentUser, productId, quantity);
-            renderProcessingView(request, response, placement);
+            OrderPlacementResult placement = orderService.placeOrder(currentUser, productId, quantity, orderToken);
+            Products product = placement.getProduct();
+            renderProcessingView(request, response, placement, product);
         } catch (IllegalArgumentException | IllegalStateException ex) {
             request.setAttribute("orderError", ex.getMessage());
+            applyPageDefaults(request);
             forward(request, response, "order/processing");
         }
     }
 
+    private void renderProcessingView(HttpServletRequest request, HttpServletResponse response,
+            OrderPlacementResult placement, Products product) throws ServletException, IOException {
+        applyPageDefaults(request);
+        OrderStatus status = placement.getStatus();
+        request.setAttribute("orderPlacement", placement);
+        request.setAttribute("product", product);
+        request.setAttribute("quantity", placement.getQuantity());
+        request.setAttribute("statusLabel", orderService.getFriendlyStatus(status));
+        request.setAttribute("statusClass", orderService.getStatusBadgeClass(status));
+        request.setAttribute("pollUrl", buildPollUrl(request, placement));
+        forward(request, response, "order/processing");
+    }
+
     private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Integer userId = resolveUserId(request);
-        if (userId == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+        Users currentUser = requireAuthenticatedUser(request, response);
+        if (currentUser == null) {
             return;
         }
         int page = resolvePage(request.getParameter("page"));
         int size = resolveSize(request.getParameter("size"));
         OrderStatus status = parseStatus(request.getParameter("status"));
         prepareNavigation(request);
-        request.setAttribute("pageTitle", "Đơn hàng đã mua");
-        request.setAttribute("headerTitle", "Lịch sử đơn mua");
-        request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
-        PaginatedResult<Order> result = orderService.listOrders(userId, page, size, status);
+        PaginatedResult<Order> result = orderService.listOrders(currentUser.getId(), page, size, status);
         List<Order> orders = result.getItems();
         request.setAttribute("items", orders);
         request.setAttribute("statusClasses", buildStatusClassMap(orders));
@@ -113,25 +130,45 @@ public class OrderController extends BaseController {
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("size", result.getPageSize());
         request.setAttribute("total", result.getTotalItems());
+        request.setAttribute("pageTitle", "Đơn hàng đã mua");
+        request.setAttribute("headerTitle", "Lịch sử đơn mua");
+        request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
+        request.setAttribute("bodyClass", BODY_CLASS);
         forward(request, response, "order/list");
     }
 
-        applyPageDefaults(request);
-        request.setAttribute("orderPlacement", placement);
-        request.setAttribute("product", product);
-        request.setAttribute("quantity", placement.getQuantity());
-        request.setAttribute("statusLabel", orderService.getFriendlyStatus(status));
-        request.setAttribute("statusClass", orderService.getStatusBadgeClass(status));
-        request.setAttribute("pollUrl", buildPollUrl(request, placement));
-        forward(request, response, "order/processing");
+    private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Users currentUser = requireAuthenticatedUser(request, response);
+        if (currentUser == null) {
+            return;
+        }
+        int orderId;
+        try {
+            orderId = parseIntegerParameter(request, "orderId");
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
+            return;
+        }
+        try {
+            OrderDetailView detail = orderService.getOrderDetail(orderId, currentUser);
+            LOGGER.info(() -> "User " + currentUser.getId() + " viewed credentials of order " + orderId);
+            prepareNavigation(request);
+            request.setAttribute("detail", detail);
+            request.setAttribute("statusLabel", orderService.getFriendlyStatus(detail.getOrder().getStatus()));
+            request.setAttribute("statusClass", orderService.getStatusBadgeClass(detail.getOrder().getStatus()));
+            request.setAttribute("bodyClass", BODY_CLASS);
+            forward(request, response, "order/detail");
+        } catch (SecurityException ex) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, ex.getMessage());
+        }
     }
 
     private void handleStatusPoll(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Users currentUser;
-        try {
-            currentUser = requireAuthenticatedUser(request);
-        } catch (IllegalStateException ex) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+        Users currentUser = requireAuthenticatedUser(request, response);
+        if (currentUser == null) {
             return;
         }
 
@@ -156,14 +193,16 @@ public class OrderController extends BaseController {
         }
     }
 
-    private Users requireAuthenticatedUser(HttpServletRequest request) {
+    private Users requireAuthenticatedUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);
         if (session == null) {
-            throw new IllegalStateException("Session expired");
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return null;
         }
         Users currentUser = (Users) session.getAttribute("currentUser");
         if (currentUser == null || currentUser.getId() == null) {
-            throw new IllegalStateException("Session expired");
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return null;
         }
         return currentUser;
     }
@@ -197,25 +236,12 @@ public class OrderController extends BaseController {
 
     private String buildPollUrl(HttpServletRequest request, OrderPlacementResult placement) {
         String contextPath = request.getContextPath();
-        List<Map<String, String>> navItems = new ArrayList<>();
-
-        request.setAttribute("bodyClass", BODY_CLASS);
-        Map<String, String> homeLink = new HashMap<>();
-        homeLink.put("href", contextPath + "/home");
-        homeLink.put("label", "Trang chủ");
-        navItems.add(homeLink);
-
-        Map<String, String> productLink = new HashMap<>();
-        productLink.put("href", contextPath + "/products");
-        productLink.put("label", "Sản phẩm");
-        navItems.add(productLink);
-
-        Map<String, String> orderLink = new HashMap<>();
-        orderLink.put("href", contextPath + "/orders/my");
-        orderLink.put("label", "Đơn đã mua");
-        navItems.add(orderLink);
-
-        request.setAttribute("navItems", navItems);
+        StringBuilder builder = new StringBuilder(contextPath)
+                .append("/order/status?orderId=")
+                .append(placement.getOrderId())
+                .append("&token=")
+                .append(placement.getOrderToken());
+        return builder.toString();
     }
 
     private void writeStatusResponse(HttpServletResponse response, OrderStatusView statusView) throws IOException {
@@ -254,10 +280,22 @@ public class OrderController extends BaseController {
     }
 
     private void applyPageDefaults(HttpServletRequest request) {
-        request.setAttribute("bodyClass", "layout");
+        request.setAttribute("bodyClass", BODY_CLASS);
         request.setAttribute("pageTitle", "Xử lý đơn hàng");
         request.setAttribute("headerTitle", "Đơn hàng đang được xử lý");
         request.setAttribute("headerSubtitle", "Chúng tôi sẽ hoàn tất đơn trong giây lát, vui lòng đợi...");
+    }
+
+    private int resolvePage(String pageParam) {
+        if (pageParam == null) {
+            return 1;
+        }
+        try {
+            int page = Integer.parseInt(pageParam);
+            return page > 0 ? page : 1;
+        } catch (NumberFormatException ex) {
+            return 1;
+        }
     }
 
     private int resolveSize(String sizeParam) {
@@ -272,14 +310,6 @@ public class OrderController extends BaseController {
         }
     }
 
-    private Integer resolveUserId(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            return null;
-        }
-        return (Integer) session.getAttribute("userId");
-    }
-
     private OrderStatus parseStatus(String statusParam) {
         if (statusParam == null || statusParam.isBlank()) {
             return null;
@@ -287,8 +317,24 @@ public class OrderController extends BaseController {
         try {
             return OrderStatus.valueOf(statusParam.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            return OrderStatus.fromDatabaseValue(statusParam.trim());
+            return null;
         }
+    }
+
+    private Map<Integer, String> buildStatusClassMap(List<Order> orders) {
+        Map<Integer, String> map = new HashMap<>();
+        for (Order order : orders) {
+            map.put(order.getId(), orderService.getStatusBadgeClass(order.getStatus()));
+        }
+        return map;
+    }
+
+    private Map<Integer, String> buildStatusLabelMap(List<Order> orders) {
+        Map<Integer, String> map = new HashMap<>();
+        for (Order order : orders) {
+            map.put(order.getId(), orderService.getFriendlyStatus(order.getStatus()));
+        }
+        return map;
     }
 
     private Map<String, String> buildStatusOptions() {
@@ -297,5 +343,27 @@ public class OrderController extends BaseController {
             options.put(status.name(), orderService.getFriendlyStatus(status));
         }
         return options;
+    }
+
+    private void prepareNavigation(HttpServletRequest request) {
+        String contextPath = request.getContextPath();
+        List<Map<String, String>> navItems = new ArrayList<>();
+
+        Map<String, String> homeLink = new HashMap<>();
+        homeLink.put("href", contextPath + "/home");
+        homeLink.put("label", "Trang chủ");
+        navItems.add(homeLink);
+
+        Map<String, String> productLink = new HashMap<>();
+        productLink.put("href", contextPath + "/products");
+        productLink.put("label", "Sản phẩm");
+        navItems.add(productLink);
+
+        Map<String, String> orderLink = new HashMap<>();
+        orderLink.put("href", contextPath + "/orders/my");
+        orderLink.put("label", "Đơn đã mua");
+        navItems.add(orderLink);
+
+        request.setAttribute("navItems", navItems);
     }
 }

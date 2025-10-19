@@ -41,7 +41,7 @@ public class HomepageService {
     }
 
     public MarketplaceSummary loadMarketplaceSummary() {
-        long completedOrders = orderDAO.countByStatus(OrderStatus.COMPLETED);
+        long completedOrders = orderDAO.countByStatus(OrderStatus.CONFIRMED);
         long activeShops = shopDAO.countActive();
         long activeBuyers = buyerDAO.countActiveBuyers();
         return new MarketplaceSummary(completedOrders, activeShops, activeBuyers);
@@ -63,8 +63,8 @@ public class HomepageService {
 
     private CustomerProfileView buildProfile(Users buyer) {
         long totalOrders = orderDAO.countByBuyer(buyer.getId());
-        long completedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.COMPLETED);
-        long disputedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.DISPUTED);
+        long completedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.CONFIRMED);
+        long refundedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.REFUNDED);
         double satisfaction = totalOrders == 0 ? 0 : roundToOneDecimal((completedOrders * 5.0) / totalOrders);
         LocalDate joinDate = toLocalDate(buyer.getCreatedAt());
         return new CustomerProfileView(
@@ -73,7 +73,7 @@ public class HomepageService {
                 joinDate,
                 totalOrders,
                 completedOrders,
-                disputedOrders,
+                refundedOrders,
                 satisfaction);
     }
 

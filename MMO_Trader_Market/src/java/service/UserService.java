@@ -44,13 +44,16 @@ public class UserService {
 
         try {
             ensureEmailAvailable(normalizedEmail);
-            String hashedPassword = HashPassword.toSHA1(rawPassword);
+            String hashedPassword = HashPassword.hash(rawPassword);
             Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID);
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
             return created;
         } catch (SQLException e) {
+            if ("23000".equals(e.getSQLState()) || e.getErrorCode() == 1062) {
+                throw new IllegalArgumentException("Email đã tồn tại", e);
+            }
             throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
         }
     }
@@ -71,7 +74,7 @@ public class UserService {
         if (hashed == null || hashed.isBlank()) {
             throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui lòng đăng nhập bằng Google");
         }
-        if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
+        if (!HashPassword.matches(rawPassword, hashed)) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
         return user;
@@ -136,7 +139,7 @@ public class UserService {
                 throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
             }
 
-            String hashed = HashPassword.toSHA1(normalizedPassword);
+            String hashed = HashPassword.hash(normalizedPassword);
             int updated = userDAO.updateUserPassword(resetToken.getUserId(), hashed);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại");
@@ -199,12 +202,12 @@ public class UserService {
             }
 
             // 3) So khớp mật khẩu cũ (sửa điều kiện: phải KHÔNG trùng mới báo sai)
-            if (!currentHash.equals(HashPassword.toSHA1(oldPassword))) {
+            if (!HashPassword.matches(oldPassword, currentHash)) {
                 throw new IllegalArgumentException("Mật khẩu cũ không đúng");
             }
 
             // 4) Hash mật khẩu mới và cập nhật
-            String newHash = HashPassword.toSHA1(newPassword);
+            String newHash = HashPassword.hash(newPassword);
             int updated = userDAO.updateUserPassword(id, newHash);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại.");
@@ -306,7 +309,7 @@ public class UserService {
 
     private Users createGoogleAccount(String email, String name, String googleId) throws SQLException {
         ensureEmailAvailable(email);
-        String fallbackHash = HashPassword.toSHA1(generateRandomSecret());
+        String fallbackHash = HashPassword.hash(generateRandomSecret());
         Users created = userDAO.createUserWithGoogle(email, name, googleId, fallbackHash, DEFAULT_ROLE_ID);
         if (created == null) {
             throw new IllegalStateException("Không thể tạo tài khoản Google mới");
