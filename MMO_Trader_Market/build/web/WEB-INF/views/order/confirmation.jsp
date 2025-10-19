@@ -67,13 +67,13 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.75rem;">
-                        <a class="button button--primary" href="${pageContext.request.contextPath}/orders">Xem danh sách đơn hàng</a>
+                        <a class="button button--primary" href="${pageContext.request.contextPath}/orders/my">Xem danh sách đơn hàng</a>
                         <a class="button button--ghost" href="${pageContext.request.contextPath}/home">Tiếp tục mua sắm</a>
                     </div>
                 </c:when>
                 <c:otherwise>
                     <div class="alert alert--error" role="alert">Không tìm thấy thông tin đơn hàng.</div>
-                    <a class="button button--primary" href="${pageContext.request.contextPath}/orders">Quay lại danh sách</a>
+                    <a class="button button--primary" href="${pageContext.request.contextPath}/orders/my">Quay lại danh sách</a>
                 </c:otherwise>
             </c:choose>
         </div>
