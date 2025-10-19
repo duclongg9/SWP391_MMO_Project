@@ -1,0 +1,16 @@
+<component name="libraryTable">
+  <library name="lib2">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/mssql-jdbc-12.8.1.jre11.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/jakarta.servlet.jsp.jstl-2.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/mysql-connector-j-9.3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/angus-activation-2.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/jakarta.activation-api-2.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/jakarta.mail-2.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/build/web/WEB-INF/lib/gson-2.13.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

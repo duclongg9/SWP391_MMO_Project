@@ -21,7 +21,7 @@ public class DashboardController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("products", productService.getHighlightedProducts());
+        request.setAttribute("products", productService.homepageHighlights());
         forward(request, response, "dashboard/index");
     }
 }
