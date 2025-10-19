@@ -35,7 +35,7 @@
                         <li>Nhập email nhận sản phẩm và chọn phương thức thanh toán.</li>
                         <li>Hoàn tất thanh toán để nhận key/đường dẫn ngay lập tức.</li>
                     </ol>
-                    <form class="form" method="post" action="${pageContext.request.contextPath}/orders/buy">
+                    <form class="form" method="post" action="${pageContext.request.contextPath}/order/buy-now">
                         <input type="hidden" name="productId" value="${product.id}">
                         <div class="form__group" style="margin-bottom: 1rem;">
                             <label class="form__label" for="buyerEmail">Email nhận sản phẩm</label>
