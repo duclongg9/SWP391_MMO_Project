@@ -1,33 +1,106 @@
 package dao.product;
 
 import dao.BaseDAO;
-import model.Product;
-import model.ProductStatus;
+import model.Products;
+
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * DAO responsible for retrieving products. The current implementation uses
- * an in-memory list to keep the sample lightweight, but the BaseDAO provides
- * JDBC utilities for a future MySQL integration.
+ * Provides read-only access to marketplace products.
+ *
+ * <p>The real project will connect to the database, however for the purpose of
+ * testing the checkout flow we keep an in-memory catalogue that is seeded on
+ * application start.</p>
  */
 public class ProductDAO extends BaseDAO {
 
-    private static final List<Product> SAMPLE_PRODUCTS = Arrays.asList(
-            new Product(1, "Acc game A", "Tài khoản full skin", new BigDecimal("120000"), ProductStatus.PENDING_REVIEW),
-            new Product(2, "Acc game B", "Rank cao mùa mới", new BigDecimal("340000"), ProductStatus.APPROVED),
-            new Product(3, "Thẻ nạp C", "Giao ngay sau khi thanh toán", new BigDecimal("95000"), ProductStatus.APPROVED)
-    );
+    private static final List<Products> SAMPLE_PRODUCTS = new ArrayList<>();
 
-    public List<Product> findAll() {
-        return SAMPLE_PRODUCTS;
+    static {
+        seedSampleProducts();
     }
 
-    public List<Product> findHighlighted() {
+    private static void seedSampleProducts() {
+        if (!SAMPLE_PRODUCTS.isEmpty()) {
+            return;
+        }
+        Date now = Date.from(Instant.now());
+        SAMPLE_PRODUCTS.add(new Products(
+                1001,
+                10,
+                "Gmail Business 50GB",
+                new BigDecimal("250000"),
+                12,
+                "APPROVED",
+                Date.from(Instant.now().minus(14, ChronoUnit.DAYS)),
+                now,
+                "Tài khoản Gmail doanh nghiệp dung lượng 50GB kèm hướng dẫn đổi mật khẩu."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1002,
+                11,
+                "Spotify Premium 12 tháng",
+                new BigDecimal("185000"),
+                30,
+                "APPROVED",
+                Date.from(Instant.now().minus(5, ChronoUnit.DAYS)),
+                now,
+                "Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1003,
+                12,
+                "Netflix UHD 1 năm",
+                new BigDecimal("650000"),
+                8,
+                "DISPUTED",
+                Date.from(Instant.now().minus(20, ChronoUnit.DAYS)),
+                Date.from(Instant.now().minus(1, ChronoUnit.DAYS)),
+                "Tài khoản Netflix gói Ultra HD, hỗ trợ đăng nhập 4 thiết bị."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1004,
+                13,
+                "Windows 11 Pro key",
+                new BigDecimal("390000"),
+                50,
+                "PENDING",
+                Date.from(Instant.now().minus(3, ChronoUnit.DAYS)),
+                now,
+                "Key bản quyền Windows 11 Pro, kích hoạt online trọn đời."
+        ));
+    }
+
+    /**
+     * Returns all products sorted by the latest update time.
+     */
+    public List<Products> findAll() {
         return SAMPLE_PRODUCTS.stream()
-                .filter(product -> product.getStatus() == ProductStatus.APPROVED)
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns products to be displayed on the homepage dashboard.
+     */
+    public List<Products> findHighlighted() {
+        List<Products> sorted = findAll();
+        return sorted.subList(0, Math.min(3, sorted.size()));
+    }
+
+    /**
+     * Finds a product by id from the sample catalogue.
+     */
+    public Optional<Products> findById(int id) {
+        return SAMPLE_PRODUCTS.stream()
+                .filter(product -> product.getId() != null && product.getId() == id)
+                .findFirst();
     }
 }

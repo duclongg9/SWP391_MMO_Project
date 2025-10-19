@@ -9,93 +9,253 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import model.Role;
-import java.sql.Timestamp;
 
-/**
- * DAO responsible for user authentication. Replace the in-memory collection by
- * a JDBC implementation when integrating with the real database tables.
- */
 public class UserDAO extends BaseDAO {
 
-    /*Khai báo các model cần xử dụng liên quan*/
-    RoleDAO rdao = new RoleDAO();
+    // Tên cột trong bảng users
+    private static final String COL_ID             = "id";
+    private static final String COL_ROLE_ID        = "role_id";
+    private static final String COL_EMAIL          = "email";
+    private static final String COL_NAME           = "name";
+    private static final String COL_AVATAR_URL     = "avatar_url";
+    private static final String COL_HASHED_PWD     = "hashed_password";
+    private static final String COL_GOOGLE_ID      = "google_id";
+    private static final String COL_STATUS         = "status";
+    private static final String COL_CREATED_AT     = "created_at";
+    private static final String COL_UPDATED_AT     = "updated_at";
 
-    /*Phần mapping database với các biến tự tạo trong java*/
-    private static final String COL_ID = "id";
-    private static final String COL_FULL_NAME = "name";
-    private static final String COL_EMAIL = "email";
-    private static final String COL_ROLE = "role_id";
-    private static final String COL_HASH_PASSWORD = "hashed_password";
-    private static final String COL_GOOGLE_ID = "google_id";
-    private static final String COL_AVATA = "avatar_url";
-    private static final String COL_STATUS = "status";
-    private static final String COL_CREATED_AT = "created_at";
-    private static final String COL_UPDATED_AT = "updated_at";
-    
-    /*Hàm lấy user theo userId*/
-    public User getUserByUserId(int id) throws SQLException {
-        String sql = """
-                    SELECT * FROM  users
-                    WHERE id = ? AND status = 1
-                    LIMIT 1
-                    """;
-        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            
+    /** Helper: map 1 hàng ResultSet -> Users */
+    private Users mapRow(ResultSet rs) throws SQLException {
+        Users u = new Users();
+        u.setId(rs.getInt(COL_ID));
+        u.setRoleId(rs.getInt(COL_ROLE_ID));
+        u.setEmail(rs.getString(COL_EMAIL));
+        u.setName(rs.getString(COL_NAME));
+        u.setAvatarUrl(rs.getString(COL_AVATAR_URL));
+        u.setHashedPassword(rs.getString(COL_HASHED_PWD));
+        u.setGoogleId(rs.getString(COL_GOOGLE_ID));
+        // TINYINT(1) -> boolean
+        u.setStatus(rs.getObject(COL_STATUS) == null ? null : rs.getBoolean(COL_STATUS));
+        // Timestamp là subclass của java.util.Date, gán trực tiếp ok
+        u.setCreatedAt(rs.getTimestamp(COL_CREATED_AT));
+        u.setUpdatedAt(rs.getTimestamp(COL_UPDATED_AT));
+        return u;
+    }
+
+    /** Lấy user theo id (chỉ lấy user đang active) */
+    public Users getUserByUserId(int id) {
+        final String sql = """
+                SELECT * FROM users
+                WHERE id = ? AND status = 1
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setInt(1, id);
-            
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                User user = new User();
-                Role role = new Role();
-                user.setId(rs.getInt(COL_ID));
-                user.setUsername(rs.getString(COL_FULL_NAME));
-                user.setEmail(rs.getString(COL_EMAIL));
-                user.setRole(rdao.getRoleById(rs.getInt(COL_ROLE)));
-                user.setHashPassword(rs.getString(COL_HASH_PASSWORD));
-                user.setGoogleId(rs.getString(COL_GOOGLE_ID));
-                user.setAvataUrl(rs.getString(COL_AVATA));
-                user.setStatus(rs.getInt(COL_STATUS));
-
-                //Lấy thời gian TimeStamp ở DB --> Instant trong java
-                java.sql.Timestamp c = rs.getTimestamp(COL_CREATED_AT);
-                java.sql.Timestamp u = rs.getTimestamp(COL_UPDATED_AT);
-                user.setCreatedAt(c != null ? c.toInstant() : null);
-                user.setUpdatedAt(u != null ? u.toInstant() : null);
-
-                return user;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
             }
         } catch (SQLException e) {
-            Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);
+            Logger.getLogger(UserDAO.class.getName())
+                    .log(Level.SEVERE, "Lỗi lấy user theo id", e);
         }
         return null;
     }
-    
-    public int updateUserProfileBasic(int id,String name) throws SQLException{
+
+    /** Cập nhật tên hiển thị */
+    public int updateUserProfileBasic(int id, String name) throws SQLException {
         final String sql = """
-                           Update users
-                           Set name = ?, updated_at = CURRENT_TIMESTAMP
-                           WHERE id = ? AND status = 1
-                           """;
-        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+                UPDATE users
+                SET name = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status = 1
+                """;
+        try (Connection con = DBConnect.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, id);
             return ps.executeUpdate();
         }
     }
-    
-    public int updateUserPassword(int id,String hashedPassword) throws SQLException{
+
+    /** Cập nhật mật khẩu đã hash */
+    public int updateUserPassword(int id, String hashedPassword) throws SQLException {
         final String sql = """
-                           Update users
-                           Set hashed_password = ?, updated_at = CURRENT_TIMESTAMP
-                           WHERE id = ? AND status = 1
-                           """;
-        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+                UPDATE users
+                SET hashed_password = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status = 1
+                """;
+        try (Connection con = DBConnect.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, hashedPassword);
             ps.setInt(2, id);
             return ps.executeUpdate();
         }
     }
-    
-   
+
+    /**
+     lưu tài khoản mới
+     */
+    public int createBuyerAccount(String roleName, String email, String hashedPassword, Timestamp createdAt) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, hashed_password, status, created_at, updated_at)
+                SELECT id, ?, ?, 1, ?, ?
+                FROM roles
+                WHERE name = ?
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ps.setString(2, hashedPassword);
+            ps.setTimestamp(3, createdAt);
+            ps.setTimestamp(4, createdAt);
+            ps.setString(5, roleName);
+            return ps.executeUpdate();
+        }
+    }
+
+
+    /** (Tuỳ chọn) Lấy user theo email */
+    public Users getUserByEmail(String email) {
+        final String sql = """
+                SELECT * FROM users
+                WHERE email = ? AND status = 1
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(UserDAO.class.getName())
+                    .log(Level.SEVERE, "Lỗi lấy user theo email", e);
+        }
+        return null;
+    }
+
+    /** Tìm user theo google_id */
+    public Users getUserByGoogleId(String googleId) {
+        final String sql = """
+                SELECT * FROM users
+                WHERE google_id = ? AND status = 1
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, googleId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(UserDAO.class.getName())
+                    .log(Level.SEVERE, "Lỗi lấy user theo google id", e);
+        }
+        return null;
+    }
+        /** Kiểm tra email đã tồn tại hay chưa */
+    public boolean emailExists(String email) throws SQLException {
+        final String sql = """
+                SELECT 1 FROM users
+                WHERE email = ?
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /** Tạo user mới */
+    public Users createUser(String email, String name, String hashedPassword, int roleId) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, roleId);
+            ps.setString(2, email);
+            ps.setString(3, name);
+            ps.setString(4, hashedPassword);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                return null;
+            }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int id = rs.getInt(1);
+                    Users created = new Users();
+                    created.setId(id);
+                    created.setRoleId(roleId);
+                    created.setEmail(email);
+                    created.setName(name);
+                    created.setHashedPassword(hashedPassword);
+                    created.setStatus(true);
+                    return created;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Tạo user mới đăng nhập bằng Google.
+     */
+    public Users createUserWithGoogle(String email, String name, String googleId,
+            String hashedPassword, int roleId) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, name, hashed_password, google_id, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, roleId);
+            ps.setString(2, email);
+            ps.setString(3, name);
+            ps.setString(4, hashedPassword);
+            ps.setString(5, googleId);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                return null;
+            }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    Users created = new Users();
+                    created.setId(rs.getInt(1));
+                    created.setRoleId(roleId);
+                    created.setEmail(email);
+                    created.setName(name);
+                    created.setGoogleId(googleId);
+                    created.setHashedPassword(hashedPassword);
+                    created.setStatus(true);
+                    return created;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Liên kết tài khoản Google với user hiện tại.
+     */
+    public int updateGoogleId(int userId, String googleId) throws SQLException {
+        final String sql = """
+                UPDATE users
+                SET google_id = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status = 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, googleId);
+            ps.setInt(2, userId);
+            return ps.executeUpdate();
+        }
+    }
 }

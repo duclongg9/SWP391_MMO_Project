@@ -1,0 +1,112 @@
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "https://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+    <context id="MySQLTables" targetRuntime="MyBatis3" defaultModelType="flat">
+        <!-- Ký tự đặt tên camelCase, tránh cảnh báo -->
+        <property name="javaFileEncoding" value="UTF-8"/>
+        <property name="autoDelimitKeywords" value="true"/>
+        <property name="beginningDelimiter" value="`"/>
+        <property name="endingDelimiter" value="`"/>
+
+        <!-- KẾT NỐI DB -->
+        <jdbcConnection
+                driverClass="com.mysql.cj.jdbc.Driver"
+                connectionURL="jdbc:mysql://127.0.0.1:3306/mmo_schema?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC"
+                userId="root"
+                password="123">
+            <!-- Nếu cần, bỏ dòng dưới: chỉ dùng catalog hiện tại -->
+            <property name="nullCatalogMeansCurrent" value="false"/>
+        </jdbcConnection>
+
+        <!-- THƯ MỤC ĐẦU RA -->
+        <javaModelGenerator targetPackage="model"  targetProject="src/java"/>
+        <sqlMapGenerator    targetPackage="mapper" targetProject="src/java"/>
+        <javaClientGenerator type="XMLMAPPER" targetPackage="dao" targetProject="src/java"/>
+
+        <!-- TEMPLATES BẢNG: tắt *ByExample cho mapper gọn -->
+        <!-- Tip: copy block thuộc tính enable*... đặt cho từng <table/> -->
+        <!-- ===================== DANH SÁCH BẢNG ====================== -->
+        <table catalog="mmo_schema" tableName="conversation_participants"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="conversations"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="deposit_requests"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="disputes"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="inventory_logs"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="kyc_request_statuses"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="kyc_requests"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="messages"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="orders"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="product_credentials"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="products"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="roles"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="shops"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="system_configs"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="users"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="wallet_transactions"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="wallets"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="withdrawal_rejection_reasons"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="withdrawal_request_reasons_map"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+
+        <table catalog="mmo_schema" tableName="withdrawal_requests"
+               enableSelectByExample="false" enableUpdateByExample="false"
+               enableDeleteByExample="false" enableCountByExample="false"/>
+        <!-- =================== HẾT DANH SÁCH BẢNG ==================== -->
+    </context>
+</generatorConfiguration>

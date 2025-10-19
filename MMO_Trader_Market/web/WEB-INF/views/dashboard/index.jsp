@@ -3,7 +3,7 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="model.Product" %>
+<%@ page import="model.Products" %>
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
@@ -69,7 +69,7 @@
         </div>
         <ul class="product-grid">
             <%
-                List<Product> products = (List<Product>) request.getAttribute("products");
+                List<Products> products = (List<Products>) request.getAttribute("products");
                 if (products == null || products.isEmpty()) {
             %>
             <li class="product-card product-card--empty">
@@ -77,7 +77,7 @@
             </li>
             <%
                 } else {
-                    for (Product product : products) {
+                    for (Products product : products) {
             %>
             <li class="product-card">
                 <h3><%= product.getName() %></h3>
