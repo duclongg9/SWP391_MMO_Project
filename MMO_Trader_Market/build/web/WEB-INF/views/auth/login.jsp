@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="MMO Trader Market - Đăng nhập" />
 <c:set var="bodyClass" value="layout layout--center" />
-<c:set var="headerTitle" value="MMO Trader Market" />
+<c:set var="headerTitle" value="Đăng nhập" />
 <c:set var="headerSubtitle" value="Đăng nhập để quản lý giao dịch" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
@@ -34,7 +34,7 @@
             <label class="form-card__option form-card__option--inline" for="rememberMe">
                 <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
                        <c:if test="${rememberMeChecked}">checked</c:if>>
-                <span class="form-card__option-text">Ghi nhớ đăng nhập</span>
+                <span class="form-card__option-text">Ghi nhớ mật khẩu</span>
             </label>
             <a class="form-card__link" href="<c:url value='/forgot-password' />">Quên mật khẩu?</a>
         </div>
