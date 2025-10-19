@@ -2,6 +2,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="model.Product" %>
 <%@ page import="model.ProductCategory" %>
+<%@ page import="model.ProductStatus" %>
 <%@ page import="model.CustomerProfile" %>
 <%@ page import="model.Review" %>
 <%
@@ -71,8 +72,12 @@
                             <li>Trạng thái duyệt: <strong><%= product.getStatus() %></strong></li>
                         </ul>
                         <footer class="product-card__footer">
-                            <button class="button button--ghost" type="button">Xem chi tiết demo</button>
-                            <button class="button button--primary" type="button">Thêm vào giỏ</button>
+                            <a class="button button--ghost" href="#">Xem chi tiết demo</a>
+                            <% if (product.getStatus() == ProductStatus.APPROVED) { %>
+                            <a class="button button--primary" href="<%= request.getContextPath() %>/orders/buy?productId=<%= product.getId() %>">Mua ngay</a>
+                            <% } else { %>
+                            <span class="badge badge--warning">Đang chờ duyệt</span>
+                            <% } %>
                         </footer>
                     </article>
                 <% } %>
