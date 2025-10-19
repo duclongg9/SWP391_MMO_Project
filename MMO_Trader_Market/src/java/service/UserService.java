@@ -3,6 +3,7 @@ package service;
 import dao.user.UserDAO;
 import model.Users;
 import units.HashPassword;
+import units.SendMail;
 
 import java.sql.SQLException;
 
@@ -43,6 +44,8 @@ public class UserService {
 
     public int updatePassword(int id, String oldPassword, String newPassword) {
         // 1) Validate input
+        //Gọi thông tin liên quan
+        UserDAO udao = new UserDAO();
         if (oldPassword == null || oldPassword.isBlank()) {
             throw new IllegalArgumentException("Vui lòng nhập mật khẩu cũ");
         }
@@ -74,6 +77,23 @@ public class UserService {
             int updated = udao.updateUserPassword(id, newHash);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại.");
+            }
+
+            //Gửi email
+            if (updated > 0) {
+                String subject = "[Thông báo quan trọng]-Thông tin tài khoản của bạn";
+                String messageText = "Chào Kiệt,\n\n"
+                        + "Bạn đã thay đổi mật khẩu thành công trên hệ thống sàn thương mại điện tử MMO Trader System \n\n"
+                        + "Vui lòng kiểm tra lại tài khoản nếu bạn không thực hiện hành động này\n\n"
+                        + "Trân trọng,\nAdmin MMO Trader System"; // đang test fig cứng tên
+
+                try {
+                    String userEmail = udao.getUserByUserId(id).getEmail();
+                    SendMail.sendMail(userEmail, subject, messageText);
+                } catch (Exception e) {
+                    e.printStackTrace(); // log lỗi gửi mail (không làm hỏng luồng chính)
+                }
+
             }
 
             return updated;
