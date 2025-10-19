@@ -2,11 +2,9 @@ package dao.user;
 
 import dao.BaseDAO;
 import dao.connect.DBConnect;
-import model.User;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import model.Users;
+
+import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -77,8 +75,7 @@ public class UserDAO extends BaseDAO {
             return ps.executeUpdate();
         }
     }
-
-    /** Cập nhật mật khẩu đã hash */
+/** Cập nhật mật khẩu đã hash */
     public int updateUserPassword(int id, String hashedPassword) throws SQLException {
         final String sql = """
                 UPDATE users
@@ -157,7 +154,7 @@ public class UserDAO extends BaseDAO {
         return null;
     }
         /** Kiểm tra email đã tồn tại hay chưa */
-    public boolean emailExists(String email) throws SQLException {
+public boolean emailExists(String email) throws SQLException {
         final String sql = """
                 SELECT 1 FROM users
                 WHERE email = ?
@@ -229,7 +226,7 @@ public class UserDAO extends BaseDAO {
                 if (rs.next()) {
                     Users created = new Users();
                     created.setId(rs.getInt(1));
-                    created.setRoleId(roleId);
+created.setRoleId(roleId);
                     created.setEmail(email);
                     created.setName(name);
                     created.setGoogleId(googleId);

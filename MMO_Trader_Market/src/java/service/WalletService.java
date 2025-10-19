@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package service;
 
 import dao.user.WalletTransactionDAO;
@@ -11,13 +7,8 @@ import java.util.List;
 import model.WalletTransactions;
 import model.Wallets;
 
-/**
- *
- * @author D E L L
- */
 public class WalletService {
 
-    //Khai báo các model liên quan
     private final WalletsDAO wdao;
     private final WalletTransactionDAO wtdao;
 
@@ -26,42 +17,39 @@ public class WalletService {
         this.wtdao = wtdao;
     }
 
-    /*Xem ví của mình*/
+    /* Xem ví của mình */
     public Wallets viewUserWallet(int userId) {
-
-        // Quyền Isở hữu ví
         Wallets wallet = wdao.getUserWallet(userId);
-        if (wallet.getUserId().getId() != userId) {
-            throw new SecurityException("Không có quyền xem ví này");
-        }
         if (wallet == null) {
             throw new IllegalArgumentException("Hệ thống ví đang gặp vấn đề");
+        }
+        // userId trong model là Integer, so sánh trực tiếp
+        if (wallet.getUserId() == null || !wallet.getUserId().equals(userId)) {
+            throw new SecurityException("Không có quyền xem ví này");
         }
         return wallet;
     }
 
-    /*Xem lịch sử giao dịch trong ví*/
-    public List<WalletTransactions> viewUserTransactionList(int walletId,int userId, int currentPage, int pageSize) {
+    /* Xem lịch sử giao dịch trong ví */
+    public List<WalletTransactions> viewUserTransactionList(int walletId, int userId, int currentPage, int pageSize) {
         int page = Math.max(1, currentPage);
 
-        // Kiểm quyền trước khi đọc giao dịch (chặn IDOR)
         Wallets wallet = wdao.getUserWallet(userId);
         if (wallet == null) {
             throw new IllegalArgumentException("Ví không tồn tại");
         }
-        if (wallet.getUserId() == null || wallet.getUserId().getId() != userId) {
+        if (wallet.getUserId() == null || !wallet.getUserId().equals(userId)) {
             throw new SecurityException("Không có quyền xem ví này");
         }
-        List<WalletTransactions> list = new ArrayList<>();
-        list = wtdao.getListWalletTransactionPaging(walletId,currentPage,pageSize);
-        if (list.isEmpty() || list == null) {
+
+        List<WalletTransactions> list = wtdao.getListWalletTransactionPaging(walletId, page, pageSize);
+        if (list == null || list.isEmpty()) {
             throw new IllegalArgumentException("Ví này chưa có một giao dịch nào");
         }
         return list;
     }
-    
-    //Tổng bản ghi trong trang
-    public int totalPage(int userId){
+
+    public int totalPage(int userId) {
         return wtdao.totalTransaction(userId);
     }
 }
