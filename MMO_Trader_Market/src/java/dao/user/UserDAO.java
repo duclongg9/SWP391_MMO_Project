@@ -91,6 +91,30 @@ public class UserDAO extends BaseDAO {
         }
     }
 
+    /**
+     lưu tài khoản mới
+     */
+    public int createBuyerAccount(String roleName, String email, String hashedPassword, Timestamp createdAt) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, hashed_password, status, created_at, updated_at)
+                SELECT id, ?, ?, 1, ?, ?
+                FROM roles
+                WHERE name = ?
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ps.setString(2, hashedPassword);
+            ps.setTimestamp(3, createdAt);
+            ps.setTimestamp(4, createdAt);
+            ps.setString(5, roleName);
+            return ps.executeUpdate();
+        }
+    }
+
+
     /** (Tuỳ chọn) Lấy user theo email */
     public Users getUserByEmail(String email) {
         final String sql = """
@@ -109,5 +133,53 @@ public class UserDAO extends BaseDAO {
                     .log(Level.SEVERE, "Lỗi lấy user theo email", e);
         }
         return null;
+    }
+        /** Kiểm tra email đã tồn tại hay chưa */
+    public boolean emailExists(String email) throws SQLException {
+        final String sql = """
+                SELECT 1 FROM users
+                WHERE email = ?
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /** Tạo user mới */
+    public Users createUser(String email, String name, String hashedPassword, int roleId) throws SQLException {
+        final String sql = """
+                INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, roleId);
+            ps.setString(2, email);
+            ps.setString(3, name);
+            ps.setString(4, hashedPassword);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                return null;
+            }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int id = rs.getInt(1);
+                    Users created = new Users();
+                    created.setId(id);
+                    created.setRoleId(roleId);
+                    created.setEmail(email);
+                    created.setName(name);
+                    created.setHashedPassword(hashedPassword);
+                    created.setStatus(true);
+                    return created;
+                }
+            }
+            return null;
+        }
     }
 }

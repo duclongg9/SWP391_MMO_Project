@@ -48,4 +48,27 @@ public class RoleDAO {
         }
         return null;
     }
+      /**
+     * Tìm kiếm mã định danh (ID) của một vai trò dựa trên tên duy nhất của nó.
+     */
+        public Integer getRoleIdByName(String roleName) {
+        String sql = """
+                     SELECT id FROM roles
+                     WHERE name = ?
+                     LIMIT 1
+                     """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, roleName);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(COL_ID);
+                }
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);
+        }
+        return null;
+    }
 }
