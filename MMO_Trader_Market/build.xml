@@ -32,5 +32,7 @@
         <echo>Log: ${basedir}/mbg.out.log</echo>
         <echo>Err: ${basedir}/mbg.err.log</echo>
     </target>
+<!-- Import NetBeans generated targets (e.g. run-deploy) -->
+    <import file="nbproject/build-impl.xml"/>
 
 </project>
