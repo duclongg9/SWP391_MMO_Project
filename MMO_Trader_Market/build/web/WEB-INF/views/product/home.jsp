@@ -1,6 +1,17 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-
-
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Product" %>
+<%@ page import="model.ProductCategory" %>
+<%@ page import="model.ProductStatus" %>
+<%@ page import="model.CustomerProfile" %>
+<%@ page import="model.Review" %>
+<%
+    List<ProductCategory> categories = (List<ProductCategory>) request.getAttribute("categories");
+    List<Product> featuredProducts = (List<Product>) request.getAttribute("featuredProducts");
+    CustomerProfile profile = (CustomerProfile) request.getAttribute("customerProfile");
+    List<Review> reviews = (List<Review>) request.getAttribute("reviews");
+    List<String> buyerTips = (List<String>) request.getAttribute("buyerTips");
+%>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
@@ -49,24 +60,30 @@
         </div>
 
         <div class="landing__products">
-            <c:forEach var="p" items="${featuredProducts}">
-                <article class="product-card">
-                    <header class="product-card__header">
-                        <h4>${p.name}</h4>
-                        <span class="badge">Tài khoản</span>
-                    </header>
-                    <p class="product-card__description">${p.description}</p>
-                    <ul class="product-card__meta">
-                        <li>Mã sản phẩm: <strong>#${p.id}</strong></li>
-                        <li>Giá đề xuất: <strong>${p.price} đ</strong></li>
-                        <li>Trạng thái duyệt: <strong>${p.status}</strong></li>
-                    </ul>
-                    <footer class="product-card__footer">
-                        <button class="button button--ghost" type="button">Xem chi tiết demo</button>
-                        <button class="button button--primary" type="button">Thêm vào giỏ</button>
-                    </footer>
-                </article>
-            </c:forEach>
+            <% if (featuredProducts != null) { %>
+                <% for (Product product : featuredProducts) { %>
+                    <article class="product-card">
+                        <header class="product-card__header">
+                            <h4><%= product.getName() %></h4>
+                            <span class="badge">Tài khoản</span>
+                        </header>
+                        <p class="product-card__description"><%= product.getDescription() %></p>
+                        <ul class="product-card__meta">
+                            <li>Mã sản phẩm: <strong>#<%= product.getId() %></strong></li>
+                            <li>Giá đề xuất: <strong><%= product.getPrice() %> đ</strong></li>
+                            <li>Trạng thái duyệt: <strong><%= product.getStatus() %></strong></li>
+                        </ul>
+                        <footer class="product-card__footer">
+                            <a class="button button--ghost" href="#">Xem chi tiết demo</a>
+                            <% if (product.getStatus() == ProductStatus.APPROVED) { %>
+                            <a class="button button--primary" href="<%= request.getContextPath() %>/orders/buy?productId=<%= product.getId() %>">Mua ngay</a>
+                            <% } else { %>
+                            <span class="badge badge--warning">Đang chờ duyệt</span>
+                            <% } %>
+                        </footer>
+                    </article>
+                <% } %>
+            <% } %>
         </div>
     </section>
 

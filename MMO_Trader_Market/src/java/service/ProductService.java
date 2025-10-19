@@ -4,6 +4,7 @@ import dao.product.ProductDAO;
 import model.Products;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Contains business logic related to products.
@@ -21,7 +22,8 @@ public class ProductService {
         if (p == null) throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã bị xoá");
         return p;
     }
-    public List<Products> findAll() {
-        return productDAO.findAll();
+
+    public Optional<Product> findById(int id) {
+        return productDAO.findById(id);
     }
 }
