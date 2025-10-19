@@ -12,7 +12,6 @@ import service.OrderService;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class OrderController extends BaseController {
     private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         int page = resolvePage(request.getParameter("page"));
-        prepareNavigation(request);
+        request.setAttribute("bodyClass", BODY_CLASS);
         request.setAttribute("pageTitle", "Đơn hàng đã mua");
         request.setAttribute("headerTitle", "Lịch sử đơn mua");
         request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
@@ -109,7 +108,7 @@ public class OrderController extends BaseController {
 
     private void prepareCheckoutPage(HttpServletRequest request, Products product, String error)
             throws ServletException {
-        prepareNavigation(request);
+        request.setAttribute("bodyClass", BODY_CLASS);
         request.setAttribute("pageTitle", "Mua ngay sản phẩm");
         request.setAttribute("headerTitle", "Hoàn tất đơn hàng");
         request.setAttribute("headerSubtitle", "Bước 1: Kiểm tra thông tin trước khi thanh toán");
@@ -126,7 +125,7 @@ public class OrderController extends BaseController {
 
     private void showConfirmation(HttpServletRequest request, HttpServletResponse response, Order order)
             throws ServletException, IOException {
-        prepareNavigation(request);
+        request.setAttribute("bodyClass", BODY_CLASS);
         request.setAttribute("pageTitle", "Thanh toán thành công");
         request.setAttribute("headerTitle", "Đơn hàng đã tạo");
         request.setAttribute("headerSubtitle", "Bước 2: Nhận thông tin bàn giao sản phẩm");
@@ -161,29 +160,6 @@ public class OrderController extends BaseController {
         } catch (NumberFormatException ex) {
             return -1;
         }
-    }
-
-    private void prepareNavigation(HttpServletRequest request) {
-        String contextPath = request.getContextPath();
-        List<Map<String, String>> navItems = new ArrayList<>();
-
-        request.setAttribute("bodyClass", BODY_CLASS);
-        Map<String, String> homeLink = new HashMap<>();
-        homeLink.put("href", contextPath + "/home");
-        homeLink.put("label", "Trang chủ");
-        navItems.add(homeLink);
-
-        Map<String, String> productLink = new HashMap<>();
-        productLink.put("href", contextPath + "/products");
-        productLink.put("label", "Sản phẩm");
-        navItems.add(productLink);
-
-        Map<String, String> orderLink = new HashMap<>();
-        orderLink.put("href", contextPath + "/orders");
-        orderLink.put("label", "Đơn đã mua");
-        navItems.add(orderLink);
-
-        request.setAttribute("navItems", navItems);
     }
 
     private Map<Integer, String> buildStatusClassMap(List<Order> orders) {

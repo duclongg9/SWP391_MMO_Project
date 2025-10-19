@@ -37,22 +37,20 @@
             </div>
         </div>
 
-        <aside class="landing__categories">
-            <h3 class="landing__aside-title">Shop nổi bật</h3>
+        <aside class="landing__categories" id="product-types">
+            <h3 class="landing__aside-title">Loại sản phẩm phổ biến</h3>
             <c:choose>
-                <c:when test="${empty shops}">
-                    <p>Chưa có dữ liệu.</p>
+                <c:when test="${empty productTypes}">
+                    <p>Đang cập nhật dữ liệu.</p>
                 </c:when>
                 <c:otherwise>
                     <ul class="category-menu">
-                        <c:forEach var="shop" items="${shops}">
+                        <c:forEach var="type" items="${productTypes}">
                             <li class="category-menu__item">
-                                <span class="category-menu__icon">
-                                    <c:out value="${shopIcons[shop.status]}" />
-                                </span>
+                                <span class="category-menu__icon">🏷️</span>
                                 <div>
-                                    <strong><c:out value="${shop.name}" /></strong>
-                                    <p><c:out value="${shop.description}" /></p>
+                                    <strong><c:out value="${type.title}" /></strong>
+                                    <p><c:out value="${type.description}" /></p>
                                 </div>
                             </li>
                         </c:forEach>
@@ -60,6 +58,32 @@
                 </c:otherwise>
             </c:choose>
         </aside>
+    </section>
+
+    <section class="panel landing__section">
+        <div class="panel__header">
+            <h3 class="panel__title">Shop nổi bật</h3>
+        </div>
+        <c:choose>
+            <c:when test="${empty shops}">
+                <p>Chưa có dữ liệu.</p>
+            </c:when>
+            <c:otherwise>
+                <ul class="category-menu category-menu--grid">
+                    <c:forEach var="shop" items="${shops}">
+                        <li class="category-menu__item">
+                            <span class="category-menu__icon">
+                                <c:out value="${shopIcons[shop.status]}" />
+                            </span>
+                            <div>
+                                <strong><c:out value="${shop.name}" /></strong>
+                                <p><c:out value="${shop.description}" /></p>
+                            </div>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:otherwise>
+        </c:choose>
     </section>
 
     <section class="panel landing__section">
@@ -179,6 +203,29 @@
                             </article>
                         </c:forEach>
                     </div>
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </section>
+
+    <section class="panel landing__section" id="faq">
+        <div class="panel__header">
+            <h3 class="panel__title">Câu hỏi thường gặp</h3>
+        </div>
+        <div class="panel__body faq-list">
+            <c:choose>
+                <c:when test="${empty faqs}">
+                    <p>Đang cập nhật câu hỏi.</p>
+                </c:when>
+                <c:otherwise>
+                    <c:forEach var="faq" items="${faqs}">
+                        <details class="faq-item">
+                            <summary class="faq-item__question">
+                                <span><c:out value="${faq.title}" /></span>
+                            </summary>
+                            <p class="faq-item__answer"><c:out value="${faq.description}" /></p>
+                        </details>
+                    </c:forEach>
                 </c:otherwise>
             </c:choose>
         </div>
