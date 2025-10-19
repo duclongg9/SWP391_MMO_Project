@@ -38,14 +38,11 @@
             </label>
         </div>
         <button class="button button--primary" type="submit">Đăng ký</button>
+        <div class="form-card__actions-row">
+            <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
+            <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>
+        </div>
     </form>
-    <section class="guide-link">
-        <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>
-    </section>
-    <section class="guide-link">
-        <p>Đã có tài khoản?</p>
-        <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
-    </section>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
