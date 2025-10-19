@@ -1,87 +1,63 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
-import java.time.Instant;
 
-/**
- *
- * @author D E L L
- */
+import java.math.BigDecimal;
+import java.util.Date;
+
 public class Wallets {
-    private int id;
-    private User userId;
-    private double balance;
-    private int status;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private Integer id;
+    private Integer userId;
+    private BigDecimal balance;
+    private Boolean status;
+    private Date createdAt;
+    private Date updatedAt;
 
     public Wallets() {
     }
-
-    public Wallets(int id, double balance, int status, Instant created_at, Instant updated_at) {
+    
+    public Wallets(Integer id, Integer userId, BigDecimal balance, Boolean status, Date createdAt, Date updatedAt) {
         this.id = id;
+        this.userId = userId;
         this.balance = balance;
         this.status = status;
-        this.createdAt = created_at;
-        this.updatedAt = updated_at;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(double balance) {
-        this.balance = balance;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
-    public User getUserId() {
+  
+    public Integer getId() {
+        return id;
+    }
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    public Integer getUserId() {
         return userId;
     }
-
-    public void setUserId(User userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
-    
-    
-
-    @Override
-    public String toString() {
-        return "Wallets{" + "id=" + id + ", balance=" + balance + ", status=" + status + ", created_at=" + createdAt + ", updated_at=" + updatedAt + '}';
+    public BigDecimal getBalance() {
+        return balance;
     }
-    
-    
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+    public Boolean getStatus() {
+        return status;
+    }
+    public void setStatus(Boolean status) {
+        this.status = status;
+    }
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

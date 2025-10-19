@@ -2,6 +2,7 @@ package model;
 
 import java.io.Serializable;
 import java.time.Instant;
+import javax.management.relation.Role;
 
 /**
  * Represents a user in the system.
