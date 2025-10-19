@@ -1,106 +1,106 @@
 package dao.product;
 
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Products;
 
-import java.sql.*;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Provides read-only access to marketplace products.
+ *
+ * <p>The real project will connect to the database, however for the purpose of
+ * testing the checkout flow we keep an in-memory catalogue that is seeded on
+ * application start.</p>
+ */
 public class ProductDAO extends BaseDAO {
 
-    // Tên cột trong bảng products
-    private static final String COL_ID              = "id";
-    private static final String COL_SHOP_ID         = "shop_id";
-    private static final String COL_NAME            = "name";
-    private static final String COL_PRICE           = "price";
-    private static final String COL_INVENTORY_COUNT = "inventory_count";
-    private static final String COL_STATUS          = "status";
-    private static final String COL_DESCRIPTION     = "description";
-    private static final String COL_CREATED_AT      = "created_at";
-    private static final String COL_UPDATED_AT      = "updated_at";
+    private static final List<Products> SAMPLE_PRODUCTS = new ArrayList<>();
 
-    // Chọn đúng các cột cần dùng (tránh SELECT *)
-    private static final String BASE_COLUMNS = String.join(", ",
-            COL_ID, COL_SHOP_ID, COL_NAME, COL_PRICE, COL_INVENTORY_COUNT,
-            COL_STATUS, COL_DESCRIPTION, COL_CREATED_AT, COL_UPDATED_AT
-    );
-
-    private Products mapRow(ResultSet rs) throws SQLException {
-        Products p = new Products();
-        p.setId(rs.getInt(COL_ID));
-        p.setShopId(rs.getInt(COL_SHOP_ID));
-        p.setName(rs.getString(COL_NAME));
-        p.setPrice(rs.getBigDecimal(COL_PRICE));
-        p.setInventoryCount(rs.getInt(COL_INVENTORY_COUNT));
-        p.setStatus(rs.getString(COL_STATUS));
-        p.setDescription(rs.getString(COL_DESCRIPTION));
-        p.setCreatedAt(rs.getTimestamp(COL_CREATED_AT));   // Timestamp extends Date
-        p.setUpdatedAt(rs.getTimestamp(COL_UPDATED_AT));
-        return p;
+    static {
+        seedSampleProducts();
     }
 
-    /** Lấy toàn bộ sản phẩm (có thể dùng cho admin) */
+    private static void seedSampleProducts() {
+        if (!SAMPLE_PRODUCTS.isEmpty()) {
+            return;
+        }
+        Date now = Date.from(Instant.now());
+        SAMPLE_PRODUCTS.add(new Products(
+                1001,
+                10,
+                "Gmail Business 50GB",
+                new BigDecimal("250000"),
+                12,
+                "APPROVED",
+                Date.from(Instant.now().minus(14, ChronoUnit.DAYS)),
+                now,
+                "Tài khoản Gmail doanh nghiệp dung lượng 50GB kèm hướng dẫn đổi mật khẩu."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1002,
+                11,
+                "Spotify Premium 12 tháng",
+                new BigDecimal("185000"),
+                30,
+                "APPROVED",
+                Date.from(Instant.now().minus(5, ChronoUnit.DAYS)),
+                now,
+                "Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1003,
+                12,
+                "Netflix UHD 1 năm",
+                new BigDecimal("650000"),
+                8,
+                "DISPUTED",
+                Date.from(Instant.now().minus(20, ChronoUnit.DAYS)),
+                Date.from(Instant.now().minus(1, ChronoUnit.DAYS)),
+                "Tài khoản Netflix gói Ultra HD, hỗ trợ đăng nhập 4 thiết bị."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1004,
+                13,
+                "Windows 11 Pro key",
+                new BigDecimal("390000"),
+                50,
+                "PENDING",
+                Date.from(Instant.now().minus(3, ChronoUnit.DAYS)),
+                now,
+                "Key bản quyền Windows 11 Pro, kích hoạt online trọn đời."
+        ));
+    }
+
+    /**
+     * Returns all products sorted by the latest update time.
+     */
     public List<Products> findAll() {
-        String sql = "SELECT " + BASE_COLUMNS + " FROM products ORDER BY updated_at DESC, id DESC";
-        List<Products> result = new ArrayList<>();
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) result.add(mapRow(rs));
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách sản phẩm", e);
-        }
-        return result;
+        return SAMPLE_PRODUCTS.stream()
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
+                .collect(Collectors.toList());
     }
 
-    /** Sản phẩm nổi bật: trạng thái APPROVED (đủ dữ liệu hiển thị) */
+    /**
+     * Returns products to be displayed on the homepage dashboard.
+     */
     public List<Products> findHighlighted() {
-        String sql = "SELECT " + BASE_COLUMNS + " FROM products " +
-                "WHERE status = ? ORDER BY updated_at DESC, id DESC LIMIT 30";
-        List<Products> result = new ArrayList<>();
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "APPROVED");
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy sản phẩm nổi bật", e);
-        }
-        return result;
+        List<Products> sorted = findAll();
+        return sorted.subList(0, Math.min(3, sorted.size()));
     }
 
-    /** Lấy sản phẩm theo id (chỉ trả về khi đang active) */
-    public Products findById(int id) {
-        String sql = "SELECT " + BASE_COLUMNS + " FROM products WHERE id=? AND status <> 'DELETED' LIMIT 1";
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy sản phẩm theo id", e);
-        }
-        return null;
-    }
-
-    /** Tìm theo tên (phục vụ search đơn giản) */
-    public List<Products> searchByName(String keyword) {
-        String sql = "SELECT " + BASE_COLUMNS + " FROM products " +
-                "WHERE status = 'APPROVED' AND name LIKE ? ORDER BY updated_at DESC";
-        List<Products> result = new ArrayList<>();
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "%" + keyword + "%");
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi search sản phẩm theo tên", e);
-        }
-        return result;
+    /**
+     * Finds a product by id from the sample catalogue.
+     */
+    public Optional<Products> findById(int id) {
+        return SAMPLE_PRODUCTS.stream()
+                .filter(product -> product.getId() != null && product.getId() == id)
+                .findFirst();
     }
 }
