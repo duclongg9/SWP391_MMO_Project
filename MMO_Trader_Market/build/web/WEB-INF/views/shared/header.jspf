@@ -11,6 +11,7 @@
     java.util.List<java.util.Map<String, String>> headerNavigationItems =
             (java.util.List<java.util.Map<String, String>>) request.getAttribute("navItems");
 %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <header class="layout__header <%= headerModifier %>">
     <div>
         <h1><%= headerTitle %></h1>

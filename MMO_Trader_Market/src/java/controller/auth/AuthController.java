@@ -1,8 +1,6 @@
 package controller.auth;
 
 import controller.BaseController;
-import model.User;
-import service.UserService;
 import units.CredentialsValidator;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
