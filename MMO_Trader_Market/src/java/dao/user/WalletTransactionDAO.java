@@ -82,8 +82,9 @@ public class WalletTransactionDAO {
     //Tính tổng số transaction của mỗi user
     public int totalTransaction(int id) {
         String sql = """
-                     SELECT COUNT(*) FROM wallet_transactions
-                     WHERE id = ?
+                     SELECT COUNT(*) FROM wallets w 
+                     JOIN wallet_transactions wt ON wt.wallet_id = w.id
+                     WHERE user_id = ?
                      """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -99,12 +100,12 @@ public class WalletTransactionDAO {
     }
 
     /*Hàm lấy danh sách transaction và phân trang*/
-    public List<WalletTransactions> getListWalletTransactionPaging(int id, int index) {
+    public List<WalletTransactions> getListWalletTransactionPaging(int id, int index,int pageSize) {
         List<WalletTransactions> list = new ArrayList<>();
 
         //Phần tích toán số trang động
         final int page = Math.max(1, index);
-        final int limit = PAGE_SIZE;
+        final int limit = pageSize;
         final int offset = (page - 1) * limit;
 
         String sql;

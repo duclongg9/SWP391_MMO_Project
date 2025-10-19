@@ -41,11 +41,11 @@ public class WalletService {
     }
 
     /*Xem lịch sử giao dịch trong ví*/
-    public List<WalletTransactions> viewUserTransactionList(int userId, int index) {
-        int page = Math.max(1, index);
+    public List<WalletTransactions> viewUserTransactionList(int walletId,int userId, int currentPage, int pageSize) {
+        int page = Math.max(1, currentPage);
 
         // Kiểm quyền trước khi đọc giao dịch (chặn IDOR)
-        Wallets wallet = wdao.getUserWallet(index);
+        Wallets wallet = wdao.getUserWallet(userId);
         if (wallet == null) {
             throw new IllegalArgumentException("Ví không tồn tại");
         }
@@ -53,13 +53,14 @@ public class WalletService {
             throw new SecurityException("Không có quyền xem ví này");
         }
         List<WalletTransactions> list = new ArrayList<>();
-        list = wtdao.getListWalletTransactionPaging(userId, index);
+        list = wtdao.getListWalletTransactionPaging(walletId,currentPage,pageSize);
         if (list.isEmpty() || list == null) {
             throw new IllegalArgumentException("Ví này chưa có một giao dịch nào");
         }
         return list;
     }
     
+    //Tổng bản ghi trong trang
     public int totalPage(int userId){
         return wtdao.totalTransaction(userId);
     }

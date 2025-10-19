@@ -74,45 +74,31 @@ public class WalletController extends HttpServlet {
 //           response.sendRedirect(request.getContextPath() + "/login.jsp");
 //           return;
 //        }
-        // Đọc param page (index) an toàn
-        int currentPage = 1;
-        String idxParam = request.getParameter("index");
-        if (idxParam != null) {
-            try {
-                currentPage = Integer.parseInt(idxParam);
-            } catch (NumberFormatException ex) {
-                currentPage = 1;
-            }
-        }
-        if (currentPage < 1) {
-            currentPage = 1;
+        // TODO: lấy userId thật từ session
+        int userId = 1;
+
+        // Đọc tham số phân trang: page/pageSize (khớp với JSP)
+        String indexPage = request.getParameter("index");
+        int index;
+        if (indexPage == null) {
+            index = 1;
+        } else {
+            index = Integer.parseInt(indexPage);
         }
 
         try {
-            // Tổng số transaction (items) — đảm bảo method service trả total items
-            int totalItems = walletService.totalPage(1); // đổi tên nếu khác
-            // Tính tổng số trang
-            int totalPages = (int) Math.ceil(totalItems / PAGE_SIZE);
-            if (totalPages < 1) {
-                totalPages = 1;
-            }
-
-            // Clamp currentPage vào [1..totalPages]
-            if (currentPage > totalPages) {
-                currentPage = totalPages;
-            }
-
-            // Lấy dữ liệu cho trang hiện tại
-            Wallets wallet = walletService.viewUserWallet(1);
-            List<WalletTransactions> walletTransaction = walletService.viewUserTransactionList(1, currentPage);
-
+            // Lấy ví + kiểm quyền
+            Wallets wallet = walletService.viewUserWallet(userId);
+            int walletId = wallet.getId();
+            List<WalletTransactions> walletTransaction = walletService.viewUserTransactionList(1, userId, index, PAGE_SIZE);
+            int totalTransaction = walletService.totalPage(userId);
+            int endPage;
+            endPage = totalTransaction % PAGE_SIZE == 0 ? totalTransaction / PAGE_SIZE : totalTransaction / PAGE_SIZE + 1;
             // Thiết lập attributes cho JSP
             request.setAttribute("wallet", wallet);
             request.setAttribute("listTransaction", walletTransaction);
-            request.setAttribute("currentPage", currentPage);
-            request.setAttribute("totalPages", totalPages);
-            request.setAttribute("pageSize", PAGE_SIZE);
-            request.setAttribute("totalItems", totalItems);
+            request.setAttribute("currentPage", index);
+            request.setAttribute("endPage", endPage);
 
             // Forward
             request.getRequestDispatcher("/WEB-INF/views/wallet/wallet.jsp").forward(request, response);
