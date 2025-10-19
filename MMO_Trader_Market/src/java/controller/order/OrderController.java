@@ -5,15 +5,18 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.Order;
 import model.PaginatedResult;
 import model.Products;
+import model.OrderStatus;
 import service.OrderService;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +25,7 @@ import java.util.Map;
  * list historical purchases.
  * @version 1.0 21/05/2024
  */
-@WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/buy"})
+@WebServlet(name = "OrderController", urlPatterns = {"/orders/my", "/orders/buy"})
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
@@ -90,20 +93,29 @@ public class OrderController extends BaseController {
 
     private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        Integer userId = resolveUserId(request);
+        if (userId == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
         int page = resolvePage(request.getParameter("page"));
+        int size = resolveSize(request.getParameter("size"));
+        OrderStatus status = parseStatus(request.getParameter("status"));
         prepareNavigation(request);
         request.setAttribute("pageTitle", "Đơn hàng đã mua");
         request.setAttribute("headerTitle", "Lịch sử đơn mua");
         request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
-        PaginatedResult<Order> result = orderService.listOrders(page, DEFAULT_PAGE_SIZE);
+        PaginatedResult<Order> result = orderService.listOrders(userId, page, size, status);
         List<Order> orders = result.getItems();
-        request.setAttribute("orders", orders);
+        request.setAttribute("items", orders);
         request.setAttribute("statusClasses", buildStatusClassMap(orders));
         request.setAttribute("statusLabels", buildStatusLabelMap(orders));
-        request.setAttribute("currentPage", result.getCurrentPage());
+        request.setAttribute("statusOptions", buildStatusOptions());
+        request.setAttribute("statusFilter", status == null ? "" : status.name());
+        request.setAttribute("page", result.getCurrentPage());
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("pageSize", result.getPageSize());
-        request.setAttribute("totalItems", result.getTotalItems());
+        request.setAttribute("size", result.getPageSize());
+        request.setAttribute("total", result.getTotalItems());
         forward(request, response, "order/list");
     }
 
@@ -179,7 +191,7 @@ public class OrderController extends BaseController {
         navItems.add(productLink);
 
         Map<String, String> orderLink = new HashMap<>();
-        orderLink.put("href", contextPath + "/orders");
+        orderLink.put("href", contextPath + "/orders/my");
         orderLink.put("label", "Đơn đã mua");
         navItems.add(orderLink);
 
@@ -216,5 +228,44 @@ public class OrderController extends BaseController {
         } catch (NumberFormatException ex) {
             return 1;
         }
+    }
+
+    private int resolveSize(String sizeParam) {
+        if (sizeParam == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        try {
+            int size = Integer.parseInt(sizeParam);
+            return size > 0 ? size : DEFAULT_PAGE_SIZE;
+        } catch (NumberFormatException ex) {
+            return DEFAULT_PAGE_SIZE;
+        }
+    }
+
+    private Integer resolveUserId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        return (Integer) session.getAttribute("userId");
+    }
+
+    private OrderStatus parseStatus(String statusParam) {
+        if (statusParam == null || statusParam.isBlank()) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(statusParam.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return OrderStatus.fromDatabaseValue(statusParam.trim());
+        }
+    }
+
+    private Map<String, String> buildStatusOptions() {
+        Map<String, String> options = new LinkedHashMap<>();
+        for (OrderStatus status : OrderStatus.values()) {
+            options.put(status.name(), orderService.getFriendlyStatus(status));
+        }
+        return options;
     }
 }

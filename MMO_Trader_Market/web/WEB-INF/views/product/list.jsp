@@ -54,7 +54,7 @@
                                             <c:url var="buyUrl" value="/orders/buy">
                                                 <c:param name="productId" value="${product.id}" />
                                             </c:url>
-                                            <c:url var="ordersUrl" value="/orders" />
+                                            <c:url var="ordersUrl" value="/orders/my" />
                                             <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
                                             <a class="button button--ghost" href="${ordersUrl}">Đơn đã mua</a>
                                         </c:when>

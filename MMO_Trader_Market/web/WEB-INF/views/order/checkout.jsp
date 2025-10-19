@@ -55,7 +55,7 @@
                             Bằng việc tiếp tục, bạn xác nhận đã đọc quy định bảo vệ người mua và sẵn sàng thanh toán.
                         </p>
                         <div style="display: flex; gap: 0.75rem;">
-                            <a class="button button--ghost" href="${pageContext.request.contextPath}/orders">Trở lại</a>
+                            <a class="button button--ghost" href="${pageContext.request.contextPath}/orders/my">Trở lại</a>
                             <button class="button button--primary" type="submit">Bước 2: Thanh toán</button>
                         </div>
                     </form>

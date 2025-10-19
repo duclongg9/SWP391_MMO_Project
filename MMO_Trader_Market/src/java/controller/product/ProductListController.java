@@ -79,7 +79,7 @@ public class ProductListController extends BaseController {
         List<Map<String, String>> items = new ArrayList<>();
         items.add(createNavItem(contextPath + "/dashboard", "Bảng điều khiển"));
         items.add(createNavItem(contextPath + "/products", "Sản phẩm"));
-        items.add(createNavItem(contextPath + "/orders", "Đơn đã mua"));
+        items.add(createNavItem(contextPath + "/orders/my", "Đơn đã mua"));
         items.add(createNavItem(contextPath + "/styleguide", "Styleguide"));
         return items;
     }
