@@ -10,11 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import model.CustomerProfile;
-import model.Product;
-import model.ProductCategory;
-import model.Review;
-import service.HomepageService;
 
 /**
  * Handles requests for the public facing homepage where visitors discover
@@ -24,8 +19,6 @@ import service.HomepageService;
 public class HomepageController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-
-    private final HomepageService homepageService = new HomepageService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -55,17 +48,6 @@ public class HomepageController extends BaseController {
         navItems.add(guideLink);
 
         request.setAttribute("navItems", navItems);
-
-        List<ProductCategory> categories = homepageService.getCategories();
-        List<Product> featuredProducts = homepageService.getFeaturedProducts();
-        CustomerProfile customerProfile = homepageService.getSampleCustomerProfile();
-        List<Review> reviews = homepageService.getSampleReviews();
-
-        request.setAttribute("categories", categories);
-        request.setAttribute("featuredProducts", featuredProducts);
-        request.setAttribute("customerProfile", customerProfile);
-        request.setAttribute("reviews", reviews);
-        request.setAttribute("buyerTips", homepageService.getBuyerSafetyTips());
 
         forward(request, response, "product/home");
     }
