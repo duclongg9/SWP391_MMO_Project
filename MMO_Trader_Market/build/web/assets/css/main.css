@@ -101,6 +101,10 @@ code {
     border: 1px solid rgba(15, 23, 42, 0.05);
 }
 
+.panel--sub {
+    border-style: dashed;
+}
+
 .panel__header {
     padding: 1.5rem 2rem;
     display: flex;
@@ -266,6 +270,11 @@ code {
     background: rgba(192, 57, 43, 0.1);
     color: var(--danger-color);
     border: 1px solid rgba(192, 57, 43, 0.3);
+}
+.alert--success {
+    background: rgba(46, 204, 113, 0.12);
+    color: #1e8449;
+    border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 /* Menu */
@@ -455,6 +464,11 @@ code {
 .badge--danger {
     background: rgba(192, 57, 43, 0.18);
     color: var(--danger-color);
+}
+
+.badge--ghost {
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--muted-color);
 }
 
 .icon-showcase {

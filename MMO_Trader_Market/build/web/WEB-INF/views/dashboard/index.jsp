@@ -69,7 +69,7 @@
         </div>
         <ul class="product-grid">
             <%
-                List<Product> products = (List<Product>) request.getAttribute("products");
+                List<Products> products = (List<Products>) request.getAttribute("products");
                 if (products == null || products.isEmpty()) {
             %>
             <li class="product-card product-card--empty">
@@ -77,7 +77,7 @@
             </li>
             <%
                 } else {
-                    for (Product product : products) {
+                    for (Products product : products) {
             %>
             <li class="product-card">
                 <h3><%= product.getName() %></h3>
