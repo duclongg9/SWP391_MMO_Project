@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -129,87 +130,38 @@
         </c:forEach>
       </tbody>
     </table>
-           <!-- Pagination: hiển thị khi nhiều hơn 1 trang -->
-            <c:if test="${totalPages > 1}">
-              <nav class="pagination" aria-label="Phân trang">
-                <!-- Prev -->
-                <c:choose>
-                  <c:when test="${currentPage > 1}">
-                    <c:url var="prevUrl" value="${pageContext.request.requestURI}">
-                      <c:param name="page" value="${currentPage - 1}" />
-                      <c:param name="pageSize" value="${pageSize}" />
-                      <!-- nếu có filter: <c:param name="search" value="${param.search}" /> -->
-                    </c:url>
-                    <a class="pagination__item" href="${prevUrl}" aria-label="Previous">‹</a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="pagination__item pagination__item--disabled" aria-disabled="true">‹</span>
-                  </c:otherwise>
-                </c:choose>
-
-                <!-- Numbers (window = 5) -->
-                <c:set var="window" value="5" />
-                <c:set var="half" value="${window / 2}" />
-                <c:set var="start" value="${currentPage - half}" />
-                <c:if test="${start < 1}"><c:set var="start" value="1" /></c:if>
-                <c:set var="end" value="${start + window - 1}" />
-                <c:if test="${end > totalPages}">
-                  <c:set var="end" value="${totalPages}" />
-                  <c:set var="start" value="${end - window + 1}" />
-                  <c:if test="${start < 1}"><c:set var="start" value="1" /></c:if>
-                </c:if>
-
-                <!-- first + ellipsis -->
-                <c:if test="${start > 1}">
-                  <c:url var="firstUrl" value="${pageContext.request.requestURI}">
-                    <c:param name="page" value="1" />
-                    <c:param name="pageSize" value="${pageSize}" />
-                  </c:url>
-                  <a class="pagination__item" href="${firstUrl}">1</a>
-                  <span class="pagination__item">…</span>
-                </c:if>
-
-                <!-- in các số trong window -->
-                <c:forEach var="i" begin="${start}" end="${end}">
-                  <c:choose>
-                    <c:when test="${i == currentPage}">
-                      <span class="pagination__item pagination__item--active" aria-current="page">${i}</span>
-                    </c:when>
-                    <c:otherwise>
-                      <c:url var="nUrl" value="${pageContext.request.requestURI}">
-                        <c:param name="page" value="${i}" />
-                        <c:param name="pageSize" value="${pageSize}" />
-                      </c:url>
-                      <a class="pagination__item" href="${nUrl}">${i}</a>
-                    </c:otherwise>
-                  </c:choose>
-                </c:forEach>
-
-                <!-- ellipsis + last -->
-                <c:if test="${end < totalPages}">
-                  <span class="pagination__item">…</span>
-                  <c:url var="lastUrl" value="${pageContext.request.requestURI}">
-                    <c:param name="page" value="${totalPages}" />
-                    <c:param name="pageSize" value="${pageSize}" />
-                  </c:url>
-                  <a class="pagination__item" href="${lastUrl}">${totalPages}</a>
-                </c:if>
-
-                <!-- Next -->
-                <c:choose>
-                  <c:when test="${currentPage < totalPages}">
-                    <c:url var="nextUrl" value="${pageContext.request.requestURI}">
-                      <c:param name="page" value="${currentPage + 1}" />
-                      <c:param name="pageSize" value="${pageSize}" />
-                    </c:url>
-                    <a class="pagination__item" href="${nextUrl}" aria-label="Next">›</a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="pagination__item pagination__item--disabled" aria-disabled="true">›</span>
-                  </c:otherwise>
-                </c:choose>
-              </nav>
-            </c:if>
+          <!--Pagination -->
+          
+          <ul class="pagination">
+              <c:if test="${currentPage > 1}">
+              <li class="pagination__item">
+                  <a href="${pageContext.request.contextPath}/wallet?index=${currentPage - 1}" class="pagination-item__link">
+                      <i class="pagination-item__icon fa-solid fa-chevron-left"></i>
+                  </a>
+              </li>
+              </c:if>
+              <c:forEach begin="1" end="${endPage}" var="i">
+              <li class="pagination__item">
+                  <a href="${pageContext.request.contextPath}/wallet?index=${i}" class="pagination-item__link ${currentPage == i?"pagination__item--active":""} ">${i}</a>
+              </li>
+              </c:forEach>
+              <li class="pagination__item">
+                  <a>...</a>
+              </li>
+              <li class="pagination__item">
+                  <a href="${pageContext.request.contextPath}/wallet?index=${endPage}" class="pagination-item__link">${endPage}</a>
+              </li>
+              <c:if test="${currentPage < endPage}">
+              <li class="pagination__item">
+                  <a href="${pageContext.request.contextPath}/wallet?index=${currentPage + 1}" class="pagination-item__link">
+                      <i class="pagination-item__icon fa-solid fa-chevron-right"></i>
+                  </a>
+                  
+              </li>
+              </c:if>
+          </ul>
+          
+          <!--Pagination end-->
 
 </div>
 
