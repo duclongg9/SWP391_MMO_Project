@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -102,5 +103,23 @@ public class ProductDAO extends BaseDAO {
         return SAMPLE_PRODUCTS.stream()
                 .filter(product -> product.getId() != null && product.getId() == id)
                 .findFirst();
+    }
+
+    /**
+     * Searches products by keyword across name and description.
+     * @param keyword optional keyword provided by the user
+     * @return filtered product list sorted by latest update time
+     */
+    public List<Products> search(String keyword) {
+        String normalized = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+        return findAll().stream()
+                .filter(product -> normalized.isEmpty() || matchesKeyword(product, normalized))
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesKeyword(Products product, String normalizedKeyword) {
+        String name = product.getName() == null ? "" : product.getName().toLowerCase(Locale.ROOT);
+        String description = product.getDescription() == null ? "" : product.getDescription().toLowerCase(Locale.ROOT);
+        return name.contains(normalizedKeyword) || description.contains(normalizedKeyword);
     }
 }
