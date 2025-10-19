@@ -42,15 +42,15 @@ public final class DBConnect {
     /**
      * Lấy kết nối mới mỗi lần được gọi, sử dụng cấu hình chung của ứng dụng.
      */
-    public static Connection getConnection() {
+    public static Connection getConnection() throws SQLException {
+        if (URL.isBlank() || USER.isBlank()) {
+            throw new SQLException("Database connection properties are empty");
+        }
         try {
-            if (URL.isBlank() || USER.isBlank()) {
-                throw new SQLException("Database connection properties are empty");
-            }
             return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Lỗi khi kết nối tới database", ex);
-            return null;
+            throw ex;
         }
     }
 

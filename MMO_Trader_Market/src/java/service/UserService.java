@@ -119,7 +119,7 @@ public class UserService {
             String resetLink = resetBaseUrl + "?token=" + token;
             sendResetMail(user.getEmail(), user.getName(), resetLink);
         } catch (SQLException e) {
-            throw new RuntimeException("DB gặp sự cố khi tạo yêu cầu đặt lại mật khẩu", e);
+            throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
     }
 
@@ -143,7 +143,7 @@ public class UserService {
             }
             passwordResetTokenDAO.markUsed(resetToken.getId());
         } catch (SQLException e) {
-            throw new RuntimeException("DB gặp sự cố khi đặt lại mật khẩu", e);
+            throw new IllegalStateException("Không thể đặt lại mật khẩu lúc này. Vui lòng thử lại sau.", e);
         }
     }
     
@@ -290,7 +290,7 @@ public class UserService {
         try {
             SendMail.sendMail(email, subject, body);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu", e);
+            throw new IllegalStateException("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
     }
 
