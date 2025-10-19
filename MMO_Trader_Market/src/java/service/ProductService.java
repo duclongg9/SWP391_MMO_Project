@@ -1,8 +1,8 @@
 package service;
 
 import dao.product.ProductDAO;
-import model.PaginatedResult;
 import model.Products;
+import service.dto.ProductSearchResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +14,15 @@ public class ProductService {
 
     private static final int HIGHLIGHT_LIMIT = 3;
 
-    private final ProductDAO productDAO = new ProductDAO();
+    private final ProductDAO productDAO;
+
+    public ProductService() {
+        this(new ProductDAO());
+    }
+
+    public ProductService(ProductDAO productDAO) {
+        this.productDAO = productDAO;
+    }
 
     public List<Products> homepageHighlights() {
         return productDAO.findHighlighted(HIGHLIGHT_LIMIT);
@@ -29,24 +37,23 @@ public class ProductService {
         return productDAO.findById(id);
     }
 
-    public PaginatedResult<Products> search(String keyword, int page, int pageSize) {
+    public ProductSearchResult search(int ownerId, String keyword, int page, int pageSize) {
         if (pageSize <= 0) {
             throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");
         }
-        if (page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1.");
-        }
-
+        int safePage = Math.max(page, 1);
         String normalizedKeyword = keyword == null ? null : keyword.trim();
-        int totalItems = productDAO.countByKeyword(normalizedKeyword);
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
-        int currentPage = Math.min(page, totalPages);
-        int offset = (currentPage - 1) * pageSize;
+
+        long totalItems = productDAO.countSearch(ownerId, normalizedKeyword);
+        int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / pageSize);
+        if (totalPages > 0 && safePage > totalPages) {
+            safePage = totalPages;
+        }
 
         List<Products> items = totalItems == 0
                 ? List.of()
-                : productDAO.search(normalizedKeyword, pageSize, offset);
+                : productDAO.search(ownerId, normalizedKeyword, safePage, pageSize);
 
-        return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
+        return new ProductSearchResult(items, totalItems, safePage, pageSize, totalPages);
     }
 }
