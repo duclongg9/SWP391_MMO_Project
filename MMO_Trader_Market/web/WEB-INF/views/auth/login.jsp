@@ -6,7 +6,7 @@
 <c:set var="headerSubtitle" value="Đăng nhập để quản lý giao dịch" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
-<main class="layout__content">
+<main class="layout__content auth-page">
     <c:if test="${not empty error}">
         <div class="alert alert--error"><c:out value="${error}" /></div>
     </c:if>
@@ -14,12 +14,16 @@
         <div class="alert alert--success"><c:out value="${success}" /></div>
     </c:if>
     <form method="post" action="<c:url value='/auth' />" class="form-card">
-        <label class="form-card__label" for="email">Email</label>
-        <input class="form-card__input" id="email" name="email" type="email"
-               placeholder="example@email.com"
-               value="<c:out value='${prefillEmail}'/>" required>
-        <label class="form-card__label" for="password">Mật khẩu</label>
-        <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
+        <div class="form-card__field">
+            <label class="form-card__label" for="email">Email</label>
+            <input class="form-card__input" id="email" name="email" type="email"
+                   placeholder="example@email.com"
+                   value="<c:out value='${prefillEmail}'/>" required>
+        </div>
+        <div class="form-card__field">
+            <label class="form-card__label" for="password">Mật khẩu</label>
+            <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
+        </div>
         <div class="form-card__option">
             <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
                    <c:if test="${rememberMeChecked}">checked</c:if>>
