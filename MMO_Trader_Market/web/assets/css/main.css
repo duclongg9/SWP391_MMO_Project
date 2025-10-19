@@ -46,8 +46,28 @@ code {
 }
 
 .layout--center .layout__content {
-    max-width: 520px;
+    width: min(100%, 960px);
     margin: 0 auto;
+}
+
+.auth-page {
+    max-width: 720px;
+    width: 100%;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+}
+
+.auth-page .form-card,
+.auth-page .guide-link,
+.auth-page .alert {
+    width: min(100%, 640px);
+}
+
+.auth-page .guide-link .button {
+    width: 100%;
 }
 
 .layout__header,
