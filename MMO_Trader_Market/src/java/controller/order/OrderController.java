@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.Order;
+import model.PaginatedResult;
 import model.Products;
 import service.OrderService;
 
@@ -26,6 +27,7 @@ public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final String BODY_CLASS = "layout";
+    private static final int DEFAULT_PAGE_SIZE = 5;
     private static final DateTimeFormatter ORDER_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -88,14 +90,20 @@ public class OrderController extends BaseController {
 
     private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        int page = resolvePage(request.getParameter("page"));
         prepareNavigation(request);
         request.setAttribute("pageTitle", "Đơn hàng đã mua");
         request.setAttribute("headerTitle", "Lịch sử đơn mua");
         request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
-        List<Order> orders = orderService.findAll();
+        PaginatedResult<Order> result = orderService.listOrders(page, DEFAULT_PAGE_SIZE);
+        List<Order> orders = result.getItems();
         request.setAttribute("orders", orders);
         request.setAttribute("statusClasses", buildStatusClassMap(orders));
         request.setAttribute("statusLabels", buildStatusLabelMap(orders));
+        request.setAttribute("currentPage", result.getCurrentPage());
+        request.setAttribute("totalPages", result.getTotalPages());
+        request.setAttribute("pageSize", result.getPageSize());
+        request.setAttribute("totalItems", result.getTotalItems());
         forward(request, response, "order/list");
     }
 
@@ -196,5 +204,17 @@ public class OrderController extends BaseController {
 
     private String formatOrderDate(Order order) {
         return ORDER_TIME_FORMATTER.format(order.getCreatedAt());
+    }
+
+    private int resolvePage(String pageParam) {
+        if (pageParam == null) {
+            return 1;
+        }
+        try {
+            int page = Integer.parseInt(pageParam);
+            return page >= 1 ? page : 1;
+        } catch (NumberFormatException ex) {
+            return 1;
+        }
     }
 }

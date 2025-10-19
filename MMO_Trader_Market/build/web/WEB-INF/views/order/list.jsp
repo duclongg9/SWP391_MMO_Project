@@ -15,6 +15,7 @@
             <c:if test="${not empty error}">
                 <div class="alert alert--error" role="alert"><c:out value="${error}" /></div>
             </c:if>
+            <p class="profile-card__note">Có tổng cộng ${totalItems} đơn hàng trong hệ thống.</p>
             <c:choose>
                 <c:when test="${not empty orders}">
                     <table class="table table--interactive">
@@ -71,9 +72,48 @@
                     </table>
                 </c:when>
                 <c:otherwise>
-                    <p>Bạn chưa có đơn hàng nào. Hãy truy cập trang chủ để chọn sản phẩm phù hợp.</p>
+                    <p>Chưa có dữ liệu.</p>
                 </c:otherwise>
             </c:choose>
+            <c:if test="${totalPages > 1}">
+                <nav class="pagination" aria-label="Phân trang đơn hàng">
+                    <c:choose>
+                        <c:when test="${currentPage == 1}">
+                            <span class="pagination__item pagination__item--disabled" aria-disabled="true">«</span>
+                        </c:when>
+                        <c:otherwise>
+                            <c:url var="prevUrl" value="/orders">
+                                <c:param name="page" value="${currentPage - 1}" />
+                            </c:url>
+                            <a class="pagination__item" href="${prevUrl}">«</a>
+                        </c:otherwise>
+                    </c:choose>
+                    <c:forEach var="pageNumber" begin="1" end="${totalPages}">
+                        <c:url var="pageUrl" value="/orders">
+                            <c:param name="page" value="${pageNumber}" />
+                        </c:url>
+                        <c:choose>
+                            <c:when test="${pageNumber == currentPage}">
+                                <a class="pagination__item pagination__item--active" href="${pageUrl}" aria-current="page">${pageNumber}</a>
+                            </c:when>
+                            <c:otherwise>
+                                <a class="pagination__item" href="${pageUrl}">${pageNumber}</a>
+                            </c:otherwise>
+                        </c:choose>
+                    </c:forEach>
+                    <c:choose>
+                        <c:when test="${currentPage >= totalPages}">
+                            <span class="pagination__item pagination__item--disabled" aria-disabled="true">»</span>
+                        </c:when>
+                        <c:otherwise>
+                            <c:url var="nextUrl" value="/orders">
+                                <c:param name="page" value="${currentPage + 1}" />
+                            </c:url>
+                            <a class="pagination__item" href="${nextUrl}">»</a>
+                        </c:otherwise>
+                    </c:choose>
+                </nav>
+            </c:if>
         </div>
     </section>
 </main>

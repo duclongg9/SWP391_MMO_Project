@@ -1,11 +1,18 @@
 package service;
 
 import dao.order.OrderDAO;
+import dao.user.BuyerDAO;
 import model.Order;
 import model.OrderStatus;
+import model.PaginatedResult;
 import model.Products;
+import model.Users;
 
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Contains the business rules for processing a buyer checkout request.
@@ -13,17 +20,27 @@ import java.util.List;
  */
 public class OrderService {
 
-    private static final String APPROVED_STATUS = "APPROVED";
+    private static final Set<String> PURCHASABLE_STATUSES = Set.of("AVAILABLE");
 
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProductService productService = new ProductService();
+    private final BuyerDAO buyerDAO = new BuyerDAO();
 
-    /**
-     * Loads every order stored in the temporary in-memory repository.
-     * @return immutable snapshot of all recorded orders
-     */
-    public List<Order> findAll() {
-        return orderDAO.findAll();
+    public PaginatedResult<Order> listOrders(int page, int pageSize) {
+        if (pageSize <= 0) {
+            throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");
+        }
+        if (page < 1) {
+            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1.");
+        }
+        int totalItems = orderDAO.countAll();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
+        int currentPage = Math.min(page, totalPages);
+        int offset = (currentPage - 1) * pageSize;
+        List<Order> items = totalItems == 0
+                ? List.of()
+                : orderDAO.findAll(pageSize, offset);
+        return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
     }
 
     /**
@@ -34,7 +51,7 @@ public class OrderService {
     public Products validatePurchasableProduct(int productId) {
         Products product = productService.findOptionalById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
-        if (product.getStatus() == null || !APPROVED_STATUS.equalsIgnoreCase(product.getStatus())) {
+        if (!isPurchasable(product.getStatus())) {
             throw new IllegalStateException("Sản phẩm hiện chưa sẵn sàng để bán.");
         }
         return product;
@@ -55,11 +72,12 @@ public class OrderService {
             throw new IllegalArgumentException("Vui lòng chọn phương thức thanh toán.");
         }
         Products product = validatePurchasableProduct(productId);
-        Order order = orderDAO.save(product, buyerEmail.trim(), paymentMethod.trim());
-        String activationCode = orderDAO.generateActivationCode(order);
-        String deliveryLink = orderDAO.generateDeliveryLink(order);
-        order.markCompleted(activationCode, deliveryLink);
-        return order;
+        Users buyer = resolveBuyer(buyerEmail.trim());
+        try {
+            return orderDAO.createOrder(product, buyer.getId(), paymentMethod.trim());
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể tạo đơn hàng. Vui lòng thử lại sau.", ex);
+        }
     }
 
     /**
@@ -73,9 +91,9 @@ public class OrderService {
         }
         return switch (status) {
             case COMPLETED -> "badge";
-            case PROCESSING -> "badge badge--warning";
-            case DISPUTED -> "badge badge--danger";
-            default -> "badge badge--ghost";
+            case PROCESSING, PENDING -> "badge badge--warning";
+            case DISPUTED, FAILED -> "badge badge--danger";
+            case REFUNDED -> "badge badge--ghost";
         };
     }
 
@@ -92,7 +110,28 @@ public class OrderService {
             case COMPLETED -> "Hoàn thành";
             case PROCESSING -> "Đang xử lý";
             case DISPUTED -> "Đang khiếu nại";
-            case PENDING_PAYMENT -> "Chờ thanh toán";
+            case PENDING -> "Chờ xử lý";
+            case FAILED -> "Thanh toán thất bại";
+            case REFUNDED -> "Đã hoàn tiền";
         };
+    }
+
+    private Users resolveBuyer(String email) {
+        Optional<Users> existing = buyerDAO.findActiveBuyerByEmail(email);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        try {
+            return buyerDAO.createBuyer(email);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể khởi tạo người mua mới.", ex);
+        }
+    }
+
+    private boolean isPurchasable(String status) {
+        if (status == null) {
+            return false;
+        }
+        return PURCHASABLE_STATUSES.contains(status.trim().toUpperCase(Locale.ROOT));
     }
 }
