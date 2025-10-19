@@ -11,6 +11,9 @@ import model.Users;
 import service.UserService;
 
 import java.io.IOException;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles registration flow for new users.
@@ -19,6 +22,8 @@ import java.io.IOException;
 public class RegisterController extends BaseController {
 
     private static final long serialVersionUID = 1L;
+
+    private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
 
     private final UserService userService = new UserService(new UserDAO());
 
@@ -45,13 +50,15 @@ public class RegisterController extends BaseController {
             HttpSession session = request.getSession();
             session.setAttribute("registerSuccess", "Tạo tài khoản thành công! Vui lòng đăng nhập.");
             session.setAttribute("newUserEmail", createdUser.getEmail());
-
             response.sendRedirect(request.getContextPath() + "/auth");
-              } catch (IllegalArgumentException | IllegalStateException e) {
+            return;
+        } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
             forward(request, response, "auth/register");
         } catch (RuntimeException e) {
-            request.setAttribute("error", "Hệ thống đang gặp sự cố. Vui lòng thử lại sau.");
+            String errorId = UUID.randomUUID().toString();
+            LOGGER.log(Level.SEVERE, "Unexpected error during registration, errorId=" + errorId, e);
+            request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
             forward(request, response, "auth/register");
         }
     }
