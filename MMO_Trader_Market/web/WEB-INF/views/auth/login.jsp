@@ -24,24 +24,21 @@
             <label class="form-card__label" for="password">Mật khẩu</label>
             <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
         </div>
-        <div class="form-card__option">
-            <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
-                   <c:if test="${rememberMeChecked}">checked</c:if>>
-            <label class="form-card__option-text" for="rememberMe">Ghi nhớ đăng nhập</label>
+        <div class="form-card__options-row">
+            <label class="form-card__option form-card__option--inline" for="rememberMe">
+                <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
+                       <c:if test="${rememberMeChecked}">checked</c:if>>
+                <span class="form-card__option-text">Ghi nhớ đăng nhập</span>
+            </label>
+            <a class="form-card__link" href="<c:url value='/forgot-password' />">Quên mật khẩu?</a>
         </div>
 
         <button class="button button--primary" type="submit">Đăng nhập</button>
+        <div class="form-card__actions-row">
+            <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng nhập bằng Google</a>
+            <a class="button button--ghost" href="<c:url value='/register' />">Đăng ký ngay</a>
+        </div>
     </form>
-    <section class="guide-link">
-        <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng nhập bằng Google</a>
-    </section>
-    <section class="guide-link">
-        <a class="button button--ghost" href="<c:url value='/forgot-password' />">Quên mật khẩu</a>
-    </section>
-    <section class="guide-link">
-        <p>Chưa có tài khoản?</p>
-        <a class="button button--ghost" href="<c:url value='/register' />">Đăng ký ngay</a>
-    </section>
     <section class="guide-link">
         <a class="button button--ghost" href="<c:url value='/styleguide' />">Xem thư viện giao diện</a>
     </section>

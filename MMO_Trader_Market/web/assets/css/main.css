@@ -257,6 +257,14 @@ code {
     color: var(--text-light);
 }
 
+.form-card__option--inline {
+    align-items: center;
+}
+
+.form-card__option--inline .form-card__checkbox {
+    margin-top: 0;
+}
+
 .form-card__checkbox {
     width: 1.15rem;
     height: 1.15rem;
@@ -277,6 +285,36 @@ code {
 .form-card__option-text a:hover,
 .form-card__option-text a:focus {
     text-decoration: underline;
+}
+
+.form-card__options-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.form-card__link {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.form-card__link:hover,
+.form-card__link:focus {
+    text-decoration: underline;
+}
+
+.form-card__actions-row {
+    display: flex;
+    width: 100%;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.form-card__actions-row .button {
+    flex: 1 1 240px;
 }
 
 /* Buttons */
