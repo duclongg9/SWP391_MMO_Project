@@ -5,16 +5,15 @@
 package dao.user;
 
 import dao.connect.DBConnect;
+import model.Roles;
+
+import javax.management.relation.Role;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import model.Role;
 
 /**
  *
@@ -26,7 +25,7 @@ public class RoleDAO {
     private static final String COL_ROLE = "name";
 
     /*Hàm lấy role theo role id */
-    public Role getRoleById(int id) throws SQLException {
+    public Roles getRoleById(int id) throws SQLException {
         String sql = """
                      SELECT * FROM roles
                      WHERE id = ?
@@ -38,7 +37,7 @@ public class RoleDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Role role = new Role();
+                    Roles role = new Roles();
                     role.setId(rs.getInt(COL_ID));
                     role.setName(rs.getString(COL_ROLE));
                     return role;
