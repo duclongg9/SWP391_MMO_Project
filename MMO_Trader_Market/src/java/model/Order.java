@@ -13,6 +13,7 @@ public class Order implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final int id;
+    private final int buyerId;
     private final Products product;
     private final String buyerEmail;
     private final String paymentMethod;
@@ -21,14 +22,15 @@ public class Order implements Serializable {
     private String activationCode;
     private String deliveryLink;
 
-    public Order(int id, Products product, String buyerEmail, String paymentMethod,
+    public Order(int id, int buyerId, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt) {
-        this(id, product, buyerEmail, paymentMethod, status, createdAt, null, null);
+        this(id, buyerId, product, buyerEmail, paymentMethod, status, createdAt, null, null);
     }
 
-    public Order(int id, Products product, String buyerEmail, String paymentMethod,
+    public Order(int id, int buyerId, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt, String activationCode, String deliveryLink) {
         this.id = id;
+        this.buyerId = buyerId;
         this.product = product;
         this.buyerEmail = buyerEmail;
         this.paymentMethod = paymentMethod;
@@ -40,6 +42,10 @@ public class Order implements Serializable {
 
     public int getId() {
         return id;
+    }
+
+    public int getBuyerId() {
+        return buyerId;
     }
 
     public Products getProduct() {
@@ -97,7 +103,7 @@ public class Order implements Serializable {
      * @param deliveryLink optional URL for downloading the product
      */
     public void markCompleted(String activationCode, String deliveryLink) {
-        this.status = OrderStatus.COMPLETED;
+        this.status = OrderStatus.DELIVERED;
         this.activationCode = activationCode;
         this.deliveryLink = deliveryLink;
     }

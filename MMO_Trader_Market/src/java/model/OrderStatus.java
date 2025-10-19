@@ -6,12 +6,19 @@ package model;
  * @author gpt-5-codex
  */
 public enum OrderStatus {
-    PENDING,
-    PROCESSING,
-    COMPLETED,
-    FAILED,
-    REFUNDED,
-    DISPUTED;
+    PENDING("Pending"),
+    PROCESSING("Processing"),
+    CONFIRMED("Confirmed"),
+    DELIVERED("Completed"),
+    FAILED("Failed"),
+    REFUNDED("Refunded"),
+    DISPUTED("Disputed");
+
+    private final String databaseValue;
+
+    OrderStatus(String databaseValue) {
+        this.databaseValue = databaseValue;
+    }
 
     public static OrderStatus fromDatabaseValue(String value) {
         if (value == null) {
@@ -20,7 +27,8 @@ public enum OrderStatus {
         return switch (value.toUpperCase()) {
             case "PENDING" -> PENDING;
             case "PROCESSING" -> PROCESSING;
-            case "COMPLETED" -> COMPLETED;
+            case "CONFIRMED" -> CONFIRMED;
+            case "DELIVERED", "COMPLETED" -> DELIVERED;
             case "FAILED" -> FAILED;
             case "REFUNDED" -> REFUNDED;
             case "DISPUTED" -> DISPUTED;
@@ -29,13 +37,6 @@ public enum OrderStatus {
     }
 
     public String toDatabaseValue() {
-        return switch (this) {
-            case PENDING -> "Pending";
-            case PROCESSING -> "Processing";
-            case COMPLETED -> "Completed";
-            case FAILED -> "Failed";
-            case REFUNDED -> "Refunded";
-            case DISPUTED -> "Disputed";
-        };
+        return databaseValue;
     }
 }

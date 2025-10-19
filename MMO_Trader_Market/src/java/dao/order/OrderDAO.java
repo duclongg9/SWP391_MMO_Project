@@ -182,7 +182,7 @@ public class OrderDAO extends BaseDAO {
                 int orderId = insertOrder(connection, product, buyerId);
                 boolean credentialAssigned = assignCredential(connection, orderId, product.getId());
                 if (credentialAssigned) {
-                    updateOrderStatus(connection, orderId, OrderStatus.COMPLETED);
+                    updateOrderStatus(connection, orderId, OrderStatus.DELIVERED);
                 }
                 decrementInventory(connection, product.getId());
                 connection.commit();
@@ -283,7 +283,7 @@ public class OrderDAO extends BaseDAO {
         String activationCode = rs.getString("activation_code");
         String paymentMethod = resolvePaymentMethod(rs.getString("transaction_type"));
 
-        return new Order(rs.getInt("order_id"), product, rs.getString("buyer_email"), paymentMethod,
+        return new Order(rs.getInt("order_id"), rs.getInt("buyer_id"), product, rs.getString("buyer_email"), paymentMethod,
                 status, createdAt, activationCode, null);
     }
 
@@ -303,8 +303,49 @@ public class OrderDAO extends BaseDAO {
         if (paymentMethod == null || paymentMethod.isBlank()) {
             return order;
         }
-        return new Order(order.getId(), order.getProduct(), order.getBuyerEmail(), paymentMethod,
+        return new Order(order.getId(), order.getBuyerId(), order.getProduct(), order.getBuyerEmail(), paymentMethod,
                 order.getStatus(), order.getCreatedAt(), order.getActivationCode(), order.getDeliveryLink());
+    }
+
+    public Optional<OrderCredential> getCredentials(int orderId) {
+        final String sql = "SELECT encrypted_value, delivery_link FROM product_credentials WHERE order_id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    String activationCode = rs.getString("encrypted_value");
+                    String deliveryLink = null;
+                    try {
+                        deliveryLink = rs.getString("delivery_link");
+                    } catch (SQLException ignored) {
+                        LOGGER.log(Level.FINE, "delivery_link column missing for product_credentials", ignored);
+                    }
+                    return Optional.of(new OrderCredential(activationCode, deliveryLink));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải thông tin bàn giao đơn hàng " + orderId, ex);
+        }
+        return Optional.empty();
+    }
+
+    public static final class OrderCredential {
+        private final String activationCode;
+        private final String deliveryLink;
+
+        public OrderCredential(String activationCode, String deliveryLink) {
+            this.activationCode = activationCode;
+            this.deliveryLink = deliveryLink;
+        }
+
+        public String getActivationCode() {
+            return activationCode;
+        }
+
+        public String getDeliveryLink() {
+            return deliveryLink;
+        }
     }
 }
 

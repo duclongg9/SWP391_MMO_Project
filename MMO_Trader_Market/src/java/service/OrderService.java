@@ -9,6 +9,7 @@ import model.Products;
 import model.Users;
 
 import java.sql.SQLException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -21,6 +22,9 @@ import java.util.Set;
 public class OrderService {
 
     private static final Set<String> PURCHASABLE_STATUSES = Set.of("AVAILABLE");
+
+    private static final EnumSet<OrderStatus> CREDENTIAL_VISIBLE_STATUSES =
+            EnumSet.of(OrderStatus.CONFIRMED, OrderStatus.DELIVERED, OrderStatus.REFUNDED);
 
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProductService productService = new ProductService();
@@ -40,6 +44,7 @@ public class OrderService {
         List<Order> items = totalItems == 0
                 ? List.of()
                 : orderDAO.findAll(pageSize, offset);
+        items.forEach(this::enforceCredentialVisibility);
         return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
     }
 
@@ -90,7 +95,8 @@ public class OrderService {
             return "badge";
         }
         return switch (status) {
-            case COMPLETED -> "badge";
+            case DELIVERED -> "badge";
+            case CONFIRMED -> "badge";
             case PROCESSING, PENDING -> "badge badge--warning";
             case DISPUTED, FAILED -> "badge badge--danger";
             case REFUNDED -> "badge badge--ghost";
@@ -107,13 +113,36 @@ public class OrderService {
             return "Không xác định";
         }
         return switch (status) {
-            case COMPLETED -> "Hoàn thành";
+            case DELIVERED -> "Đã bàn giao";
+            case CONFIRMED -> "Đã xác nhận";
             case PROCESSING -> "Đang xử lý";
             case DISPUTED -> "Đang khiếu nại";
             case PENDING -> "Chờ xử lý";
             case FAILED -> "Thanh toán thất bại";
             case REFUNDED -> "Đã hoàn tiền";
         };
+    }
+
+    public Order loadOrderDetail(int orderId, Users currentUser) {
+        if (orderId <= 0) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ.");
+        }
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new SecurityException("Người dùng chưa đăng nhập.");
+        }
+        Order order = orderDAO.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!belongsToBuyer(order, currentUser.getId())) {
+            throw new SecurityException("Bạn không có quyền truy cập đơn hàng này.");
+        }
+        clearCredentialData(order);
+        if (shouldExposeCredentials(order.getStatus())) {
+            orderDAO.getCredentials(orderId).ifPresent(credential -> {
+                order.setActivationCode(credential.getActivationCode());
+                order.setDeliveryLink(credential.getDeliveryLink());
+            });
+        }
+        return order;
     }
 
     private Users resolveBuyer(String email) {
@@ -133,5 +162,30 @@ public class OrderService {
             return false;
         }
         return PURCHASABLE_STATUSES.contains(status.trim().toUpperCase(Locale.ROOT));
+    }
+
+    private void enforceCredentialVisibility(Order order) {
+        if (!shouldExposeCredentials(order.getStatus())) {
+            clearCredentialData(order);
+        }
+    }
+
+    private void clearCredentialData(Order order) {
+        order.setActivationCode(null);
+        order.setDeliveryLink(null);
+    }
+
+    private boolean shouldExposeCredentials(OrderStatus status) {
+        if (status == null) {
+            return false;
+        }
+        return CREDENTIAL_VISIBLE_STATUSES.contains(status);
+    }
+
+    private boolean belongsToBuyer(Order order, Integer userId) {
+        if (userId == null) {
+            return false;
+        }
+        return order.getBuyerId() == userId;
     }
 }

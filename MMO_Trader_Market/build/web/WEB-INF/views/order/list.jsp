@@ -1,7 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
@@ -50,10 +49,7 @@
                                 <td>
                                     <c:choose>
                                         <c:when test="${not empty order.activationCode}">
-                                            <code><c:out value="${order.activationCode}" /></code><br>
-                                            <c:if test="${not empty order.deliveryLink}">
-                                                <a href="${fn:escapeXml(order.deliveryLink)}">Xem link</a>
-                                            </c:if>
+                                            <span class="badge">Sẵn sàng</span>
                                         </c:when>
                                         <c:otherwise>
                                             <span class="badge badge--ghost">Đang xử lý</span>
@@ -61,9 +57,13 @@
                                     </c:choose>
                                 </td>
                                 <td class="table__actions">
+                                    <c:url var="detailUrl" value="/orders/detail">
+                                        <c:param name="id" value="${order.id}" />
+                                    </c:url>
                                     <c:url var="buyAgainUrl" value="/orders/buy">
                                         <c:param name="productId" value="${order.product.id}" />
                                     </c:url>
+                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
                                     <a class="button button--ghost" href="${buyAgainUrl}">Mua lại</a>
                                 </td>
                             </tr>

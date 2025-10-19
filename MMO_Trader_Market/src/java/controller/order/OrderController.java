@@ -5,9 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.Order;
 import model.PaginatedResult;
 import model.Products;
+import model.Users;
 import service.OrderService;
 
 import java.io.IOException;
@@ -16,13 +18,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles the buyer checkout flow: confirm information, create the order and
  * list historical purchases.
  * @version 1.0 21/05/2024
  */
-@WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/buy"})
+@WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/buy", "/orders/detail"})
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
@@ -31,12 +35,18 @@ public class OrderController extends BaseController {
     private static final DateTimeFormatter ORDER_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    private static final Logger LOGGER = Logger.getLogger(OrderController.class.getName());
+
     private final OrderService orderService = new OrderService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String servletPath = request.getServletPath();
+        if ("/orders/detail".equals(servletPath)) {
+            showOrderDetail(request, response);
+            return;
+        }
         if ("/orders/buy".equals(servletPath)) {
             showCheckout(request, response);
             return;
@@ -53,6 +63,47 @@ public class OrderController extends BaseController {
             return;
         }
         response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+    }
+
+    private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Users currentUser = resolveCurrentUser(request);
+        if (currentUser == null || currentUser.getId() == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        String orderIdParam = request.getParameter("id");
+        if (orderIdParam == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Thiếu mã đơn hàng");
+            return;
+        }
+        int orderId;
+        try {
+            orderId = Integer.parseInt(orderIdParam);
+        } catch (NumberFormatException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã đơn hàng không hợp lệ");
+            return;
+        }
+        try {
+            Order order = orderService.loadOrderDetail(orderId, currentUser);
+            prepareNavigation(request);
+            request.setAttribute("pageTitle", "Chi tiết đơn hàng");
+            request.setAttribute("headerTitle", "Thông tin đơn hàng #" + order.getId());
+            request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao");
+            request.setAttribute("orderStatusClass", orderService.getStatusBadgeClass(order.getStatus()));
+            request.setAttribute("orderStatusLabel", orderService.getFriendlyStatus(order.getStatus()));
+            request.setAttribute("orderCreatedAt", formatOrderDate(order));
+            request.setAttribute("order", order);
+            LOGGER.info(() -> String.format("Buyer %s (%d) viewed order #%d", currentUser.getEmail(),
+                    currentUser.getId(), order.getId()));
+            forward(request, response, "order/detail");
+        } catch (SecurityException ex) {
+            LOGGER.log(Level.WARNING, "Unauthorized access to order detail #{0} by user {1}",
+                    new Object[]{orderId, currentUser.getId()});
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
     private void showCheckout(HttpServletRequest request, HttpServletResponse response)
@@ -216,5 +267,17 @@ public class OrderController extends BaseController {
         } catch (NumberFormatException ex) {
             return 1;
         }
+    }
+
+    private Users resolveCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object principal = session.getAttribute("currentUser");
+        if (principal instanceof Users) {
+            return (Users) principal;
+        }
+        return null;
     }
 }
