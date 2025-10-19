@@ -5,20 +5,20 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import model.Order;
+import model.Products;
+import service.OrderService;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import model.Order;
-import model.Products;
-import service.OrderService;
 
 /**
  * Handles the buyer checkout flow: confirm information, create the order and
  * list historical purchases.
  * @version 1.0 21/05/2024
- * @author gpt-5-codex
  */
 @WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/buy"})
 public class OrderController extends BaseController {
@@ -55,13 +55,12 @@ public class OrderController extends BaseController {
         try {
             int productId = Integer.parseInt(productIdParam);
             Products product = orderService.validatePurchasableProduct(productId);
-            prepareNavigation(request);
-            request.setAttribute("pageTitle", "Mua ngay sản phẩm");
-            request.setAttribute("headerTitle", "Hoàn tất đơn hàng");
-            request.setAttribute("headerSubtitle", "Bước 1: Kiểm tra thông tin trước khi thanh toán");
-            request.setAttribute("product", product);
+            prepareCheckoutPage(request, product, null);
             forward(request, response, "order/checkout");
-        } catch (NumberFormatException | IllegalArgumentException | IllegalStateException ex) {
+        } catch (NumberFormatException ex) {
+            request.setAttribute("error", "Mã sản phẩm không hợp lệ");
+            showOrderHistory(request, response);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             request.setAttribute("error", ex.getMessage());
             showOrderHistory(request, response);
         }
@@ -84,10 +83,22 @@ public class OrderController extends BaseController {
             forward(request, response, "order/confirmation");
         } catch (NumberFormatException ex) {
             request.setAttribute("error", "Mã sản phẩm không hợp lệ");
-            showCheckout(request, response);
+            showOrderHistory(request, response);
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            request.setAttribute("error", ex.getMessage());
-            showCheckout(request, response);
+            int productId = parseProductIdSafely(productIdParam);
+            if (productId > 0) {
+                Products product = null;
+                try {
+                    product = orderService.validatePurchasableProduct(productId);
+                } catch (IllegalArgumentException | IllegalStateException ignored) {
+                    // giữ nguyên thông báo lỗi ban đầu
+                }
+                prepareCheckoutPage(request, product, ex.getMessage());
+                forward(request, response, "order/checkout");
+            } else {
+                request.setAttribute("error", ex.getMessage());
+                showOrderHistory(request, response);
+            }
         }
     }
 
@@ -100,6 +111,26 @@ public class OrderController extends BaseController {
         request.setAttribute("orders", orderService.findAll());
         request.setAttribute("badgeHelper", orderService);
         forward(request, response, "order/list");
+    }
+
+    private void prepareCheckoutPage(HttpServletRequest request, Products product, String error)
+            throws ServletException {
+        prepareNavigation(request);
+        request.setAttribute("pageTitle", "Mua ngay sản phẩm");
+        request.setAttribute("headerTitle", "Hoàn tất đơn hàng");
+        request.setAttribute("headerSubtitle", "Bước 1: Kiểm tra thông tin trước khi thanh toán");
+        request.setAttribute("product", product);
+        if (error != null) {
+            request.setAttribute("error", error);
+        }
+    }
+
+    private int parseProductIdSafely(String productIdParam) {
+        try {
+            return Integer.parseInt(productIdParam);
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
     }
 
     private void prepareNavigation(HttpServletRequest request) {

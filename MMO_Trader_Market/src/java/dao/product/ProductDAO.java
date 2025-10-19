@@ -1,57 +1,106 @@
 package dao.product;
 
-import com.sun.jdi.connect.spi.Connection;
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Products;
-import model.ProductStatus;
+
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Provides read-only access to marketplace products.
+ *
+ * <p>The real project will connect to the database, however for the purpose of
+ * testing the checkout flow we keep an in-memory catalogue that is seeded on
+ * application start.</p>
+ */
 public class ProductDAO extends BaseDAO {
 
-    // Tên cột trong bảng products
-    private static final String COL_ID              = "id";
-    private static final String COL_SHOP_ID         = "shop_id";
-    private static final String COL_NAME            = "name";
-    private static final String COL_PRICE           = "price";
-    private static final String COL_INVENTORY_COUNT = "inventory_count";
-    private static final String COL_STATUS          = "status";
-    private static final String COL_DESCRIPTION     = "description";
-    private static final String COL_CREATED_AT      = "created_at";
-    private static final String COL_UPDATED_AT      = "updated_at";
+    private static final List<Products> SAMPLE_PRODUCTS = new ArrayList<>();
 
-    // Chọn đúng các cột cần dùng (tránh SELECT *)
-    private static final String BASE_COLUMNS = String.join(", ",
-            COL_ID, COL_SHOP_ID, COL_NAME, COL_PRICE, COL_INVENTORY_COUNT,
-            COL_STATUS, COL_DESCRIPTION, COL_CREATED_AT, COL_UPDATED_AT
-    );
-
-    public List<ProductDAO> findAll() {
-        return new ArrayList<>(SAMPLE_PRODUCTS);
+    static {
+        seedSampleProducts();
     }
 
-    /** Lấy toàn bộ sản phẩm (có thể dùng cho admin) */
-    public List<Products> findAll() {
-        String sql = "SELECT " + BASE_COLUMNS + " FROM products ORDER BY updated_at DESC, id DESC";
-        List<Products> result = new ArrayList<>();
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) result.add(mapRow(rs));
-        } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách sản phẩm", e);
+    private static void seedSampleProducts() {
+        if (!SAMPLE_PRODUCTS.isEmpty()) {
+            return;
         }
-        return result;
+        Date now = Date.from(Instant.now());
+        SAMPLE_PRODUCTS.add(new Products(
+                1001,
+                10,
+                "Gmail Business 50GB",
+                new BigDecimal("250000"),
+                12,
+                "APPROVED",
+                Date.from(Instant.now().minus(14, ChronoUnit.DAYS)),
+                now,
+                "Tài khoản Gmail doanh nghiệp dung lượng 50GB kèm hướng dẫn đổi mật khẩu."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1002,
+                11,
+                "Spotify Premium 12 tháng",
+                new BigDecimal("185000"),
+                30,
+                "APPROVED",
+                Date.from(Instant.now().minus(5, ChronoUnit.DAYS)),
+                now,
+                "Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1003,
+                12,
+                "Netflix UHD 1 năm",
+                new BigDecimal("650000"),
+                8,
+                "DISPUTED",
+                Date.from(Instant.now().minus(20, ChronoUnit.DAYS)),
+                Date.from(Instant.now().minus(1, ChronoUnit.DAYS)),
+                "Tài khoản Netflix gói Ultra HD, hỗ trợ đăng nhập 4 thiết bị."
+        ));
+        SAMPLE_PRODUCTS.add(new Products(
+                1004,
+                13,
+                "Windows 11 Pro key",
+                new BigDecimal("390000"),
+                50,
+                "PENDING",
+                Date.from(Instant.now().minus(3, ChronoUnit.DAYS)),
+                now,
+                "Key bản quyền Windows 11 Pro, kích hoạt online trọn đời."
+        ));
     }
 
+    /**
+     * Returns all products sorted by the latest update time.
+     */
+    public List<Products> findAll() {
+        return SAMPLE_PRODUCTS.stream()
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns products to be displayed on the homepage dashboard.
+     */
+    public List<Products> findHighlighted() {
+        List<Products> sorted = findAll();
+        return sorted.subList(0, Math.min(3, sorted.size()));
+    }
+
+    /**
+     * Finds a product by id from the sample catalogue.
+     */
     public Optional<Products> findById(int id) {
         return SAMPLE_PRODUCTS.stream()
-                .filter(product -> product.getId() == id)
+                .filter(product -> product.getId() != null && product.getId() == id)
                 .findFirst();
     }
 }

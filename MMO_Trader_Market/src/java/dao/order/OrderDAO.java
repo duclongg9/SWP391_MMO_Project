@@ -2,6 +2,10 @@ package dao.order;
 
 import dao.BaseDAO;
 import dao.product.ProductDAO;
+import model.Order;
+import model.OrderStatus;
+import model.Products;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,14 +13,10 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import model.Order;
-import model.OrderStatus;
-import model.Products;
 
 /**
  * Provides persistence-like operations for buyer orders using an in-memory store.
  * @version 1.0 21/05/2024
- * @author gpt-5-codex
  */
 public class OrderDAO extends BaseDAO {
 
@@ -36,8 +36,7 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Persists a new order into the in-memory store.
-     * @param product
-     * @param products product being purchased
+     * @param product product being purchased
      * @param buyerEmail email used for delivery
      * @param paymentMethod selected payment channel
      * @return created order entity
@@ -65,7 +64,7 @@ public class OrderDAO extends BaseDAO {
         if (!ORDERS.isEmpty()) {
             return;
         }
-        List<ProductDAO> products = productDAO.findAll();
+        List<Products> products = productDAO.findAll();
         if (products.isEmpty()) {
             return;
         }
