@@ -249,13 +249,16 @@ code {
 }
 
 .layout__header--auth .site-header__inner {
-    grid-template-columns: auto;
-    justify-items: center;
-    gap: 1rem;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.25rem;
+}
+
+.layout__header--auth .site-header__brand {
+    justify-self: start;
 }
 
 .layout__header--auth .site-header__actions {
-    justify-self: center;
+    justify-self: end;
 }
 
 .layout__header--split {
