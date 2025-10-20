@@ -7,168 +7,17 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/Admin.css">
 
-    <style>
-        body {
-            font-family: "Poppins", sans-serif;
-            background: #f4f6f9;
-            margin: 0;
-            overflow-x: hidden;
-        }
+    <script>
+        window.APP_BASE = '${pageContext.request.contextPath}';
+    </script>
 
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 70px;
-            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-            color: #fff;
-            transition: width 0.3s ease;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-        }
+    <!-- Nạp admin.js đúng cách -->
+    <script src="${pageContext.request.contextPath}/assets/Script/admin.js" defer></script>
 
-        .sidebar:hover { width: 220px; }
-
-        /* Logo trên cùng */
-        .sidebar .top-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 60px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .sidebar h4 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            margin: 0;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        /* Khi thu gọn chỉ hiển thị MMO */
-        .sidebar:not(:hover) h4 span.full {
-            display: none;
-        }
-        .sidebar:not(:hover) h4 span.short {
-            display: inline;
-        }
-        .sidebar:hover h4 span.full {
-            display: inline;
-        }
-        .sidebar:hover h4 span.short {
-            display: none;
-        }
-
-        /* Menu item */
-        .sidebar a {
-            color: #cbd5e1;
-            text-decoration: none;
-            display: flex;
-            padding: 12px 18px;
-            border-radius: 8px;
-            white-space: nowrap;
-            transition: all 0.25s ease;
-            margin: 15px 7px;
-        }
-
-        .sidebar a:hover {
-            background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
-            color: #fff;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-            transform: translateX(4px);
-        }
-
-        .sidebar a.active {
-            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
-            color: #fff;
-            margin-right: 5px;
-            font-weight: 600;
-            box-shadow: inset 2px 0 0 #38bdf8;
-        }
-
-        .sidebar i {
-            font-size: 20px;
-
-            text-align: center;
-            transition: transform 0.2s ease;
-        }
-
-        .sidebar a:hover i { transform: scale(1.15); }
-
-        .sidebar span {
-            opacity: 0;
-            margin-left: 10px;
-            transition: opacity 0.3s ease;
-        }
-
-        .sidebar:hover span { opacity: 1; }
-
-        /* Logout */
-        .logout-section {
-            padding: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logout-btn {
-            border: none;
-            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
-            color: #fff;
-            border-radius: 6px;
-            padding: 10px 15px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: linear-gradient(90deg, #f87171 0%, #dc2626 100%);
-            transform: scale(1.03);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
-        }
-
-        /* Main */
-        .main {
-            margin-left: 70px;
-            transition: margin-left 0.3s ease;
-            padding: 20px;
-        }
-
-        .sidebar:hover ~ .main { margin-left: 220px; }
-
-        /* Header */
-        .header {
-            background: #fff;
-            padding: 10px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .page-content {
-            margin-top: 20px;
-            background: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-        }
-    </style>
 </head>
 <body>
 

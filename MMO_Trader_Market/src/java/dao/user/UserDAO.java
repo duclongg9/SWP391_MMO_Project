@@ -255,4 +255,21 @@ created.setRoleId(roleId);
             return ps.executeUpdate();
         }
     }
+
+    /**
+     * Cập nhật role của user
+     */
+    public boolean updateUserRole(int userId, int roleId) throws SQLException {
+        final String sql = """
+                UPDATE users
+                SET role_id = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status = 1
+                """;
+        try (Connection conn = DBConnect.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roleId);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        }
+    }
 }

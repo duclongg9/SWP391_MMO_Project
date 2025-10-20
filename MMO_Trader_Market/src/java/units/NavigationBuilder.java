@@ -31,6 +31,8 @@ public final class NavigationBuilder {
         if (isAdminRole(roleId)) {
             items.add(createNavItem(contextPath + "/dashboard", "Dashboard",
                     isActive(currentPath, "/dashboard")));
+            items.add(createNavItem(contextPath + "/admin/seller-requests", "Duyệt yêu cầu seller",
+                    isActive(currentPath, "/admin/seller-requests") || isActive(currentPath, "/admin/kyc-requests")));
             items.add(createNavItem(contextPath + "/orders", "Quản lý đơn hàng",
                     isActive(currentPath, "/orders")));
         }
@@ -46,11 +48,24 @@ public final class NavigationBuilder {
         }
 
         if (isBuyerRole(roleId)) {
+            items.add(createNavItem(contextPath + "/user/seller-request", "Trở thành seller",
+                    isActive(currentPath, "/user/seller-request") || isActive(currentPath, "/user/kyc-request")));
             items.add(createNavItem(contextPath + "/wallet", "Ví của tôi",
                     isActive(currentPath, "/wallet")));
             items.add(createNavItem(contextPath + "/orders", "Đơn hàng",
                     isActive(currentPath, "/orders")));
             items.add(createIconItem(contextPath + "/profile", "👤", "Tài khoản", false,
+                    isActive(currentPath, "/profile")));
+        } else if (isSellerRole(roleId)) {
+            items.add(createNavItem(contextPath + "/seller/shop", "Gian hàng của tôi",
+                    isActive(currentPath, "/seller/shop")));
+            items.add(createNavItem(contextPath + "/seller/products", "Quản lý sản phẩm",
+                    isActive(currentPath, "/seller/products")));
+            items.add(createNavItem(contextPath + "/wallet", "Ví của tôi",
+                    isActive(currentPath, "/wallet")));
+            items.add(createNavItem(contextPath + "/orders", "Đơn hàng bán",
+                    isActive(currentPath, "/orders")));
+            items.add(createIconItem(contextPath + "/profile", "👤", "Seller", false,
                     isActive(currentPath, "/profile")));
         } else {
             items.add(createIconItem(contextPath + "/profile", "👤", "Quản trị viên", false,
@@ -141,7 +156,11 @@ public final class NavigationBuilder {
         return roleId != null && roleId == 3;
     }
 
+    private static boolean isSellerRole(Integer roleId) {
+        return roleId != null && roleId == 2;
+    }
+
     private static boolean isAdminRole(Integer roleId) {
-        return roleId != null && roleId != 3;
+        return roleId != null && roleId == 1;
     }
 }

@@ -231,6 +231,55 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    public long countByStatus(OrderStatus status) {
+        final String sql = "SELECT COUNT(*) FROM orders WHERE status = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status.toDatabaseValue());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng theo trạng thái", ex);
+        }
+        return 0;
+    }
+
+    public long countByBuyer(int buyerId) {
+        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, buyerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng theo người mua", ex);
+        }
+        return 0;
+    }
+
+    public long countByBuyerAndStatus(Integer buyerId, OrderStatus status) {
+        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, buyerId);
+            statement.setString(2, status.toDatabaseValue());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng theo người mua và trạng thái", ex);
+        }
+        return 0;
+    }
+
     public Connection openConnection() throws SQLException {
         return getConnection();
     }

@@ -189,6 +189,136 @@ public class ProductDAO extends BaseDAO {
         return statement;
     }
 
+    /**
+     * Tạo sản phẩm mới cho shop
+     */
+    public Products createProduct(int shopId, String name, String description, 
+                                 java.math.BigDecimal price, Integer inventoryCount) throws SQLException {
+        final String sql = "INSERT INTO products (shop_id, name, description, price, inventory_count, status, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, 'Pending', NOW(), NOW())";
+        
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, shopId);
+            statement.setString(2, name);
+            statement.setString(3, description);
+            statement.setBigDecimal(4, price);
+            if (inventoryCount == null) {
+                statement.setNull(5, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(5, inventoryCount);
+            }
+            
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Tạo sản phẩm thất bại");
+            }
+            
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    Products product = new Products();
+                    product.setId(generatedKeys.getInt(1));
+                    product.setShopId(shopId);
+                    product.setName(name);
+                    product.setDescription(description);
+                    product.setPrice(price);
+                    product.setInventoryCount(inventoryCount);
+                    product.setStatus("Pending");
+                    product.setCreatedAt(new java.util.Date());
+                    product.setUpdatedAt(new java.util.Date());
+                    return product;
+                }
+                throw new SQLException("Tạo sản phẩm thất bại, không lấy được ID");
+            }
+        }
+    }
+
+    /**
+     * Lấy danh sách sản phẩm của một shop
+     */
+    public List<Products> findByShopId(int shopId, int limit, int offset) {
+        final String sql = "SELECT id, shop_id, name, description, price, inventory_count, status, created_at, updated_at "
+                + "FROM products WHERE shop_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        
+        List<Products> products = new ArrayList<>();
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            statement.setInt(2, limit);
+            statement.setInt(3, offset);
+            
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop ID", ex);
+        }
+        return products;
+    }
+
+    /**
+     * Đếm số sản phẩm của shop
+     */
+    public long countByShopId(int shopId) {
+        final String sql = "SELECT COUNT(*) FROM products WHERE shop_id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo shop ID", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Cập nhật sản phẩm
+     */
+    public boolean updateProduct(int productId, String name, String description, 
+                               java.math.BigDecimal price, Integer inventoryCount) {
+        final String sql = "UPDATE products SET name = ?, description = ?, price = ?, inventory_count = ?, updated_at = NOW() "
+                + "WHERE id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, name);
+            statement.setString(2, description);
+            statement.setBigDecimal(3, price);
+            if (inventoryCount == null) {
+                statement.setNull(4, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(4, inventoryCount);
+            }
+            statement.setInt(5, productId);
+            
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật sản phẩm", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Xóa sản phẩm (chỉ chủ shop mới được xóa)
+     */
+    public boolean deleteProduct(int productId, int shopId) {
+        final String sql = "DELETE FROM products WHERE id = ? AND shop_id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            statement.setInt(2, shopId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể xóa sản phẩm", ex);
+            return false;
+        }
+    }
+
     private Products mapRow(ResultSet rs) throws SQLException {
         Products product = new Products();
         product.setId(rs.getInt("id"));
