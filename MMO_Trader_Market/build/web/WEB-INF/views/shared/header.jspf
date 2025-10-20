@@ -94,24 +94,5 @@
         </c:forEach>
       </nav>
     </c:if>
-
-    <c:if test="${isLoggedIn or (not isAuthPage)}">
-      <div class="site-header__actions">
-        <c:choose>
-          <c:when test="${isLoggedIn}">
-            <div class="site-header__user">
-              <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
-              <div class="site-header__user-info">
-                <span class="site-header__user-name"><c:out value="${displayName}" /></span>
-              </div>
-              <a class="button button--ghost site-header__logout" href="${logoutUrl}">Đăng xuất</a>
-            </div>
-          </c:when>
-          <c:otherwise>
-            <a class="button button--primary site-header__login" href="${loginUrl}">Đăng nhập</a>
-          </c:otherwise>
-        </c:choose>
-      </div>
-    </c:if>
   </div>
 </header>
