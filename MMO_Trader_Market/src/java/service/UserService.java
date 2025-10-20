@@ -212,7 +212,7 @@ String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter 
             //Gửi email
             if (updated > 0) {
                 String subject = "[Thông báo quan trọng]-Thông tin tài khoản của bạn";
-                String messageText = "Chào Kiệt,\n\n"
+                String messageText = "Chào ["+user.getName()+"] ,\n\n"
                         + "Bạn đã thay đổi mật khẩu thành công trên hệ thống sàn thương mại điện tử MMO Trader System \n\n"
                         + "Vui lòng kiểm tra lại tài khoản nếu bạn không thực hiện hành động này\n\n"
                         + "Trân trọng,\nAdmin MMO Trader System"; // đang test fig cứng tên
