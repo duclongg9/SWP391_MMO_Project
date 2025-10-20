@@ -24,7 +24,11 @@
 
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
 <c:set var="isAuthPage"
-        value="${fn:contains(currentUri, '/login') or fn:contains(currentUri, '/register') or fn:contains(currentUri, '/forgot')}" />
+        value="${fn:contains(currentUri, '/auth')
+                or fn:contains(currentUri, '/login')
+                or fn:contains(currentUri, '/register')
+                or fn:contains(currentUri, '/forgot')
+                or fn:contains(currentUri, '/reset-password')}" />
 <c:set var="isLoggedIn" value="${not empty sessionScope.authUser}" />
 
 <!-- Mặc định headerModifier là chuỗi rỗng nếu chưa set -->
