@@ -118,10 +118,10 @@
                 <c:when test="${not empty p.createdAtDate}">
                   <fmt:formatDate value="${p.createdAtDate}"
                                   pattern="dd/MM/yyyy HH:mm"
-                                  timeZone="Asia/Ho_Chi_Minh" />
+                                  timeZone="Asia/Ho_Chi_Minh"/>
                 </c:when>
-                <c:when test="${not empty p.createdAt}">
-                  <c:out value="${p.createdAt}" />
+                <c:when test="${not empty p.createdAtDate}">
+                  <c:out value="${p.createdAtDate}" />
                 </c:when>
                 <c:otherwise>-</c:otherwise>
               </c:choose>

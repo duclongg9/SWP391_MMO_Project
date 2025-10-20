@@ -19,18 +19,20 @@
     <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
  
         
-       <!--Thời gian cập nhật mới nhất -->
-       <c:if test="${not empty myProfile.updatedAtDate}">
-        <fmt:timeZone value="Asia/Ho_Chi_Minh">
-          <fmt:formatDate value="${myProfile.updatedAtDate}"
-                          pattern="dd/MM/yyyy HH:mm"
-                          var="updatedAtStr"/>
-        </fmt:timeZone>
+       
+       <!-- Thời gian cập nhật mới nhất -->
+         <c:if test="${not empty myProfile.updatedAt}">
+          <fmt:timeZone value="Asia/Ho_Chi_Minh">
+            <fmt:formatDate value="${myProfile.updatedAt}"
+                            pattern="dd/MM/yyyy HH:mm"
+                            var="updatedAtStr" />
+          </fmt:timeZone>
 
-        <small class="muted" title="${updatedAtStr}">
-          Cập nhật hồ sơ lần cuối: ${updatedAtStr}
-        </small>
-      </c:if>
+          <small class="muted" title="${updatedAtStr}">
+            Cập nhật hồ sơ lần cuối: ${updatedAtStr}
+          </small>
+        </c:if>
+
       
 
         
@@ -71,7 +73,7 @@
         <th scope="row"><label for="fullName">Họ và tên</label></th>
         <td>
           <input id="fullName" name="fullName" type="text" required maxlength="100"
-                 autocomplete="name" placeholder="${myProfile.username}">
+                 autocomplete="name" placeholder="${myProfile.name}">
         </td>
       </tr>
 
