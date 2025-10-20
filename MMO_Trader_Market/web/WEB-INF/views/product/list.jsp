@@ -50,7 +50,7 @@
                                     <c:set var="statusUpper"
                                            value="${not empty product.status ? fn:toUpperCase(product.status) : ''}" />
                                     <c:choose>
-                                        <c:when test="${statusUpper eq 'APPROVED'}">
+                                        <c:when test="${statusUpper eq 'AVAILABLE' && product.inventoryCount > 0}">
                                             <form method="post" action="${pageContext.request.contextPath}/order/buy-now"
                                                   style="display:inline;">
                                                 <input type="hidden" name="productId" value="${product.id}" />
@@ -61,7 +61,7 @@
                                             <a class="button button--ghost" href="${ordersUrl}">Đơn đã mua</a>
                                         </c:when>
                                         <c:otherwise>
-                                            <button class="button button--ghost" type="button" disabled>Đang chờ duyệt</button>
+                                            <button class="button button--ghost" type="button" disabled>Không khả dụng</button>
                                         </c:otherwise>
                                     </c:choose>
                                 </td>

@@ -53,7 +53,7 @@ public class BuyerDAO extends BaseDAO {
                 + "ORDER BY COUNT(o.id) DESC, u.created_at ASC LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, OrderStatus.CONFIRMED.toDatabaseValue());
+            statement.setString(1, OrderStatus.COMPLETED.toDatabaseValue());
             statement.setString(2, BUYER_ROLE);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
