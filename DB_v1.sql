@@ -52,6 +52,21 @@ CREATE TABLE `password_reset_tokens` (
   CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB;
 
+-- Table for persistent remember-me login tokens
+DROP TABLE IF EXISTS `remember_me_tokens`;
+CREATE TABLE `remember_me_tokens` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `selector` varchar(32) NOT NULL UNIQUE,
+  `hashed_validator` varchar(64) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_remember_me_user` (`user_id`),
+  CONSTRAINT `fk_remember_me_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Table for Shops
 DROP TABLE IF EXISTS `shops`;
 CREATE TABLE `shops` (

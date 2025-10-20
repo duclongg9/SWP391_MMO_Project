@@ -1,72 +1,51 @@
 package dao.connect;
 
-import conf.AppConfig;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/**
- * Simple helper used by legacy DAO classes that still open raw JDBC connections.
- *
- * <p>The original implementation hard-coded the JDBC URL and credentials which made
- * it diverge from {@link conf.AppConfig}. This class now reuses the central
- * configuration file so every DAO reads from the same source of truth.</p>
- */
-public final class DBConnect {
+public class DBConnect {
+    private static final String URL = "jdbc:mysql://localhost:3306/mmo_schema";
+    private static final String USER = "root"; 
+    private static final String PASSWORD = "123456"; 
 
-    private static final Logger LOGGER = Logger.getLogger(DBConnect.class.getName());
-
-    private static final String URL = AppConfig.get("db.url");
-    private static final String USER = AppConfig.get("db.username");
-    private static final String PASSWORD = AppConfig.get("db.password");
-    private static final String DRIVER = AppConfig.get("db.driver");
-
-    static {
-        if (DRIVER.isBlank() || URL.isBlank() || USER.isBlank()) {
-            LOGGER.severe("Thiếu cấu hình JDBC. Kiểm tra lại conf/database.properties");
-        } else {
-            try {
-                Class.forName(DRIVER);
-            } catch (ClassNotFoundException ex) {
-                LOGGER.log(Level.SEVERE, "Không tìm thấy JDBC driver: {0}", DRIVER);
-            }
-        }
-    }
-
-    private DBConnect() {
-    }
-
-    /**
-     * Lấy kết nối mới mỗi lần được gọi, sử dụng cấu hình chung của ứng dụng.
-     */
+    // Hàm lấy kết nối mới mỗi lần được gọi
     public static Connection getConnection() {
+        Connection conn = null;
         try {
-            if (URL.isBlank() || USER.isBlank()) {
-                throw new SQLException("Database connection properties are empty");
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("Kết nối thành công đến database!");
+        } catch (ClassNotFoundException e) {
+            System.err.println("Lỗi: Không tìm thấy driver JDBC!");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Lỗi: Không thể kết nối đến database!");
+            e.printStackTrace();
+        }
+        return conn;
+    }
+
+    // Đóng kết nối sau khi sử dụng
+    public static void closeConnection(Connection conn) {
+        try {
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
+                System.out.println("Đã đóng kết nối database.");
             }
-            return DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Lỗi khi kết nối tới database", ex);
-            return null;
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi đóng kết nối database!");
+            e.printStackTrace();
         }
     }
 
-    /**
-     * Đóng kết nối sau khi sử dụng.
-     */
-    public static void closeConnection(Connection conn) {
-        if (conn == null) {
-            return;
-        }
-        try {
-            if (!conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.WARNING, "Lỗi khi đóng kết nối database", ex);
+    public static void main(String[] args) {
+        Connection con = DBConnect.getConnection();
+        if (con != null) {
+            System.out.println("Database connection is active!");
+            DBConnect.closeConnection(con); // Đóng kết nối sau khi kiểm tra
+        } else {
+            System.out.println("Database connection failed!");
         }
     }
 }
