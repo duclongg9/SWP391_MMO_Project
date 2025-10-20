@@ -3,6 +3,8 @@ package dao.product;
 import dao.BaseDAO;
 import model.Products;
 
+import java.math.BigDecimal;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,6 +41,72 @@ public class ProductDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo id", ex);
         }
         return Optional.empty();
+    }
+
+    public Optional<Products> findAvailableById(int id) {
+        final String sql = "SELECT " + PRODUCT_COLUMNS
+                + " FROM products WHERE id = ? AND status = 'Available' LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm khả dụng", ex);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<BigDecimal> findPriceById(int productId) {
+        final String sql = "SELECT price FROM products WHERE id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.ofNullable(rs.getBigDecimal("price"));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy giá sản phẩm", ex);
+        }
+        return Optional.empty();
+    }
+
+    public boolean decrementInventory(int productId, int qty) {
+        try (Connection connection = getConnection()) {
+            return decrementInventory(connection, productId, qty);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể trừ tồn kho", ex);
+            return false;
+        }
+    }
+
+    public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
+        final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
+                + "WHERE id = ? AND inventory_count >= ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, qty);
+            statement.setInt(2, productId);
+            statement.setInt(3, qty);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    public int lockInventoryForUpdate(Connection connection, int productId) throws SQLException {
+        final String sql = "SELECT inventory_count FROM products WHERE id = ? FOR UPDATE";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("inventory_count");
+                }
+            }
+        }
+        return 0;
     }
 
     public int countByKeyword(String keyword) {
