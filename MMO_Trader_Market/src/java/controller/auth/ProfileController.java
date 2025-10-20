@@ -56,14 +56,14 @@ public class ProfileController extends HttpServlet {
             }
         }
 
-//        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
-//        Integer user = (Integer)request.getSession().getAttribute("userId");
-//        if(user == null){
-//           response.sendRedirect(request.getContextPath() + "/login.jsp");
-//           return;
-//        }
+        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
+        Integer user = (Integer)request.getSession().getAttribute("userId");
+        if(user == null){
+           response.sendRedirect(request.getContextPath() + "/login.jsp");
+           return;
+        }
         try {
-            Users myProfile = viewProfileService.viewMyProfile(1);
+            Users myProfile = viewProfileService.viewMyProfile(user);
             request.setAttribute("myProfile", myProfile);
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
             return;
@@ -83,11 +83,11 @@ public class ProfileController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
-//        Integer user = (Integer)request.getSession().getAttribute("userId");
-//        if(user == null){
-//           response.sendRedirect(request.getContextPath() + "/login.jsp");
-//           return;
-//        }
+        Integer user = (Integer)request.getSession().getAttribute("userId");
+        if(user == null){
+           response.sendRedirect(request.getContextPath() + "/login.jsp");
+           return;
+        }
 
         /*Phần phân chia 2 hành động cập nhật mật khẩu và cập nhật lại thông tin người dùng*/
         String action = request.getParameter("action");
@@ -100,7 +100,7 @@ public class ProfileController extends HttpServlet {
             switch (action) {
                 case "updateProfile": {
                     String name = request.getParameter("fullName");
-                    viewProfileService.updateMyProfile(1, name); //đang test với Id = 1
+                    viewProfileService.updateMyProfile(user, name); 
                     session.setAttribute("msg", "Thông tin đã được cập nhật.");
                     response.sendRedirect(request.getContextPath() + "/profile");
                     break;
@@ -108,7 +108,7 @@ public class ProfileController extends HttpServlet {
                 case "updatePassword": {
                     String oldPass = request.getParameter("oldPass");
                     String newPass = request.getParameter("newPass");
-                    viewProfileService.updatePassword(1, oldPass, newPass); //đang test với id = 1
+                    viewProfileService.updatePassword(user, oldPass, newPass); 
                     session.setAttribute("msg", "Mật khẩu đã được cập nhật.");
                     response.sendRedirect(request.getContextPath() + "/profile");
                     break;
