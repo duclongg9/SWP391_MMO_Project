@@ -1,137 +1,139 @@
 package service;
 
+import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
-import dao.user.BuyerDAO;
-import model.Order;
+import dao.product.ProductDAO;
 import model.OrderStatus;
+import model.Orders;
 import model.PaginatedResult;
 import model.Products;
-import model.Users;
+import model.view.OrderDetailView;
+import model.view.OrderRow;
+import queue.OrderQueueProducer;
+import queue.memory.InMemoryOrderQueue;
 
-import java.sql.SQLException;
+import java.math.BigDecimal;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * Contains the business rules for processing a buyer checkout request.
- * @version 1.0 21/05/2024
+ * Business logic for buyer orders: creating pending orders and reading history.
  */
 public class OrderService {
 
-    private static final Set<String> PURCHASABLE_STATUSES = Set.of("AVAILABLE");
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            "Pending", "Processing", "Completed", "Failed", "Refunded", "Disputed"
+    );
+    private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
 
-    private final OrderDAO orderDAO = new OrderDAO();
-    private final ProductService productService = new ProductService();
-    private final BuyerDAO buyerDAO = new BuyerDAO();
+    private final OrderDAO orderDAO;
+    private final ProductDAO productDAO;
+    private final CredentialDAO credentialDAO;
+    private final OrderQueueProducer queueProducer;
 
-    public PaginatedResult<Order> listOrders(int page, int pageSize) {
-        if (pageSize <= 0) {
-            throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");
-        }
-        if (page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1.");
-        }
-        int totalItems = orderDAO.countAll();
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
-        int currentPage = Math.min(page, totalPages);
-        int offset = (currentPage - 1) * pageSize;
-        List<Order> items = totalItems == 0
-                ? List.of()
-                : orderDAO.findAll(pageSize, offset);
-        return new PaginatedResult<>(items, currentPage, totalPages, pageSize, totalItems);
+    public OrderService() {
+        this(new OrderDAO(), new ProductDAO(), new CredentialDAO(), InMemoryOrderQueue.getInstance());
     }
 
-    /**
-     * Ensures the product exists and has been approved before buyers can continue checkout.
-     * @param productId identifier coming from the UI
-     * @return the validated product
-     */
-    public Products validatePurchasableProduct(int productId) {
-        Products product = productService.findOptionalById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
-        if (!isPurchasable(product.getStatus())) {
-            throw new IllegalStateException("Sản phẩm hiện chưa sẵn sàng để bán.");
-        }
-        return product;
+    public OrderService(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
+            OrderQueueProducer queueProducer) {
+        this.orderDAO = Objects.requireNonNull(orderDAO, "orderDAO");
+        this.productDAO = Objects.requireNonNull(productDAO, "productDAO");
+        this.credentialDAO = Objects.requireNonNull(credentialDAO, "credentialDAO");
+        this.queueProducer = Objects.requireNonNull(queueProducer, "queueProducer");
+        InMemoryOrderQueue.ensureWorkerInitialized(orderDAO, productDAO, credentialDAO);
     }
 
-    /**
-     * Creates a new order after validating the buyer information and generates delivery assets.
-     * @param productId the product that the buyer wants to purchase
-     * @param buyerEmail email used to deliver digital goods
-     * @param paymentMethod the payment option selected during checkout
-     * @return the persisted order enriched with activation details
-     */
-    public Order createOrder(int productId, String buyerEmail, String paymentMethod) {
-        if (buyerEmail == null || buyerEmail.isBlank()) {
-            throw new IllegalArgumentException("Vui lòng nhập email nhận sản phẩm.");
-        }
-        if (paymentMethod == null || paymentMethod.isBlank()) {
-            throw new IllegalArgumentException("Vui lòng chọn phương thức thanh toán.");
-        }
-        Products product = validatePurchasableProduct(productId);
-        Users buyer = resolveBuyer(buyerEmail.trim());
-        try {
-            return orderDAO.createOrder(product, buyer.getId(), paymentMethod.trim());
-        } catch (SQLException ex) {
-            throw new IllegalStateException("Không thể tạo đơn hàng. Vui lòng thử lại sau.", ex);
-        }
+    public int placeOrderPending(int userId, int productId, int quantity) {
+        return placeOrderPending(userId, productId, quantity, UUID.randomUUID().toString());
     }
 
-    /**
-     * Maps order status to the appropriate badge style.
-     * @param status current order status
-     * @return CSS class for the badge component
-     */
-    public String getStatusBadgeClass(OrderStatus status) {
-        if (status == null) {
-            return "badge";
+    public int placeOrderPending(int userId, int productId, int quantity, String idempotencyKey) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng mua phải lớn hơn 0");
         }
-        return switch (status) {
-            case COMPLETED -> "badge";
-            case PROCESSING, PENDING -> "badge badge--warning";
-            case DISPUTED, FAILED -> "badge badge--danger";
-            case REFUNDED -> "badge badge--ghost";
-        };
+        String trimmedKey = Objects.requireNonNullElse(idempotencyKey, "").trim();
+        if (trimmedKey.isEmpty()) {
+            trimmedKey = UUID.randomUUID().toString();
+        }
+        Optional<Orders> existing = orderDAO.findByIdemKey(trimmedKey);
+        if (existing.isPresent()) {
+            Orders order = existing.get();
+            if (!Objects.equals(order.getBuyerId(), userId)) {
+                throw new IllegalStateException("Khóa idempotency đã được sử dụng bởi tài khoản khác.");
+            }
+            return order.getId();
+        }
+        Products product = productDAO.findAvailableById(productId)
+                .filter(p -> p.getInventoryCount() != null && p.getInventoryCount() >= quantity)
+                .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
+        BigDecimal price = productDAO.findPriceById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Không thể xác định giá sản phẩm."));
+        BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
+        int orderId = orderDAO.createPending(userId, productId, quantity, total, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity);
+        return orderId;
     }
 
-    /**
-     * Converts the status enum to a localized label for display.
-     * @param status current order status
-     * @return user-friendly Vietnamese label
-     */
-    public String getFriendlyStatus(OrderStatus status) {
-        if (status == null) {
+    public PaginatedResult<OrderRow> getMyOrders(int userId, String status, int page, int size) {
+        String normalizedStatus = normalizeStatus(status);
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.max(size, 1);
+        long totalItemsLong = orderDAO.countByBuyer(userId, normalizedStatus);
+        int totalPages = totalItemsLong == 0 ? 1 : (int) Math.ceil((double) totalItemsLong / safeSize);
+        int currentPage = Math.min(safePage, totalPages);
+        int offset = (currentPage - 1) * safeSize;
+        List<OrderRow> rows = orderDAO.findByBuyerPaged(userId, normalizedStatus, safeSize, offset);
+        int totalItems = Math.toIntExact(Math.min(totalItemsLong, Integer.MAX_VALUE));
+        return new PaginatedResult<>(rows, currentPage, totalPages, safeSize, totalItems);
+    }
+
+    public Optional<OrderDetailView> getDetail(int orderId, int userId) {
+        return orderDAO.findByIdForUser(orderId, userId)
+                .map(detail -> {
+                    List<String> credentials = List.of();
+                    if ("Completed".equalsIgnoreCase(detail.order().getStatus())) {
+                        credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
+                    }
+                    return new OrderDetailView(detail.order(), detail.product(), credentials);
+                });
+    }
+
+    public Map<String, String> getStatusLabels() {
+        return STATUS_LABELS.entrySet().stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        e -> e.getKey().toDatabaseValue(), Map.Entry::getValue));
+    }
+
+    public String getStatusLabel(String status) {
+        OrderStatus orderStatus = OrderStatus.fromDatabaseValue(status);
+        if (orderStatus == null) {
             return "Không xác định";
         }
-        return switch (status) {
-            case COMPLETED -> "Hoàn thành";
-            case PROCESSING -> "Đang xử lý";
-            case DISPUTED -> "Đang khiếu nại";
-            case PENDING -> "Chờ xử lý";
-            case FAILED -> "Thanh toán thất bại";
-            case REFUNDED -> "Đã hoàn tiền";
-        };
+        return STATUS_LABELS.getOrDefault(orderStatus, "Không xác định");
     }
 
-    private Users resolveBuyer(String email) {
-        Optional<Users> existing = buyerDAO.findActiveBuyerByEmail(email);
-        if (existing.isPresent()) {
-            return existing.get();
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
         }
-        try {
-            return buyerDAO.createBuyer(email);
-        } catch (SQLException ex) {
-            throw new IllegalStateException("Không thể khởi tạo người mua mới.", ex);
-        }
+        String normalized = Character.toUpperCase(status.charAt(0)) + status.substring(1).toLowerCase();
+        return ALLOWED_STATUSES.contains(normalized) ? normalized : null;
     }
 
-    private boolean isPurchasable(String status) {
-        if (status == null) {
-            return false;
-        }
-        return PURCHASABLE_STATUSES.contains(status.trim().toUpperCase(Locale.ROOT));
+    private static Map<OrderStatus, String> buildStatusLabels() {
+        Map<OrderStatus, String> labels = new EnumMap<>(OrderStatus.class);
+        labels.put(OrderStatus.PENDING, "Đang xử lý");
+        labels.put(OrderStatus.PROCESSING, "Đang xử lý");
+        labels.put(OrderStatus.COMPLETED, "Hoàn thành");
+        labels.put(OrderStatus.FAILED, "Thất bại");
+        labels.put(OrderStatus.REFUNDED, "Đã hoàn tiền");
+        labels.put(OrderStatus.DISPUTED, "Khiếu nại");
+        return labels;
     }
 }
