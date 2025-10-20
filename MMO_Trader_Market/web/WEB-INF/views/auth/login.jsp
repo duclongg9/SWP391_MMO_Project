@@ -2,16 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="MMO Trader Market - Đăng nhập" />
 <c:set var="bodyClass" value="layout layout--center" />
+<c:set var="headerModifier" value="layout__header--auth" />
 <%--<c:set var="headerTitle" value="Đăng nhập" />
 <c:set var="headerSubtitle" value="Đăng nhập để quản lý giao dịch" />--%>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
-<style>
-  /* Thu gọn khoảng cách giữa các nút hướng dẫn dưới form */
-  /* Tùy chọn: thu gọn form cho đều mắt */
-  .form-card { gap: 12px; }
-  .form-card__field { margin-bottom: 10px; }
-</style>
 <main class="layout__content auth-page">
     <c:if test="${not empty error}">
         <div class="alert alert--error"><c:out value="${error}" /></div>
