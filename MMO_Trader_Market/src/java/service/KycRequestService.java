@@ -53,12 +53,11 @@ public class KycRequestService {
      */
     public SellerRequest createKycRequest(Users user, String fullName, String dateOfBirthStr, String idNumber,
                                          Part frontIdImage, Part backIdImage, Part selfieImage,
-                                         String businessType, String businessName, String businessDescription, 
-                                         String experience, String phoneNumber, String email, String facebookLink,
-                                         String zaloNumber, String otherContacts) {
+                                         String businessType, String businessName, String phoneNumber, 
+                                         String email, String facebookLink, String zaloNumber, String otherContacts) {
         validateUser(user);
         validateKycInfo(fullName, dateOfBirthStr, idNumber);
-        validateBusinessInfo(businessType, businessName, businessDescription, experience);
+        validateBusinessInfo(businessType, businessName);
         validateContactInfo(phoneNumber, email, facebookLink, zaloNumber, otherContacts);
         validateImageFiles(frontIdImage, backIdImage, selfieImage);
         
@@ -81,8 +80,8 @@ public class KycRequestService {
             String combinedContactInfo = buildContactInfo(phoneNumber, email, facebookLink, zaloNumber, otherContacts);
             
             return sellerRequestDAO.createKycRequest(user.getId(), fullName.trim(), dateOfBirth, idNumber.trim(),
-                    frontIdPath, backIdPath, selfiePath, businessName.trim(), businessDescription.trim(), 
-                    experience.trim(), combinedContactInfo);
+                    frontIdPath, backIdPath, selfiePath, businessName.trim(), "Sẽ cập nhật sau khi tạo shop", 
+                    "Sẽ chia sẻ sau", combinedContactInfo);
             
         } catch (SQLException | IOException ex) {
             LOGGER.log(Level.SEVERE, "Lỗi khi tạo KYC request", ex);
@@ -274,45 +273,24 @@ public class KycRequestService {
         }
     }
 
-    private void validateBusinessInfo(String businessName, String businessDescription, String experience, String contactInfo) {
+    private void validateBusinessInfo(String businessType, String businessName) {
+        // Validate business type
+        if (businessType == null || businessType.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn loại hình kinh doanh.");
+        }
+        
+        if (!"individual".equals(businessType) && !"company".equals(businessType)) {
+            throw new IllegalArgumentException("Loại hình kinh doanh không hợp lệ.");
+        }
+        
         // Validate business name
         if (businessName == null || businessName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng nhập tên doanh nghiệp/gian hàng");
+            throw new IllegalArgumentException("Vui lòng nhập tên cửa hàng/doanh nghiệp.");
         }
         
         String trimmedBusinessName = businessName.trim();
         if (!BUSINESS_NAME_PATTERN.matcher(trimmedBusinessName).matches()) {
-            throw new IllegalArgumentException("Tên doanh nghiệp phải từ 3-100 ký tự, chỉ chứa chữ, số và ký tự đặc biệt: - _ . ( )");
-        }
-
-        // Validate business description
-        if (businessDescription == null || businessDescription.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng nhập mô tả doanh nghiệp");
-        }
-        
-        String trimmedDesc = businessDescription.trim();
-        if (trimmedDesc.length() < 20 || trimmedDesc.length() > 1000) {
-            throw new IllegalArgumentException("Mô tả doanh nghiệp phải từ 20 đến 1000 ký tự");
-        }
-
-        // Validate experience
-        if (experience == null || experience.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng nhập kinh nghiệm bán hàng");
-        }
-        
-        String trimmedExp = experience.trim();
-        if (trimmedExp.length() < 10 || trimmedExp.length() > 500) {
-            throw new IllegalArgumentException("Kinh nghiệm phải từ 10 đến 500 ký tự");
-        }
-
-        // Validate contact info
-        if (contactInfo == null || contactInfo.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng nhập thông tin liên hệ");
-        }
-        
-        String trimmedContact = contactInfo.trim();
-        if (trimmedContact.length() < 10 || trimmedContact.length() > 200) {
-            throw new IllegalArgumentException("Thông tin liên hệ phải từ 10-200 ký tự");
+            throw new IllegalArgumentException("Tên cửa hàng phải từ 3-100 ký tự, chỉ chứa chữ, số và ký tự đặc biệt: - _ . ( )");
         }
     }
 
@@ -328,6 +306,61 @@ public class KycRequestService {
         if (selfieImage == null || selfieImage.getSize() == 0) {
             throw new IllegalArgumentException("Vui lòng chọn ảnh selfie");
         }
+    }
+
+    private void validateContactInfo(String phoneNumber, String email, String facebookLink, String zaloNumber, String otherContacts) {
+        // Validate phone number (bắt buộc)
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập số điện thoại");
+        }
+        
+        String trimmedPhone = phoneNumber.trim();
+        if (!PHONE_NUMBER_PATTERN.matcher(trimmedPhone).matches()) {
+            throw new IllegalArgumentException("Số điện thoại không hợp lệ (10-11 chữ số)");
+        }
+
+        // Validate email (bắt buộc)
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập email");
+        }
+        
+        String trimmedEmail = email.trim();
+        if (!EMAIL_PATTERN.matcher(trimmedEmail).matches()) {
+            throw new IllegalArgumentException("Địa chỉ email không hợp lệ");
+        }
+
+        // Validate Facebook link (tùy chọn) - chỉ check format nếu có điền
+        if (facebookLink != null && !facebookLink.trim().isEmpty()) {
+            String trimmedFb = facebookLink.trim();
+            if (!URL_PATTERN.matcher(trimmedFb).matches()) {
+                throw new IllegalArgumentException("Link Facebook không đúng định dạng URL");
+            }
+        }
+
+        // Zalo và other contacts đều tùy chọn - không cần validation
+    }
+
+    private String buildContactInfo(String phoneNumber, String email, String facebookLink, String zaloNumber, String otherContacts) {
+        StringBuilder contactInfo = new StringBuilder();
+        
+        // Thông tin bắt buộc
+        contactInfo.append("📞 SĐT: ").append(phoneNumber.trim()).append("\n");
+        contactInfo.append("📧 Email: ").append(email.trim()).append("\n");
+        
+        // Thông tin tùy chọn - chỉ thêm nếu có
+        if (facebookLink != null && !facebookLink.trim().isEmpty()) {
+            contactInfo.append("👥 Facebook: ").append(facebookLink.trim()).append("\n");
+        }
+        
+        if (zaloNumber != null && !zaloNumber.trim().isEmpty()) {
+            contactInfo.append("💬 Zalo: ").append(zaloNumber.trim()).append("\n");
+        }
+        
+        if (otherContacts != null && !otherContacts.trim().isEmpty()) {
+            contactInfo.append("📝 Khác: ").append(otherContacts.trim()).append("\n");
+        }
+        
+        return contactInfo.toString();
     }
 
     private Date parseDate(String dateStr) {

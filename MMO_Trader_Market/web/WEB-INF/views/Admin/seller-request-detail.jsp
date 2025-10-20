@@ -56,22 +56,10 @@
                             <span class="detail-value"><c:out value="${sellerRequest.businessName}" /></span>
                         </div>
                     </div>
-                    <div class="detail-item detail-item--full">
-                        <span class="detail-label">Mô tả doanh nghiệp:</span>
-                        <div class="detail-value">
-                            <p class="detail-text"><c:out value="${sellerRequest.businessDescription}" /></p>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="detail-section">
-                    <h3 class="detail-section__title">Kinh nghiệm và thông tin liên hệ</h3>
-                    <div class="detail-item detail-item--full">
-                        <span class="detail-label">Kinh nghiệm bán hàng:</span>
-                        <div class="detail-value">
-                            <p class="detail-text"><c:out value="${sellerRequest.experience}" /></p>
-                        </div>
-                    </div>
+                    <h3 class="detail-section__title">Thông tin liên hệ</h3>
                     <div class="detail-item detail-item--full">
                         <span class="detail-label">Thông tin liên hệ:</span>
                         <div class="detail-value">

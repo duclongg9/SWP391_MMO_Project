@@ -105,8 +105,6 @@ public class KycRequestController extends BaseController {
             String idNumber = request.getParameter("idNumber");
             String businessType = request.getParameter("businessType");
             String businessName = request.getParameter("businessName");
-            String businessDescription = request.getParameter("businessDescription");
-            String experience = request.getParameter("experience");
             
             // Lấy thông tin liên hệ
             String phoneNumber = request.getParameter("phoneNumber");
@@ -122,8 +120,8 @@ public class KycRequestController extends BaseController {
             
             // Tạo KYC request
             SellerRequest kycRequest = kycRequestService.createKycRequest(currentUser, fullName, dateOfBirth, idNumber,
-                    frontIdImage, backIdImage, selfieImage, businessType, businessName, businessDescription, 
-                    experience, phoneNumber, email, facebookLink, zaloNumber, otherContacts);
+                    frontIdImage, backIdImage, selfieImage, businessType, businessName, phoneNumber, 
+                    email, facebookLink, zaloNumber, otherContacts);
             
             session.setAttribute("success", "Yêu cầu KYC của bạn đã được gửi thành công! Admin sẽ xem xét trong vòng 1-2 ngày làm việc.");
             response.sendRedirect(request.getContextPath() + "/user/kyc-request");
@@ -178,8 +176,6 @@ public class KycRequestController extends BaseController {
         request.setAttribute("idNumber", request.getParameter("idNumber"));
         request.setAttribute("businessType", request.getParameter("businessType"));
         request.setAttribute("businessName", request.getParameter("businessName"));
-        request.setAttribute("businessDescription", request.getParameter("businessDescription"));
-        request.setAttribute("experience", request.getParameter("experience"));
         request.setAttribute("phoneNumber", request.getParameter("phoneNumber"));
         request.setAttribute("email", request.getParameter("email"));
         request.setAttribute("facebookLink", request.getParameter("facebookLink"));

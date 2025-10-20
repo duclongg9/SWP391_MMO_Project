@@ -296,20 +296,6 @@
                                    maxlength="100">
                             <small class="form-help">Tên này sẽ hiển thị trên cửa hàng của bạn</small>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="businessDescription" class="form-label required">Mô tả kinh doanh</label>
-                            <textarea id="businessDescription" name="businessDescription" class="form-textarea" 
-                                      placeholder="Mô tả chi tiết về các sản phẩm/dịch vụ bạn định bán, thị trường mục tiêu..." 
-                                      required maxlength="1000">${businessDescription}</textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="experience" class="form-label required">Kinh nghiệm bán hàng</label>
-                            <textarea id="experience" name="experience" class="form-textarea" 
-                                      placeholder="Chia sẻ kinh nghiệm bán hàng, các kênh đã từng bán, thành tích..." 
-                                      required maxlength="500">${experience}</textarea>
-                        </div>
                     </div>
                     
                     <!-- Thông tin liên hệ -->
@@ -317,6 +303,10 @@
                         <div class="section-title">
                             📞 Thông tin liên hệ
                         </div>
+                        <p class="section-description">
+                            <strong>SĐT và Email</strong> là bắt buộc để admin có thể liên lạc. 
+                            Facebook và Zalo là thông tin bổ sung, có thể để trống.
+                        </p>
                         
                         <div class="form-grid">
                             <div class="form-group">
@@ -327,21 +317,21 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="email" class="form-label">Email liên hệ</label>
+                                <label for="email" class="form-label required">Email liên hệ</label>
                                 <input type="email" id="email" name="email" class="form-input" 
-                                       value="${email}" placeholder="shop@example.com" maxlength="100">
+                                       value="${email}" placeholder="shop@example.com" required maxlength="100">
                             </div>
                         </div>
                         
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="facebookLink" class="form-label">Link Facebook</label>
+                                <label for="facebookLink" class="form-label">Link Facebook <span style="color: #666; font-weight: normal;">(tùy chọn)</span></label>
                                 <input type="url" id="facebookLink" name="facebookLink" class="form-input" 
                                        value="${facebookLink}" placeholder="https://facebook.com/yourshop" maxlength="200">
                             </div>
                             
                             <div class="form-group">
-                                <label for="zaloNumber" class="form-label">Số Zalo</label>
+                                <label for="zaloNumber" class="form-label">Số Zalo <span style="color: #666; font-weight: normal;">(tùy chọn)</span></label>
                                 <input type="tel" id="zaloNumber" name="zaloNumber" class="form-input" 
                                        value="${zaloNumber}" placeholder="0987654321" 
                                        pattern="[0-9]{10,11}" title="Số Zalo phải có 10-11 chữ số">
