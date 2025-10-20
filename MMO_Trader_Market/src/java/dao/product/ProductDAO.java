@@ -2,6 +2,9 @@ package dao.product;
 
 import dao.BaseDAO;
 import model.Products;
+import model.product.ProductDetail;
+import model.product.ProductListRow;
+import model.product.ShopOption;
 
 import java.math.BigDecimal;
 
@@ -26,6 +29,109 @@ public class ProductDAO extends BaseDAO {
 
     private static final String PRODUCT_COLUMNS = "id, shop_id, name, description, price, "
             + "inventory_count, status, created_at, updated_at";
+
+    private static final String LIST_SELECT = "SELECT p.id, p.name, p.price, p.inventory_count, p.status, "
+            + "p.created_at, s.id AS shop_id, s.name AS shop_name "
+            + "FROM products p JOIN shops s ON s.id = p.shop_id";
+
+    private static final String DETAIL_SELECT = "SELECT p.id, p.name, p.description, p.price, p.inventory_count, "
+            + "p.status, s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
+            + "FROM products p JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
+
+    private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
+            + "FROM products p JOIN shops s ON s.id = p.shop_id "
+            + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
+
+    public List<ProductListRow> findAvailablePaged(String q, Integer shopId, int limit, int offset) {
+        StringBuilder sql = new StringBuilder(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
+        List<Object> params = new ArrayList<>();
+        if (hasText(q)) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add(buildLikePattern(q));
+        }
+        if (shopId != null && shopId > 0) {
+            sql.append(" AND p.shop_id = ?");
+            params.add(shopId);
+        }
+        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<ProductListRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(mapListRow(rs));
+                }
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách sản phẩm khả dụng", ex);
+            return List.of();
+        }
+    }
+
+    public long countAvailable(String q, Integer shopId) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
+                .append(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
+        List<Object> params = new ArrayList<>();
+        if (hasText(q)) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add(buildLikePattern(q));
+        }
+        if (shopId != null && shopId > 0) {
+            sql.append(" AND p.shop_id = ?");
+            params.add(shopId);
+        }
+        sql.append(") AS available_products");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm khả dụng", ex);
+        }
+        return 0;
+    }
+
+    public Optional<ProductDetail> findDetailById(int productId) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(DETAIL_SELECT)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapDetail(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải chi tiết sản phẩm", ex);
+        }
+        return Optional.empty();
+    }
+
+    public List<ShopOption> findShopsWithAvailableProducts() {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(SHOP_FILTER_SELECT);
+             ResultSet rs = statement.executeQuery()) {
+            List<ShopOption> shops = new ArrayList<>();
+            while (rs.next()) {
+                shops.add(mapShopOption(rs));
+            }
+            return shops;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách shop cho bộ lọc sản phẩm", ex);
+            return List.of();
+        }
+    }
 
     public Optional<Products> findById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
@@ -170,6 +276,32 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private String buildLikePattern(String keyword) {
+        return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            Object value = params.get(i);
+            int index = i + 1;
+            if (value instanceof Integer intValue) {
+                statement.setInt(index, intValue);
+            } else if (value instanceof Long longValue) {
+                statement.setLong(index, longValue);
+            } else if (value instanceof String stringValue) {
+                statement.setString(index, stringValue);
+            } else if (value instanceof BigDecimal decimalValue) {
+                statement.setBigDecimal(index, decimalValue);
+            } else {
+                statement.setObject(index, value);
+            }
+        }
+    }
+
     private void appendSearchClause(String keyword, StringBuilder sql, List<String> parameters) {
         if (keyword == null || keyword.isBlank()) {
             return;
@@ -187,6 +319,39 @@ public class ProductDAO extends BaseDAO {
             statement.setString(i + 1, parameters.get(i));
         }
         return statement;
+    }
+
+    private ProductListRow mapListRow(ResultSet rs) throws SQLException {
+        Integer inventory = (Integer) rs.getObject("inventory_count");
+        return new ProductListRow(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getBigDecimal("price"),
+                inventory,
+                rs.getString("status"),
+                rs.getInt("shop_id"),
+                rs.getString("shop_name")
+        );
+    }
+
+    private ProductDetail mapDetail(ResultSet rs) throws SQLException {
+        Integer inventory = (Integer) rs.getObject("inventory_count");
+        Integer ownerId = (Integer) rs.getObject("shop_owner_id");
+        return new ProductDetail(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getString("description"),
+                rs.getBigDecimal("price"),
+                inventory,
+                rs.getString("status"),
+                rs.getInt("shop_id"),
+                rs.getString("shop_name"),
+                ownerId
+        );
+    }
+
+    private ShopOption mapShopOption(ResultSet rs) throws SQLException {
+        return new ShopOption(rs.getInt("shop_id"), rs.getString("shop_name"));
     }
 
     private Products mapRow(ResultSet rs) throws SQLException {
