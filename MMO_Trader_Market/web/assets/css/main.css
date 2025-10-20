@@ -352,7 +352,7 @@ code {
 
 .table thead {
     background: var(--primary-color);
-    color: #fff;
+    color: #f3f4f6;
 }
 
 .table th,
@@ -380,6 +380,7 @@ code {
 .pagination {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     margin-top: 1.5rem;
 }
@@ -398,6 +399,16 @@ code {
     transition: var(--transition);
 }
 
+.pagination-item__link{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  text-decoration:none;
+  color:inherit; /* ăn theo màu từ li */
+}
+
 .pagination__item:hover {
     background: rgba(0, 91, 150, 0.08);
 }
@@ -406,6 +417,15 @@ code {
     background: var(--primary-color);
     color: #fff;
     border-color: transparent;
+}
+/* Không để hover làm đổi màu khi đang active */
+.pagination__item--active:hover{ 
+    background: var(--primary-color); 
+}
+
+/* (tuỳ chọn) đảm bảo chữ trắng nếu có CSS khác ghi đè */
+.pagination__item--active .pagination-item__link{ 
+    color:#fff; 
 }
 
 .pagination__item--disabled {

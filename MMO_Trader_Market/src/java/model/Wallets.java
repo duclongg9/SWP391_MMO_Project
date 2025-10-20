@@ -9,7 +9,11 @@ public class Wallets {
     private BigDecimal balance;
     private Boolean status;
     private Date createdAt;
+    private Date updatedAt;
 
+    public Wallets() {
+    }
+    
     public Wallets(Integer id, Integer userId, BigDecimal balance, Boolean status, Date createdAt, Date updatedAt) {
         this.id = id;
         this.userId = userId;
@@ -19,7 +23,7 @@ public class Wallets {
         this.updatedAt = updatedAt;
     }
 
-    private Date updatedAt;
+  
     public Integer getId() {
         return id;
     }
