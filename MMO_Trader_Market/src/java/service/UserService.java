@@ -69,7 +69,7 @@ public class UserService {
         }
         String hashed = user.getHashedPassword();
         if (hashed == null || hashed.isBlank()) {
-            throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui lòng đăng nhập bằng Google");
+throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui lòng đăng nhập bằng Google");
         }
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
@@ -130,7 +130,7 @@ public class UserService {
         ensurePasswordMatch(normalizedPassword, confirmPassword);
 
         try {
-            PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalizedToken);
+PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalizedToken);
             if (resetToken == null || resetToken.getExpiresAt() == null
                     || resetToken.getExpiresAt().toInstant().isBefore(Instant.now())) {
                 throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
@@ -192,8 +192,7 @@ public class UserService {
             if (user == null) {
                 throw new IllegalArgumentException("Tài khoản không tồn tại hoặc đã bị khóa");
             }
-
-            String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter theo model
+String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter theo model
             if (currentHash == null || currentHash.isBlank()) {
                 throw new IllegalStateException("Tài khoản chưa thiết lập mật khẩu");
             }
@@ -260,7 +259,7 @@ public class UserService {
     }
 
     private void ensurePasswordMatch(String password, String confirmPassword) {
-        String confirm = confirmPassword == null ? "" : confirmPassword.trim();
+String confirm = confirmPassword == null ? "" : confirmPassword.trim();
         if (!password.equals(confirm)) {
             throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
         }
