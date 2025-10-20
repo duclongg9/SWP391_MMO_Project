@@ -5,11 +5,11 @@ package model;
  */
 public enum OrderStatus {
     PENDING,
-    PROCESSING,
-    COMPLETED,
+    CONFIRMED,
     FAILED,
+    DELIVERED,
     REFUNDED,
-    DISPUTED;
+    CANCELLED;
 
     public static OrderStatus fromDatabaseValue(String value) {
         if (value == null) {
@@ -17,11 +17,11 @@ public enum OrderStatus {
         }
         return switch (value.toUpperCase()) {
             case "PENDING" -> PENDING;
-            case "PROCESSING" -> PROCESSING;
-            case "COMPLETED" -> COMPLETED;
+            case "CONFIRMED" -> CONFIRMED;
             case "FAILED" -> FAILED;
+            case "DELIVERED" -> DELIVERED;
             case "REFUNDED" -> REFUNDED;
-            case "DISPUTED" -> DISPUTED;
+            case "CANCELLED" -> CANCELLED;
             default -> null;
         };
     }
@@ -29,11 +29,11 @@ public enum OrderStatus {
     public String toDatabaseValue() {
         return switch (this) {
             case PENDING -> "PENDING";
-            case PROCESSING -> "PROCESSING";
-            case COMPLETED -> "COMPLETED";
+            case CONFIRMED -> "CONFIRMED";
             case FAILED -> "FAILED";
+            case DELIVERED -> "DELIVERED";
             case REFUNDED -> "REFUNDED";
-            case DISPUTED -> "DISPUTED";
+            case CANCELLED -> "CANCELLED";
         };
     }
 }

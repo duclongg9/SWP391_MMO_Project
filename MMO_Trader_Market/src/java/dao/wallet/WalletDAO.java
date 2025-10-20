@@ -9,8 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,52 +33,6 @@ public class WalletDAO extends BaseDAO {
             }
         }
         return Optional.empty();
-    }
-
-    public Optional<WalletSnapshot> findWallet(int userId) {
-        String sql = "SELECT id, balance, hold_balance FROM wallets WHERE user_id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, userId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    BigDecimal balance = rs.getBigDecimal("balance");
-                    BigDecimal holdBalance = rs.getBigDecimal("hold_balance");
-                    return Optional.of(new WalletSnapshot(rs.getInt("id"), balance, holdBalance));
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "findWallet failed", ex);
-        }
-        return Optional.empty();
-    }
-
-    public List<WalletTransactionItem> findRecentTransactions(int walletId, int limit) {
-        String sql = "SELECT id, transaction_type, amount, balance_before, balance_after, note, created_at "
-                + "FROM wallet_transactions WHERE wallet_id = ? ORDER BY created_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, walletId);
-            statement.setInt(2, Math.max(limit, 1));
-            try (ResultSet rs = statement.executeQuery()) {
-                List<WalletTransactionItem> items = new ArrayList<>();
-                while (rs.next()) {
-                    items.add(new WalletTransactionItem(
-                            rs.getLong("id"),
-                            rs.getString("transaction_type"),
-                            rs.getBigDecimal("amount"),
-                            rs.getBigDecimal("balance_before"),
-                            rs.getBigDecimal("balance_after"),
-                            rs.getString("note"),
-                            rs.getTimestamp("created_at")
-                    ));
-                }
-                return items;
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "findRecentTransactions failed", ex);
-            return List.of();
-        }
     }
 
     public WalletHoldRecord createHold(int buyerId, int sellerId, BigDecimal amount, int orderId, String orderToken)
@@ -318,10 +270,6 @@ public class WalletDAO extends BaseDAO {
     }
 
     public record WalletSnapshot(int id, BigDecimal balance, BigDecimal holdBalance) {
-    }
-
-    public record WalletTransactionItem(long id, String type, BigDecimal amount,
-            BigDecimal balanceBefore, BigDecimal balanceAfter, String note, Timestamp createdAt) {
     }
 
     public enum WalletHoldStatus {

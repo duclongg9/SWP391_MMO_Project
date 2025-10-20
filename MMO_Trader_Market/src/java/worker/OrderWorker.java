@@ -145,8 +145,8 @@ public final class OrderWorker implements Runnable {
         try {
             walletService.capture(message.orderToken());
             orderDAO.assignCredentialToOrder(order.getId(), productId);
-            if (!orderDAO.updateStatus(order.getId(), message.orderToken(), OrderStatus.COMPLETED)) {
-                throw new RuntimeException("Failed to update order status to completed");
+            if (!orderDAO.updateStatus(order.getId(), message.orderToken(), OrderStatus.CONFIRMED)) {
+                throw new RuntimeException("Failed to update order status to confirmed");
             }
             return true;
         } catch (IllegalStateException ex) {

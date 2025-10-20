@@ -25,7 +25,7 @@ public class ProductService {
     }
 
     public List<Products> homepageHighlights() {
-        return productDAO.findAvailable(HIGHLIGHT_LIMIT, 0);
+        return productDAO.findHighlighted(HIGHLIGHT_LIMIT);
     }
 
     public Products detail(int id) {
@@ -59,9 +59,5 @@ public class ProductService {
                 : productDAO.search(ownerId, normalizedKeyword, safePage, pageSize);
 
         return new ProductSearchResult(items, totalItems, safePage, pageSize, totalPages);
-    }
-
-    public long countAvailableProducts() {
-        return productDAO.countAvailableProducts();
     }
 }

@@ -8,12 +8,9 @@
     <section class="panel wallet__summary">
         <div class="panel__header">
             <h2 class="panel__title">Tổng quan ví</h2>
-            <span class="badge">Đang hoạt động</span>
+            <span class="badge"><c:out value="${walletStatus}" /></span>
         </div>
         <div class="panel__body wallet__stats">
-            <c:if test="${not empty error}">
-                <div class="alert alert--error"><c:out value="${error}" /></div>
-            </c:if>
             <article class="wallet-stat">
                 <p class="wallet-stat__label">Số dư khả dụng</p>
                 <p class="wallet-stat__value">
@@ -28,6 +25,36 @@
                     <span class="wallet-stat__currency"><c:out value="${walletCurrency}" /></span>
                 </p>
             </article>
+            <article class="wallet-stat">
+                <p class="wallet-stat__label">Cập nhật gần nhất</p>
+                <p class="wallet-stat__meta"><c:out value="${walletUpdatedAt}" /></p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel wallet__shortcuts">
+        <div class="panel__header">
+            <h3 class="panel__title">Thao tác nhanh</h3>
+        </div>
+        <div class="panel__body wallet-shortcuts">
+            <c:choose>
+                <c:when test="${empty shortcuts}">
+                    <p>Không có thao tác nhanh.</p>
+                </c:when>
+                <c:otherwise>
+                    <div class="wallet-shortcuts__grid">
+                        <c:forEach var="shortcut" items="${shortcuts}">
+                            <a class="wallet-shortcut" href="${shortcut.href}">
+                                <span class="wallet-shortcut__icon" aria-hidden="true"><c:out value="${shortcut.icon}" /></span>
+                                <div>
+                                    <strong class="wallet-shortcut__title"><c:out value="${shortcut.title}" /></strong>
+                                    <p class="wallet-shortcut__description"><c:out value="${shortcut.description}" /></p>
+                                </div>
+                            </a>
+                        </c:forEach>
+                    </div>
+                </c:otherwise>
+            </c:choose>
         </div>
     </section>
 
@@ -44,34 +71,19 @@
                     <table class="table table--interactive">
                         <thead>
                         <tr>
-                            <th>Loại giao dịch</th>
+                            <th>Nội dung</th>
                             <th>Số tiền</th>
-                            <th>Số dư sau giao dịch</th>
-                            <th>Ghi chú</th>
+                            <th>Trạng thái</th>
                             <th>Thời gian</th>
                         </tr>
                         </thead>
                         <tbody>
                         <c:forEach var="transaction" items="${transactions}">
                             <tr>
-                                <td><c:out value="${transaction.type}" /></td>
-                                <td>
-                                    <fmt:formatNumber value="${transaction.amount}" type="number" minFractionDigits="0" />
-                                    <span class="wallet-stat__currency"><c:out value="${walletCurrency}" /></span>
-                                </td>
-                                <td>
-                                    <fmt:formatNumber value="${transaction.balanceAfter}" type="number" minFractionDigits="0" />
-                                    <span class="wallet-stat__currency"><c:out value="${walletCurrency}" /></span>
-                                </td>
-                                <td><c:out value="${transaction.note}" /></td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${not empty transaction.createdAt}">
-                                            <fmt:formatDate value="${transaction.createdAt}" type="both" />
-                                        </c:when>
-                                        <c:otherwise>--</c:otherwise>
-                                    </c:choose>
-                                </td>
+                                <td><c:out value="${transaction.title}" /></td>
+                                <td><strong><c:out value="${transaction.amount}" /></strong></td>
+                                <td><span class="badge"><c:out value="${transaction.status}" /></span></td>
+                                <td><c:out value="${transaction.time}" /></td>
                             </tr>
                         </c:forEach>
                         </tbody>

@@ -68,6 +68,26 @@ public class ProductListController extends BaseController {
         request.setAttribute("headerTitle", "Danh sách sản phẩm");
         request.setAttribute("headerSubtitle", "Quản lý sản phẩm theo mô hình MVC");
         request.setAttribute("headerModifier", HEADER_MODIFIER);
+<<<<<<< HEAD:MMO_Trader_Market/src/java/controller/product/ProductListController.java
+        request.setAttribute("navItems", buildNavigation(request.getContextPath()));
+    }
+
+    private List<Map<String, String>> buildNavigation(String contextPath) {
+        List<Map<String, String>> items = new ArrayList<>();
+        items.add(createNavItem(contextPath + "/dashboard", "Bảng điều khiển"));
+        items.add(createNavItem(contextPath + "/products", "Sản phẩm"));
+        items.add(createNavItem(contextPath + "/orders/my", "Đơn đã mua"));
+        items.add(createNavItem(contextPath + "/styleguide", "Styleguide"));
+        return items;
+    }
+
+    private Map<String, String> createNavItem(String href, String label) {
+        Map<String, String> item = new HashMap<>();
+        item.put("href", href);
+        item.put("label", label);
+        return item;
+=======
+>>>>>>> origin/hoa:MMO_Trader_Market/src/java/controller/product/ProductController.java
     }
 
     private String normalizeKeyword(String keywordParam) {

@@ -10,8 +10,7 @@
     <c:if test="${not empty error}">
         <div class="alert alert--error"><c:out value="${error}" /></div>
     </c:if>
-    <form method="post" action="<c:url value='/auth' />" class="form-card">
-        <input type="hidden" name="action" value="register" />
+    <form method="post" action="<c:url value='/register' />" class="form-card">
         <div class="form-card__field">
             <label class="form-card__label" for="name">Tài khoản</label>
             <input class="form-card__input" id="name" name="name" type="text"
@@ -39,11 +38,21 @@
             </label>
         </div>
         <button class="button button--primary" type="submit">Đăng ký</button>
+        <div class="form-card__actions-row">
+            <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
+            <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>
+        </div>
     </form>
+<<<<<<< HEAD
+    <section class="guide-link">
+        <a class="button button--secondary" href="<c:url value='/oauth2/google/login' />">Đăng ký bằng Google</a>
+    </section>
     <section class="guide-link">
         <p>Đã có tài khoản?</p>
         <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
     </section>
+=======
+>>>>>>> origin/hoa
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
