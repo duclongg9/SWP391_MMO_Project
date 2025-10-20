@@ -1,205 +1,203 @@
 package dao.order;
 
 import dao.BaseDAO;
-import model.Order;
 import model.OrderStatus;
+import model.Orders;
 import model.Products;
+import model.view.OrderDetailView;
+import model.view.OrderRow;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Data access layer for orders table, encapsulating CRUD and transactional helpers.
+ */
 public class OrderDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(OrderDAO.class.getName());
 
-    private static final String BASE_SELECT = "SELECT "
-            + "o.id AS order_id, o.product_id, o.buyer_id, o.total_amount, o.status AS order_status, o.created_at AS order_created_at, "
-            + "p.shop_id, p.name AS product_name, p.description AS product_description, p.price AS product_price, "
-            + "p.inventory_count AS product_inventory, p.status AS product_status, p.created_at AS product_created_at, "
-            + "p.updated_at AS product_updated_at, u.email AS buyer_email, "
-            + "wt.transaction_type AS transaction_type, pc.encrypted_value AS activation_code "
-            + "FROM orders o "
-            + "JOIN products p ON p.id = o.product_id "
-            + "JOIN users u ON u.id = o.buyer_id "
-            + "LEFT JOIN wallet_transactions wt ON wt.id = o.payment_transaction_id "
-            + "LEFT JOIN product_credentials pc ON pc.order_id = o.id ";
-
-    public int countAll() {
-        final String sql = "SELECT COUNT(*) FROM orders";
+    public int createPending(int buyerId, int productId, int qty, BigDecimal total, String idemKey) {
+        final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
+                + "VALUES (?, ?, ?, 'Pending', ?, NOW(), NOW())";
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm số đơn hàng", ex);
-        }
-        return 0;
-    }
-
-    public long countByStatus(OrderStatus status) {
-        final String sql = "SELECT COUNT(*) FROM orders WHERE status = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, status.toDatabaseValue());
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng theo trạng thái", ex);
-        }
-        return 0;
-    }
-
-    public long countByBuyer(int buyerId) {
-        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, buyerId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng của người mua", ex);
-        }
-        return 0;
-    }
-
-    public long countByBuyerAndStatus(int buyerId, OrderStatus status) {
-        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND status = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, buyerId);
-            statement.setString(2, status.toDatabaseValue());
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng theo trạng thái và người mua", ex);
-        }
-        return 0;
-    }
-
-    public List<Order> findAll(int limit, int offset) {
-        final String sql = BASE_SELECT + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, limit);
-            statement.setInt(2, offset);
-            List<Order> orders = new ArrayList<>();
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    orders.add(mapRow(rs));
-                }
-            }
-            return orders;
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tải danh sách đơn hàng", ex);
-            return List.of();
-        }
-    }
-
-    public Optional<Order> findById(int orderId) {
-        final String sql = BASE_SELECT + "WHERE o.id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, orderId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tải chi tiết đơn hàng", ex);
-        }
-        return Optional.empty();
-    }
-
-    public Order createOrder(Products product, int buyerId, String paymentMethod)
-            throws SQLException {
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                int orderId = insertOrder(connection, product, buyerId);
-                boolean credentialAssigned = assignCredential(connection, orderId, product.getId());
-                if (credentialAssigned) {
-                    updateOrderStatus(connection, orderId, OrderStatus.COMPLETED);
-                }
-                decrementInventory(connection, product.getId());
-                connection.commit();
-                return findById(orderId)
-                        .map(order -> enrichPaymentMethod(order, paymentMethod))
-                        .orElseThrow(() -> new SQLException("Không thể tải lại đơn hàng vừa tạo"));
-            } catch (SQLException ex) {
-                connection.rollback();
-                throw ex;
-            } finally {
-                connection.setAutoCommit(true);
-            }
-        }
-    }
-
-    private int insertOrder(Connection connection, Products product, int buyerId)
-            throws SQLException {
-        final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
-        try (PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, buyerId);
-            statement.setInt(2, product.getId());
-            BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
-            statement.setBigDecimal(3, price);
-            statement.setString(4, OrderStatus.PROCESSING.toDatabaseValue());
+            statement.setInt(2, productId);
+            statement.setBigDecimal(3, total);
+            statement.setString(4, idemKey);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
                     return keys.getInt(1);
                 }
             }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể tạo đơn hàng mới", ex);
         }
-        throw new SQLException("Không thể tạo đơn hàng mới");
+        throw new IllegalStateException("Không thể tạo đơn hàng mới");
     }
 
-    private boolean assignCredential(Connection connection, int orderId, Integer productId) throws SQLException {
-        final String selectSql = "SELECT id, encrypted_value FROM product_credentials "
-                + "WHERE product_id = ? AND is_sold = 0 ORDER BY id ASC LIMIT 1 FOR UPDATE";
-        try (PreparedStatement select = connection.prepareStatement(selectSql)) {
-            select.setInt(1, productId);
-            try (ResultSet rs = select.executeQuery()) {
-                if (!rs.next()) {
-                    return false;
+    public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
+        final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.total_amount, o.status, o.created_at, o.updated_at, "
+                + "o.payment_transaction_id, o.idempotency_key, o.hold_until, "
+                + "p.id AS p_id, p.shop_id, p.name, p.description, p.price, p.inventory_count, p.status AS p_status, "
+                + "p.created_at AS p_created_at, p.updated_at AS p_updated_at "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            statement.setInt(2, userId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    Orders order = mapOrder(rs);
+                    Products product = mapProduct(rs);
+                    return Optional.of(new OrderDetailView(order, product, List.of()));
                 }
-                int credentialId = rs.getInt("id");
-                final String updateSql = "UPDATE product_credentials SET order_id = ?, is_sold = 1 "
-                        + "WHERE id = ?";
-                try (PreparedStatement update = connection.prepareStatement(updateSql)) {
-                    update.setInt(1, orderId);
-                    update.setInt(2, credentialId);
-                    update.executeUpdate();
-                }
-                return true;
             }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy chi tiết đơn hàng", ex);
+        }
+        return Optional.empty();
+    }
+
+    public boolean setStatus(int orderId, String status) {
+        final String sql = "UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status);
+            statement.setInt(2, orderId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái đơn hàng", ex);
+            return false;
         }
     }
 
-    private void updateOrderStatus(Connection connection, int orderId, OrderStatus status) throws SQLException {
-        final String sql = "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+    public boolean setCompletedWithTx(int orderId, Integer paymentTxId) {
+        final String sql = "UPDATE orders SET status = 'Completed', payment_transaction_id = ?, updated_at = NOW() WHERE id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (paymentTxId == null) {
+                statement.setNull(1, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(1, paymentTxId);
+            }
+            statement.setInt(2, orderId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể hoàn tất đơn hàng", ex);
+            return false;
+        }
+    }
+
+    public Optional<Orders> findById(int orderId) {
+        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
+                + "hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapOrder(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tìm đơn hàng", ex);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Orders> findByIdemKey(String idemKey) {
+        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
+                + "hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, idemKey);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapOrder(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tìm đơn hàng theo khóa idempotency", ex);
+        }
+        return Optional.empty();
+    }
+
+    public List<OrderRow> findByBuyerPaged(int buyerId, String status, int limit, int offset) {
+        final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE o.buyer_id = ? "
+                + "AND (? IS NULL OR o.status = ?) "
+                + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
+        List<OrderRow> rows = new ArrayList<>();
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, buyerId);
+            if (status == null) {
+                statement.setNull(2, java.sql.Types.VARCHAR);
+                statement.setNull(3, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(2, status);
+                statement.setString(3, status);
+            }
+            statement.setInt(4, limit);
+            statement.setInt(5, offset);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp created = rs.getTimestamp("created_at");
+                    rows.add(new OrderRow(
+                            rs.getInt("id"),
+                            rs.getString("product_name"),
+                            rs.getBigDecimal("total_amount"),
+                            rs.getString("status"),
+                            created == null ? null : new java.util.Date(created.getTime())
+                    ));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách đơn hàng", ex);
+        }
+        return rows;
+    }
+
+    public long countByBuyer(int buyerId, String status) {
+        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND (? IS NULL OR status = ?)";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, buyerId);
+            if (status == null) {
+                statement.setNull(2, java.sql.Types.VARCHAR);
+                statement.setNull(3, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(2, status);
+                statement.setString(3, status);
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn hàng", ex);
+        }
+        return 0;
+    }
+
+    public void updateStatus(Connection connection, int orderId, OrderStatus status) throws SQLException {
+        final String sql = "UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, status.toDatabaseValue());
             statement.setInt(2, orderId);
@@ -207,62 +205,65 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
-    private void decrementInventory(Connection connection, Integer productId) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = CASE "
-                + "WHEN inventory_count > 0 THEN inventory_count - 1 ELSE 0 END, updated_at = CURRENT_TIMESTAMP "
-                + "WHERE id = ?";
+    public void assignPaymentTransaction(Connection connection, int orderId, Integer paymentTransactionId) throws SQLException {
+        final String sql = "UPDATE orders SET payment_transaction_id = ?, updated_at = NOW() WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
+            if (paymentTransactionId == null) {
+                statement.setNull(1, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(1, paymentTransactionId);
+            }
+            statement.setInt(2, orderId);
             statement.executeUpdate();
         }
     }
 
-    private Order mapRow(ResultSet rs) throws SQLException {
+    public void insertInventoryLog(Connection connection, int productId, int orderId, int changeAmount, String reason)
+            throws SQLException {
+        final String sql = "INSERT INTO inventory_logs (product_id, related_order_id, change_amount, reason, created_at) "
+                + "VALUES (?, ?, ?, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            statement.setInt(2, orderId);
+            statement.setInt(3, changeAmount);
+            statement.setString(4, reason);
+            statement.executeUpdate();
+        }
+    }
+
+    public Connection openConnection() throws SQLException {
+        return getConnection();
+    }
+
+    private Orders mapOrder(ResultSet rs) throws SQLException {
+        Orders order = new Orders();
+        order.setId(rs.getInt("id"));
+        order.setBuyerId(rs.getInt("buyer_id"));
+        order.setProductId(rs.getInt("product_id"));
+        order.setPaymentTransactionId(rs.getObject("payment_transaction_id") == null
+                ? null : rs.getInt("payment_transaction_id"));
+        order.setTotalAmount(rs.getBigDecimal("total_amount"));
+        order.setStatus(rs.getString("status"));
+        order.setIdempotencyKey(rs.getString("idempotency_key"));
+        order.setHoldUntil(rs.getTimestamp("hold_until"));
+        order.setCreatedAt(rs.getTimestamp("created_at"));
+        order.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return order;
+    }
+
+    private Products mapProduct(ResultSet rs) throws SQLException {
         Products product = new Products();
-        product.setId(rs.getInt("product_id"));
+        product.setId(rs.getInt("p_id"));
         product.setShopId(rs.getInt("shop_id"));
-        product.setName(rs.getString("product_name"));
-        product.setDescription(rs.getString("product_description"));
-        product.setPrice(rs.getBigDecimal("product_price"));
-        product.setInventoryCount(rs.getInt("product_inventory"));
-        product.setStatus(rs.getString("product_status"));
-        Timestamp productCreated = rs.getTimestamp("product_created_at");
-        Timestamp productUpdated = rs.getTimestamp("product_updated_at");
-        if (productCreated != null) {
-            product.setCreatedAt(new java.util.Date(productCreated.getTime()));
-        }
-        if (productUpdated != null) {
-            product.setUpdatedAt(new java.util.Date(productUpdated.getTime()));
-        }
-
-        OrderStatus status = OrderStatus.fromDatabaseValue(rs.getString("order_status"));
-        Timestamp orderCreated = rs.getTimestamp("order_created_at");
-        LocalDateTime createdAt = orderCreated == null ? LocalDateTime.now() : orderCreated.toLocalDateTime();
-        String activationCode = rs.getString("activation_code");
-        String paymentMethod = resolvePaymentMethod(rs.getString("transaction_type"));
-
-        return new Order(rs.getInt("order_id"), product, rs.getString("buyer_email"), paymentMethod,
-                status, createdAt, activationCode, null);
+        product.setName(rs.getString("name"));
+        product.setDescription(rs.getString("description"));
+        product.setPrice(rs.getBigDecimal("price"));
+        int inventory = rs.getInt("inventory_count");
+        product.setInventoryCount(rs.wasNull() ? null : inventory);
+        product.setStatus(rs.getString("p_status"));
+        product.setCreatedAt(rs.getTimestamp("p_created_at"));
+        product.setUpdatedAt(rs.getTimestamp("p_updated_at"));
+        return product;
     }
 
-    private String resolvePaymentMethod(String transactionType) {
-        if (transactionType == null) {
-            return null;
-        }
-        return switch (transactionType) {
-            case "Purchase" -> "Ví ký quỹ MMO";
-            case "Deposit" -> "Nạp ví";
-            case "Withdrawal" -> "Rút ví";
-            default -> transactionType;
-        };
-    }
-
-    private Order enrichPaymentMethod(Order order, String paymentMethod) {
-        if (paymentMethod == null || paymentMethod.isBlank()) {
-            return order;
-        }
-        return new Order(order.getId(), order.getProduct(), order.getBuyerEmail(), paymentMethod,
-                order.getStatus(), order.getCreatedAt(), order.getActivationCode(), order.getDeliveryLink());
-    }
 }
-
