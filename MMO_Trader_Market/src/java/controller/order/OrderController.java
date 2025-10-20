@@ -5,192 +5,177 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.Order;
-import model.PaginatedResult;
+import jakarta.servlet.http.HttpSession;
+import model.Orders;
 import model.Products;
+import model.view.OrderDetailView;
 import service.OrderService;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Handles the buyer checkout flow: confirm information, create the order and
- * list historical purchases.
- * @version 1.0 21/05/2024
+ * Buyer order endpoints: buy now, order history and detail view.
  */
-@WebServlet(name = "OrderController", urlPatterns = {"/orders", "/orders/buy"})
+@WebServlet(name = "OrderController", urlPatterns = {
+        "/order/buy-now",
+        "/orders/my",
+        "/orders/detail"
+})
 public class OrderController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-    private static final String BODY_CLASS = "layout";
-    private static final int DEFAULT_PAGE_SIZE = 5;
-    private static final DateTimeFormatter ORDER_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int ROLE_SELLER = 2;
+    private static final int ROLE_BUYER = 3;
 
     private final OrderService orderService = new OrderService();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String servletPath = request.getServletPath();
-        if ("/orders/buy".equals(servletPath)) {
-            showCheckout(request, response);
-            return;
-        }
-        showOrderHistory(request, response);
-    }
-
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String servletPath = request.getServletPath();
-        if ("/orders/buy".equals(servletPath)) {
-            processCheckout(request, response);
+        String path = request.getServletPath();
+        if ("/order/buy-now".equals(path)) {
+            handleBuyNow(request, response);
             return;
         }
         response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
     }
 
-    private void showCheckout(HttpServletRequest request, HttpServletResponse response)
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String productIdParam = request.getParameter("productId");
-        try {
-            int productId = Integer.parseInt(productIdParam);
-            Products product = orderService.validatePurchasableProduct(productId);
-            prepareCheckoutPage(request, product, null);
-            forward(request, response, "order/checkout");
-        } catch (NumberFormatException ex) {
-            request.setAttribute("error", "Mã sản phẩm không hợp lệ");
-            showOrderHistory(request, response);
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            request.setAttribute("error", ex.getMessage());
-            showOrderHistory(request, response);
+        String path = request.getServletPath();
+        switch (path) {
+            case "/orders/my" -> showMyOrders(request, response);
+            case "/orders/detail" -> showOrderDetail(request, response);
+            default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
-    private void processCheckout(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String productIdParam = request.getParameter("productId");
-        String buyerEmail = request.getParameter("buyerEmail");
-        String paymentMethod = request.getParameter("paymentMethod");
-        try {
-            Order order = createOrder(productIdParam, buyerEmail, paymentMethod);
-            showConfirmation(request, response, order);
-        } catch (NumberFormatException ex) {
-            request.setAttribute("error", "Mã sản phẩm không hợp lệ");
-            showOrderHistory(request, response);
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            handleCheckoutValidationError(request, response, productIdParam, ex.getMessage());
-        }
-    }
-
-    private void showOrderHistory(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        int page = resolvePage(request.getParameter("page"));
-        request.setAttribute("bodyClass", BODY_CLASS);
-        request.setAttribute("pageTitle", "Đơn hàng đã mua");
-        request.setAttribute("headerTitle", "Lịch sử đơn mua");
-        request.setAttribute("headerSubtitle", "Theo dõi trạng thái và thông tin bàn giao sản phẩm");
-        PaginatedResult<Order> result = orderService.listOrders(page, DEFAULT_PAGE_SIZE);
-        List<Order> orders = result.getItems();
-        request.setAttribute("orders", orders);
-        request.setAttribute("statusClasses", buildStatusClassMap(orders));
-        request.setAttribute("statusLabels", buildStatusLabelMap(orders));
-        request.setAttribute("currentPage", result.getCurrentPage());
-        request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("pageSize", result.getPageSize());
-        request.setAttribute("totalItems", result.getTotalItems());
-        forward(request, response, "order/list");
-    }
-
-    private void prepareCheckoutPage(HttpServletRequest request, Products product, String error)
-            throws ServletException {
-        request.setAttribute("bodyClass", BODY_CLASS);
-        request.setAttribute("pageTitle", "Mua ngay sản phẩm");
-        request.setAttribute("headerTitle", "Hoàn tất đơn hàng");
-        request.setAttribute("headerSubtitle", "Bước 1: Kiểm tra thông tin trước khi thanh toán");
-        request.setAttribute("product", product);
-        if (error != null) {
-            request.setAttribute("error", error);
-        }
-    }
-
-    private Order createOrder(String productIdParam, String buyerEmail, String paymentMethod) {
-        int productId = Integer.parseInt(productIdParam);
-        return orderService.createOrder(productId, buyerEmail, paymentMethod);
-    }
-
-    private void showConfirmation(HttpServletRequest request, HttpServletResponse response, Order order)
-            throws ServletException, IOException {
-        request.setAttribute("bodyClass", BODY_CLASS);
-        request.setAttribute("pageTitle", "Thanh toán thành công");
-        request.setAttribute("headerTitle", "Đơn hàng đã tạo");
-        request.setAttribute("headerSubtitle", "Bước 2: Nhận thông tin bàn giao sản phẩm");
-        request.setAttribute("orderStatusClass", orderService.getStatusBadgeClass(order.getStatus()));
-        request.setAttribute("orderStatusLabel", orderService.getFriendlyStatus(order.getStatus()));
-        request.setAttribute("orderCreatedAt", formatOrderDate(order));
-        request.setAttribute("order", order);
-        forward(request, response, "order/confirmation");
-    }
-
-    private void handleCheckoutValidationError(HttpServletRequest request, HttpServletResponse response,
-            String productIdParam, String errorMessage) throws ServletException, IOException {
-        int productId = parseProductIdSafely(productIdParam);
-        if (productId <= 0) {
-            request.setAttribute("error", errorMessage);
-            showOrderHistory(request, response);
+    private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-        Products product = null;
-        try {
-            product = orderService.validatePurchasableProduct(productId);
-        } catch (IllegalArgumentException | IllegalStateException ignored) {
-            // giữ nguyên thông báo lỗi ban đầu
+        Integer userId = (Integer) session.getAttribute("userId");
+        int productId = parsePositiveInt(request.getParameter("productId"));
+        int quantity = parsePositiveInt(request.getParameter("qty"));
+        if (userId == null || productId <= 0 || quantity <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
         }
-        prepareCheckoutPage(request, product, errorMessage);
-        forward(request, response, "order/checkout");
+        String idemKeyParam = Optional.ofNullable(request.getParameter("idemKey"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(UUID.randomUUID().toString());
+        int orderId = orderService.placeOrderPending(userId, productId, quantity, idemKeyParam);
+        String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+        response.sendRedirect(redirectUrl);
     }
 
-    private int parseProductIdSafely(String productIdParam) {
+    private void showMyOrders(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        String statusParam = normalize(request.getParameter("status"));
+        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
+        int size = parsePositiveIntOrDefault(request.getParameter("size"), DEFAULT_PAGE_SIZE);
+
+        var result = orderService.getMyOrders(userId, statusParam, page, size);
+        Map<String, String> statusLabels = orderService.getStatusLabels();
+
+        request.setAttribute("items", result.getItems());
+        request.setAttribute("total", result.getTotalItems());
+        request.setAttribute("page", result.getCurrentPage());
+        request.setAttribute("totalPages", result.getTotalPages());
+        request.setAttribute("size", result.getPageSize());
+        request.setAttribute("status", statusParam == null ? "" : statusParam);
+        request.setAttribute("statusLabels", statusLabels);
+        request.setAttribute("statusOptions", statusLabels);
+
+        forward(request, response, "order/my");
+    }
+
+    private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        int orderId = parsePositiveInt(request.getParameter("id"));
+        if (orderId <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
+        if (detailOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        OrderDetailView detail = detailOpt.get();
+        Orders order = detail.order();
+        Products product = detail.product();
+        List<String> credentials = detail.credentials();
+
+        request.setAttribute("order", order);
+        request.setAttribute("product", product);
+        request.setAttribute("credentials", credentials);
+        request.setAttribute("statusLabel", orderService.getStatusLabel(order.getStatus()));
+
+        forward(request, response, "order/detail");
+    }
+
+    private boolean isBuyerOrSeller(HttpSession session) {
+        if (session == null) {
+            return false;
+        }
+        Integer role = (Integer) session.getAttribute("userRole");
+        return role != null && (ROLE_BUYER == role || ROLE_SELLER == role);
+    }
+
+    private int parsePositiveInt(String value) {
+        if (value == null) {
+            return -1;
+        }
         try {
-            return Integer.parseInt(productIdParam);
+            int parsed = Integer.parseInt(value);
+            return parsed > 0 ? parsed : -1;
         } catch (NumberFormatException ex) {
             return -1;
         }
     }
 
-    private Map<Integer, String> buildStatusClassMap(List<Order> orders) {
-        Map<Integer, String> statusClasses = new HashMap<>();
-        for (Order order : orders) {
-            statusClasses.put(order.getId(), orderService.getStatusBadgeClass(order.getStatus()));
-        }
-        return statusClasses;
+    private int parsePositiveIntOrDefault(String value, int defaultValue) {
+        int parsed = parsePositiveInt(value);
+        return parsed > 0 ? parsed : defaultValue;
     }
 
-    private Map<Integer, String> buildStatusLabelMap(List<Order> orders) {
-        Map<Integer, String> statusLabels = new HashMap<>();
-        for (Order order : orders) {
-            statusLabels.put(order.getId(), orderService.getFriendlyStatus(order.getStatus()));
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
         }
-        return statusLabels;
-    }
-
-    private String formatOrderDate(Order order) {
-        return ORDER_TIME_FORMATTER.format(order.getCreatedAt());
-    }
-
-    private int resolvePage(String pageParam) {
-        if (pageParam == null) {
-            return 1;
-        }
-        try {
-            int page = Integer.parseInt(pageParam);
-            return page >= 1 ? page : 1;
-        } catch (NumberFormatException ex) {
-            return 1;
-        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
