@@ -24,7 +24,7 @@ import java.util.UUID;
  */
 public class OrderService {
 
-    private static final Set<String> ALLOWED_PRODUCT_STATUSES = Set.of("APPROVED");
+    private static final Set<String> ALLOWED_PRODUCT_STATUSES = Set.of("AVAILABLE");
     private static final Set<Integer> PURCHASER_ROLES = Set.of(2, 3); // 2: Seller, 3: Buyer
 
     private final OrderDAO orderDAO = new OrderDAO();
@@ -56,7 +56,11 @@ public class OrderService {
         Products product = productService.findOptionalById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm bạn chọn không tồn tại hoặc đã bị gỡ."));
         if (!isPurchasable(product.getStatus())) {
-            throw new IllegalStateException("Sản phẩm hiện chưa sẵn sàng để bán.");
+            throw new IllegalStateException("Sản phẩm hiện không mở bán.");
+        }
+        Integer inventory = product.getInventoryCount();
+        if (inventory != null && inventory <= 0) {
+            throw new IllegalStateException("Sản phẩm đã hết hàng.");
         }
         return product;
     }
@@ -154,11 +158,11 @@ public class OrderService {
         }
         return switch (status) {
             case PENDING -> "badge badge--warning";
-            case CONFIRMED -> "badge badge--success";
+            case PROCESSING -> "badge badge--info";
+            case COMPLETED -> "badge badge--success";
             case FAILED -> "badge badge--danger";
-            case DELIVERED -> "badge";
             case REFUNDED -> "badge badge--ghost";
-            case CANCELLED -> "badge badge--ghost";
+            case DISPUTED -> "badge badge--warning";
         };
     }
 
@@ -167,17 +171,17 @@ public class OrderService {
             return "Không xác định";
         }
         return switch (status) {
-            case PENDING -> "Đang xử lý";
-            case CONFIRMED -> "Đã thanh toán";
+            case PENDING -> "Chờ xử lý";
+            case PROCESSING -> "Đang thực hiện";
+            case COMPLETED -> "Hoàn tất";
             case FAILED -> "Thất bại";
-            case DELIVERED -> "Đã bàn giao";
             case REFUNDED -> "Đã hoàn tiền";
-            case CANCELLED -> "Đã huỷ";
+            case DISPUTED -> "Đang tranh chấp";
         };
     }
 
     private boolean isDeliverable(OrderStatus status) {
-        return status == OrderStatus.CONFIRMED || status == OrderStatus.DELIVERED || status == OrderStatus.REFUNDED;
+        return status == OrderStatus.COMPLETED || status == OrderStatus.REFUNDED;
     }
 
     private boolean isPurchasable(String status) {

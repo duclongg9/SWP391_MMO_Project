@@ -1,19 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<<<<<<< HEAD
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <fmt:setLocale value="vi_VN" scope="request" />
-=======
-<%@ page import="java.util.List" %>
-<%@ page import="model.Products" %>
-<%
-    request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
-    request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Bảng điều khiển");
-    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
-    request.setAttribute("headerModifier", "layout__header--split");
-%>
->>>>>>> origin/hoa
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content dashboard">

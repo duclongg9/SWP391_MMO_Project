@@ -79,6 +79,22 @@ public class OrderDAO extends BaseDAO {
         return 0L;
     }
 
+    public BigDecimal sumRevenueByStatus(OrderStatus status) {
+        String sql = "SELECT SUM(total_amount) FROM orders WHERE status = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status.toDatabaseValue());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal total = rs.getBigDecimal(1);
+                    return rs.wasNull() ? BigDecimal.ZERO : total;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "sumRevenueByStatus failed", ex);
+        }
+        return BigDecimal.ZERO;
+    }
+
     public long countPendingByOwner(int ownerId) {
         final String sql = "SELECT COUNT(*) FROM orders o "
                 + "JOIN products p ON p.id = o.product_id "
@@ -227,14 +243,13 @@ public class OrderDAO extends BaseDAO {
         final String sql = "SELECT SUM(o.total_amount) FROM orders o "
                 + "JOIN products p ON p.id = o.product_id "
                 + "JOIN shops s ON s.id = p.shop_id "
-                + "WHERE s.owner_id = ? AND o.status IN (?, ?) "
+                + "WHERE s.owner_id = ? AND o.status = ? "
                 + "AND YEAR(o.created_at) = ? AND MONTH(o.created_at) = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, ownerId);
-            statement.setString(2, OrderStatus.CONFIRMED.toDatabaseValue());
-            statement.setString(3, OrderStatus.DELIVERED.toDatabaseValue());
-            statement.setInt(4, safeYear);
-            statement.setInt(5, safeMonth);
+            statement.setString(2, OrderStatus.COMPLETED.toDatabaseValue());
+            statement.setInt(3, safeYear);
+            statement.setInt(4, safeMonth);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     BigDecimal total = rs.getBigDecimal(1);

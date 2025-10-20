@@ -1,36 +1,22 @@
 package service;
 
-import dao.message.ConversationMessageDAO;
 import dao.order.OrderDAO;
 import dao.shop.ShopDAO;
-import dao.system.SystemConfigDAO;
-import dao.user.BuyerDAO;
 import model.Products;
 import model.Shops;
-import model.SystemConfigs;
-import model.Users;
-import model.view.ConversationMessageView;
-import model.view.CustomerProfileView;
-import model.view.MarketplaceSummary;
 import model.OrderStatus;
+import model.view.MarketplaceSummary;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 
 public class HomepageService {
 
     private static final int SHOP_LIMIT = 4;
-    private static final int MESSAGE_LIMIT = 3;
 
     private final ProductService productService = new ProductService();
     private final ShopDAO shopDAO = new ShopDAO();
     private final OrderDAO orderDAO = new OrderDAO();
-    private final BuyerDAO buyerDAO = new BuyerDAO();
-    private final ConversationMessageDAO conversationMessageDAO = new ConversationMessageDAO();
-    private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
     public List<Products> loadFeaturedProducts() {
         return productService.homepageHighlights();
@@ -41,51 +27,11 @@ public class HomepageService {
     }
 
     public MarketplaceSummary loadMarketplaceSummary() {
-        long completedOrders = orderDAO.countByStatus(OrderStatus.CONFIRMED);
-        long activeShops = shopDAO.countActive();
-        long activeBuyers = buyerDAO.countActiveBuyers();
-        return new MarketplaceSummary(completedOrders, activeShops, activeBuyers);
-    }
-
-    public CustomerProfileView loadHighlightedBuyer() {
-        return buyerDAO.findTopBuyerByCompletedOrders()
-                .map(this::buildProfile)
-                .orElse(null);
-    }
-
-    public List<ConversationMessageView> loadRecentMessages() {
-        return conversationMessageDAO.findLatest(MESSAGE_LIMIT);
-    }
-
-    public List<SystemConfigs> loadSystemNotes() {
-        return systemConfigDAO.findAll();
-    }
-
-    private CustomerProfileView buildProfile(Users buyer) {
-        long totalOrders = orderDAO.countByBuyer(buyer.getId());
-        long completedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.CONFIRMED);
-        long refundedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.REFUNDED);
-        double satisfaction = totalOrders == 0 ? 0 : roundToOneDecimal((completedOrders * 5.0) / totalOrders);
-        LocalDate joinDate = toLocalDate(buyer.getCreatedAt());
-        return new CustomerProfileView(
-                Objects.toString(buyer.getName(), buyer.getEmail()),
-                buyer.getEmail(),
-                joinDate,
-                totalOrders,
-                completedOrders,
-                refundedOrders,
-                satisfaction);
-    }
-
-    private LocalDate toLocalDate(Date date) {
-        if (date == null) {
-            return LocalDate.now();
-        }
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-    }
-
-    private double roundToOneDecimal(double value) {
-        return Math.round(value * 10.0) / 10.0;
+        long availableProducts = productService.countAvailableProducts();
+        long pendingOrders = orderDAO.countByStatus(OrderStatus.PENDING);
+        long completedOrders = orderDAO.countByStatus(OrderStatus.COMPLETED);
+        BigDecimal revenue = orderDAO.sumRevenueByStatus(OrderStatus.COMPLETED);
+        return new MarketplaceSummary(availableProducts, pendingOrders, completedOrders, revenue);
     }
 }
 

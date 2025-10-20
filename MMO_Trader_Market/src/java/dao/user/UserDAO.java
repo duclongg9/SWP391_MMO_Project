@@ -1,10 +1,14 @@
 package dao.user;
 
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Users;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,7 +51,7 @@ public class UserDAO extends BaseDAO {
                 WHERE id = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -68,7 +72,7 @@ public class UserDAO extends BaseDAO {
                 SET name = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection con = DBConnect.getConnection();
+        try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, id);
@@ -83,7 +87,7 @@ public class UserDAO extends BaseDAO {
                 SET hashed_password = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection con = DBConnect.getConnection();
+        try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, hashedPassword);
             ps.setInt(2, id);
@@ -102,7 +106,7 @@ public class UserDAO extends BaseDAO {
                 WHERE name = ?
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, email);
@@ -122,7 +126,7 @@ public class UserDAO extends BaseDAO {
                 WHERE email = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
@@ -142,7 +146,7 @@ public class UserDAO extends BaseDAO {
                 WHERE google_id = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, googleId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -161,7 +165,7 @@ public class UserDAO extends BaseDAO {
                 WHERE email = ?
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
@@ -176,7 +180,7 @@ public class UserDAO extends BaseDAO {
                 INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, roleId);
             ps.setString(2, email);
@@ -212,7 +216,7 @@ public class UserDAO extends BaseDAO {
                 INSERT INTO users (role_id, email, name, hashed_password, google_id, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, roleId);
             ps.setString(2, email);
@@ -249,7 +253,7 @@ public class UserDAO extends BaseDAO {
                 SET google_id = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, googleId);
             ps.setInt(2, userId);
