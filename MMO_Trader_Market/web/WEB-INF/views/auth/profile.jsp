@@ -21,9 +21,9 @@
         
        
        <!-- Thời gian cập nhật mới nhất -->
-        <c:if test="${not empty myProfile.updatedAtDate}">
+         <c:if test="${not empty myProfile.updatedAt}">
           <fmt:timeZone value="Asia/Ho_Chi_Minh">
-            <fmt:formatDate value="${myProfile.updatedAtDate}"
+            <fmt:formatDate value="${myProfile.updatedAt}"
                             pattern="dd/MM/yyyy HH:mm"
                             var="updatedAtStr" />
           </fmt:timeZone>
@@ -73,7 +73,7 @@
         <th scope="row"><label for="fullName">Họ và tên</label></th>
         <td>
           <input id="fullName" name="fullName" type="text" required maxlength="100"
-                 autocomplete="name" placeholder="${myProfile.username}">
+                 autocomplete="name" placeholder="${myProfile.name}">
         </td>
       </tr>
 
