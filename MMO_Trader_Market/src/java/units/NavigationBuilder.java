@@ -38,8 +38,10 @@ public final class NavigationBuilder {
         addBaseItems(items, contextPath, currentPath);
 
         if (roleId == null) {
-            items.add(createIconItem(contextPath + "/auth", "👤", "Đăng nhập", true,
-                    isActive(currentPath, "/auth")));
+            if (shouldDisplayAuthCta(currentPath)) {
+                items.add(createIconItem(contextPath + "/auth", "👤", "Đăng nhập", true,
+                        isActive(currentPath, "/auth")));
+            }
             return items;
         }
 
@@ -109,6 +111,21 @@ public final class NavigationBuilder {
             return currentPath == null || currentPath.isEmpty() || "/".equals(currentPath);
         }
         return currentPath.equals(path) || currentPath.startsWith(path + "/");
+    }
+
+    private static boolean shouldDisplayAuthCta(String currentPath) {
+        if (currentPath == null) {
+            return true;
+        }
+
+        return !currentPath.equals("/auth")
+                && !currentPath.startsWith("/auth/")
+                && !currentPath.equals("/register")
+                && !currentPath.startsWith("/register/")
+                && !currentPath.equals("/forgot-password")
+                && !currentPath.startsWith("/forgot-password/")
+                && !currentPath.equals("/reset-password")
+                && !currentPath.startsWith("/reset-password/");
     }
 
     private static String resolveCurrentPath(HttpServletRequest request) {

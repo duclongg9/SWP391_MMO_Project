@@ -1,83 +1,131 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
 package controller.wallet;
 
-import controller.BaseController;
+import java.io.IOException;
+import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import service.WalletService;
+import model.Wallets;
+import model.WalletTransactions;
 
 /**
- * Hiển thị ví điện tử dành cho người mua.
+ *
+ * @author D E L L
  */
 @WebServlet(name = "WalletController", urlPatterns = {"/wallet"})
-public class WalletController extends BaseController {
+public class WalletController extends HttpServlet {
 
-    private static final long serialVersionUID = 1L;
+    private final WalletService walletService = new WalletService(new dao.user.WalletsDAO(), new dao.user.WalletTransactionDAO());
 
+    private static final int PAGE_SIZE = 5;
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        try (PrintWriter out = response.getWriter()) {
+            /* TODO output your page here. You may use following sample code. */
+            out.println("<!DOCTYPE html>");
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet WalletController</title>");
+            out.println("</head>");
+            out.println("<body>");
+            out.println("<h1>Servlet WalletController at " + request.getContextPath() + "</h1>");
+            out.println("</body>");
+            out.println("</html>");
+        }
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("pageTitle", "Ví điện tử - MMO Trader Market");
-        request.setAttribute("bodyClass", "layout");
-//        request.setAttribute("headerTitle", "Ví điện tử");
-//        request.setAttribute("headerSubtitle", "Theo dõi số dư và giao dịch gần đây");
-        request.setAttribute("headerModifier", "layout__header--split");
+        // FLASH: chuyển từ session sang request rồi xóa (dùng 1 lần)
+        HttpSession ss = request.getSession(false);
+        if (ss != null) {
+            Object ok = ss.getAttribute("msg");
+            Object err = ss.getAttribute("emg");
+            if (ok != null) {
+                request.setAttribute("msg", ok.toString());
+                ss.removeAttribute("msg");
+            }
+            if (err != null) {
+                request.setAttribute("emg", err.toString());
+                ss.removeAttribute("emg");
+            }
+        }
 
-        request.setAttribute("walletBalance", new BigDecimal("1250000"));
-        request.setAttribute("walletHold", new BigDecimal("250000"));
-        request.setAttribute("walletCurrency", "VND");
-        request.setAttribute("walletStatus", "Đang hoạt động");
-        request.setAttribute("walletUpdatedAt", "12/05/2024 09:30");
+//        /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
+//        Integer user = (Integer)request.getSession().getAttribute("userId");
+//        if(user == null){
+//           response.sendRedirect(request.getContextPath() + "/login.jsp");
+//           return;
+//        }
+        // TODO: lấy userId thật từ session
+        int userId = 1;
 
-        request.setAttribute("transactions", buildTransactions());
-        request.setAttribute("shortcuts", buildShortcuts(request.getContextPath()));
+        // Đọc tham số phân trang: page/pageSize (khớp với JSP)
+        String indexPage = request.getParameter("index");
+        int index;
+        if (indexPage == null) {
+            index = 1;
+        } else {
+            index = Integer.parseInt(indexPage);
+        }
 
-        forward(request, response, "wallet/overview");
+        try {
+            // Lấy ví + kiểm quyền
+            Wallets wallet = walletService.viewUserWallet(userId);
+            int walletId = wallet.getId();
+            List<WalletTransactions> walletTransaction = walletService.viewUserTransactionList(1, userId, index, PAGE_SIZE);
+            int totalTransaction = walletService.totalPage(userId);
+            int endPage;
+            endPage = totalTransaction % PAGE_SIZE == 0 ? totalTransaction / PAGE_SIZE : totalTransaction / PAGE_SIZE + 1;
+            // Thiết lập attributes cho JSP
+            request.setAttribute("wallet", wallet);
+            request.setAttribute("listTransaction", walletTransaction);
+            request.setAttribute("currentPage", index);
+            request.setAttribute("endPage", endPage);
+
+            // Forward
+            request.getRequestDispatcher("/WEB-INF/views/wallet/wallet.jsp").forward(request, response);
+            return;
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("emg", e);
+            request.getRequestDispatcher("WEB-INF/views/wallet/wallet.jsp").forward(request, response);
+            return;
+        } catch (RuntimeException e) {
+            request.setAttribute("emg", "Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
+            request.getRequestDispatcher("WEB-INF/views/wallet/wallet.jsp").forward(request, response);
+            return;
+        }
+
     }
 
-    private List<Map<String, String>> buildTransactions() {
-        List<Map<String, String>> transactions = new ArrayList<>();
-
-        transactions.add(createTransaction("Nạp tiền Momo", "+500.000 đ", "Hoàn tất", "12/05/2024 09:30"));
-        transactions.add(createTransaction("Thanh toán đơn #1024", "-320.000 đ", "Hoàn tất", "08/05/2024 21:10"));
-        transactions.add(createTransaction("Hoàn tiền đơn #1008", "+320.000 đ", "Đã hoàn", "02/05/2024 14:20"));
-        transactions.add(createTransaction("Rút về ngân hàng", "-1.000.000 đ", "Đang xử lý", "28/04/2024 08:45"));
-
-        return transactions;
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
     }
 
-    private List<Map<String, String>> buildShortcuts(String contextPath) {
-        List<Map<String, String>> shortcuts = new ArrayList<>();
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
 
-        shortcuts.add(createShortcut(contextPath + "/orders", "Đơn đã mua", "Theo dõi lịch sử giao dịch mua", "🧾"));
-        shortcuts.add(createShortcut(contextPath + "/products", "Sản phẩm", "Khám phá thêm sản phẩm mới", "🛒"));
-        shortcuts.add(createShortcut(contextPath + "/profile", "Tài khoản", "Cập nhật thông tin bảo mật", "🔐"));
-
-        return shortcuts;
-    }
-
-    private Map<String, String> createTransaction(String title, String amount, String status, String time) {
-        Map<String, String> transaction = new HashMap<>();
-        transaction.put("title", title);
-        transaction.put("amount", amount);
-        transaction.put("status", status);
-        transaction.put("time", time);
-        return transaction;
-    }
-
-    private Map<String, String> createShortcut(String href, String title, String description, String icon) {
-        Map<String, String> shortcut = new HashMap<>();
-        shortcut.put("href", href);
-        shortcut.put("title", title);
-        shortcut.put("description", description);
-        shortcut.put("icon", icon);
-        return shortcut;
-    }
 }
