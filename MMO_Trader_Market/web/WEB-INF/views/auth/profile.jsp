@@ -1,5 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="model.Products" %>
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
@@ -12,6 +18,24 @@
 <main class="layout__content grid-2">
     <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
  
+        
+       
+       <!-- Thời gian cập nhật mới nhất -->
+         <c:if test="${not empty myProfile.updatedAt}">
+          <fmt:timeZone value="Asia/Ho_Chi_Minh">
+            <fmt:formatDate value="${myProfile.updatedAt}"
+                            pattern="dd/MM/yyyy HH:mm"
+                            var="updatedAtStr" />
+          </fmt:timeZone>
+
+          <small class="muted" title="${updatedAtStr}">
+            Cập nhật hồ sơ lần cuối: ${updatedAtStr}
+          </small>
+        </c:if>
+
+      
+
+        
         <!--Alerts dùng chung cho cả 2 form-->
   <div style="grid-column: 1 / -1;">
     <c:if test="${not empty msg}">
@@ -49,7 +73,7 @@
         <th scope="row"><label for="fullName">Họ và tên</label></th>
         <td>
           <input id="fullName" name="fullName" type="text" required maxlength="100"
-                 autocomplete="name" placeholder="${myProfile.username}">
+                 autocomplete="name" placeholder="${myProfile.name}">
         </td>
       </tr>
 
