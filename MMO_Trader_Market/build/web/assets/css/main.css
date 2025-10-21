@@ -45,6 +45,11 @@ code {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(245, 247, 250, 0.95) 100%);
 }
 
+.layout.layout--auth {
+    display: flex;
+    flex-direction: column;
+}
+
 .layout--center .layout__content {
     width: min(100%, 960px);
     margin: 0 auto;
@@ -61,8 +66,14 @@ code {
     justify-content: center;
     align-items: center;
     min-height: 100%;
+    width: 100%;
+    margin: 0 auto;
     padding: clamp(2rem, 8vh, 4rem) 1.5rem;
     gap: 2rem;
+}
+
+.layout--auth .layout__content.auth-page {
+    flex: 1 0 auto;
 }
 
 .auth-page__inner {
