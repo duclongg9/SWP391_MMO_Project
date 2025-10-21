@@ -35,6 +35,8 @@ public class HomepageController extends BaseController {
             throws ServletException, IOException {
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
+//        request.setAttribute("headerTitle", "MMO Trader Market");
+//        request.setAttribute("headerSubtitle", "Nền tảng demo mua bán tài khoản an toàn");
 
         populateHomepageData(request);
 
