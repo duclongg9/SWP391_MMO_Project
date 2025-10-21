@@ -38,19 +38,22 @@
         </div>
 
         <aside class="landing__categories" id="product-types">
-            <h3 class="landing__aside-title">Loại sản phẩm phổ biến</h3>
+            <h3 class="landing__aside-title">Danh mục chính</h3>
             <c:choose>
-                <c:when test="${empty productTypes}">
+                <c:when test="${empty productCategories}">
                     <p>Đang cập nhật dữ liệu.</p>
                 </c:when>
                 <c:otherwise>
                     <ul class="category-menu">
-                        <c:forEach var="type" items="${productTypes}">
+                        <c:forEach var="category" items="${productCategories}">
+                            <c:url var="categoryUrl" value="/products">
+                                <c:param name="type" value="${category.typeCode}" />
+                            </c:url>
                             <li class="category-menu__item">
                                 <span class="category-menu__icon">🏷️</span>
                                 <div>
-                                    <strong><c:out value="${type.title}" /></strong>
-                                    <p><c:out value="${type.description}" /></p>
+                                    <strong><a href="${categoryUrl}"><c:out value="${category.typeLabel}" /></a></strong>
+                                    <p><fmt:formatNumber value="${category.availableProducts}" type="number" /> sản phẩm khả dụng</p>
                                 </div>
                             </li>
                         </c:forEach>
@@ -99,37 +102,49 @@
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="product" items="${featuredProducts}">
-                        <article class="product-card">
-                            <header class="product-card__header">
-                                <h4><c:out value="${product.name}" /></h4>
-                                <span class="badge"><c:out value="${product.status}" /></span>
-                            </header>
-                            <p class="product-card__description"><c:out value="${product.description}" /></p>
-                            <ul class="product-card__meta">
-                                <li>Mã sản phẩm: <strong>#<c:out value="${product.id}" /></strong></li>
-                                <li>
-                                    Giá đề xuất:
-                                    <strong>
-                                        <fmt:formatNumber value="${product.price}" type="number" minFractionDigits="0" /> đ
-                                    </strong>
-                                </li>
-                                <li>Trạng thái duyệt: <strong><c:out value="${product.status}" /></strong></li>
-                            </ul>
-                            <footer class="product-card__footer">
-                                <a class="button button--ghost" href="${pageContext.request.contextPath}/products">Chi tiết</a>
-                                <c:set var="statusUpper" value="${fn:toUpperCase(product.status)}" />
+                        <article class="product-card product-card--featured">
+                            <div class="product-card__image">
                                 <c:choose>
-                                    <c:when test="${statusUpper eq 'AVAILABLE'}">
-                                        <c:url var="buyUrl" value="/orders/buy">
-                                            <c:param name="productId" value="${product.id}" />
-                                        </c:url>
-                                        <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
+                                    <c:when test="${not empty product.primaryImageUrl}">
+                                        <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
                                     </c:when>
                                     <c:otherwise>
-                                        <span class="badge badge--warning">Chưa sẵn sàng</span>
+                                        <div class="product-card__placeholder">Không có ảnh</div>
                                     </c:otherwise>
                                 </c:choose>
-                            </footer>
+                            </div>
+                            <div class="product-card__body">
+                                <header class="product-card__header">
+                                    <h4><c:out value="${product.name}" /></h4>
+                                </header>
+                                <p class="product-card__meta">
+                                    <span><c:out value="${product.productTypeLabel}" /> • <c:out value="${product.productSubtypeLabel}" /></span>
+                                    <span>Shop: <strong><c:out value="${product.shopName}" /></strong></span>
+                                </p>
+                                <p class="product-card__description"><c:out value="${product.shortDescription}" /></p>
+                                <p class="product-card__price">
+                                    <c:choose>
+                                        <c:when test="${product.minPrice eq product.maxPrice}">
+                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        </c:when>
+                                        <c:otherwise>
+                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                            –
+                                            <fmt:formatNumber value="${product.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        </c:otherwise>
+                                    </c:choose>
+                                </p>
+                                <ul class="product-card__meta product-card__meta--stats">
+                                    <li>Tồn kho: <strong><c:out value="${product.inventoryCount}" /></strong></li>
+                                    <li>Đã bán: <strong><c:out value="${product.soldCount}" /></strong></li>
+                                </ul>
+                                <footer class="product-card__footer">
+                                    <c:url var="detailUrl" value="/product/detail">
+                                        <c:param name="id" value="${product.id}" />
+                                    </c:url>
+                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
+                                </footer>
+                            </div>
                         </article>
                     </c:forEach>
                 </c:otherwise>

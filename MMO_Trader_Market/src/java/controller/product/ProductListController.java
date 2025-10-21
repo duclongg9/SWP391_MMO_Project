@@ -6,8 +6,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.product.PagedResult;
-import model.product.ProductListRow;
-import model.product.ShopOption;
+import model.view.product.ProductSubtypeOption;
+import model.view.product.ProductSummaryView;
+import model.view.product.ProductTypeOption;
 import service.ProductService;
 
 import java.io.IOException;
@@ -28,13 +29,16 @@ public class ProductListController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String query = normalize(request.getParameter("q"));
-        Integer shopId = parseShopId(request.getParameter("shopId"));
+        String keyword = normalize(request.getParameter("q"));
+        String productType = normalize(request.getParameter("type"));
+        String productSubtype = normalize(request.getParameter("subtype"));
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
         int size = parsePositiveIntOrDefault(request.getParameter("size"), DEFAULT_SIZE);
 
-        PagedResult<ProductListRow> result = productService.list(query, shopId, page, size);
-        List<ShopOption> shops = productService.listAvailableShops();
+        PagedResult<ProductSummaryView> result = productService.searchPublicProducts(
+                productType, productSubtype, keyword, page, size);
+        List<ProductTypeOption> typeOptions = productService.getTypeOptions();
+        List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(productType);
 
         request.setAttribute("pageTitle", "Sản phẩm");
         request.setAttribute("headerTitle", "Kho sản phẩm");
@@ -45,24 +49,13 @@ public class ProductListController extends BaseController {
         request.setAttribute("currentPage", result.getPage());
         request.setAttribute("size", result.getSize());
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("query", query == null ? "" : query);
-        request.setAttribute("selectedShopId", shopId);
-        request.setAttribute("shops", shops);
+        request.setAttribute("query", keyword == null ? "" : keyword);
+        request.setAttribute("selectedType", productType);
+        request.setAttribute("selectedSubtype", productSubtype);
+        request.setAttribute("typeOptions", typeOptions);
+        request.setAttribute("subtypeOptions", subtypeOptions);
 
         forward(request, response, "product/list");
-    }
-
-    private String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private Integer parseShopId(String value) {
-        int parsed = parsePositiveIntOrDefault(value, -1);
-        return parsed > 0 ? parsed : null;
     }
 
     private int parsePositiveIntOrDefault(String value, int defaultValue) {
@@ -75,5 +68,13 @@ public class ProductListController extends BaseController {
         } catch (NumberFormatException ex) {
             return defaultValue;
         }
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

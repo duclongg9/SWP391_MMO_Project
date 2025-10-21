@@ -65,7 +65,7 @@ CREATE TABLE `products` (
   `shop_id` int NOT NULL,
 
   -- Loại & Subtype cố định (ENUM)
-  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME') NOT NULL DEFAULT 'OTHER',
+  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME'),
   `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
 
   `name` varchar(255) NOT NULL,
@@ -453,7 +453,22 @@ VALUES
    JSON_OBJECT('variant_code','vp-470','attributes', JSON_OBJECT('amount','470VP'),'price',95000.0000,'inventory_count',50,'status','Available'),
    JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375VP'),'price',270000.0000,'inventory_count',50,'status','Available')
  ),
- NOW(),NOW());
+ NOW(),NOW()),
+
+-- 1007: SOFTWARE/CANVA
+(1007,1,'SOFTWARE','CANVA',
+ 'Canva Pro chính chủ',
+ 'Canva Pro bản quyền 12 tháng, kích hoạt trực tiếp.',
+ 'Cung cấp tài khoản Canva Pro chính chủ, kích hoạt ngay sau khi thanh toán, bảo hành 30 ngày.',
+ 90000.0000,
+ 'https://cdn.mmo.local/products/canva_main.jpg',
+ JSON_ARRAY('https://cdn.mmo.local/products/canva_main.jpg','https://cdn.mmo.local/products/canva_2.jpg'),
+ 60,187,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',40,'status','Available'),
+   JSON_OBJECT('variant_code','canva-12m','attributes',JSON_OBJECT('duration','12m'),'price',750000.0000,'inventory_count',20,'status','Available')
+ ),
+ '2024-01-18 10:00:00','2024-01-28 08:00:00');
 
 -- Credentials (ví dụ ràng buộc với đơn)
 INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`is_sold`,`created_at`) VALUES
