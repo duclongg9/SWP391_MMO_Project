@@ -23,7 +23,7 @@
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
@@ -322,6 +322,17 @@ code {
 
 .panel__title {
     margin: 0;
+}
+
+.panel__header-text {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.panel__subtitle {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
 }
 
 .panel__tag {
@@ -1233,6 +1244,10 @@ code {
 
 .landing__section {
     padding: 0;
+}
+
+.landing__filters .panel__body {
+    padding: 1.5rem 2rem 2rem;
 }
 
 .landing__products {
