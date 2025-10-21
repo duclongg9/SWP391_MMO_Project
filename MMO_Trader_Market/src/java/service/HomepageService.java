@@ -13,6 +13,7 @@ import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
 import model.view.product.ProductCategorySummary;
 import model.view.product.ProductSummaryView;
+import model.view.product.ProductTypeOption;
 import model.OrderStatus;
 
 import java.time.LocalDate;
@@ -64,6 +65,10 @@ public class HomepageService {
 
     public List<SystemConfigs> loadSystemNotes() {
         return systemConfigDAO.findAll();
+    }
+
+    public List<ProductTypeOption> loadFilterTypeOptions() {
+        return productService.getTypeOptions();
     }
 
     private CustomerProfileView buildProfile(Users buyer) {
