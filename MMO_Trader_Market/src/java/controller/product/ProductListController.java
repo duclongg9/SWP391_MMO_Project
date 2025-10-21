@@ -41,6 +41,8 @@ public class ProductListController extends BaseController {
         List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(productType);
 
         request.setAttribute("pageTitle", "Sản phẩm");
+        request.setAttribute("headerTitle", "Kho sản phẩm");
+        request.setAttribute("headerSubtitle", "Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.");
         request.setAttribute("items", result.getItems());
         request.setAttribute("totalItems", result.getTotalItems());
         request.setAttribute("page", result.getPage());
