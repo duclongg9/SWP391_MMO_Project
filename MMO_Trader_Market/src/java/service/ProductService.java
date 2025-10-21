@@ -41,10 +41,10 @@ public class ProductService {
 
     static {
         Map<String, String> typeLabels = new LinkedHashMap<>();
-        typeLabels.put("EMAIL", "Email");
-        typeLabels.put("SOCIAL", "Mạng xã hội");
-        typeLabels.put("SOFTWARE", "Phần mềm");
-        typeLabels.put("GAME", "Game");
+        typeLabels.put("EMAIL", "Tài khoản Mail");
+        typeLabels.put("SOCIAL", "Tài khoản MXH");
+        typeLabels.put("SOFTWARE", "Tài khoản phần mềm");
+        typeLabels.put("GAME", "Tài khoản Game");
         typeLabels.put("OTHER", "Khác");
         TYPE_LABELS = Collections.unmodifiableMap(typeLabels);
 
@@ -59,22 +59,16 @@ public class ProductService {
 
         List<ProductTypeOption> options = new ArrayList<>();
         options.add(new ProductTypeOption("EMAIL", TYPE_LABELS.get("EMAIL"),
-                List.of(new ProductSubtypeOption("GMAIL", SUBTYPE_LABELS.get("GMAIL")) )));
+                List.of(new ProductSubtypeOption("GMAIL", SUBTYPE_LABELS.get("GMAIL")))));
         options.add(new ProductTypeOption("SOCIAL", TYPE_LABELS.get("SOCIAL"),
                 List.of(
                         new ProductSubtypeOption("FACEBOOK", SUBTYPE_LABELS.get("FACEBOOK")),
                         new ProductSubtypeOption("TIKTOK", SUBTYPE_LABELS.get("TIKTOK"))
                 )));
         options.add(new ProductTypeOption("SOFTWARE", TYPE_LABELS.get("SOFTWARE"),
-                List.of(
-                        new ProductSubtypeOption("CANVA", SUBTYPE_LABELS.get("CANVA")),
-                        new ProductSubtypeOption("OTHER", SUBTYPE_LABELS.get("OTHER"))
-                )));
+                List.of(new ProductSubtypeOption("CANVA", SUBTYPE_LABELS.get("CANVA")))));
         options.add(new ProductTypeOption("GAME", TYPE_LABELS.get("GAME"),
-                List.of(
-                        new ProductSubtypeOption("VALORANT", SUBTYPE_LABELS.get("VALORANT")),
-                        new ProductSubtypeOption("OTHER", SUBTYPE_LABELS.get("OTHER"))
-                )));
+                List.of(new ProductSubtypeOption("VALORANT", SUBTYPE_LABELS.get("VALORANT")))));
         options.add(new ProductTypeOption("OTHER", TYPE_LABELS.get("OTHER"),
                 List.of(new ProductSubtypeOption("OTHER", SUBTYPE_LABELS.get("OTHER")))));
         TYPE_OPTIONS = List.copyOf(options);
