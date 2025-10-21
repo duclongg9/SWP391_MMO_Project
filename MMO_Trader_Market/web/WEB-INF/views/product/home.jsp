@@ -81,6 +81,18 @@
 
     <section class="panel landing__section">
         <div class="panel__header">
+            <h3 class="panel__title">Khám phá sản phẩm</h3>
+            <p class="panel__subtitle">Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
+        </div>
+        <c:set var="filterIncludeSize" value="${false}" />
+        <c:set var="filterQuery" value="${query}" />
+        <c:set var="filterType" value="${selectedType}" />
+        <c:set var="filterSubtype" value="${selectedSubtype}" />
+        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
+    </section>
+
+    <section class="panel landing__section">
+        <div class="panel__header">
             <h3 class="panel__title">Shop nổi bật</h3>
         </div>
         <c:choose>
