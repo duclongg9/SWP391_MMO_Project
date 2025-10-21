@@ -65,7 +65,7 @@ CREATE TABLE `products` (
   `shop_id` int NOT NULL,
 
   -- Loại & Subtype cố định (ENUM)
-  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME') NOT NULL DEFAULT 'OTHER',
+  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME'),
   `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
 
   `name` varchar(255) NOT NULL,
