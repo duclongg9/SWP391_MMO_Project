@@ -27,15 +27,21 @@ public class ProductDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
 
-    private static final String PRODUCT_COLUMNS = "id, shop_id, name, description, price, "
-            + "inventory_count, status, created_at, updated_at";
+    private static final String PRODUCT_COLUMNS = String.join(", ",
+            "id", "shop_id", "product_type", "product_subtype", "name",
+            "short_description", "description", "price", "primary_image_url",
+            "gallery_json", "inventory_count", "sold_count", "status",
+            "variant_schema", "variants_json", "created_at", "updated_at");
 
-    private static final String LIST_SELECT = "SELECT p.id, p.name, p.price, p.inventory_count, p.status, "
-            + "p.created_at, s.id AS shop_id, s.name AS shop_name "
+    private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
+            + "p.short_description, p.price, p.inventory_count, p.sold_count, p.status, "
+            + "p.primary_image_url, s.id AS shop_id, s.name AS shop_name "
             + "FROM products p JOIN shops s ON s.id = p.shop_id";
 
-    private static final String DETAIL_SELECT = "SELECT p.id, p.name, p.description, p.price, p.inventory_count, "
-            + "p.status, s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
+    private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
+            + "p.short_description, p.description, p.price, p.inventory_count, p.sold_count, p.status, "
+            + "p.primary_image_url, p.gallery_json, p.variant_schema, p.variants_json, "
+            + "s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
             + "FROM products p JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
 
     private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
@@ -323,12 +329,18 @@ public class ProductDAO extends BaseDAO {
 
     private ProductListRow mapListRow(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
+        Integer sold = (Integer) rs.getObject("sold_count");
         return new ProductListRow(
                 rs.getInt("id"),
+                rs.getString("product_type"),
+                rs.getString("product_subtype"),
                 rs.getString("name"),
+                rs.getString("short_description"),
                 rs.getBigDecimal("price"),
                 inventory,
+                sold,
                 rs.getString("status"),
+                rs.getString("primary_image_url"),
                 rs.getInt("shop_id"),
                 rs.getString("shop_name")
         );
@@ -336,14 +348,23 @@ public class ProductDAO extends BaseDAO {
 
     private ProductDetail mapDetail(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
+        Integer sold = (Integer) rs.getObject("sold_count");
         Integer ownerId = (Integer) rs.getObject("shop_owner_id");
         return new ProductDetail(
                 rs.getInt("id"),
+                rs.getString("product_type"),
+                rs.getString("product_subtype"),
                 rs.getString("name"),
+                rs.getString("short_description"),
                 rs.getString("description"),
                 rs.getBigDecimal("price"),
                 inventory,
+                sold,
                 rs.getString("status"),
+                rs.getString("primary_image_url"),
+                rs.getString("gallery_json"),
+                rs.getString("variant_schema"),
+                rs.getString("variants_json"),
                 rs.getInt("shop_id"),
                 rs.getString("shop_name"),
                 ownerId
@@ -358,11 +379,21 @@ public class ProductDAO extends BaseDAO {
         Products product = new Products();
         product.setId(rs.getInt("id"));
         product.setShopId(rs.getInt("shop_id"));
+        product.setProductType(rs.getString("product_type"));
+        product.setProductSubtype(rs.getString("product_subtype"));
         product.setName(rs.getString("name"));
+        product.setShortDescription(rs.getString("short_description"));
         product.setDescription(rs.getString("description"));
         product.setPrice(rs.getBigDecimal("price"));
-        product.setInventoryCount(rs.getInt("inventory_count"));
+        product.setPrimaryImageUrl(rs.getString("primary_image_url"));
+        product.setGalleryJson(rs.getString("gallery_json"));
+        Integer inventory = (Integer) rs.getObject("inventory_count");
+        product.setInventoryCount(inventory);
+        Integer sold = (Integer) rs.getObject("sold_count");
+        product.setSoldCount(sold);
         product.setStatus(rs.getString("status"));
+        product.setVariantSchema(rs.getString("variant_schema"));
+        product.setVariantsJson(rs.getString("variants_json"));
         Timestamp createdAt = rs.getTimestamp("created_at");
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         if (createdAt != null) {
