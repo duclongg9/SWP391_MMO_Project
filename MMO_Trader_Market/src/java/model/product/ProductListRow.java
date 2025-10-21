@@ -18,12 +18,15 @@ public class ProductListRow {
     private final Integer soldCount;
     private final String status;
     private final String primaryImageUrl;
+    private final String variantSchema;
+    private final String variantsJson;
     private final int shopId;
     private final String shopName;
 
     public ProductListRow(int id, String productType, String productSubtype, String name,
             String shortDescription, BigDecimal price, Integer inventoryCount,
-            Integer soldCount, String status, String primaryImageUrl, int shopId, String shopName) {
+            Integer soldCount, String status, String primaryImageUrl,
+            String variantSchema, String variantsJson, int shopId, String shopName) {
         this.id = id;
         this.productType = Objects.requireNonNullElse(productType, "OTHER");
         this.productSubtype = Objects.requireNonNullElse(productSubtype, "OTHER");
@@ -34,6 +37,8 @@ public class ProductListRow {
         this.soldCount = soldCount;
         this.status = status;
         this.primaryImageUrl = primaryImageUrl;
+        this.variantSchema = variantSchema;
+        this.variantsJson = variantsJson;
         this.shopId = shopId;
         this.shopName = Objects.requireNonNullElse(shopName, "");
     }
@@ -76,6 +81,14 @@ public class ProductListRow {
 
     public String getPrimaryImageUrl() {
         return primaryImageUrl;
+    }
+
+    public String getVariantSchema() {
+        return variantSchema;
+    }
+
+    public String getVariantsJson() {
+        return variantsJson;
     }
 
     public int getShopId() {
