@@ -5,13 +5,15 @@ import dao.order.OrderDAO;
 import dao.shop.ShopDAO;
 import dao.system.SystemConfigDAO;
 import dao.user.BuyerDAO;
-import model.Products;
 import model.Shops;
 import model.SystemConfigs;
 import model.Users;
 import model.view.ConversationMessageView;
 import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
+import model.view.product.ProductCategorySummary;
+import model.view.product.ProductSummaryView;
+import model.view.product.ProductTypeOption;
 import model.OrderStatus;
 
 import java.time.LocalDate;
@@ -32,12 +34,16 @@ public class HomepageService {
     private final ConversationMessageDAO conversationMessageDAO = new ConversationMessageDAO();
     private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
-    public List<Products> loadFeaturedProducts() {
-        return productService.homepageHighlights();
+    public List<ProductSummaryView> loadFeaturedProducts() {
+        return productService.getHomepageHighlights();
     }
 
     public List<Shops> loadActiveShops() {
         return shopDAO.findActive(SHOP_LIMIT);
+    }
+
+    public List<ProductCategorySummary> loadProductCategories() {
+        return productService.getHomepageCategories();
     }
 
     public MarketplaceSummary loadMarketplaceSummary() {
@@ -59,6 +65,10 @@ public class HomepageService {
 
     public List<SystemConfigs> loadSystemNotes() {
         return systemConfigDAO.findAll();
+    }
+
+    public List<ProductTypeOption> loadFilterTypeOptions() {
+        return productService.getTypeOptions();
     }
 
     private CustomerProfileView buildProfile(Users buyer) {

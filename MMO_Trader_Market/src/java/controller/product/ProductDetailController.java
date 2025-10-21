@@ -5,10 +5,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.product.ProductDetail;
+import jakarta.servlet.http.HttpSession;
+import model.view.product.ProductDetailView;
+import model.view.product.ProductSummaryView;
 import service.ProductService;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Displays detail information for a single product.
@@ -29,12 +32,25 @@ public class ProductDetailController extends BaseController {
             return;
         }
         try {
-            ProductDetail product = productService.getDetail(productId);
+            ProductDetailView product = productService.getPublicDetail(productId);
+            List<ProductSummaryView> similarProducts = productService.findSimilarProducts(
+                    product.getProductType(), product.getId());
+            HttpSession session = request.getSession(false);
+            boolean isAuthenticated = session != null && session.getAttribute("userId") != null;
+
             request.setAttribute("pageTitle", product.getName());
             request.setAttribute("headerTitle", product.getName());
             request.setAttribute("headerSubtitle", "Thông tin chi tiết sản phẩm");
             request.setAttribute("product", product);
-            request.setAttribute("canBuy", product.getInventoryCount() != null && product.getInventoryCount() > 0);
+            request.setAttribute("variantOptions", product.getVariants());
+            request.setAttribute("galleryImages", product.getGalleryImages());
+            request.setAttribute("priceMin", product.getMinPrice());
+            request.setAttribute("priceMax", product.getMaxPrice());
+            request.setAttribute("variantSchema", product.getVariantSchema());
+            request.setAttribute("variantOptionsJson", product.getVariantsJson());
+            request.setAttribute("similarProducts", similarProducts);
+            request.setAttribute("canBuy", isAuthenticated && product.isAvailable());
+            request.setAttribute("isAuthenticated", isAuthenticated);
             forward(request, response, "product/detail");
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);

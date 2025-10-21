@@ -14,8 +14,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,7 +37,7 @@ public class ProductDAO extends BaseDAO {
 
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
             + "p.short_description, p.price, p.inventory_count, p.sold_count, p.status, "
-            + "p.primary_image_url, s.id AS shop_id, s.name AS shop_name "
+            + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
             + "FROM products p JOIN shops s ON s.id = p.shop_id";
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
@@ -48,17 +50,24 @@ public class ProductDAO extends BaseDAO {
             + "FROM products p JOIN shops s ON s.id = p.shop_id "
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
-    public List<ProductListRow> findAvailablePaged(String q, Integer shopId, int limit, int offset) {
+    public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
+            int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (hasText(q)) {
-            sql.append(" AND LOWER(p.name) LIKE ?");
-            params.add(buildLikePattern(q));
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
         }
-        if (shopId != null && shopId > 0) {
-            sql.append(" AND p.shop_id = ?");
-            params.add(shopId);
+        if (hasText(productSubtype)) {
+            sql.append(" AND p.product_subtype = ?");
+            params.add(productSubtype);
+        }
+        if (hasText(keyword)) {
+            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            String pattern = buildLikePattern(keyword);
+            params.add(pattern);
+            params.add(pattern);
         }
         sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
@@ -80,18 +89,24 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
-    public long countAvailable(String q, Integer shopId) {
+    public long countAvailable(String keyword, String productType, String productSubtype) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (hasText(q)) {
-            sql.append(" AND LOWER(p.name) LIKE ?");
-            params.add(buildLikePattern(q));
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
         }
-        if (shopId != null && shopId > 0) {
-            sql.append(" AND p.shop_id = ?");
-            params.add(shopId);
+        if (hasText(productSubtype)) {
+            sql.append(" AND p.product_subtype = ?");
+            params.add(productSubtype);
+        }
+        if (hasText(keyword)) {
+            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            String pattern = buildLikePattern(keyword);
+            params.add(pattern);
+            params.add(pattern);
         }
         sql.append(") AS available_products");
 
@@ -122,6 +137,74 @@ public class ProductDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải chi tiết sản phẩm", ex);
         }
         return Optional.empty();
+    }
+
+    public List<ProductListRow> findTopAvailable(int limit) {
+        int resolvedLimit = Math.max(limit, 1);
+        String sql = LIST_SELECT
+                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
+                + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, resolvedLimit);
+            List<ProductListRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(mapListRow(rs));
+                }
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm nổi bật", ex);
+            return List.of();
+        }
+    }
+
+    public Map<String, Long> countAvailableByType() {
+        final String sql = "SELECT p.product_type, COUNT(*) AS total "
+                + "FROM products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
+                + "GROUP BY p.product_type";
+        Map<String, Long> result = new HashMap<>();
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                String type = rs.getString("product_type");
+                long total = rs.getLong("total");
+                if (type != null) {
+                    result.put(type, total);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo loại", ex);
+        }
+        return result;
+    }
+
+    public List<ProductListRow> findSimilarByType(String productType, int excludeProductId, int limit) {
+        if (!hasText(productType)) {
+            return List.of();
+        }
+        String sql = LIST_SELECT
+                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
+                + " AND p.product_type = ? AND p.id <> ?"
+                + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productType);
+            statement.setInt(2, excludeProductId);
+            statement.setInt(3, Math.max(limit, 1));
+            List<ProductListRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(mapListRow(rs));
+                }
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm tương tự", ex);
+            return List.of();
+        }
     }
 
     public List<ShopOption> findShopsWithAvailableProducts() {
@@ -341,6 +424,8 @@ public class ProductDAO extends BaseDAO {
                 sold,
                 rs.getString("status"),
                 rs.getString("primary_image_url"),
+                rs.getString("variant_schema"),
+                rs.getString("variants_json"),
                 rs.getInt("shop_id"),
                 rs.getString("shop_name")
         );

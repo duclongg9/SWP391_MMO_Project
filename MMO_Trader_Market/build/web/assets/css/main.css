@@ -45,6 +45,13 @@ code {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(245, 247, 250, 0.95) 100%);
 }
 
+.layout.layout--auth {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* NEW: chiếm đủ chiều cao màn hình */
+}
+
+
 .layout--center .layout__content {
     width: min(100%, 960px);
     margin: 0 auto;
@@ -56,20 +63,29 @@ code {
 
 .layout--center .layout__content.auth-page,
 .layout--auth .layout__content.auth-page {
+    flex: 1 1 auto;                /* NEW: chiếm hết không gian còn lại dưới header */
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100%;
-    padding: clamp(2rem, 8vh, 4rem) 1.5rem;
+    align-items: center;           /* NEW: căn giữa theo trục dọc */
+    justify-content: center;       /* NEW: căn giữa theo trục ngang */
+    min-height: calc(100vh - var(--auth-header, 72px) - var(--auth-footer, 0px)); /* NEW: trừ chiều cao header/footer nếu có */
+    width: 100%;
+    margin: 0 auto;
+    padding: clamp(2rem, 8vh, 4rem) 1.5rem; /* giữ như cũ */
     gap: 2rem;
+}
+
+
+.layout--auth .layout__content.auth-page {
+    flex: 1 0 auto;
 }
 
 .auth-page__inner {
     width: min(100%, 400px);
     display: grid;
     gap: 1.5rem;
+    margin: 0 auto; /* NEW: giúp giữ giữa ngang nếu có thay đổi layout */
 }
+
 
 .auth-page__header {
     display: grid;
@@ -121,20 +137,9 @@ code {
     z-index: 1000;
 }
 
-.layout__footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-}
+.layout__footer       { --auth-footer: 0px; }
 
-.layout__header--auth {
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-    background: rgba(255, 255, 255, 0.94);
-    border-bottom: 1px solid rgba(0, 91, 150, 0.08);
-    backdrop-filter: blur(6px);
-}
+.layout__header--auth { --auth-header: 72px; }
 
 .site-header__inner {
     width: min(100%, 1200px);
