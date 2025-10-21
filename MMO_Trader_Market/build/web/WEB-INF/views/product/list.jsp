@@ -12,13 +12,28 @@
             <h2>Khám phá sản phẩm</h2>
             <p>Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
         </div>
-        <c:set var="filterFormAction" value="${cPath}/products" />
-        <c:set var="filterIncludeSize" value="${true}" />
-        <c:set var="filterPageSize" value="${size}" />
-        <c:set var="filterQuery" value="${query}" />
-        <c:set var="filterType" value="${selectedType}" />
-        <c:set var="filterSubtype" value="${selectedSubtype}" />
-        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
+        <form class="product-filters" method="get" action="${cPath}/products">
+            <div class="product-filters__group">
+                <label class="sr-only" for="q">Từ khóa</label>
+                <input class="product-filters__input" type="search" id="q" name="q"
+                       placeholder="Nhập tên sản phẩm..." value="${fn:escapeXml(query)}" />
+            </div>
+            <div class="product-filters__group">
+                <label class="sr-only" for="shopId">Shop</label>
+                <select class="product-filters__select" id="shopId" name="shopId">
+                    <option value="">Tất cả shop</option>
+                    <c:forEach var="shop" items="${shops}">
+                        <c:set var="optionValue" value="${shop.id}" />
+                        <option value="${optionValue}"
+                                <c:if test="${selectedShopId == optionValue}">selected</c:if>>
+                            <c:out value="${shop.name}" />
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+            <input type="hidden" name="size" value="${size}" />
+            <button class="button button--primary" type="submit">Áp dụng</button>
+        </form>
         <div class="product-list__meta">
             <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
             <span>Trang ${page} / ${totalPages}</span>
@@ -28,44 +43,26 @@
                 <div class="product-grid">
                     <c:forEach var="p" items="${items}">
                         <article class="product-card">
-                            <div class="product-card__image">
+                            <h3 class="product-card__title"><c:out value="${p.name}" /></h3>
+                            <p class="product-card__price">
+                                <fmt:formatNumber value="${p.price}" type="currency" currencySymbol="đ"
+                                                  maxFractionDigits="0" minFractionDigits="0" />
+                            </p>
+                            <p class="product-card__stock">Tồn kho: <strong>${p.inventoryCount}</strong></p>
+                            <p class="product-card__shop">Shop: <c:out value="${p.shopName}" /></p>
+                            <div class="product-card__actions">
+                                <a class="button button--ghost" href="${cPath}/product/detail?id=${p.id}">Xem</a>
                                 <c:choose>
-                                    <c:when test="${not empty p.primaryImageUrl}">
-                                        <img src="${p.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(p.name)}" loading="lazy" />
+                                    <c:when test="${p.inventoryCount gt 0}">
+                                        <form class="product-card__buy" method="post"
+                                              action="${cPath}/order/buy-now?productId=${p.id}&amp;qty=1">
+                                            <button class="button button--primary" type="submit">Mua ngay</button>
+                                        </form>
                                     </c:when>
                                     <c:otherwise>
-                                        <div class="product-card__placeholder">Không có ảnh</div>
+                                        <span class="product-card__badge">Hết hàng</span>
                                     </c:otherwise>
                                 </c:choose>
-                            </div>
-                            <div class="product-card__body">
-                                <h3 class="product-card__title"><c:out value="${p.name}" /></h3>
-                                <p class="product-card__meta">
-                                    <span><c:out value="${p.productTypeLabel}" /> • <c:out value="${p.productSubtypeLabel}" /></span>
-                                    <span>Shop: <strong><c:out value="${p.shopName}" /></strong></span>
-                                </p>
-                                <p class="product-card__description"><c:out value="${p.shortDescription}" /></p>
-                                <p class="product-card__price">
-                                    <c:choose>
-                                        <c:when test="${p.minPrice eq p.maxPrice}">
-                                            Giá
-                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:when>
-                                        <c:otherwise>
-                                            Giá từ
-                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                            –
-                                            <fmt:formatNumber value="${p.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:otherwise>
-                                    </c:choose>
-                                </p>
-                                <ul class="product-card__meta product-card__meta--stats">
-                                    <li>Tồn kho: <strong><c:out value="${p.inventoryCount}" /></strong></li>
-                                    <li>Đã bán: <strong><c:out value="${p.soldCount}" /></strong></li>
-                                </ul>
-                                <div class="product-card__actions">
-                                    <a class="button button--primary" href="${cPath}/product/detail?id=${p.id}">Xem chi tiết</a>
-                                </div>
                             </div>
                         </article>
                     </c:forEach>
@@ -85,11 +82,8 @@
                     <c:if test="${not empty query}">
                         <c:param name="q" value="${query}" />
                     </c:if>
-                    <c:if test="${not empty selectedType}">
-                        <c:param name="type" value="${selectedType}" />
-                    </c:if>
-                    <c:if test="${not empty selectedSubtype}">
-                        <c:param name="subtype" value="${selectedSubtype}" />
+                    <c:if test="${not empty selectedShopId}">
+                        <c:param name="shopId" value="${selectedShopId}" />
                     </c:if>
                 </c:url>
                 <c:url var="nextUrl" value="/products">
@@ -98,11 +92,8 @@
                     <c:if test="${not empty query}">
                         <c:param name="q" value="${query}" />
                     </c:if>
-                    <c:if test="${not empty selectedType}">
-                        <c:param name="type" value="${selectedType}" />
-                    </c:if>
-                    <c:if test="${not empty selectedSubtype}">
-                        <c:param name="subtype" value="${selectedSubtype}" />
+                    <c:if test="${not empty selectedShopId}">
+                        <c:param name="shopId" value="${selectedShopId}" />
                     </c:if>
                 </c:url>
                 <span class="pagination__summary">Trang ${page} / ${totalPages}</span>
@@ -114,11 +105,8 @@
                         <c:if test="${not empty query}">
                             <c:param name="q" value="${query}" />
                         </c:if>
-                        <c:if test="${not empty selectedType}">
-                            <c:param name="type" value="${selectedType}" />
-                        </c:if>
-                        <c:if test="${not empty selectedSubtype}">
-                            <c:param name="subtype" value="${selectedSubtype}" />
+                        <c:if test="${not empty selectedShopId}">
+                            <c:param name="shopId" value="${selectedShopId}" />
                         </c:if>
                     </c:url>
                     <a class="pagination__item ${i == page ? 'pagination__item--active' : ''}"

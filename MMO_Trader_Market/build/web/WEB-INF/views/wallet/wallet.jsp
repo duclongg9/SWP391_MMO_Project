@@ -17,6 +17,11 @@
     List<Map<String, String>> navItems = new ArrayList<>();
     String contextPath = request.getContextPath();
 
+    Map<String, String> productLink = new HashMap<>();
+    productLink.put("href", contextPath + "/products");
+    productLink.put("label", "Danh sách sản phẩm");
+    navItems.add(productLink);
+
     Map<String, String> guideLink = new HashMap<>();
     guideLink.put("href", contextPath + "/styleguide");
     guideLink.put("label", "Thư viện giao diện");
