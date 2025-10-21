@@ -38,22 +38,19 @@
         </div>
 
         <aside class="landing__categories" id="product-types">
-            <h3 class="landing__aside-title">Danh mục chính</h3>
+            <h3 class="landing__aside-title">Loại sản phẩm phổ biến</h3>
             <c:choose>
-                <c:when test="${empty productCategories}">
+                <c:when test="${empty productTypes}">
                     <p>Đang cập nhật dữ liệu.</p>
                 </c:when>
                 <c:otherwise>
                     <ul class="category-menu">
-                        <c:forEach var="category" items="${productCategories}">
-                            <c:url var="categoryUrl" value="/products">
-                                <c:param name="type" value="${category.typeCode}" />
-                            </c:url>
+                        <c:forEach var="type" items="${productTypes}">
                             <li class="category-menu__item">
                                 <span class="category-menu__icon">🏷️</span>
                                 <div>
-                                    <strong><a href="${categoryUrl}"><c:out value="${category.typeLabel}" /></a></strong>
-                                    <p><fmt:formatNumber value="${category.availableProducts}" type="number" /> sản phẩm khả dụng</p>
+                                    <strong><c:out value="${type.title}" /></strong>
+                                    <p><c:out value="${type.description}" /></p>
                                 </div>
                             </li>
                         </c:forEach>
@@ -61,18 +58,6 @@
                 </c:otherwise>
             </c:choose>
         </aside>
-    </section>
-
-    <section class="panel landing__section">
-        <div class="panel__header">
-            <h3 class="panel__title">Khám phá sản phẩm</h3>
-            <p class="panel__subtitle">Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
-        </div>
-        <c:set var="filterIncludeSize" value="${false}" />
-        <c:set var="filterQuery" value="${query}" />
-        <c:set var="filterType" value="${selectedType}" />
-        <c:set var="filterSubtype" value="${selectedSubtype}" />
-        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
     </section>
 
     <section class="panel landing__section">
@@ -103,7 +88,7 @@
 
     <section class="panel landing__section">
         <div class="panel__header">
-            <h3 class="panel__title">Sản phẩm nổi bật</h3>
+            <h3 class="panel__title">Sản phẩm gợi ý</h3>
             <span class="panel__tag">Dữ liệu trực tiếp</span>
         </div>
 
@@ -114,51 +99,37 @@
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="product" items="${featuredProducts}">
-                        <article class="product-card product-card--featured">
-                            <div class="product-card__image">
+                        <article class="product-card">
+                            <header class="product-card__header">
+                                <h4><c:out value="${product.name}" /></h4>
+                                <span class="badge"><c:out value="${product.status}" /></span>
+                            </header>
+                            <p class="product-card__description"><c:out value="${product.description}" /></p>
+                            <ul class="product-card__meta">
+                                <li>Mã sản phẩm: <strong>#<c:out value="${product.id}" /></strong></li>
+                                <li>
+                                    Giá đề xuất:
+                                    <strong>
+                                        <fmt:formatNumber value="${product.price}" type="number" minFractionDigits="0" /> đ
+                                    </strong>
+                                </li>
+                                <li>Trạng thái duyệt: <strong><c:out value="${product.status}" /></strong></li>
+                            </ul>
+                            <footer class="product-card__footer">
+                                <a class="button button--ghost" href="${pageContext.request.contextPath}/products">Chi tiết</a>
+                                <c:set var="statusUpper" value="${fn:toUpperCase(product.status)}" />
                                 <c:choose>
-                                    <c:when test="${not empty product.primaryImageUrl}">
-                                        <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
+                                    <c:when test="${statusUpper eq 'AVAILABLE'}">
+                                        <c:url var="buyUrl" value="/orders/buy">
+                                            <c:param name="productId" value="${product.id}" />
+                                        </c:url>
+                                        <a class="button button--primary" href="${buyUrl}">Mua ngay</a>
                                     </c:when>
                                     <c:otherwise>
-                                        <div class="product-card__placeholder">Không có ảnh</div>
+                                        <span class="badge badge--warning">Chưa sẵn sàng</span>
                                     </c:otherwise>
                                 </c:choose>
-                            </div>
-                            <div class="product-card__body">
-                                <header class="product-card__header">
-                                    <h4><c:out value="${product.name}" /></h4>
-                                </header>
-                                <p class="product-card__meta">
-                                    <span><c:out value="${product.productTypeLabel}" /> • <c:out value="${product.productSubtypeLabel}" /></span>
-                                    <span>Shop: <strong><c:out value="${product.shopName}" /></strong></span>
-                                </p>
-                                <p class="product-card__description"><c:out value="${product.shortDescription}" /></p>
-                                <p class="product-card__price">
-                                    <c:choose>
-                                        <c:when test="${product.minPrice eq product.maxPrice}">
-                                            Giá
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:when>
-                                        <c:otherwise>
-                                            Giá từ
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                            –
-                                            <fmt:formatNumber value="${product.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:otherwise>
-                                    </c:choose>
-                                </p>
-                                <ul class="product-card__meta product-card__meta--stats">
-                                    <li>Tồn kho: <strong><c:out value="${product.inventoryCount}" /></strong></li>
-                                    <li>Đã bán: <strong><c:out value="${product.soldCount}" /></strong></li>
-                                </ul>
-                                <footer class="product-card__footer">
-                                    <c:url var="detailUrl" value="/product/detail">
-                                        <c:param name="id" value="${product.id}" />
-                                    </c:url>
-                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
-                                </footer>
-                            </div>
+                            </footer>
                         </article>
                     </c:forEach>
                 </c:otherwise>
