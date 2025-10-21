@@ -1,3 +1,4 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
@@ -23,7 +24,7 @@
   <div class="product-filters__group">
     <label class="product-filters__label" for="${queryInputId}">Tìm sản phẩm </label>
     <input class="product-filters__input" type="search" id="${queryInputId}" name="q"
-           placeholder="Nhập tên sản phẩm..." value="${fn:escapeXml(filterQueryValue)}" />
+           placeholder="Nhập tên sản phẩm ..." value="${fn:escapeXml(filterQueryValue)}" />
   </div>
   <div class="product-filters__group">
     <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>
@@ -48,7 +49,7 @@
     </select>
   </div>
   <div class="product-filters__group">
-    <label class="product-filters__label" for="${subtypeInputId}">Phân loại chi tiết</label>
+<label class="product-filters__label" for="${subtypeInputId}">Phân loại chi tiết</label>
     <select class="product-filters__select" id="${subtypeInputId}" name="subtype"
             data-initial="${fn:escapeXml(filterSubtypeValue)}">
       <option value="">Tất cả</option>
