@@ -40,6 +40,10 @@ public class HomepageController extends BaseController {
 
         populateHomepageData(request);
 
+        request.setAttribute("query", "");
+        request.setAttribute("selectedType", "");
+        request.setAttribute("selectedSubtype", "");
+
         forward(request, response, "product/home");
     }
 
@@ -66,6 +70,7 @@ public class HomepageController extends BaseController {
         request.setAttribute("systemNotes", systemNotes);
 
         request.setAttribute("faqs", buildFaqEntries());
+        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
     }
 
     private Map<String, String> buildShopIconMap() {

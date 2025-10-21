@@ -12,44 +12,13 @@
             <h2>Khám phá sản phẩm</h2>
             <p>Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
         </div>
-        <form class="product-filters" method="get" action="${cPath}/products">
-            <div class="product-filters__group">
-                <label class="sr-only" for="q">Từ khóa</label>
-                <input class="product-filters__input" type="search" id="q" name="q"
-                       placeholder="Nhập tên sản phẩm..." value="${fn:escapeXml(query)}" />
-            </div>
-            <div class="product-filters__group">
-                <label class="sr-only" for="type">Danh mục</label>
-                <select class="product-filters__select" id="type" name="type">
-                    <option value="">Tất cả danh mục</option>
-                    <c:forEach var="type" items="${typeOptions}">
-                        <c:set var="code" value="${type.code}" />
-                        <option value="${code}" <c:if test="${code == selectedType}">selected</c:if>>
-                            <c:out value="${type.label}" />
-                        </option>
-                    </c:forEach>
-                </select>
-            </div>
-            <div class="product-filters__group">
-                <label class="sr-only" for="subtype">Phân loại</label>
-                <select class="product-filters__select" id="subtype" name="subtype">
-                    <option value="">
-                        <c:choose>
-                            <c:when test="${empty selectedType}">Chọn danh mục trước</c:when>
-                            <c:otherwise>Tất cả phân loại</c:otherwise>
-                        </c:choose>
-                    </option>
-                    <c:forEach var="subtype" items="${subtypeOptions}">
-                        <c:set var="subCode" value="${subtype.code}" />
-                        <option value="${subCode}" <c:if test="${subCode == selectedSubtype}">selected</c:if>>
-                            <c:out value="${subtype.label}" />
-                        </option>
-                    </c:forEach>
-                </select>
-            </div>
-            <input type="hidden" name="size" value="${size}" />
-            <button class="button button--primary" type="submit">Áp dụng</button>
-        </form>
+        <c:set var="filterFormAction" value="${cPath}/products" />
+        <c:set var="filterIncludeSize" value="${true}" />
+        <c:set var="filterPageSize" value="${size}" />
+        <c:set var="filterQuery" value="${query}" />
+        <c:set var="filterType" value="${selectedType}" />
+        <c:set var="filterSubtype" value="${selectedSubtype}" />
+        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
         <div class="product-list__meta">
             <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
             <span>Trang ${page} / ${totalPages}</span>
@@ -79,9 +48,11 @@
                                 <p class="product-card__price">
                                     <c:choose>
                                         <c:when test="${p.minPrice eq p.maxPrice}">
+                                            Giá
                                             <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
                                         </c:when>
                                         <c:otherwise>
+                                            Giá từ
                                             <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
                                             –
                                             <fmt:formatNumber value="${p.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
