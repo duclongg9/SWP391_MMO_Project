@@ -1,14 +1,20 @@
 <component name="libraryTable">
-  <library name="lib">
+  <library name="lib3">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/mysql-connector-j-9.3.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/mssql-jdbc-12.8.1.jre11.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/mybatis-3.5.15.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/jakarta.mail-2.0.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/jakarta.activation-api-2.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/mysql-connector-j-8.0.33.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/jakarta.servlet.jsp.jstl-2.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/mybatis-generator-core-1.4.2.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/angus-activation-2.0.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/MMO_Trader_Market/lib/gson-2.13.1.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/jbcrypt-0.4.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/mssql-jdbc-12.8.1.jre11.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/jakarta.servlet-api-5.0.0.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

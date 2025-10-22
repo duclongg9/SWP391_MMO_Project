@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Context docBase="D:\SWP391_MMO_Project\MMO_Trader_Market\web" path="/MMO_Trader_Market">
+  <Resources cacheMaxSize="10240">
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/mysql-connector-j-9.3.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mysql-connector-j-9.3.0.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/mssql-jdbc-12.8.1.jre11.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mssql-jdbc-12.8.1.jre11.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/mybatis-3.5.15.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mybatis-3.5.15.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/jakarta.mail-2.0.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.mail-2.0.1.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/jakarta.activation-api-2.1.2.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.activation-api-2.1.2.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/mysql-connector-j-8.0.33.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mysql-connector-j-8.0.33.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/jakarta.servlet.jsp.jstl-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-2.0.0.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/mybatis-generator-core-1.4.2.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mybatis-generator-core-1.4.2.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/angus-activation-2.0.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/angus-activation-2.0.1.jar"/>
+    <PostResources base="D:/SWP391_MMO_Project/MMO_Trader_Market/lib/gson-2.13.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/gson-2.13.1.jar"/>
+    <PostResources base="C:/Users/Admin/Downloads/jbcrypt-0.4.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jbcrypt-0.4.jar"/>
+    <PostResources base="C:/Users/Admin/Downloads/mssql-jdbc-12.8.1.jre11.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mssql-jdbc-12.8.1.jre11.jar"/>
+    <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet-api-5.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet-api-5.0.0.jar"/>
+  </Resources>
+</Context>

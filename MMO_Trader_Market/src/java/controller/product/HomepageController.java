@@ -23,7 +23,7 @@ import java.util.Map;
  * Handles requests for the public facing homepage where visitors discover
  * available account products.
  */
-@WebServlet(name = "HomepageController", urlPatterns = {"/home"})
+@WebServlet(name = "HomepageController", urlPatterns = {"/MMO_Trader_Market/home"})
 public class HomepageController extends BaseController {
 
     private static final long serialVersionUID = 1L;

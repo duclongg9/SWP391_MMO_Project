@@ -85,7 +85,6 @@ public class AdminViewServlet extends HttpServlet {
                 title   = "Quản lý người dùng"; active = "users";
                 break;
             }
-
             case "/cashs": { // ✅ thêm route này để không rơi về dashboard
                 content = "/WEB-INF/views/Admin/pages/cashs.jsp";
                 title   = "Nạp / Rút"; active = "cashs";
