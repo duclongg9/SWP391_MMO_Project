@@ -20,9 +20,13 @@ public abstract class BaseDAO {
                 throw new SQLException("JDBC driver not found", ex);
             }
         }
-        return DriverManager.getConnection(
-                AppConfig.get("db.url"),
-                AppConfig.get("db.username"),
-                AppConfig.get("db.password"));
+        try {
+            return DriverManager.getConnection(
+                    AppConfig.get("db.url"),
+                    AppConfig.get("db.username"),
+                    AppConfig.get("db.password"));
+        } catch (SQLException ex) {
+            throw new SQLException("Failed to obtain JDBC connection using configuration keys db.url, db.username, and db.password", ex);
+        }
     }
 }
