@@ -15,9 +15,10 @@ public final class AppConfig {
     static {
         try (InputStream stream = AppConfig.class.getClassLoader()
                 .getResourceAsStream("conf/database.properties")) {
-            if (stream != null) {
-                PROPERTIES.load(stream);
+            if (stream == null) {
+                throw new ExceptionInInitializerError("Missing configuration file conf/database.properties on the classpath");
             }
+            PROPERTIES.load(stream);
         } catch (IOException ex) {
             throw new ExceptionInInitializerError(ex);
         }

@@ -11,14 +11,14 @@ import java.sql.SQLException;
 public abstract class BaseDAO {
 
     protected Connection getConnection() throws SQLException {
-        String driver = AppConfig.get("db.driver");
-        if (driver.isBlank()) {
-            throw new SQLException("Database driver class is not configured. Update conf/database.properties");
-        }
-        try {
-            Class.forName(driver);
-        } catch (ClassNotFoundException ex) {
-            throw new SQLException("JDBC driver not found", ex);
+        String driver = AppConfig.get("db.driver").trim();
+        if (!driver.isEmpty()) {
+            // Explicit driver loading remains configurable for legacy containers.
+            try {
+                Class.forName(driver);
+            } catch (ClassNotFoundException ex) {
+                throw new SQLException("JDBC driver not found", ex);
+            }
         }
         return DriverManager.getConnection(
                 AppConfig.get("db.url"),
