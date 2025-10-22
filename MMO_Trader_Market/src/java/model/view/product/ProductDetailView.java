@@ -94,11 +94,19 @@ public class ProductDetailView {
         return productTypeLabel;
     }
 
+    public String getProductTypeVi() {
+        return productTypeLabel;
+    }
+
     public String getProductSubtype() {
         return productSubtype;
     }
 
     public String getProductSubtypeLabel() {
+        return productSubtypeLabel;
+    }
+
+    public String getProductSubtypeVi() {
         return productSubtypeLabel;
     }
 
@@ -128,6 +136,18 @@ public class ProductDetailView {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getStatusVi() {
+        if (status == null) {
+            return "Không xác định";
+        }
+        return switch (status) {
+            case "Available", "AVAILABLE" -> "Đang bán";
+            case "Unavailable", "UNAVAILABLE" -> "Không khả dụng";
+            case "Draft", "DRAFT" -> "Bản nháp";
+            default -> "".equals(status) ? "Không xác định" : status;
+        };
     }
 
     public int getShopId() {

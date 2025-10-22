@@ -41,13 +41,13 @@ public class ProductDetailController extends BaseController {
             request.setAttribute("pageTitle", product.getName());
             request.setAttribute("headerTitle", product.getName());
             request.setAttribute("headerSubtitle", "Thông tin chi tiết sản phẩm");
+            request.setAttribute("detail", product);
             request.setAttribute("product", product);
-            request.setAttribute("variantOptions", product.getVariants());
-            request.setAttribute("galleryImages", product.getGalleryImages());
+            request.setAttribute("variants", product.getVariants());
+            request.setAttribute("gallery", product.getGalleryImages());
             request.setAttribute("priceMin", product.getMinPrice());
             request.setAttribute("priceMax", product.getMaxPrice());
             request.setAttribute("variantSchema", product.getVariantSchema());
-            request.setAttribute("variantOptionsJson", product.getVariantsJson());
             request.setAttribute("similarProducts", similarProducts);
             request.setAttribute("canBuy", isAuthenticated && product.isAvailable());
             request.setAttribute("isAuthenticated", isAuthenticated);

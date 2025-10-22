@@ -15,7 +15,7 @@
         <c:set var="filterFormAction" value="${cPath}/products" />
         <c:set var="filterIncludeSize" value="${true}" />
         <c:set var="filterPageSize" value="${size}" />
-        <c:set var="filterQuery" value="${query}" />
+        <c:set var="filterQuery" value="${q}" />
         <c:set var="filterType" value="${selectedType}" />
         <c:set var="filterSubtype" value="${selectedSubtype}" />
         <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
@@ -49,22 +49,25 @@
                                     <c:choose>
                                         <c:when test="${p.minPrice eq p.maxPrice}">
                                             Giá
-                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                         </c:when>
                                         <c:otherwise>
-                                            Giá từ
-                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                            Từ
+                                            <fmt:formatNumber value="${p.minPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                             –
-                                            <fmt:formatNumber value="${p.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                            <fmt:formatNumber value="${p.maxPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                         </c:otherwise>
                                     </c:choose>
                                 </p>
                                 <ul class="product-card__meta product-card__meta--stats">
-                                    <li>Tồn kho: <strong><c:out value="${p.inventoryCount}" /></strong></li>
-                                    <li>Đã bán: <strong><c:out value="${p.soldCount}" /></strong></li>
+                                    <li>Còn: <strong><c:out value="${p.inventoryCount}" default="0" /></strong></li>
+                                    <li>Đã bán: <strong><c:out value="${p.soldCount}" default="0" /></strong></li>
                                 </ul>
                                 <div class="product-card__actions">
-                                    <a class="button button--primary" href="${cPath}/product/detail?id=${p.id}">Xem chi tiết</a>
+                                    <c:url var="detailUrl" value="/product/detail">
+                                        <c:param name="id" value="${p.id}" />
+                                    </c:url>
+                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
                                 </div>
                             </div>
                         </article>

@@ -41,6 +41,7 @@ public class HomepageController extends BaseController {
         populateHomepageData(request);
 
         request.setAttribute("query", "");
+        request.setAttribute("q", "");
         request.setAttribute("selectedType", "");
         request.setAttribute("selectedSubtype", "");
 
@@ -52,13 +53,14 @@ public class HomepageController extends BaseController {
         request.setAttribute("summary", summary);
 
         List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featuredProducts);
+        request.setAttribute("featured", featuredProducts);
+
+        Map<String, ProductSummaryView> topBySubtype = homepageService.loadTopProductsBySubtype();
+        request.setAttribute("topBySubtype", topBySubtype);
 
         List<Shops> shops = homepageService.loadActiveShops();
         request.setAttribute("shops", shops);
         request.setAttribute("shopIcons", buildShopIconMap());
-
-        request.setAttribute("productCategories", homepageService.loadProductCategories());
 
         CustomerProfileView profile = homepageService.loadHighlightedBuyer();
         request.setAttribute("customerProfile", profile);
@@ -71,6 +73,7 @@ public class HomepageController extends BaseController {
 
         request.setAttribute("faqs", buildFaqEntries());
         request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
+        request.setAttribute("subtypes", List.of());
     }
 
     private Map<String, String> buildShopIconMap() {
