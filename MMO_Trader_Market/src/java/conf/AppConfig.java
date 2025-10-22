@@ -28,6 +28,29 @@ public final class AppConfig {
     }
 
     public static String get(String key) {
+        String override = firstNonEmpty(
+                System.getProperty(key),
+                System.getenv(key),
+                System.getenv(toEnvKey(key)));
+        if (override != null) {
+            return override;
+        }
         return Objects.toString(PROPERTIES.getProperty(key), "");
+    }
+
+    private static String firstNonEmpty(String... candidates) {
+        if (candidates == null) {
+            return null;
+        }
+        for (String candidate : candidates) {
+            if (candidate != null && !candidate.isEmpty()) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static String toEnvKey(String key) {
+        return key.replace('.', '_').toUpperCase();
     }
 }
