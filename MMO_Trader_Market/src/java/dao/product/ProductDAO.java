@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -157,6 +158,31 @@ public class ProductDAO extends BaseDAO {
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm nổi bật", ex);
             return List.of();
+        }
+    }
+
+    public Map<String, ProductListRow> findTopAvailableBySubtype() {
+        String sql = LIST_SELECT
+                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
+                + " ORDER BY p.product_subtype ASC, p.sold_count DESC, p.created_at DESC";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            Map<String, ProductListRow> result = new LinkedHashMap<>();
+            while (rs.next()) {
+                ProductListRow row = mapListRow(rs);
+                String subtype = row.getProductSubtype();
+                if (subtype == null || subtype.isBlank()) {
+                    subtype = "OTHER";
+                }
+                if (!result.containsKey(subtype)) {
+                    result.put(subtype, row);
+                }
+            }
+            return result;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm bán chạy theo subtype", ex);
+            return Map.of();
         }
     }
 

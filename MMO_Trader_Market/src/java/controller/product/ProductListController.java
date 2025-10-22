@@ -39,6 +39,9 @@ public class ProductListController extends BaseController {
                 productType, productSubtype, keyword, page, size);
         List<ProductTypeOption> typeOptions = productService.getTypeOptions();
         List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(productType);
+        List<String> subtypeCodes = subtypeOptions.stream()
+                .map(ProductSubtypeOption::getCode)
+                .toList();
 
         request.setAttribute("pageTitle", "Sản phẩm");
         request.setAttribute("headerTitle", "Kho sản phẩm");
@@ -50,10 +53,11 @@ public class ProductListController extends BaseController {
         request.setAttribute("size", result.getSize());
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("query", keyword == null ? "" : keyword);
+        request.setAttribute("q", keyword == null ? "" : keyword);
         request.setAttribute("selectedType", productType);
         request.setAttribute("selectedSubtype", productSubtype);
         request.setAttribute("typeOptions", typeOptions);
-        request.setAttribute("subtypeOptions", subtypeOptions);
+        request.setAttribute("subtypes", subtypeCodes);
 
         forward(request, response, "product/list");
     }

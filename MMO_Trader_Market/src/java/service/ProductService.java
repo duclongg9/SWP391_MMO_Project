@@ -33,6 +33,7 @@ import java.util.Optional;
 public class ProductService {
 
     private static final int DEFAULT_HOMEPAGE_LIMIT = 8;
+    private static final int HOMEPAGE_FEATURED_LIMIT = 6;
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
 
     private static final Map<String, String> TYPE_LABELS;
@@ -80,8 +81,17 @@ public class ProductService {
     private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
 
     public List<ProductSummaryView> getHomepageHighlights() {
-        List<ProductListRow> rows = productDAO.findTopAvailable(DEFAULT_HOMEPAGE_LIMIT);
+        List<ProductListRow> rows = productDAO.findTopAvailable(HOMEPAGE_FEATURED_LIMIT);
         return rows.stream().map(this::toSummaryView).toList();
+    }
+
+    public Map<String, ProductSummaryView> getTopProductsBySubtype() {
+        Map<String, ProductListRow> rows = productDAO.findTopAvailableBySubtype();
+        Map<String, ProductSummaryView> result = new LinkedHashMap<>();
+        for (Map.Entry<String, ProductListRow> entry : rows.entrySet()) {
+            result.put(entry.getKey(), toSummaryView(entry.getValue()));
+        }
+        return result;
     }
 
     public List<ProductCategorySummary> getHomepageCategories() {

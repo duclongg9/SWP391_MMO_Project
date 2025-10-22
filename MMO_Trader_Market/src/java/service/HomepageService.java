@@ -11,7 +11,6 @@ import model.Users;
 import model.view.ConversationMessageView;
 import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
-import model.view.product.ProductCategorySummary;
 import model.view.product.ProductSummaryView;
 import model.view.product.ProductTypeOption;
 import model.OrderStatus;
@@ -20,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class HomepageService {
@@ -38,12 +38,12 @@ public class HomepageService {
         return productService.getHomepageHighlights();
     }
 
-    public List<Shops> loadActiveShops() {
-        return shopDAO.findActive(SHOP_LIMIT);
+    public Map<String, ProductSummaryView> loadTopProductsBySubtype() {
+        return productService.getTopProductsBySubtype();
     }
 
-    public List<ProductCategorySummary> loadProductCategories() {
-        return productService.getHomepageCategories();
+    public List<Shops> loadActiveShops() {
+        return shopDAO.findActive(SHOP_LIMIT);
     }
 
     public MarketplaceSummary loadMarketplaceSummary() {

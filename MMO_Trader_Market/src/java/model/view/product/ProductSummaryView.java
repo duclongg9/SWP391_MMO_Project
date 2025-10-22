@@ -84,6 +84,14 @@ public class ProductSummaryView {
         return maxPrice;
     }
 
+    public BigDecimal getPriceMin() {
+        return getMinPrice();
+    }
+
+    public BigDecimal getPriceMax() {
+        return getMaxPrice();
+    }
+
     public Integer getInventoryCount() {
         return inventoryCount;
     }

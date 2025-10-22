@@ -23,6 +23,7 @@
 <c:url value="/auth?action=logout" var="logoutUrl" />
 
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
+<c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="isAuthPage"
         value="${fn:contains(currentUri, '/auth')
                 or fn:contains(currentUri, '/login')
@@ -69,30 +70,44 @@
       </c:if>
     </div>
 
-    <c:if test="${not empty navItems}">
-      <nav class="menu menu--horizontal site-header__nav" aria-label="Chuyển hướng chính">
-        <c:forEach var="item" items="${navItems}">
-          <c:set var="itemClass" value="menu__item" />
-          <c:if test="${not empty item['modifier']}">
-            <c:set var="itemClass" value="${itemClass} ${item['modifier']}" />
-          </c:if>
+    <div class="site-header__nav-group">
+      <div class="site-header__dropdown" data-dropdown>
+        <button class="site-header__dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+          Loại sản phẩm
+        </button>
+        <ul class="site-header__dropdown-menu">
+          <li><a href="${contextPath}/products?type=EMAIL">Email</a></li>
+          <li><a href="${contextPath}/products?type=SOCIAL">Tài khoản MXH</a></li>
+          <li><a href="${contextPath}/products?type=SOFTWARE">Tài khoản phần mềm</a></li>
+          <li><a href="${contextPath}/products?type=GAME">Tài khoản Game</a></li>
+        </ul>
+      </div>
 
-          <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
-            <c:if test="${not empty item['icon']}">
-              <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
+      <c:if test="${not empty navItems}">
+        <nav class="menu menu--horizontal site-header__nav" aria-label="Chuyển hướng chính">
+          <c:forEach var="item" items="${navItems}">
+            <c:set var="itemClass" value="menu__item" />
+            <c:if test="${not empty item['modifier']}">
+              <c:set var="itemClass" value="${itemClass} ${item['modifier']}" />
             </c:if>
 
-            <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
-            <c:if test="${not empty textVal}">
-              <span class="menu__text"><c:out value="${textVal}" /></span>
-            </c:if>
+            <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
+              <c:if test="${not empty item['icon']}">
+                <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
+              </c:if>
 
-            <c:if test="${not empty item['srText']}">
-              <span class="sr-only"><c:out value="${item['srText']}" /></span>
-            </c:if>
-          </a>
-        </c:forEach>
-      </nav>
-    </c:if>
+              <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
+              <c:if test="${not empty textVal}">
+                <span class="menu__text"><c:out value="${textVal}" /></span>
+              </c:if>
+
+              <c:if test="${not empty item['srText']}">
+                <span class="sr-only"><c:out value="${item['srText']}" /></span>
+              </c:if>
+            </a>
+          </c:forEach>
+        </nav>
+      </c:if>
+    </div>
   </div>
 </header>

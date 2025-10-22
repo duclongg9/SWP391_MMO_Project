@@ -10,17 +10,17 @@
     <section class="product-detail">
         <div class="product-detail__gallery">
             <c:choose>
-                <c:when test="${empty galleryImages}">
+                <c:when test="${empty gallery}">
                     <div class="product-detail__placeholder">Chưa có ảnh minh họa</div>
                 </c:when>
                 <c:otherwise>
-                    <c:set var="mainImage" value="${galleryImages[0]}" />
+                    <c:set var="mainImage" value="${gallery[0]}" />
                     <div class="product-detail__main-image">
-                        <img id="mainImage" src="${mainImage}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
+                        <img id="mainImage" src="${mainImage}" alt="Ảnh sản phẩm ${fn:escapeXml(detail.name)}" />
                     </div>
-                    <c:if test="${fn:length(galleryImages) gt 1}">
+                    <c:if test="${fn:length(gallery) gt 1}">
                         <ul class="product-detail__thumbnails">
-                            <c:forEach var="image" items="${galleryImages}">
+                            <c:forEach var="image" items="${gallery}">
                                 <li>
                                     <button class="product-detail__thumbnail" type="button" data-image="${image}">
                                         <img src="${image}" alt="Thumbnail sản phẩm" loading="lazy" />
@@ -34,41 +34,41 @@
         </div>
         <div class="product-detail__info">
             <header class="product-detail__header">
-                <h2><c:out value="${product.name}" /></h2>
+                <h2><c:out value="${detail.name}" /></h2>
                 <p class="product-detail__type">
-                    <span class="badge">${product.productTypeLabel}</span>
-                    <span class="badge badge--ghost">${product.productSubtypeLabel}</span>
+                    <span class="badge">${detail.productTypeVi}</span>
+                    <span class="badge badge--ghost">${detail.productSubtypeVi}</span>
                 </p>
-                <p class="product-detail__shop">Gian hàng: <strong><c:out value="${product.shopName}" /></strong></p>
+                <p class="product-detail__shop">Shop: <strong><c:out value="${detail.shopName}" /></strong></p>
             </header>
             <div class="product-detail__pricing" data-min-price="${priceMin}" data-max-price="${priceMax}">
                 <span>Giá hiện tại:</span>
                 <strong id="priceDisplay">
                     <c:choose>
                         <c:when test="${priceMin eq priceMax}">
-                            <fmt:formatNumber value="${priceMin}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                            <fmt:formatNumber value="${priceMin}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                         </c:when>
                         <c:otherwise>
-                            <fmt:formatNumber value="${priceMin}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                            <fmt:formatNumber value="${priceMin}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                             –
-                            <fmt:formatNumber value="${priceMax}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                            <fmt:formatNumber value="${priceMax}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                         </c:otherwise>
                     </c:choose>
                 </strong>
             </div>
             <ul class="product-detail__stats">
-                <li>Tồn kho: <strong id="inventoryDisplay"><c:out value="${product.inventoryCount}" default="0" /></strong></li>
-                <li>Đã bán: <strong><c:out value="${product.soldCount}" default="0" /></strong></li>
+                <li>Còn: <strong id="inventoryDisplay"><c:out value="${detail.inventoryCount}" default="0" /></strong></li>
+                <li>Đã bán: <strong><c:out value="${detail.soldCount}" default="0" /></strong></li>
             </ul>
-            <c:if test="${not empty product.shortDescription}">
-                <p class="product-detail__summary"><c:out value="${product.shortDescription}" /></p>
+            <c:if test="${not empty detail.shortDescription}">
+                <p class="product-detail__summary"><c:out value="${detail.shortDescription}" /></p>
             </c:if>
             <form class="product-detail__form" method="post" action="${cPath}/order/buy-now">
-                <input type="hidden" name="productId" value="${product.id}" />
-                <c:if test="${product.hasVariants}">
+                <input type="hidden" name="productId" value="${detail.id}" />
+                <c:if test="${detail.hasVariants}">
                     <fieldset class="product-detail__variants">
                         <legend>Chọn gói sản phẩm</legend>
-                        <c:forEach var="variant" items="${variantOptions}" varStatus="status">
+                        <c:forEach var="variant" items="${variants}" varStatus="status">
                             <c:set var="variantId" value="variant-${status.index}" />
                             <label class="variant-option" for="${variantId}">
                                 <input type="radio" id="${variantId}" name="variantCode" value="${variant.variantCode}"
@@ -83,7 +83,7 @@
                                         </ul>
                                     </c:if>
                                     <span class="variant-option__price">
-                                        <fmt:formatNumber value="${variant.price}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        <fmt:formatNumber value="${variant.price}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                     </span>
                                     <span class="variant-option__inventory">Tồn kho biến thể: <strong><c:out value="${variant.inventoryCount}" /></strong></span>
                                 </span>
@@ -93,12 +93,12 @@
                 </c:if>
                 <div class="product-detail__quantity">
                     <label class="product-detail__label" for="qty">Số lượng</label>
-                    <input class="product-detail__input" type="number" id="qty" name="qty" min="1" max="${product.inventoryCount != null ? product.inventoryCount : 1}" value="1"
+                    <input class="product-detail__input" type="number" id="qty" name="qty" min="1" max="${detail.inventoryCount != null ? detail.inventoryCount : 1}" value="1"
                            <c:if test="${not canBuy}">disabled</c:if> />
                 </div>
                 <c:choose>
                     <c:when test="${canBuy}">
-                        <button class="button button--primary" id="buyButton" type="submit">Mua ngay</button>
+                        <button class="button button--primary" id="buyButton" type="submit">Mua hàng</button>
                     </c:when>
                     <c:when test="${not isAuthenticated}">
                         <a class="button button--primary" href="${cPath}/login.jsp">Đăng nhập để mua hàng</a>
@@ -108,7 +108,7 @@
                     </c:otherwise>
                 </c:choose>
             </form>
-            <c:if test="${product.hasVariants}">
+            <c:if test="${detail.hasVariants}">
                 <p class="product-detail__note">* Giá và tồn kho sẽ thay đổi theo biến thể.</p>
             </c:if>
         </div>
@@ -116,8 +116,8 @@
     <section class="product-detail__description">
         <h3>Mô tả chi tiết</h3>
         <c:choose>
-            <c:when test="${not empty product.description}">
-                <p><c:out value="${product.description}" /></p>
+            <c:when test="${not empty detail.description}">
+                <p><c:out value="${detail.description}" /></p>
             </c:when>
             <c:otherwise>
                 <p>Chưa có mô tả chi tiết cho sản phẩm này.</p>
@@ -146,12 +146,12 @@
                             <p class="product-card__price">
                                 <c:choose>
                                     <c:when test="${item.minPrice eq item.maxPrice}">
-                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                     </c:when>
                                     <c:otherwise>
-                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                         –
-                                        <fmt:formatNumber value="${item.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        <fmt:formatNumber value="${item.maxPrice}" type="currency" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0" />
                                     </c:otherwise>
                                 </c:choose>
                             </p>
@@ -234,7 +234,7 @@
                     buyButton.textContent = 'Hết hàng';
                 } else {
                     buyButton.disabled = false;
-                    buyButton.textContent = 'Mua ngay';
+                    buyButton.textContent = 'Mua hàng';
                 }
             }
         }
