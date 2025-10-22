@@ -5,6 +5,7 @@
 package dao.user;
 
 import dao.connect.DBConnect;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.sql.Connection;
@@ -12,7 +13,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.sql.Date;
 import java.util.List;
+import java.sql.Types;
 import model.TransactionType;
 import model.WalletTransactions;
 
@@ -100,7 +103,7 @@ public class WalletTransactionDAO {
     }
 
     /*Hàm lấy danh sách transaction và phân trang*/
-    public List<WalletTransactions> getListWalletTransactionPaging(int id, int index,int pageSize) {
+    public List<WalletTransactions> getListWalletTransactionPaging(int id, int index, int pageSize, String transactionType, Double minAmount, Double maxAmount, Date startDate, Date endDate) {
         List<WalletTransactions> list = new ArrayList<>();
 
         //Phần tích toán số trang động
@@ -110,15 +113,67 @@ public class WalletTransactionDAO {
 
         String sql;
         sql = """
-              SELECT * FROM wallet_transactions
-              WHERE wallet_id = ?
-              ORDER BY created_at DESC
-              LIMIT ? OFFSET ?
+              SELECT *
+              FROM wallet_transactions AS wt
+              WHERE
+                wt.wallet_id = ?
+                AND( ? IS NULL OR ? = '' OR FIND_IN_SET(wt.transaction_type, ?) > 0 )
+                AND ( ? IS NULL OR wt.amount >= ?)
+                AND ( ? IS NULL OR wt.amount <= ? )
+                AND ( ? IS NULL OR wt.created_at >= ? )
+                AND ( ? IS NULL OR wt.created_at <  ? )
+              ORDER BY wt.created_at DESC, wt.id DESC
+              LIMIT ? OFFSET ?;
               """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
-            ps.setInt(2, limit);
-            ps.setInt(3, offset);
+            String typesCsv = (transactionType == null || transactionType.isBlank())
+                    ? null : transactionType.trim();
+            if (typesCsv == null) {
+                ps.setNull(2, Types.VARCHAR);
+                ps.setNull(3, Types.VARCHAR);
+                ps.setNull(4, Types.VARCHAR);
+            } else {
+                ps.setString(2, typesCsv);
+                ps.setString(3, typesCsv);
+                ps.setString(4, typesCsv);
+            }
+            if (minAmount == null) {
+                ps.setNull(5, Types.DECIMAL);
+                ps.setNull(6, Types.DECIMAL);
+            } else {
+                ps.setDouble(5, minAmount);
+                ps.setDouble(6, minAmount);
+            }
+
+
+            if (maxAmount == null) {
+                ps.setNull(7, Types.DECIMAL);
+                ps.setNull(8, Types.DECIMAL);
+            } else {
+                ps.setDouble(7, maxAmount);
+                ps.setDouble(8, maxAmount);
+            }
+
+            // 5) TIME: bind TIMESTAMP an toàn
+            if (startDate == null) {
+                ps.setNull(9, Types.TIMESTAMP);
+                ps.setNull(10, Types.TIMESTAMP);
+            } else {
+                Timestamp fromTs = new Timestamp(startDate.getTime());
+                ps.setTimestamp(9, fromTs);
+                ps.setTimestamp(10, fromTs);
+            }
+            if (endDate == null) {
+                ps.setNull(11, Types.TIMESTAMP);
+                ps.setNull(12, Types.TIMESTAMP);
+            } else {
+                Timestamp toTs = new Timestamp(endDate.getTime());
+                ps.setTimestamp(11, toTs);
+                ps.setTimestamp(12, toTs);
+            }
+            ps.setInt(13, limit);
+            ps.setInt(14, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     WalletTransactions wt = new WalletTransactions();
@@ -128,7 +183,7 @@ public class WalletTransactionDAO {
                     //map từ ENUM java --> enum DB
                     String s = rs.getString(COL_TRANSACTION_TYPE); //"Deposit" | "Purchase" |
                     TransactionType type = TransactionType.fromDbValue(s);
-                    
+
                     wt.setTransactionType(type);
                     wt.setAmount(rs.getDouble(COL_AMOUNT));
                     wt.setBalanceBefore(rs.getDouble(COL_BALANCE_BEFORE));
@@ -148,4 +203,11 @@ public class WalletTransactionDAO {
         return null;
     }
 
+    public static void main(String[] args) {
+        WalletTransactionDAO wdao = new WalletTransactionDAO();
+        List<WalletTransactions> list = wdao.getListWalletTransactionPaging(1, 1, 5, null, null, null, null, null);
+        for (WalletTransactions walletTransactions : list) {
+            System.out.println(walletTransactions);
+        }
+    }
 }
