@@ -1,0 +1,106 @@
+
+.filterbar{
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px var(--shadow-color);
+}
+
+.filterbar__row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filterbar__field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px; /* co giãn đẹp trên màn hẹp */
+}
+
+.filterbar__label{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+/* Controls */
+.form-control,
+.select{
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface-color);
+  color: var(--text-color);
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-control:focus,
+.select:focus{
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0,91,150,.15); /* dựa theo --primary-color */
+}
+
+/* Time & amount range */
+.time-range{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.time-range .select{ min-width: 160px; }
+.time-range .form-control{ min-width: 190px; }
+
+.amount-range{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.amount-range .form-control{ min-width: 140px; }
+.amount-range__sep{
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+/* Action group (nút Lọc/Xóa) – dựa vào .btn/.button từ main.css */
+.filterbar__actions{
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  align-self: flex-end;
+}
+
+/* Nếu muốn có modifier riêng cho nút khi ở trong filterbar, dùng các rule nhẹ sau: */
+.filterbar .btn--primary,
+.filterbar .button--primary{
+  background: var(--primary-color);
+  color: #fff;
+  border-color: transparent;
+}
+.filterbar .btn--primary:hover,
+.filterbar .button--primary:hover{
+  background: var(--primary-color-dark);
+}
+
+.filterbar .btn--reset,
+.filterbar .button--ghost{
+  background: #fff;
+  color: var(--text-light);
+  border: 1px solid var(--border-color);
+}
+.filterbar .btn--reset:hover,
+.filterbar .button--ghost:hover{
+  background: rgba(0,91,150,.08);
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .filterbar__field{ min-width: 46%; flex: 1 1 46%; }
+  .time-range .form-control{ min-width: 150px; }
+  .amount-range .form-control{ min-width: 110px; }
+}
