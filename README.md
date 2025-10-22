@@ -7,9 +7,11 @@ Repo hiện chỉ giữ lại các script cơ sở dữ liệu (`.sql`). Hãy b�
 
 - `DB_v1.sql`
 - `docs/sql/order_indexes.sql`
+- `conf/database.properties` (mẫu cấu hình kết nối JDBC cho MySQL)
 
 ## Bắt đầu
 
 1. Thiết lập lại cấu trúc dự án (thư mục `src`, `web`, v.v.) theo stack bạn lựa chọn.
 2. Khi cần, cập nhật hoặc bổ sung các script SQL tại thư mục gốc hoặc dưới `docs/sql/`.
-3. Commit phần khởi tạo mới để nhóm có thể tiếp tục phát triển.
+3. Sao chép `conf/database.properties` và điều chỉnh thông tin kết nối (URL, tài khoản) cho môi trường của bạn.
+4. Commit phần khởi tạo mới để nhóm có thể tiếp tục phát triển.
