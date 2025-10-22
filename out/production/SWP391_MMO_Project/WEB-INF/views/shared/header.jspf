@@ -1,0 +1,98 @@
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+
+<c:choose>
+  <c:when test="${not empty headerBrandName}">
+    <c:set var="brandName" value="${headerBrandName}" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="brandName" value="MMO Trader Market" />
+  </c:otherwise>
+</c:choose>
+
+<c:choose>
+  <c:when test="${not empty headerHomeHref}">
+    <c:set var="homeHref" value="${headerHomeHref}" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="homeHref" value="${pageContext.request.contextPath}/home" />
+  </c:otherwise>
+</c:choose>
+
+<c:url value="/login" var="loginUrl" />
+<c:url value="/auth?action=logout" var="logoutUrl" />
+
+<c:set var="currentUri" value="${pageContext.request.requestURI}" />
+<c:set var="isAuthPage"
+        value="${fn:contains(currentUri, '/auth')
+                or fn:contains(currentUri, '/login')
+                or fn:contains(currentUri, '/register')
+                or fn:contains(currentUri, '/forgot')
+                or fn:contains(currentUri, '/reset-password')}" />
+<c:set var="isLoggedIn" value="${not empty sessionScope.authUser}" />
+
+<!-- Mặc định headerModifier là chuỗi rỗng nếu chưa set -->
+<c:if test="${empty headerModifier}">
+  <c:set var="headerModifier" value="" />
+</c:if>
+
+<c:if test="${isLoggedIn}">
+  <c:set var="displayName"
+         value="${not empty sessionScope.authUser.fullName ? sessionScope.authUser.fullName :
+                 (not empty sessionScope.authUser.name ? sessionScope.authUser.name :
+                 (not empty sessionScope.authUser.username ? sessionScope.authUser.username : sessionScope.authUser.email))}" />
+  <c:set var="avatarInitial" value="U" />
+  <c:if test="${not empty displayName}">
+    <c:set var="avatarInitial" value="${fn:toUpperCase(fn:substring(displayName, 0, 1))}" />
+  </c:if>
+</c:if>
+
+<header class="layout__header ${headerModifier}">
+  <div class="site-header__inner">
+    <div class="layout__brand site-header__brand">
+      <a class="layout__logo site-header__logo" href="${homeHref}" title="${brandName}">
+        <c:if test="${not empty headerLogoSrc}">
+          <img class="site-header__logo-image" src="${headerLogoSrc}" alt="${brandName}" loading="lazy" />
+        </c:if>
+        <span class="site-header__logo-text"><c:out value="${brandName}" /></span>
+      </a>
+
+      <c:if test="${not empty headerTitle or not empty headerSubtitle}">
+        <div class="layout__heading site-header__heading">
+          <c:if test="${not empty headerTitle}">
+            <h1><c:out value="${headerTitle}" /></h1>
+          </c:if>
+          <c:if test="${not empty headerSubtitle}">
+            <p class="subtitle"><c:out value="${headerSubtitle}" /></p>
+          </c:if>
+        </div>
+      </c:if>
+    </div>
+
+    <c:if test="${not empty navItems}">
+      <nav class="menu menu--horizontal site-header__nav" aria-label="Chuyển hướng chính">
+        <c:forEach var="item" items="${navItems}">
+          <c:set var="itemClass" value="menu__item" />
+          <c:if test="${not empty item['modifier']}">
+            <c:set var="itemClass" value="${itemClass} ${item['modifier']}" />
+          </c:if>
+
+          <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
+            <c:if test="${not empty item['icon']}">
+              <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
+            </c:if>
+
+            <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
+            <c:if test="${not empty textVal}">
+              <span class="menu__text"><c:out value="${textVal}" /></span>
+            </c:if>
+
+            <c:if test="${not empty item['srText']}">
+              <span class="sr-only"><c:out value="${item['srText']}" /></span>
+            </c:if>
+          </a>
+        </c:forEach>
+      </nav>
+    </c:if>
+  </div>
+</header>
