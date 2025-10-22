@@ -39,7 +39,7 @@ public class RoleDAO {
                 if (rs.next()) {
                     Roles role = new Roles();
                     role.setId(rs.getInt(COL_ID));
-                    role.setName(rs.getString(COL_ROLE));
+                    role.setNameId(rs.getString(COL_ROLE));
                     return role;
                 }
             }

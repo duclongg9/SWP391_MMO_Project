@@ -3,7 +3,11 @@
   <component name="WebContextManager">
     <option name="state">
       <map>
+        <entry key="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/Admin/_layout.jsp" value="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/Admin" />
+        <entry key="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/Admin/pages/users.jsp" value="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/Admin/pages" />
+        <entry key="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/order/confirmation.jsp" value="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/order" />
         <entry key="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/product/home.jsp" value="file://$PROJECT_DIR$/MMO_Trader_Market/web/WEB-INF/views/product" />
+        <entry key="file://$PROJECT_DIR$/MMO_Trader_Market/web/login.jsp" value="file://$PROJECT_DIR$/MMO_Trader_Market/web" />
       </map>
     </option>
   </component>

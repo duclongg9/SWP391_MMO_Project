@@ -27,7 +27,7 @@ public class Roles {
 
 
 
-    public void setName(String name) {
+    public void setNameId(String name) {
         this.name = name;
     }
     @Override

@@ -1,4 +1,9 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<jsp:useBean id="pageTitle" scope="request" type="java.lang.String"/>
+<jsp:useBean id="active" scope="request" type="java.lang.String"/>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="false" %>
+
+
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -14,13 +19,13 @@
     <script>
         window.APP_BASE = '${pageContext.request.contextPath}';
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Nạp admin.js đúng cách -->
+    <!-- Nạp admin.js -->
     <script src="${pageContext.request.contextPath}/assets/Script/admin.js" defer></script>
-
 </head>
-<body>
 
+<body>
 <!-- Sidebar -->
 <div class="sidebar">
     <div>
@@ -53,7 +58,7 @@
 
     <!-- Logout -->
     <div class="logout-section">
-        <a href="${pageContext.request.contextPath}/index.html" methods="get" style="margin: 0;">
+        <a href="${pageContext.request.contextPath}/index.html" style="margin: 0;">
             <i class="bi bi-box-arrow-right me-2"></i><span>Đăng xuất</span>
         </a>
     </div>
@@ -66,9 +71,9 @@
     </div>
 
     <div class="page-content">
+        <jsp:useBean id="content" scope="request" type="java.lang.String"/>
         <jsp:include page="${content}" />
     </div>
 </div>
-
 </body>
 </html>
