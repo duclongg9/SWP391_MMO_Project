@@ -146,9 +146,15 @@ public class ProductDetailView {
         return variantsJson;
     }
 
-    public boolean hasVariants() {
+    public boolean isHasVariants() {
         return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema) && !variants.isEmpty();
     }
+    
+    public boolean hasVariants() {
+        return isHasVariants();
+    }
+
+
 
     public boolean hasPriceRange() {
         if (minPrice == null || maxPrice == null) {
