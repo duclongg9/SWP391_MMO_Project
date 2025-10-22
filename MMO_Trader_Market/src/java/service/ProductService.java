@@ -107,12 +107,17 @@ public class ProductService {
         int currentPage = Math.min(safePage, totalPages);
         int offset = (currentPage - 1) * safeSize;
 
-        List<ProductSummaryView> items = totalItems == 0
-                ? List.of()
-                : productDAO.findAvailablePaged(normalizedKeyword, normalizedType, normalizedSubtype, safeSize, offset)
-                .stream()
+        List<ProductListRow> rows = productDAO.findAvailablePaged(
+                normalizedKeyword, normalizedType, normalizedSubtype, safeSize, offset);
+        List<ProductSummaryView> items = rows.stream()
                 .map(this::toSummaryView)
                 .toList();
+
+        if (totalItems == 0 && !items.isEmpty()) {
+            totalItems = items.size();
+            totalPages = 1;
+            currentPage = 1;
+        }
 
         return new PagedResult<>(items, currentPage, safeSize, totalPages, totalItems);
     }

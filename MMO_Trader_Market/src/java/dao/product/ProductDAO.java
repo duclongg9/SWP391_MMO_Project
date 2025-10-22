@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,9 +29,6 @@ public class ProductDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
     private static final String SCHEMA = "mmo_schema";
-    private static final Set<String> PRODUCT_TYPES = Set.of("EMAIL", "SOCIAL", "SOFTWARE", "GAME", "OTHER");
-    private static final Set<String> PRODUCT_SUBTYPES = Set.of("GMAIL", "FACEBOOK", "TIKTOK", "CANVA", "VALORANT", "OTHER");
-
     private static final String PRODUCT_COLUMNS = String.join(", ",
             "id", "shop_id", "product_type", "product_subtype", "name",
             "short_description", "description", "price", "primary_image_url",
@@ -56,26 +52,15 @@ public class ProductDAO extends BaseDAO {
 
     public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
             int limit, int offset) {
-        NormalizedFilters filters = normalizeFilters(keyword, productType, productSubtype);
+        int safeLimit = Math.max(limit, 1);
+        int safeOffset = Math.max(offset, 0);
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (filters.productType != null) {
-            sql.append(" AND p.product_type = ?");
-            params.add(filters.productType);
-        }
-        if (filters.productSubtype != null) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(filters.productSubtype);
-        }
-        if (filters.keywordPattern != null) {
-            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
-            params.add(filters.keywordPattern);
-            params.add(filters.keywordPattern);
-        }
+        appendFilterClauses(sql, params, keyword, productType, productSubtype);
         sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
-        params.add(limit);
-        params.add(offset);
+        params.add(safeLimit);
+        params.add(safeOffset);
 
         debugSql(sql.toString(), params);
         try (Connection connection = getConnection();
@@ -95,26 +80,13 @@ public class ProductDAO extends BaseDAO {
     }
 
     public long countAvailable(String keyword, String productType, String productSubtype) {
-        NormalizedFilters filters = normalizeFilters(keyword, productType, productSubtype);
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM ")
                 .append(SCHEMA)
                 .append(".products p JOIN ")
                 .append(SCHEMA)
                 .append(".shops s ON s.id = p.shop_id WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (filters.productType != null) {
-            sql.append(" AND p.product_type = ?");
-            params.add(filters.productType);
-        }
-        if (filters.productSubtype != null) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(filters.productSubtype);
-        }
-        if (filters.keywordPattern != null) {
-            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
-            params.add(filters.keywordPattern);
-            params.add(filters.keywordPattern);
-        }
+        appendFilterClauses(sql, params, keyword, productType, productSubtype);
 
         debugSql(sql.toString(), params);
         try (Connection connection = getConnection();
@@ -198,8 +170,11 @@ public class ProductDAO extends BaseDAO {
                 + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            String normalizedType = normalizeProductType(productType);
-            statement.setString(1, normalizedType != null ? normalizedType : productType.trim().toUpperCase(Locale.ROOT));
+            String normalizedType = normalizeFilterValue(productType);
+            if (normalizedType == null) {
+                return List.of();
+            }
+            statement.setString(1, normalizedType);
             statement.setInt(2, excludeProductId);
             statement.setInt(3, Math.max(limit, 1));
             List<ProductListRow> rows = new ArrayList<>();
@@ -379,42 +354,6 @@ public class ProductDAO extends BaseDAO {
         return value != null && !value.trim().isEmpty();
     }
 
-    private String normalizeProductType(String value) {
-        if (!hasText(value)) {
-            return null;
-        }
-        String normalized = value.trim().toUpperCase(Locale.ROOT);
-        return PRODUCT_TYPES.contains(normalized) ? normalized : null;
-    }
-
-    private String normalizeProductSubtype(String value) {
-        if (!hasText(value)) {
-            return null;
-        }
-        String normalized = value.trim().toUpperCase(Locale.ROOT);
-        return PRODUCT_SUBTYPES.contains(normalized) ? normalized : null;
-    }
-
-    private NormalizedFilters normalizeFilters(String keyword, String productType, String productSubtype) {
-        String normalizedType = normalizeProductType(productType);
-        String normalizedSubtype = normalizeProductSubtype(productSubtype);
-        String trimmedKeyword = hasText(keyword) ? keyword.trim() : null;
-        String pattern = trimmedKeyword == null ? null : '%' + trimmedKeyword + '%';
-        return new NormalizedFilters(normalizedType, normalizedSubtype, pattern);
-    }
-
-    private static final class NormalizedFilters {
-        private final String productType;
-        private final String productSubtype;
-        private final String keywordPattern;
-
-        private NormalizedFilters(String productType, String productSubtype, String keywordPattern) {
-            this.productType = productType;
-            this.productSubtype = productSubtype;
-            this.keywordPattern = keywordPattern;
-        }
-    }
-
     private void debugSql(String sql, List<Object> params) {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine("SQL: " + sql + " | params=" + params);
@@ -460,6 +399,38 @@ public class ProductDAO extends BaseDAO {
             statement.setString(i + 1, parameters.get(i));
         }
         return statement;
+    }
+
+    private void appendFilterClauses(StringBuilder sql, List<Object> params, String keyword,
+            String productType, String productSubtype) {
+        String normalizedType = normalizeFilterValue(productType);
+        if (normalizedType != null) {
+            sql.append(" AND p.product_type = ?");
+            params.add(normalizedType);
+        }
+
+        String normalizedSubtype = normalizeFilterValue(productSubtype);
+        if (normalizedSubtype != null) {
+            sql.append(" AND p.product_subtype = ?");
+            params.add(normalizedSubtype);
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            String trimmed = keyword.trim();
+            if (!trimmed.isEmpty()) {
+                String pattern = '%' + trimmed + '%';
+                sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
+                params.add(pattern);
+                params.add(pattern);
+            }
+        }
+    }
+
+    private String normalizeFilterValue(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        return value.trim().toUpperCase(Locale.ROOT);
     }
 
     private ProductListRow mapListRow(ResultSet rs) throws SQLException {
