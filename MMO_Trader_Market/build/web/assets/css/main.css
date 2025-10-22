@@ -33,6 +33,7 @@ a {
     color: inherit;
 }
 
+
 code {
     font-family: 'Fira Code', 'Courier New', Courier, monospace;
 }
@@ -1148,6 +1149,7 @@ justify-content: center;
 /* Landing page */
 .layout--landing {
     background: linear-gradient(135deg, rgba(0, 91, 150, 0.08), rgba(255, 183, 3, 0.05));
+    
 }
 
 .landing {
@@ -1179,6 +1181,29 @@ justify-content: center;
     margin: 1rem 0 1.5rem;
     color: var(--text-light);
     font-size: 1.05rem;
+}
+/* About block trên landing */
+.landing__about {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.landing__about-title {
+    margin: 0 0 .5rem;
+    font-size: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+    font-weight: 700;
+}
+
+.landing__about-lead {
+    margin: 0 0 1rem;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.landing__about-text {
+    margin: 0;
+    line-height: 1.85;
+    color: var(--text-color);
 }
 
 .landing__metrics {

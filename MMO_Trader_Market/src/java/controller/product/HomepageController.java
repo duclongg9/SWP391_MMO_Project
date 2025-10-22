@@ -87,10 +87,10 @@ public class HomepageController extends BaseController {
         faqs.add(createEntry("Làm sao để mua tài khoản an toàn?",
                 "Hãy kiểm tra trạng thái duyệt và chỉ thanh toán qua kênh được hỗ trợ trong hệ thống."));
         faqs.add(createEntry("Tôi có thể yêu cầu hoàn tiền không?",
-                "Người mua có thể mở khiếu nại trong vòng 24 giờ sau khi nhận tài khoản."));
+                "Người mua có thể mở khiếu nại trong vòng 3 ngày sau khi nhận tài khoản."));
         faqs.add(createEntry("Ví điện tử hoạt động như thế nào?",
                 "Ví cho phép nạp tiền nhanh, thanh toán tức thì và theo dõi lịch sử giao dịch."));
-        faqs.add(createEntry("Seller cần chuẩn bị gì để đăng bán?",
+        faqs.add(createEntry("Người bán cần chuẩn bị gì để đăng bán?",
                 "Hãy xác minh danh tính KYC và cung cấp mô tả chi tiết cho từng sản phẩm."));
 
         return faqs;
