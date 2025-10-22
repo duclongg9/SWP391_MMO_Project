@@ -12,7 +12,8 @@
 <c:set var="filterTypeValue" value="${empty filterTypeCandidate ? '' : fn:toUpperCase(filterTypeCandidate)}" />
 <c:set var="filterSubtypeCandidate" value="${not empty filterSubtype ? filterSubtype : (not empty selectedSubtype ? selectedSubtype : param.subtype)}" />
 <c:set var="filterSubtypeValue" value="${empty filterSubtypeCandidate ? '' : fn:toUpperCase(filterSubtypeCandidate)}" />
-<c:set var="filterPageSizeCandidate" value="${not empty filterPageSize ? filterPageSize : size}" />
+<c:set var="filterPageSizeCandidate"
+        value="${not empty filterPageSize ? filterPageSize : (not empty pageSize ? pageSize : size)}" />
 <c:set var="filterPageSizeValue" value="${empty filterPageSizeCandidate ? 12 : filterPageSizeCandidate}" />
 <c:set var="filterIncludeSizeValue" value="${filterIncludeSize == true or filterIncludeSize == 'true'}" />
 
@@ -30,10 +31,10 @@
     <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>
     <select class="product-filters__select" id="${typeInputId}" name="type">
       <option value="">Tất cả loại</option>
-      <option value="EMAIL" <c:if test="${filterTypeValue == 'EMAIL'}">selected</c:if>>Email</option>
-      <option value="SOCIAL" <c:if test="${filterTypeValue == 'SOCIAL'}">selected</c:if>>Tài khoản MXH</option>
-      <option value="SOFTWARE" <c:if test="${filterTypeValue == 'SOFTWARE'}">selected</c:if>>Tài khoản phần mềm</option>
-      <option value="GAME" <c:if test="${filterTypeValue == 'GAME'}">selected</c:if>>Tài khoản Game</option>
+      <option value="EMAIL"${filterTypeValue == 'EMAIL' ? ' selected' : ''}>Email</option>
+      <option value="SOCIAL"${filterTypeValue == 'SOCIAL' ? ' selected' : ''}>Tài khoản MXH</option>
+      <option value="SOFTWARE"${filterTypeValue == 'SOFTWARE' ? ' selected' : ''}>Tài khoản phần mềm</option>
+      <option value="GAME"${filterTypeValue == 'GAME' ? ' selected' : ''}>Tài khoản Game</option>
     </select>
   </div>
   <div class="product-filters__group">
@@ -41,23 +42,23 @@
     <select class="product-filters__select" id="${subtypeInputId}" name="subtype">
       <option value="">Tất cả</option>
       <c:if test="${filterTypeValue == 'EMAIL'}">
-        <option value="GMAIL" <c:if test="${filterSubtypeValue == 'GMAIL'}">selected</c:if>>Gmail</option>
+        <option value="GMAIL"${filterSubtypeValue == 'GMAIL' ? ' selected' : ''}>Gmail</option>
       </c:if>
       <c:if test="${filterTypeValue == 'SOCIAL'}">
-        <option value="FACEBOOK" <c:if test="${filterSubtypeValue == 'FACEBOOK'}">selected</c:if>>Facebook</option>
-        <option value="TIKTOK" <c:if test="${filterSubtypeValue == 'TIKTOK'}">selected</c:if>>TikTok</option>
+        <option value="FACEBOOK"${filterSubtypeValue == 'FACEBOOK' ? ' selected' : ''}>Facebook</option>
+        <option value="TIKTOK"${filterSubtypeValue == 'TIKTOK' ? ' selected' : ''}>TikTok</option>
       </c:if>
       <c:if test="${filterTypeValue == 'SOFTWARE'}">
-        <option value="CANVA" <c:if test="${filterSubtypeValue == 'CANVA'}">selected</c:if>>Canva</option>
+        <option value="CANVA"${filterSubtypeValue == 'CANVA' ? ' selected' : ''}>Canva</option>
       </c:if>
       <c:if test="${filterTypeValue == 'GAME'}">
-        <option value="VALORANT" <c:if test="${filterSubtypeValue == 'VALORANT'}">selected</c:if>>Valorant</option>
+        <option value="VALORANT"${filterSubtypeValue == 'VALORANT' ? ' selected' : ''}>Valorant</option>
       </c:if>
     </select>
   </div>
   <input type="hidden" name="page" value="1" />
   <c:if test="${filterIncludeSizeValue}">
-    <input type="hidden" name="size" value="${filterPageSizeValue}" />
+    <input type="hidden" name="pageSize" value="${filterPageSizeValue}" />
   </c:if>
   <button class="button button--primary" type="submit">Áp dụng</button>
 </form>

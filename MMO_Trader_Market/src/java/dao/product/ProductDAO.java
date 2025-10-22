@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +38,8 @@ public class ProductDAO extends BaseDAO {
 
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
             + "p.short_description, p.price, p.inventory_count, p.sold_count, p.status, "
-            + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
+            + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name, "
+            + "p.created_at "
             + "FROM products p JOIN shops s ON s.id = p.shop_id";
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
@@ -52,29 +54,16 @@ public class ProductDAO extends BaseDAO {
 
     public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
             int limit, int offset) {
-        StringBuilder sql = new StringBuilder(LIST_SELECT)
-                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
-        List<Object> params = new ArrayList<>();
-        if (hasText(productType)) {
-            sql.append(" AND p.product_type = ?");
-            params.add(productType);
-        }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
-        }
-        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
+        SqlQuery baseQuery = buildListSql(productType, productSubtype, keyword);
+        String sql = baseQuery.getSql() + " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
+        List<Object> params = new ArrayList<>(baseQuery.getParams());
         params.add(limit);
         params.add(offset);
 
+        LOGGER.log(Level.INFO, "[ProductDAO] SQL(list)={0}, params={1}", new Object[]{sql, params});
+
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             setParameters(statement, params);
             List<ProductListRow> rows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -90,29 +79,14 @@ public class ProductDAO extends BaseDAO {
     }
 
     public long countAvailable(String keyword, String productType, String productSubtype) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
-                .append(LIST_SELECT)
-                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
-        List<Object> params = new ArrayList<>();
-        if (hasText(productType)) {
-            sql.append(" AND p.product_type = ?");
-            params.add(productType);
-        }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
-        }
-        sql.append(") AS available_products");
+        SqlQuery countQuery = buildCountSql(productType, productSubtype, keyword);
+
+        LOGGER.log(Level.INFO, "[ProductDAO] SQL(count)={0}, params={1}",
+                new Object[]{countQuery.getSql(), countQuery.getParams()});
 
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            setParameters(statement, params);
+             PreparedStatement statement = connection.prepareStatement(countQuery.getSql())) {
+            setParameters(statement, countQuery.getParams());
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     return rs.getLong(1);
@@ -394,6 +368,37 @@ public class ProductDAO extends BaseDAO {
         return value != null && !value.trim().isEmpty();
     }
 
+    private SqlQuery buildListSql(String productType, String productSubtype, String keyword) {
+        StringBuilder sql = new StringBuilder(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
+        List<Object> params = new ArrayList<>();
+
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+
+        if (hasText(productSubtype)) {
+            sql.append(" AND p.product_subtype = ?");
+            params.add(productSubtype);
+        }
+
+        if (hasText(keyword)) {
+            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
+            String pattern = buildLikePattern(keyword);
+            params.add(pattern);
+            params.add(pattern);
+        }
+
+        return new SqlQuery(sql.toString(), params);
+    }
+
+    private SqlQuery buildCountSql(String productType, String productSubtype, String keyword) {
+        SqlQuery listQuery = buildListSql(productType, productSubtype, keyword);
+        String sql = "SELECT COUNT(*) FROM (" + listQuery.getSql() + ") AS available_products";
+        return new SqlQuery(sql, listQuery.getParams());
+    }
+
     private String buildLikePattern(String keyword) {
         return "%" + keyword.trim() + "%";
     }
@@ -413,6 +418,25 @@ public class ProductDAO extends BaseDAO {
             } else {
                 statement.setObject(index, value);
             }
+        }
+    }
+
+    private static final class SqlQuery {
+
+        private final String sql;
+        private final List<Object> params;
+
+        private SqlQuery(String sql, List<Object> params) {
+            this.sql = sql;
+            this.params = Collections.unmodifiableList(new ArrayList<>(params));
+        }
+
+        String getSql() {
+            return sql;
+        }
+
+        List<Object> getParams() {
+            return params;
         }
     }
 

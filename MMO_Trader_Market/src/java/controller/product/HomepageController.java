@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles requests for the public facing homepage where visitors discover
@@ -28,6 +30,7 @@ public class HomepageController extends BaseController {
 
     private static final long serialVersionUID = 1L;
 
+    private static final Logger LOGGER = Logger.getLogger(HomepageController.class.getName());
     private final HomepageService homepageService = new HomepageService();
 
     @Override
@@ -53,6 +56,9 @@ public class HomepageController extends BaseController {
         request.setAttribute("summary", summary);
 
         List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
+        LOGGER.log(Level.INFO, "[HomepageController] featuredCount={0}, firstId={1}",
+                new Object[]{featuredProducts.size(),
+                        featuredProducts.isEmpty() ? null : featuredProducts.get(0).getId()});
         request.setAttribute("featured", featuredProducts);
 
         Map<String, ProductSummaryView> topBySubtype = homepageService.loadTopProductsBySubtype();

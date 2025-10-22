@@ -12,6 +12,8 @@ import service.ProductService;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Public marketplace product list controller.
@@ -26,16 +28,26 @@ public class ProductListController extends BaseController {
     private static final Set<String> ALLOWED_TYPES = Set.of("EMAIL", "SOCIAL", "SOFTWARE", "GAME");
     private static final Set<String> ALLOWED_SUBTYPES = Set.of("GMAIL", "FACEBOOK", "TIKTOK", "CANVA", "VALORANT", "OTHER");
 
+    private static final Logger LOGGER = Logger.getLogger(ProductListController.class.getName());
     private final ProductService productService = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String keyword = trimToNull(request.getParameter("q"));
-        String productType = normalizeEnum(request.getParameter("type"), ALLOWED_TYPES);
-        String productSubtype = normalizeEnum(request.getParameter("subtype"), ALLOWED_SUBTYPES);
-        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
-        int size = DEFAULT_SIZE;
+        String rawKeyword = request.getParameter("q");
+        String rawType = request.getParameter("type");
+        String rawSubtype = request.getParameter("subtype");
+        String rawPage = request.getParameter("page");
+        String rawPageSize = firstNonBlank(request.getParameter("pageSize"), request.getParameter("size"));
+
+        String keyword = trimToNull(rawKeyword);
+        String productType = normalizeEnum(rawType, ALLOWED_TYPES);
+        String productSubtype = normalizeEnum(rawSubtype, ALLOWED_SUBTYPES);
+        int page = parsePositiveIntOrDefault(rawPage, DEFAULT_PAGE);
+        int size = parsePositiveIntOrDefault(rawPageSize, DEFAULT_SIZE);
+
+        LOGGER.log(Level.INFO, "[ProductListController] q={0}, type={1}, subtype={2}, page={3}, pageSize={4}",
+                new Object[]{keyword, productType, productSubtype, page, size});
 
         PagedResult<ProductSummaryView> result = productService.searchPublicProducts(
                 productType, productSubtype, keyword, page, size);
@@ -47,14 +59,16 @@ public class ProductListController extends BaseController {
         request.setAttribute("totalItems", result.getTotalItems());
         request.setAttribute("page", result.getPage());
         request.setAttribute("currentPage", result.getPage());
+        request.setAttribute("pageSize", result.getSize());
         request.setAttribute("size", result.getSize());
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("query", keyword == null ? "" : keyword);
-        request.setAttribute("q", keyword == null ? "" : keyword);
+        String resolvedQuery = keyword == null ? "" : keyword;
+        request.setAttribute("query", resolvedQuery);
+        request.setAttribute("q", resolvedQuery);
         request.setAttribute("selectedType", productType);
         request.setAttribute("selectedSubtype", productSubtype);
 
-        forward(request, response, "product/list");
+        forward(request, response, "product/product-list");
     }
 
     private int parsePositiveIntOrDefault(String value, int defaultValue) {
@@ -62,7 +76,7 @@ public class ProductListController extends BaseController {
             return defaultValue;
         }
         try {
-            int parsed = Integer.parseInt(value);
+            int parsed = Integer.parseInt(value.trim());
             return parsed > 0 ? parsed : defaultValue;
         } catch (NumberFormatException ex) {
             return defaultValue;
@@ -84,5 +98,18 @@ public class ProductListController extends BaseController {
         }
         String upper = trimmed.toUpperCase(Locale.ROOT);
         return allowed.contains(upper) ? upper : null;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            String trimmed = trimToNull(value);
+            if (trimmed != null) {
+                return trimmed;
+            }
+        }
+        return null;
     }
 }

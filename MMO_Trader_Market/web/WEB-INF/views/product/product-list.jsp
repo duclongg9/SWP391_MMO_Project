@@ -14,7 +14,7 @@
         </div>
         <c:set var="filterFormAction" value="${cPath}/products" />
         <c:set var="filterIncludeSize" value="${true}" />
-        <c:set var="filterPageSize" value="${size}" />
+        <c:set var="filterPageSize" value="${pageSize}" />
         <c:set var="filterQuery" value="${q}" />
         <c:set var="filterType" value="${selectedType}" />
         <c:set var="filterSubtype" value="${selectedSubtype}" />
@@ -23,11 +23,10 @@
             <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
             <span>Trang ${page} / ${totalPages}</span>
         </div>
-        <c:choose>
-            <c:when test="${not empty items}">
-                <div class="product-grid">
-                    <c:forEach var="p" items="${items}">
-                        <article class="product-card">
+        <c:if test="${not empty items}">
+            <div class="product-grid">
+                <c:forEach var="p" items="${items}">
+                    <article class="product-card">
                             <div class="product-card__image">
                                 <c:choose>
                                     <c:when test="${not empty p.primaryImageUrl}">
@@ -70,21 +69,20 @@
                                     <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
                                 </div>
                             </div>
-                        </article>
-                    </c:forEach>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="product-card product-card--empty">
-                    <p>Không tìm thấy sản phẩm phù hợp.</p>
-                </div>
-            </c:otherwise>
-        </c:choose>
+                    </article>
+                </c:forEach>
+            </div>
+        </c:if>
+        <c:if test="${empty items}">
+            <div class="product-card product-card--empty">
+                <p>Không tìm thấy sản phẩm phù hợp.</p>
+            </div>
+        </c:if>
         <c:if test="${totalPages gt 1}">
             <nav class="pagination" aria-label="Phân trang sản phẩm">
                 <c:url var="prevUrl" value="/products">
                     <c:param name="page" value="${page - 1}" />
-                    <c:param name="size" value="${size}" />
+                    <c:param name="pageSize" value="${pageSize}" />
                     <c:if test="${not empty query}">
                         <c:param name="q" value="${query}" />
                     </c:if>
@@ -97,7 +95,7 @@
                 </c:url>
                 <c:url var="nextUrl" value="/products">
                     <c:param name="page" value="${page + 1}" />
-                    <c:param name="size" value="${size}" />
+                    <c:param name="pageSize" value="${pageSize}" />
                     <c:if test="${not empty query}">
                         <c:param name="q" value="${query}" />
                     </c:if>
@@ -113,7 +111,7 @@
                 <c:forEach var="i" begin="1" end="${totalPages}">
                     <c:url var="pageUrl" value="/products">
                         <c:param name="page" value="${i}" />
-                        <c:param name="size" value="${size}" />
+                        <c:param name="pageSize" value="${pageSize}" />
                         <c:if test="${not empty query}">
                             <c:param name="q" value="${query}" />
                         </c:if>
