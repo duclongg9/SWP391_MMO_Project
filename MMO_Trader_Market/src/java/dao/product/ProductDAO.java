@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,6 +29,9 @@ import java.util.logging.Logger;
 public class ProductDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
+    private static final String SCHEMA = "mmo_schema";
+    private static final Set<String> PRODUCT_TYPES = Set.of("EMAIL", "SOCIAL", "SOFTWARE", "GAME");
+    private static final Set<String> PRODUCT_SUBTYPES = Set.of("GMAIL", "FACEBOOK", "TIKTOK", "CANVA", "VALORANT", "OTHER");
 
     private static final String PRODUCT_COLUMNS = String.join(", ",
             "id", "shop_id", "product_type", "product_subtype", "name",
@@ -38,16 +42,16 @@ public class ProductDAO extends BaseDAO {
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
             + "p.short_description, p.price, p.inventory_count, p.sold_count, p.status, "
             + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id";
+            + "FROM " + SCHEMA + ".products p JOIN " + SCHEMA + ".shops s ON s.id = p.shop_id";
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
             + "p.short_description, p.description, p.price, p.inventory_count, p.sold_count, p.status, "
             + "p.primary_image_url, p.gallery_json, p.variant_schema, p.variants_json, "
             + "s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
+            + "FROM " + SCHEMA + ".products p JOIN " + SCHEMA + ".shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
 
     private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id "
+            + "FROM " + SCHEMA + ".products p JOIN " + SCHEMA + ".shops s ON s.id = p.shop_id "
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
     public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
@@ -55,16 +59,18 @@ public class ProductDAO extends BaseDAO {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (hasText(productType)) {
+        String normalizedType = normalizeProductType(productType);
+        if (normalizedType != null) {
             sql.append(" AND p.product_type = ?");
-            params.add(productType);
+            params.add(normalizedType);
         }
-        if (hasText(productSubtype)) {
+        String normalizedSubtype = normalizeProductSubtype(productSubtype);
+        if (normalizedSubtype != null) {
             sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
+            params.add(normalizedSubtype);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
             String pattern = buildLikePattern(keyword);
             params.add(pattern);
             params.add(pattern);
@@ -73,6 +79,7 @@ public class ProductDAO extends BaseDAO {
         params.add(limit);
         params.add(offset);
 
+        debugSql(sql.toString(), params);
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
@@ -94,22 +101,25 @@ public class ProductDAO extends BaseDAO {
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
-        if (hasText(productType)) {
+        String normalizedType = normalizeProductType(productType);
+        if (normalizedType != null) {
             sql.append(" AND p.product_type = ?");
-            params.add(productType);
+            params.add(normalizedType);
         }
-        if (hasText(productSubtype)) {
+        String normalizedSubtype = normalizeProductSubtype(productSubtype);
+        if (normalizedSubtype != null) {
             sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
+            params.add(normalizedSubtype);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
             String pattern = buildLikePattern(keyword);
             params.add(pattern);
             params.add(pattern);
         }
         sql.append(") AS available_products");
 
+        debugSql(sql.toString(), params);
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
@@ -162,7 +172,7 @@ public class ProductDAO extends BaseDAO {
 
     public Map<String, Long> countAvailableByType() {
         final String sql = "SELECT p.product_type, COUNT(*) AS total "
-                + "FROM products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
+                + "FROM " + SCHEMA + ".products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
                 + "GROUP BY p.product_type";
         Map<String, Long> result = new HashMap<>();
         try (Connection connection = getConnection();
@@ -191,7 +201,8 @@ public class ProductDAO extends BaseDAO {
                 + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, productType);
+            String normalizedType = normalizeProductType(productType);
+            statement.setString(1, normalizedType != null ? normalizedType : productType.trim().toUpperCase(Locale.ROOT));
             statement.setInt(2, excludeProductId);
             statement.setInt(3, Math.max(limit, 1));
             List<ProductListRow> rows = new ArrayList<>();
@@ -223,7 +234,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     public Optional<Products> findById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
+        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM " + SCHEMA + ".products WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -240,7 +251,7 @@ public class ProductDAO extends BaseDAO {
 
     public Optional<Products> findAvailableById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products WHERE id = ? AND status = 'Available' LIMIT 1";
+                + " FROM " + SCHEMA + ".products WHERE id = ? AND status = 'Available' LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -256,7 +267,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     public Optional<BigDecimal> findPriceById(int productId) {
-        final String sql = "SELECT price FROM products WHERE id = ? LIMIT 1";
+        final String sql = "SELECT price FROM " + SCHEMA + ".products WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
@@ -281,7 +292,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
+        final String sql = "UPDATE " + SCHEMA + ".products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
                 + "WHERE id = ? AND inventory_count >= ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, qty);
@@ -292,7 +303,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     public int lockInventoryForUpdate(Connection connection, int productId) throws SQLException {
-        final String sql = "SELECT inventory_count FROM products WHERE id = ? FOR UPDATE";
+        final String sql = "SELECT inventory_count FROM " + SCHEMA + ".products WHERE id = ? FOR UPDATE";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -305,7 +316,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     public int countByKeyword(String keyword) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM " + SCHEMA + ".products");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         try (Connection connection = getConnection();
@@ -324,7 +335,9 @@ public class ProductDAO extends BaseDAO {
     public List<Products> search(String keyword, int limit, int offset) {
         StringBuilder sql = new StringBuilder("SELECT ");
         sql.append(PRODUCT_COLUMNS)
-                .append(" FROM products");
+                .append(" FROM ")
+                .append(SCHEMA)
+                .append(".products");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         sql.append(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
@@ -348,7 +361,7 @@ public class ProductDAO extends BaseDAO {
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
         final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products ORDER BY updated_at DESC LIMIT ?";
+                + " FROM " + SCHEMA + ".products ORDER BY updated_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
@@ -370,7 +383,29 @@ public class ProductDAO extends BaseDAO {
     }
 
     private String buildLikePattern(String keyword) {
-        return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
+        return "%" + keyword.trim() + "%";
+    }
+
+    private String normalizeProductType(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        return PRODUCT_TYPES.contains(normalized) ? normalized : null;
+    }
+
+    private String normalizeProductSubtype(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        return PRODUCT_SUBTYPES.contains(normalized) ? normalized : null;
+    }
+
+    private void debugSql(String sql, List<Object> params) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("SQL: " + sql + " | params=" + params);
+        }
     }
 
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
@@ -395,8 +430,12 @@ public class ProductDAO extends BaseDAO {
         if (keyword == null || keyword.isBlank()) {
             return;
         }
-        sql.append(" WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ?");
-        String pattern = '%' + keyword.toLowerCase(Locale.ROOT) + '%';
+        String trimmed = keyword.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+        sql.append(" WHERE name LIKE ? OR description LIKE ?");
+        String pattern = '%' + trimmed + '%';
         parameters.add(pattern);
         parameters.add(pattern);
     }
