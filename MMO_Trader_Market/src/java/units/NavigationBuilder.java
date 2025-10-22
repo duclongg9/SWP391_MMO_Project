@@ -62,6 +62,8 @@ public final class NavigationBuilder {
     }
 
     private static void addBaseItems(List<Map<String, String>> items, String contextPath, String currentPath) {
+        items.add(createNavItem(contextPath + "/viewproductlist", "Danh sách sản phẩm",
+                isActive(currentPath, "/viewproductlist")));
         items.add(createNavItem(contextPath + "/home#product-types", "Loại sản phẩm", false));
         items.add(createNavItem(contextPath + "/home#faq", "FAQ", false));
     }

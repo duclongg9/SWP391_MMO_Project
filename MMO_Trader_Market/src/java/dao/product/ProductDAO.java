@@ -89,6 +89,24 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    public List<ProductListRow> findAllAvailable() {
+        final String sql = LIST_SELECT
+                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
+                + " ORDER BY p.created_at DESC";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            List<ProductListRow> rows = new ArrayList<>();
+            while (rs.next()) {
+                rows.add(mapListRow(rs));
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải toàn bộ sản phẩm khả dụng", ex);
+            return List.of();
+        }
+    }
+
     public long countAvailable(String keyword, String productType, String productSubtype) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)

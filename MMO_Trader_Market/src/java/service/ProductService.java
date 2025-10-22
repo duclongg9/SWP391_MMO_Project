@@ -117,6 +117,12 @@ public class ProductService {
         return new PagedResult<>(items, currentPage, safeSize, totalPages, totalItems);
     }
 
+    public List<ProductSummaryView> getAllAvailableProducts() {
+        return productDAO.findAllAvailable().stream()
+                .map(this::toSummaryView)
+                .toList();
+    }
+
     public ProductDetailView getPublicDetail(int productId) {
         if (productId <= 0) {
             throw new IllegalArgumentException("Mã sản phẩm không hợp lệ");
