@@ -123,63 +123,65 @@
             <span class="panel__tag">Dữ liệu trực tiếp</span>
         </div>
 
-        <div class="landing__products">
-            <c:choose>
-                <c:when test="${empty featuredProducts}">
-                    <p>Chưa có dữ liệu.</p>
-                </c:when>
-                <c:otherwise>
-                    <c:forEach var="product" items="${featuredProducts}">
-                        <article class="product-card product-card--featured">
-                            <div class="product-card__image">
-                                <c:choose>
-                                    <c:when test="${not empty product.primaryImageUrl}">
-                                        <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
-                                    </c:when>
-                                    <c:otherwise>
-                                        <div class="product-card__placeholder">Không có ảnh</div>
-                                    </c:otherwise>
-                                </c:choose>
-                            </div>
-                            <div class="product-card__body">
-                                <header class="product-card__header">
-                                    <h4><c:out value="${product.name}" /></h4>
-                                </header>
-                                <p class="product-card__meta">
-                                    <span><c:out value="${product.productTypeLabel}" /> • <c:out value="${product.productSubtypeLabel}" /></span>
-                                    <span>Shop: <strong><c:out value="${product.shopName}" /></strong></span>
-                                </p>
-                                <p class="product-card__description"><c:out value="${product.shortDescription}" /></p>
-                                <p class="product-card__price">
+        <c:choose>
+            <c:when test="${empty featured}">
+                <div class="featured-carousel__empty">Chưa có dữ liệu.</div>
+            </c:when>
+            <c:otherwise>
+                <div class="featured-carousel">
+                    <div class="featured-carousel__list" id="featuredCarousel">
+                        <c:forEach var="product" items="${featured}">
+                            <article class="product-card featured-card">
+                                <div class="featured-card__image">
                                     <c:choose>
-                                        <c:when test="${product.minPrice eq product.maxPrice}">
-                                            Giá
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                        <c:when test="${not empty product.primaryImageUrl}">
+                                            <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
                                         </c:when>
                                         <c:otherwise>
-                                            Giá từ
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                            –
-                                            <fmt:formatNumber value="${product.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                            <div class="featured-card__placeholder">Không có ảnh</div>
                                         </c:otherwise>
                                     </c:choose>
-                                </p>
-                                <ul class="product-card__meta product-card__meta--stats">
-                                    <li>Tồn kho: <strong><c:out value="${product.inventoryCount}" /></strong></li>
-                                    <li>Đã bán: <strong><c:out value="${product.soldCount}" /></strong></li>
-                                </ul>
-                                <footer class="product-card__footer">
-                                    <c:url var="detailUrl" value="/product/detail">
-                                        <c:param name="id" value="${product.id}" />
-                                    </c:url>
-                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
-                                </footer>
-                            </div>
-                        </article>
-                    </c:forEach>
-                </c:otherwise>
-            </c:choose>
-        </div>
+                                </div>
+                                <div class="featured-card__body">
+                                    <h4 class="featured-card__title"><c:out value="${product.name}" /></h4>
+                                    <p class="featured-card__description"><c:out value="${product.shortDescription}" /></p>
+                                    <p class="featured-card__price">
+                                        <c:choose>
+                                            <c:when test="${product.hasValidPrice()}">
+                                                <c:choose>
+                                                    <c:when test="${product.hasPriceRange()}">
+                                                        Giá từ
+                                                        <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                                        –
+                                                        <fmt:formatNumber value="${product.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        Giá
+                                                        <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </c:when>
+                                            <c:otherwise>
+                                                Giá đang cập nhật
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </p>
+                                    <p class="featured-card__shop">Shop: <strong><c:out value="${product.shopName}" /></strong></p>
+                                    <p class="featured-card__inventory">Còn: <strong><c:out value="${product.inventoryCount}" default="0" /></strong></p>
+                                    <footer class="featured-card__footer">
+                                        <c:url var="detailUrl" value="/product/detail">
+                                            <c:param name="id" value="${product.id}" />
+                                        </c:url>
+                                        <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
+                                    </footer>
+                                </div>
+                            </article>
+                        </c:forEach>
+                    </div>
+                    <button type="button" class="featured-carousel__next" id="btnFeaturedNext" aria-label="Cuộn sang phải">&gt;</button>
+                </div>
+            </c:otherwise>
+        </c:choose>
     </section>
 
     <section class="panel landing__section landing__grid">
@@ -297,6 +299,17 @@
         </c:choose>
     </section>
 
+    <script>
+        (function () {
+            const container = document.querySelector('#featuredCarousel');
+            const nextButton = document.querySelector('#btnFeaturedNext');
+            if (container && nextButton) {
+                nextButton.addEventListener('click', function () {
+                    container.scrollBy({left: container.clientWidth, behavior: 'smooth'});
+                });
+            }
+        })();
+    </script>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>

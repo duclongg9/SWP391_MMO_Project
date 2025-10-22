@@ -12,6 +12,7 @@ import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
 import model.view.product.ProductSummaryView;
 import service.HomepageService;
+import service.ProductService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class HomepageController extends BaseController {
     private static final long serialVersionUID = 1L;
 
     private final HomepageService homepageService = new HomepageService();
+    private final ProductService productService = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -40,6 +42,9 @@ public class HomepageController extends BaseController {
 
         populateHomepageData(request);
 
+        List<ProductSummaryView> featured = productService.getFeatured(6);
+        request.setAttribute("featured", featured);
+
         request.setAttribute("query", "");
         request.setAttribute("selectedType", "");
         request.setAttribute("selectedSubtype", "");
@@ -50,9 +55,6 @@ public class HomepageController extends BaseController {
     private void populateHomepageData(HttpServletRequest request) {
         MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
         request.setAttribute("summary", summary);
-
-        List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featuredProducts);
 
         List<Shops> shops = homepageService.loadActiveShops();
         request.setAttribute("shops", shops);

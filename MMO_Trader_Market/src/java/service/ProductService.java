@@ -84,6 +84,17 @@ public class ProductService {
         return rows.stream().map(this::toSummaryView).toList();
     }
 
+    public List<ProductSummaryView> getFeatured(int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Giới hạn sản phẩm nổi bật phải lớn hơn 0");
+        }
+        int resolvedLimit = Math.max(limit, 1);
+        return productDAO.findTopAvailable(resolvedLimit).stream()
+                .limit(resolvedLimit)
+                .map(this::toSummaryView)
+                .toList();
+    }
+
     public List<ProductCategorySummary> getHomepageCategories() {
         Map<String, Long> counts = productDAO.countAvailableByType();
         List<ProductCategorySummary> summaries = new ArrayList<>();
