@@ -7,6 +7,22 @@
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
 
+    <section class="panel landing__filters">
+        <div class="panel__header">
+            <div class="panel__header-text">
+                <h3 class="panel__title">Khám phá sản phẩm</h3>
+                <p class="panel__subtitle">Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
+            </div>
+        </div>
+        <div class="panel__body">
+            <c:set var="filterIncludeSize" value="${false}" />
+            <c:set var="filterQuery" value="${query}" />
+            <c:set var="filterType" value="${selectedType}" />
+            <c:set var="filterSubtype" value="${selectedSubtype}" />
+            <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
+        </div>
+    </section>
+
     <section class="panel landing__hero">
         <div class="landing__hero-main">
             <h2>Chợ tài khoản MMO dành cho seller và buyer chuyên nghiệp</h2>
@@ -63,43 +79,6 @@
         </aside>
     </section>
 
-    <section class="panel landing__section">
-        <div class="panel__header">
-            <h3 class="panel__title">Khám phá sản phẩm</h3>
-            <p class="panel__subtitle">Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
-        </div>
-        <c:set var="filterIncludeSize" value="${false}" />
-        <c:set var="filterQuery" value="${query}" />
-        <c:set var="filterType" value="${selectedType}" />
-        <c:set var="filterSubtype" value="${selectedSubtype}" />
-        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
-    </section>
-
-    <section class="panel landing__section">
-        <div class="panel__header">
-            <h3 class="panel__title">Shop nổi bật</h3>
-        </div>
-        <c:choose>
-            <c:when test="${empty shops}">
-                <p>Chưa có dữ liệu.</p>
-            </c:when>
-            <c:otherwise>
-                <ul class="category-menu category-menu--grid">
-                    <c:forEach var="shop" items="${shops}">
-                        <li class="category-menu__item">
-                            <span class="category-menu__icon">
-                                <c:out value="${shopIcons[shop.status]}" />
-                            </span>
-                            <div>
-                                <strong><c:out value="${shop.name}" /></strong>
-                                <p><c:out value="${shop.description}" /></p>
-                            </div>
-                        </li>
-                    </c:forEach>
-                </ul>
-            </c:otherwise>
-        </c:choose>
-    </section>
 
     <section class="panel landing__section">
         <div class="panel__header">
@@ -166,76 +145,6 @@
         </div>
     </section>
 
-    <section class="panel landing__section landing__grid">
-        <div class="landing__column">
-            <div class="panel__header">
-                <h3 class="panel__title">Khách hàng tiêu biểu</h3>
-            </div>
-            <c:choose>
-                <c:when test="${empty customerProfile}">
-                    <p>Chưa có dữ liệu.</p>
-                </c:when>
-                <c:otherwise>
-                    <div class="profile-card">
-                        <h4><c:out value="${customerProfile.displayName}" /></h4>
-                        <p class="profile-card__subtitle"><c:out value="${customerProfile.email}" /></p>
-                        <dl class="profile-card__stats">
-                            <div>
-                                <dt>Ngày tham gia</dt>
-                                <dd><c:out value="${customerProfile.joinDate}" /></dd>
-                            </div>
-                            <div>
-                                <dt>Tổng số đơn</dt>
-                                <dd><c:out value="${customerProfile.totalOrders}" /></dd>
-                            </div>
-                            <div>
-                                <dt>Đơn hoàn thành</dt>
-                                <dd><c:out value="${customerProfile.completedOrders}" /></dd>
-                            </div>
-                            <div>
-                                <dt>Đơn khiếu nại</dt>
-                                <dd><c:out value="${customerProfile.disputedOrders}" /></dd>
-                            </div>
-                            <div>
-                                <dt>Độ hài lòng</dt>
-                                <dd>
-                                    <fmt:formatNumber value="${customerProfile.satisfactionScore}" type="number" minFractionDigits="1" maxFractionDigits="1" /> / 5.0
-                                </dd>
-                            </div>
-                        </dl>
-                        <p class="profile-card__note">Thông tin hiển thị dựa trên dữ liệu người mua thực tế.</p>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
-
-        <div class="landing__column">
-            <div class="panel__header">
-                <h3 class="panel__title">Trao đổi gần đây</h3>
-            </div>
-            <c:choose>
-                <c:when test="${empty recentMessages}">
-                    <p>Chưa có dữ liệu.</p>
-                </c:when>
-                <c:otherwise>
-                    <div class="reviews">
-                        <c:forEach var="message" items="${recentMessages}">
-                            <article class="review-card">
-                                <header>
-                                    <strong><c:out value="${message.senderName}" /></strong>
-                                    <span class="review-card__rating">
-                                        <c:out value="${message.createdAt}" />
-                                    </span>
-                                </header>
-                                <p class="review-card__comment"><c:out value="${message.content}" /></p>
-                                <footer>Sản phẩm: <em><c:out value="${message.productName}" /></em></footer>
-                            </article>
-                        </c:forEach>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
-    </section>
 
     <section class="panel landing__section" id="faq">
         <div class="panel__header">
