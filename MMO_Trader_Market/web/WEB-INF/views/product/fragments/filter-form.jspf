@@ -6,12 +6,12 @@
 <c:url value="/products" var="defaultFilterAction" />
 <c:set var="filterActionValue" value="${empty filterFormAction ? defaultFilterAction : filterFormAction}" />
 
-<c:set var="filterQueryCandidate" value="${not empty filterQuery ? filterQuery : (not empty q ? q : query)}" />
+<c:set var="filterQueryCandidate" value="${not empty filterQuery ? filterQuery : (not empty q ? q : (not empty query ? query : param.q))}" />
 <c:set var="filterQueryValue" value="${empty filterQueryCandidate ? '' : filterQueryCandidate}" />
-<c:set var="filterTypeCandidate" value="${not empty filterType ? filterType : selectedType}" />
-<c:set var="filterTypeValue" value="${empty filterTypeCandidate ? '' : filterTypeCandidate}" />
-<c:set var="filterSubtypeCandidate" value="${not empty filterSubtype ? filterSubtype : selectedSubtype}" />
-<c:set var="filterSubtypeValue" value="${empty filterSubtypeCandidate ? '' : filterSubtypeCandidate}" />
+<c:set var="filterTypeCandidate" value="${not empty filterType ? filterType : (not empty selectedType ? selectedType : param.type)}" />
+<c:set var="filterTypeValue" value="${empty filterTypeCandidate ? '' : fn:toUpperCase(filterTypeCandidate)}" />
+<c:set var="filterSubtypeCandidate" value="${not empty filterSubtype ? filterSubtype : (not empty selectedSubtype ? selectedSubtype : param.subtype)}" />
+<c:set var="filterSubtypeValue" value="${empty filterSubtypeCandidate ? '' : fn:toUpperCase(filterSubtypeCandidate)}" />
 <c:set var="filterPageSizeCandidate" value="${not empty filterPageSize ? filterPageSize : size}" />
 <c:set var="filterPageSizeValue" value="${empty filterPageSizeCandidate ? 12 : filterPageSizeCandidate}" />
 <c:set var="filterIncludeSizeValue" value="${filterIncludeSize == true or filterIncludeSize == 'true'}" />
@@ -29,7 +29,7 @@
   <div class="product-filters__group">
     <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>
     <select class="product-filters__select" id="${typeInputId}" name="type">
-      <option value="">Tất cả</option>
+      <option value="">Tất cả loại</option>
       <option value="EMAIL" <c:if test="${filterTypeValue == 'EMAIL'}">selected</c:if>>Email</option>
       <option value="SOCIAL" <c:if test="${filterTypeValue == 'SOCIAL'}">selected</c:if>>Tài khoản MXH</option>
       <option value="SOFTWARE" <c:if test="${filterTypeValue == 'SOFTWARE'}">selected</c:if>>Tài khoản phần mềm</option>
@@ -40,23 +40,19 @@
     <label class="product-filters__label" for="${subtypeInputId}">Phân loại chi tiết</label>
     <select class="product-filters__select" id="${subtypeInputId}" name="subtype">
       <option value="">Tất cả</option>
-      <c:forEach var="code" items="${subtypes}">
-        <c:if test="${not empty code}">
-          <c:set var="subtypeLabel">
-            <c:choose>
-              <c:when test="${code == 'GMAIL'}">Gmail</c:when>
-              <c:when test="${code == 'FACEBOOK'}">Facebook</c:when>
-              <c:when test="${code == 'TIKTOK'}">TikTok</c:when>
-              <c:when test="${code == 'CANVA'}">Canva</c:when>
-              <c:when test="${code == 'VALORANT'}">Valorant</c:when>
-              <c:otherwise>${code}</c:otherwise>
-            </c:choose>
-          </c:set>
-          <option value="${code}" <c:if test="${code == filterSubtypeValue}">selected</c:if>>
-            <c:out value="${subtypeLabel}" />
-          </option>
-        </c:if>
-      </c:forEach>
+      <c:if test="${filterTypeValue == 'EMAIL'}">
+        <option value="GMAIL" <c:if test="${filterSubtypeValue == 'GMAIL'}">selected</c:if>>Gmail</option>
+      </c:if>
+      <c:if test="${filterTypeValue == 'SOCIAL'}">
+        <option value="FACEBOOK" <c:if test="${filterSubtypeValue == 'FACEBOOK'}">selected</c:if>>Facebook</option>
+        <option value="TIKTOK" <c:if test="${filterSubtypeValue == 'TIKTOK'}">selected</c:if>>TikTok</option>
+      </c:if>
+      <c:if test="${filterTypeValue == 'SOFTWARE'}">
+        <option value="CANVA" <c:if test="${filterSubtypeValue == 'CANVA'}">selected</c:if>>Canva</option>
+      </c:if>
+      <c:if test="${filterTypeValue == 'GAME'}">
+        <option value="VALORANT" <c:if test="${filterSubtypeValue == 'VALORANT'}">selected</c:if>>Valorant</option>
+      </c:if>
     </select>
   </div>
   <input type="hidden" name="page" value="1" />

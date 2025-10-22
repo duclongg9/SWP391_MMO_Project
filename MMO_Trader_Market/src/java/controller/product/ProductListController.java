@@ -6,13 +6,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.product.PagedResult;
-import model.view.product.ProductSubtypeOption;
 import model.view.product.ProductSummaryView;
-import model.view.product.ProductTypeOption;
 import service.ProductService;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Public marketplace product list controller.
@@ -24,24 +23,22 @@ public class ProductListController extends BaseController {
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 12;
 
+    private static final Set<String> ALLOWED_TYPES = Set.of("EMAIL", "SOCIAL", "SOFTWARE", "GAME");
+    private static final Set<String> ALLOWED_SUBTYPES = Set.of("GMAIL", "FACEBOOK", "TIKTOK", "CANVA", "VALORANT", "OTHER");
+
     private final ProductService productService = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String keyword = normalize(request.getParameter("q"));
-        String productType = normalize(request.getParameter("type"));
-        String productSubtype = normalize(request.getParameter("subtype"));
+        String keyword = trimToNull(request.getParameter("q"));
+        String productType = normalizeEnum(request.getParameter("type"), ALLOWED_TYPES);
+        String productSubtype = normalizeEnum(request.getParameter("subtype"), ALLOWED_SUBTYPES);
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
-        int size = parsePositiveIntOrDefault(request.getParameter("size"), DEFAULT_SIZE);
+        int size = DEFAULT_SIZE;
 
         PagedResult<ProductSummaryView> result = productService.searchPublicProducts(
                 productType, productSubtype, keyword, page, size);
-        List<ProductTypeOption> typeOptions = productService.getTypeOptions();
-        List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(productType);
-        List<String> subtypeCodes = subtypeOptions.stream()
-                .map(ProductSubtypeOption::getCode)
-                .toList();
 
         request.setAttribute("pageTitle", "Sản phẩm");
         request.setAttribute("headerTitle", "Kho sản phẩm");
@@ -56,8 +53,6 @@ public class ProductListController extends BaseController {
         request.setAttribute("q", keyword == null ? "" : keyword);
         request.setAttribute("selectedType", productType);
         request.setAttribute("selectedSubtype", productSubtype);
-        request.setAttribute("typeOptions", typeOptions);
-        request.setAttribute("subtypes", subtypeCodes);
 
         forward(request, response, "product/list");
     }
@@ -74,11 +69,20 @@ public class ProductListController extends BaseController {
         }
     }
 
-    private String normalize(String value) {
+    private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeEnum(String value, Set<String> allowed) {
+        String trimmed = trimToNull(value);
+        if (trimmed == null) {
+            return null;
+        }
+        String upper = trimmed.toUpperCase(Locale.ROOT);
+        return allowed.contains(upper) ? upper : null;
     }
 }

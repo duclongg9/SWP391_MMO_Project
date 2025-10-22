@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -65,7 +64,7 @@ public class ProductDAO extends BaseDAO {
             params.add(productSubtype);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
             String pattern = buildLikePattern(keyword);
             params.add(pattern);
             params.add(pattern);
@@ -104,7 +103,7 @@ public class ProductDAO extends BaseDAO {
             params.add(productSubtype);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
+            sql.append(" AND (p.name LIKE ? OR p.short_description LIKE ?)");
             String pattern = buildLikePattern(keyword);
             params.add(pattern);
             params.add(pattern);
@@ -396,7 +395,7 @@ public class ProductDAO extends BaseDAO {
     }
 
     private String buildLikePattern(String keyword) {
-        return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
+        return "%" + keyword.trim() + "%";
     }
 
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
