@@ -1,12 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/components/filterbar.css">
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="model.Product" %>
+
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
@@ -86,15 +88,76 @@
 
           
            <!--Lịch sử ví -->
-<form id="profileForm" class="" method="get"
-      action="${pageContext.request.contextPath}/wallet">
+
     <input type="hidden" name="action" value="updateProfile">
   <div class="panel__header">
     <h2 class="panel__title">Lịch sử giao dịch</h2>
   </div>
+       <!-- Bộ lọc giao dịch -->
+<form class="filters filterbar" method="get"
+      action="${pageContext.request.contextPath}/wallet">
 
+  <div class="filterbar__row">
+    <!-- Loại giao dịch -->
+    <div class="filterbar__field">
+      <label class="filterbar__label" for="f-type">Loại giao dịch</label>
+      <select id="f-type" name="type" class="select">
+        <option value="">-- Tất cả --</option>
+        <option value="Deposit"    ${param.type=='Deposit'    ?'selected':''}>Nạp tiền</option>
+        <option value="Withdrawal" ${param.type=='Withdrawal' ?'selected':''}>Rút tiền</option>
+        <option value="Purchase"   ${param.type=='Purchase'   ?'selected':''}>Mua hàng</option>
+        <option value="Payout"     ${param.type=='Payout'     ?'selected':''}>Chi trả</option>
+        <option value="Refund"     ${param.type=='Refund'     ?'selected':''}>Hoàn tiền</option>
+        <option value="Fee"        ${param.type=='Fee'        ?'selected':''}>Phí</option>
+      </select>
+    </div>
+
+    <!-- Khoảng thời gian -->
+    <div class="filterbar__field">
+      <label class="filterbar__label">Khoảng thời gian</label>
+      <div class="time-range">
+        <select name="preset" class="select">
+          <option value="">Chọn nhanh</option>
+          <option value="today" ${param.preset=='today'?'selected':''}>Hôm nay</option>
+          <option value="7d"    ${param.preset=='7d'   ?'selected':''}>7 ngày</option>
+          <option value="30d"   ${param.preset=='30d'  ?'selected':''}>30 ngày</option>
+        </select>
+        <input type="date" name="start" class="form-control"
+               value="${fn:escapeXml(param.start)}" aria-label="Từ ngày">
+        <span class="amount-range__sep">–</span>
+        <input type="date" name="end" class="form-control"
+               value="${fn:escapeXml(param.end)}" aria-label="Đến ngày">
+      </div>
+    </div>
+
+    <!-- Số tiền -->
+    <div class="filterbar__field">
+      <label class="filterbar__label">Số tiền</label>
+      <div class="amount-range">
+        <input type="number" name="minAmount" class="form-control"
+               placeholder="Từ" value="${fn:escapeXml(param.minAmount)}">
+        <span class="amount-range__sep">–</span>
+        <input type="number" name="maxAmount" class="form-control"
+               placeholder="Đến" value="${fn:escapeXml(param.maxAmount)}">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="filterbar__actions">
+      <button type="submit" class="btn btn--primary">Lọc</button>
+      <a class="btn btn--reset"
+         href="${pageContext.request.contextPath}/wallet/transactions">Xóa bộ lọc</a>
+    </div>
+  </div>
+
+  <!-- Khi lọc, về trang 1 -->
+  <input type="hidden" name="page" value="1">
+
+
+    
     <table class="table table--interactive" role="presentation">
         <thead>
+            <tr>
             <th scope="col">Mã</th>
             <th scope="col">Loại giao dịch</th>
             <th scope="col">Số tiền</th>
@@ -102,12 +165,13 @@
             <th scope="col">Số tiền sau giao dịch</th>
             <th scope="col">ghi chú</th>
             <th scope="col">Thời gian tạo</th>
+            </tr>
         </thead>
       <tbody>
           <c:forEach var="p" items="${listTransaction}">
         <tr>
-          <td scope="row"><label>${p.id}</label></th>
-          <td scope="row"><label>${p.transactionType}</label></th>
+          <td scope="row"><label>${p.id}</label></td>
+          <td scope="row"><label>${p.transactionType}</label></td>
           <td><fmt:formatNumber value="${p.amount}" type="number" minFractionDigits="0" maxFractionDigits="2"/></td>
           <td><fmt:formatNumber value="${p.balanceBefore}" type="number" minFractionDigits="0" maxFractionDigits="2"/></td>
           <td><fmt:formatNumber value="${p.balanceAfter}" type="number" minFractionDigits="0" maxFractionDigits="2"/></td>
@@ -130,6 +194,7 @@
         </c:forEach>
       </tbody>
     </table>
+    
           <!--Pagination -->
           
           <ul class="pagination">
@@ -162,11 +227,10 @@
           </ul>
           
           <!--Pagination end-->
-
-</div>
-
-
 </form>
+
+
+
 
 
         
