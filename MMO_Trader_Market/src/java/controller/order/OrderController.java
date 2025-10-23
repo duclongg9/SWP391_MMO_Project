@@ -21,9 +21,10 @@ import java.util.UUID;
  * Buyer order endpoints: buy now, order history and detail view.
  */
 @WebServlet(name = "OrderController", urlPatterns = {
-        "/order/buy-now",
-        "/orders/my",
-        "/orders/detail"
+    "/order/buy-now",
+    "/orders",
+    "/orders/my",
+    "/orders/detail"
 })
 public class OrderController extends BaseController {
 
@@ -51,10 +52,21 @@ public class OrderController extends BaseController {
             throws ServletException, IOException {
         String path = request.getServletPath();
         switch (path) {
-            case "/orders/my" -> showMyOrders(request, response);
-            case "/orders/detail" -> showOrderDetail(request, response);
-            default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            case "/orders" ->
+                redirectToMyOrders(request, response);
+            case "/orders/my" ->
+                showMyOrders(request, response);
+            case "/orders/detail" ->
+                showOrderDetail(request, response);
+            default ->
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
+    }
+
+    private void redirectToMyOrders(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String target = request.getContextPath() + "/orders/my";
+        response.sendRedirect(target);
     }
 
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
