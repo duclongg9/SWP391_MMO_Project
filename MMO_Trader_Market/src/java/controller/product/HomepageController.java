@@ -39,7 +39,7 @@ public class HomepageController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (redirectAdminHome(request, response)) {
+                if (super.redirectAdminHome(request, response)) {
             return;
         }
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
