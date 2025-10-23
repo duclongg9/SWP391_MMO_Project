@@ -20,8 +20,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Handles requests for the public facing homepage where visitors discover
- * available account products.
+ * Điều phối luồng "Trang chủ" dành cho khách truy cập.
+ * <p>
+ * - Hiển thị sản phẩm nổi bật, danh mục chính và thông tin tổng quan thị trường.
+ * - Cung cấp dữ liệu shop, FAQ và thông điệp giúp người mới nắm được bức tranh chung.
+ * - Chuẩn bị bộ lọc mặc định để người dùng bắt đầu hành trình tìm sản phẩm.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 @WebServlet(name = "HomepageController", urlPatterns = {"/home"})
 public class HomepageController extends BaseController {
