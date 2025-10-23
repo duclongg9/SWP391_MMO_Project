@@ -34,6 +34,7 @@ public class ProductService {
 
     private static final int DEFAULT_HOMEPAGE_LIMIT = 8;
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
+    private static final String PRODUCT_IMAGE_BASE_PATH = "/assets/images/products/";
 
     private static final Map<String, String> TYPE_LABELS;
     private static final Map<String, String> SUBTYPE_LABELS;
@@ -128,13 +129,17 @@ public class ProductService {
         }
         List<ProductVariantOption> variants = parseVariants(detail.getVariantSchema(), detail.getVariantsJson());
         PriceRange priceRange = determinePriceRange(detail.getPrice(), detail.getVariantSchema(), variants);
+        String primaryImage = resolveImagePath(detail.getPrimaryImageUrl());
         List<String> gallery = parseGallery(detail.getGalleryJson(), detail.getPrimaryImageUrl());
+        if (primaryImage == null && !gallery.isEmpty()) {
+            primaryImage = gallery.get(0);
+        }
         return new ProductDetailView(
                 detail.getId(),
                 detail.getName(),
                 detail.getShortDescription(),
                 detail.getDescription(),
-                detail.getPrimaryImageUrl(),
+                primaryImage,
                 gallery,
                 detail.getProductType(),
                 resolveTypeLabel(detail.getProductType()),
@@ -215,11 +220,12 @@ public class ProductService {
     private ProductSummaryView toSummaryView(ProductListRow row) {
         List<ProductVariantOption> variants = parseVariants(row.getVariantSchema(), row.getVariantsJson());
         PriceRange priceRange = determinePriceRange(row.getPrice(), row.getVariantSchema(), variants);
+        String primaryImage = resolveImagePath(row.getPrimaryImageUrl());
         return new ProductSummaryView(
                 row.getId(),
                 row.getName(),
                 row.getShortDescription(),
-                row.getPrimaryImageUrl(),
+                primaryImage,
                 row.getProductType(),
                 resolveTypeLabel(row.getProductType()),
                 row.getProductSubtype(),
@@ -255,27 +261,55 @@ public class ProductService {
     }
 
     private List<String> parseGallery(String galleryJson, String fallback) {
+        String normalizedFallback = resolveImagePath(fallback);
         if (galleryJson == null || galleryJson.isBlank()) {
-            return fallback == null || fallback.isBlank() ? List.of() : List.of(fallback);
+            return normalizedFallback == null ? List.of() : List.of(normalizedFallback);
         }
         try {
             List<String> images = gson.fromJson(galleryJson, stringListType);
             if (images == null || images.isEmpty()) {
-                return fallback == null || fallback.isBlank() ? List.of() : List.of(fallback);
+                return normalizedFallback == null ? List.of() : List.of(normalizedFallback);
             }
             List<String> filtered = new ArrayList<>();
             for (String image : images) {
-                if (image != null && !image.isBlank()) {
-                    filtered.add(image);
+                String normalizedImage = resolveImagePath(image);
+                if (normalizedImage != null) {
+                    filtered.add(normalizedImage);
                 }
             }
-            if (filtered.isEmpty() && fallback != null && !fallback.isBlank()) {
-                filtered.add(fallback);
+            if (filtered.isEmpty() && normalizedFallback != null) {
+                filtered.add(normalizedFallback);
             }
             return List.copyOf(filtered);
         } catch (JsonSyntaxException ex) {
-            return fallback == null || fallback.isBlank() ? List.of() : List.of(fallback);
+            return normalizedFallback == null ? List.of() : List.of(normalizedFallback);
         }
+    }
+
+    private String resolveImagePath(String path) {
+        String normalized = normalize(path);
+        if (normalized == null) {
+            return null;
+        }
+        String sanitized = normalized.replace('\\', '/');
+        String lower = sanitized.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("http://") || lower.startsWith("https://")
+                || lower.startsWith("data:")) {
+            return sanitized;
+        }
+        if (sanitized.startsWith("//")) {
+            return sanitized;
+        }
+        if (sanitized.startsWith("/")) {
+            return sanitized;
+        }
+        if (sanitized.startsWith("assets/")) {
+            return "/" + sanitized;
+        }
+        if (sanitized.startsWith("./")) {
+            sanitized = sanitized.substring(2);
+        }
+        return PRODUCT_IMAGE_BASE_PATH + sanitized;
     }
 
     private PriceRange determinePriceRange(BigDecimal basePrice, String variantSchema, List<ProductVariantOption> variants) {
