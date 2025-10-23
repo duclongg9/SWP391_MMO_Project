@@ -3,6 +3,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="request" />
+<c:set var="cPath" value="${pageContext.request.contextPath}" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
@@ -97,7 +98,20 @@
                             <div class="product-card__image">
                                 <c:choose>
                                     <c:when test="${not empty product.primaryImageUrl}">
-                                        <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
+                                        <c:set var="featuredImageSource" value="${product.primaryImageUrl}" />
+                                        <c:choose>
+                                            <c:when test="${fn:startsWith(featuredImageSource, 'http://')
+                                                or fn:startsWith(featuredImageSource, 'https://')
+                                                or fn:startsWith(featuredImageSource, '//')
+                                                or fn:startsWith(featuredImageSource, 'data:')
+                                                or fn:startsWith(featuredImageSource, cPath)}">
+                                                <c:set var="featuredImageUrl" value="${featuredImageSource}" />
+                                            </c:when>
+                                            <c:otherwise>
+                                                <c:url var="featuredImageUrl" value="${featuredImageSource}" />
+                                            </c:otherwise>
+                                        </c:choose>
+                                        <img src="${featuredImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
                                     </c:when>
                                     <c:otherwise>
                                         <div class="product-card__placeholder">Không có ảnh</div>
