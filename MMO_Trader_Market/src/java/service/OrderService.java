@@ -91,15 +91,17 @@ public class OrderService {
         BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
 
         // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
-        Wallets wallet = walletsDAO.getUserWallet(userId);
-        if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
+        Wallets wallet = walletsDAO.ensureUserWallet(userId);
+        if (wallet == null) {
+            throw new IllegalStateException("Không thể khởi tạo ví cho tài khoản.");
+        }
+        if (Boolean.FALSE.equals(wallet.getStatus())) {
             throw new IllegalStateException("Ví không khả dụng, vui lòng liên hệ hỗ trợ.");
         }
         BigDecimal balance = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
         if (balance.compareTo(total) < 0) {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
-
         int orderId = orderDAO.createPending(userId, productId, quantity, total, trimmedKey);
         queueProducer.publish(orderId, trimmedKey, productId, quantity);
         return orderId;
