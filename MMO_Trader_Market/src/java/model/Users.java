@@ -13,10 +13,11 @@ public class Users {
     private Boolean status;
     private Date createdAt;
     private Date updatedAt;
-
-
+    private String roleName;
     public Users() {
     }
+
+
 
     @Override
     public String toString() {
@@ -106,5 +107,13 @@ public class Users {
     }
     public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
     }
 }

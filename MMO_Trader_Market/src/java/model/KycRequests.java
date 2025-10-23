@@ -18,7 +18,8 @@ public class KycRequests {
 
     private String idNumber;
 
-
+    private String userName;
+    private String statusName;
     private Date createdAt;
 
     private Date reviewedAt;
@@ -99,6 +100,12 @@ public class KycRequests {
         this.reviewedAt = reviewedAt;
         this.adminFeedback = adminFeedback;
     }
+
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
+
+    public String getStatusName() { return statusName; }
+    public void setStatusName(String statusName) { this.statusName = statusName; }
 
     public void setIdNumber(String idNumber) {
         this.idNumber = idNumber;
