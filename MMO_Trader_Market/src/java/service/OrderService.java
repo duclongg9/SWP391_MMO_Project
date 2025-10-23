@@ -11,6 +11,7 @@ import model.PaginatedResult;
 import model.Products;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
+import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
 
@@ -88,6 +89,17 @@ public class OrderService {
         BigDecimal price = productDAO.findPriceById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không thể xác định giá sản phẩm."));
         BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
+
+        // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
+        Wallets wallet = walletsDAO.getUserWallet(userId);
+        if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
+            throw new IllegalStateException("Ví không khả dụng, vui lòng liên hệ hỗ trợ.");
+        }
+        BigDecimal balance = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
+        if (balance.compareTo(total) < 0) {
+            throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
+        }
+
         int orderId = orderDAO.createPending(userId, productId, quantity, total, trimmedKey);
         queueProducer.publish(orderId, trimmedKey, productId, quantity);
         return orderId;
