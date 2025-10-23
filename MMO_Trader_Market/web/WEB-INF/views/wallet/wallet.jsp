@@ -12,8 +12,6 @@
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Menu");
-    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
     request.setAttribute("headerModifier", "layout__header--split");
 
     List<Map<String, String>> navItems = new ArrayList<>();
@@ -21,7 +19,6 @@
 
     Map<String, String> guideLink = new HashMap<>();
     guideLink.put("href", contextPath + "/styleguide");
-    guideLink.put("label", "Thư viện giao diện");
     navItems.add(guideLink);
 
     Map<String, String> logoutLink = new HashMap<>();
