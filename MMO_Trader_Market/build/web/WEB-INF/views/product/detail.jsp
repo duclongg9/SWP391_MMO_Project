@@ -15,15 +15,40 @@
                 </c:when>
                 <c:otherwise>
                     <c:set var="mainImage" value="${galleryImages[0]}" />
+                    <c:choose>
+                        <c:when test="${fn:startsWith(mainImage, 'http://')
+                            or fn:startsWith(mainImage, 'https://')
+                            or fn:startsWith(mainImage, '//')
+                            or fn:startsWith(mainImage, 'data:')
+                            or fn:startsWith(mainImage, cPath)}">
+                            <c:set var="mainImageUrl" value="${mainImage}" />
+                        </c:when>
+                        <c:otherwise>
+                            <c:url var="mainImageUrl" value="${mainImage}" />
+                        </c:otherwise>
+                    </c:choose>
                     <div class="product-detail__main-image">
-                        <img id="mainImage" src="${mainImage}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
+                        <img id="mainImage" src="${mainImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
                     </div>
                     <c:if test="${fn:length(galleryImages) gt 1}">
                         <ul class="product-detail__thumbnails">
                             <c:forEach var="image" items="${galleryImages}">
+                                <c:set var="thumbnailSource" value="${image}" />
+                                <c:choose>
+                                    <c:when test="${fn:startsWith(thumbnailSource, 'http://')
+                                        or fn:startsWith(thumbnailSource, 'https://')
+                                        or fn:startsWith(thumbnailSource, '//')
+                                        or fn:startsWith(thumbnailSource, 'data:')
+                                        or fn:startsWith(thumbnailSource, cPath)}">
+                                        <c:set var="thumbnailUrl" value="${thumbnailSource}" />
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:url var="thumbnailUrl" value="${thumbnailSource}" />
+                                    </c:otherwise>
+                                </c:choose>
                                 <li>
-                                    <button class="product-detail__thumbnail" type="button" data-image="${image}">
-                                        <img src="${image}" alt="Thumbnail sản phẩm" loading="lazy" />
+                                    <button class="product-detail__thumbnail" type="button" data-image="${thumbnailUrl}">
+                                        <img src="${thumbnailUrl}" alt="Thumbnail sản phẩm" loading="lazy" />
                                     </button>
                                 </li>
                             </c:forEach>
@@ -133,7 +158,20 @@
                         <div class="product-card__image">
                             <c:choose>
                                 <c:when test="${not empty item.primaryImageUrl}">
-                                    <img src="${item.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}" loading="lazy" />
+                                    <c:set var="relatedImageSource" value="${item.primaryImageUrl}" />
+                                    <c:choose>
+                                        <c:when test="${fn:startsWith(relatedImageSource, 'http://')
+                                            or fn:startsWith(relatedImageSource, 'https://')
+                                            or fn:startsWith(relatedImageSource, '//')
+                                            or fn:startsWith(relatedImageSource, 'data:')
+                                            or fn:startsWith(relatedImageSource, cPath)}">
+                                            <c:set var="relatedImageUrl" value="${relatedImageSource}" />
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:url var="relatedImageUrl" value="${relatedImageSource}" />
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <img src="${relatedImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}" loading="lazy" />
                                 </c:when>
                                 <c:otherwise>
                                     <div class="product-card__placeholder">Không có ảnh</div>

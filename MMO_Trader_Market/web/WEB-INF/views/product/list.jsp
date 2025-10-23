@@ -31,7 +31,20 @@
                             <div class="product-card__image">
                                 <c:choose>
                                     <c:when test="${not empty p.primaryImageUrl}">
-                                        <img src="${p.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(p.name)}" loading="lazy" />
+                                        <c:set var="productImageSource" value="${p.primaryImageUrl}" />
+                                        <c:choose>
+                                            <c:when test="${fn:startsWith(productImageSource, 'http://')
+                                                or fn:startsWith(productImageSource, 'https://')
+                                                or fn:startsWith(productImageSource, '//')
+                                                or fn:startsWith(productImageSource, 'data:')
+                                                or fn:startsWith(productImageSource, cPath)}">
+                                                <c:set var="productImageUrl" value="${productImageSource}" />
+                                            </c:when>
+                                            <c:otherwise>
+                                                <c:url var="productImageUrl" value="${productImageSource}" />
+                                            </c:otherwise>
+                                        </c:choose>
+                                        <img src="${productImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(p.name)}" loading="lazy" />
                                     </c:when>
                                     <c:otherwise>
                                         <div class="product-card__placeholder">Không có ảnh</div>
