@@ -21,7 +21,7 @@ public class DashboardController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (redirectAdminHome(request, response)) {
+        if (super.redirectAdminHome(request, response)) {
             return;
         }
         request.setAttribute("products", productService.homepageHighlights());
