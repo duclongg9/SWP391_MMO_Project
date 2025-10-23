@@ -3,11 +3,16 @@ package queue.memory;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import model.OrderStatus;
 import model.Orders;
+import model.TransactionType;
+import model.Wallets;
 import queue.OrderMessage;
 import queue.OrderWorker;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,11 +28,16 @@ public class AsyncOrderWorker implements OrderWorker {
     private final OrderDAO orderDAO;
     private final ProductDAO productDAO;
     private final CredentialDAO credentialDAO;
+    private final WalletsDAO walletsDAO;
+    private final WalletTransactionDAO walletTransactionDAO;
 
-    public AsyncOrderWorker(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO) {
+    public AsyncOrderWorker(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
+            WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO) {
         this.orderDAO = orderDAO;
         this.productDAO = productDAO;
         this.credentialDAO = credentialDAO;
+        this.walletsDAO = walletsDAO;
+        this.walletTransactionDAO = walletTransactionDAO;
     }
 
     @Override
@@ -64,7 +74,32 @@ public class AsyncOrderWorker implements OrderWorker {
         try (Connection connection = orderDAO.openConnection()) {
             connection.setAutoCommit(false);
             try {
+                // 1. Đánh dấu đơn hàng đang xử lý để tránh các luồng khác can thiệp song song.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.PROCESSING);
+                // 2. Khóa ví của người mua ở mức hàng để đảm bảo số dư không bị thay đổi ngoài ý muốn.
+                Wallets wallet = walletsDAO.lockWalletForUpdate(connection, order.getBuyerId());
+                if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
+                    LOGGER.log(Level.WARNING, "Ví của người dùng {0} không khả dụng", order.getBuyerId());
+                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
+                    connection.commit();
+                    return;
+                }
+                BigDecimal totalAmount = order.getTotalAmount();
+                if (totalAmount == null) {
+                    LOGGER.log(Level.SEVERE, "Đơn hàng {0} thiếu thông tin tổng tiền", order.getId());
+                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
+                    connection.commit();
+                    return;
+                }
+                BigDecimal balanceBefore = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
+                if (balanceBefore.compareTo(totalAmount) < 0) {
+                    LOGGER.log(Level.INFO, "Ví người dùng {0} không đủ số dư cho đơn {1}",
+                            new Object[]{order.getBuyerId(), order.getId()});
+                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
+                    connection.commit();
+                    return;
+                }
+                // 3. Khóa tồn kho và credential của sản phẩm để chắc chắn còn đủ hàng.
                 int inventory = productDAO.lockInventoryForUpdate(connection, msg.productId());
                 if (inventory < msg.qty()) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
@@ -81,8 +116,20 @@ public class AsyncOrderWorker implements OrderWorker {
                 if (!decremented) {
                     throw new SQLException("Không thể trừ tồn kho");
                 }
+                // 4. Trừ tiền trong ví và ghi nhận giao dịch thanh toán.
+                BigDecimal balanceAfter = balanceBefore.subtract(totalAmount);
+                boolean balanceUpdated = walletsDAO.updateBalance(connection, wallet.getId(), balanceAfter);
+                if (!balanceUpdated) {
+                    throw new SQLException("Không thể cập nhật số dư ví");
+                }
+                String note = "Thanh toán đơn hàng #" + order.getId();
+                int walletTxId = walletTransactionDAO.insertTransaction(connection, wallet.getId(), order.getId(),
+                        TransactionType.PURCHASE, totalAmount.negate(), balanceBefore, balanceAfter, note);
+                orderDAO.assignPaymentTransaction(connection, order.getId(), walletTxId);
+                // 5. Giao credential cho người mua và ghi nhận log tồn kho.
                 credentialDAO.markCredentialsSold(connection, msg.orderId(), credentialIds);
                 orderDAO.insertInventoryLog(connection, msg.productId(), msg.orderId(), -msg.qty(), "Sale");
+                // 6. Hoàn tất đơn hàng.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
                 connection.commit();
             } catch (SQLException ex) {
