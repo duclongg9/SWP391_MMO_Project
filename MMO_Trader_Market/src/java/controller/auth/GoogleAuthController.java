@@ -17,6 +17,16 @@ import service.GoogleOAuthService.GoogleProfile;
 import service.UserService;
 import units.RoleHomeResolver;
 
+/**
+ * Điều phối luồng "Đăng nhập bằng Google" cho người dùng khách và hiện hữu.
+ * <p>
+ * - Khởi tạo yêu cầu OAuth tới Google và lưu lại state để chống giả mạo.
+ * - Nhận kết quả callback, ánh xạ hồ sơ Google sang tài khoản nội bộ và tạo phiên mới.
+ * - Thông báo lỗi tiếng Việt cho các tình huống token không hợp lệ hoặc sự cố hệ thống.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 @WebServlet(name = "GoogleAuthController", urlPatterns = {"/auth/google"})
 public class GoogleAuthController extends BaseController {
 
@@ -27,6 +37,12 @@ public class GoogleAuthController extends BaseController {
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
     private final UserService userService = new UserService(new UserDAO());
 
+    /**
+     * Xử lý cả hai bước của Google OAuth gồm khởi tạo yêu cầu và đón callback.
+     *
+     * @param request  yêu cầu HTTP chứa tham số {@code code} và {@code state} (nếu có)
+     * @param response phản hồi HTTP để điều hướng trình duyệt
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -39,6 +55,12 @@ public class GoogleAuthController extends BaseController {
         handleCallback(request, response, code, state);
     }
 
+    /**
+     * Tạo state ngẫu nhiên, lưu vào phiên và chuyển hướng người dùng tới trang cho phép của Google.
+     *
+     * @param request  yêu cầu HTTP hiện tại để lấy phiên
+     * @param response phản hồi để điều hướng sang URL uỷ quyền của Google
+     */
     private void startAuthentication(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();
         request.getSession().setAttribute(SESSION_STATE, state);
@@ -46,6 +68,14 @@ public class GoogleAuthController extends BaseController {
         response.sendRedirect(authorizationUrl);
     }
 
+    /**
+     * Kiểm tra state, đổi mã Google lấy thông tin người dùng và tạo phiên đăng nhập nội bộ.
+     *
+     * @param request yêu cầu HTTP chứa phiên hiện tại
+     * @param response phản hồi để điều hướng người dùng tới trang phù hợp theo vai trò
+     * @param code mã Google trả về sau khi người dùng cấp quyền
+     * @param state giá trị state để kiểm chứng nguồn gốc callback
+     */
     private void handleCallback(HttpServletRequest request, HttpServletResponse response, String code, String state)
             throws IOException {
         HttpSession session = request.getSession(false);
@@ -72,6 +102,12 @@ public class GoogleAuthController extends BaseController {
         }
     }
 
+    /**
+     * Hủy phiên cũ (nếu có) và tạo phiên mới nhằm tránh tấn công cố định phiên.
+     *
+     * @param request yêu cầu HTTP cần làm mới phiên
+     * @return phiên mới sau khi đăng nhập bằng Google thành công
+     */
     private HttpSession renewSession(HttpServletRequest request) {
         HttpSession existing = request.getSession(false);
         if (existing != null) {
@@ -80,6 +116,13 @@ public class GoogleAuthController extends BaseController {
         return request.getSession(true);
     }
 
+    /**
+     * Ghi nhận thông báo lỗi vào flash session và chuyển hướng về trang đăng nhập.
+     *
+     * @param request yêu cầu HTTP để đặt thông báo lỗi
+     * @param response phản hồi HTTP dùng để chuyển hướng
+     * @param message nội dung lỗi hiển thị cho người dùng
+     */
     private void sendErrorFlash(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
         HttpSession session = request.getSession();
         session.setAttribute("oauthError", message);
