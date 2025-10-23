@@ -15,6 +15,7 @@ public class Shops {
     private Date createdAt;
 
     private String description;
+    private String ownerName;
 
     public Integer getId() {
         return id;
@@ -61,5 +62,13 @@ public class Shops {
     }
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
     }
 }
