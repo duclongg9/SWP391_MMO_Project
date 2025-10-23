@@ -3,6 +3,8 @@ package service;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
@@ -34,19 +36,30 @@ public class OrderService {
     private final OrderDAO orderDAO;
     private final ProductDAO productDAO;
     private final CredentialDAO credentialDAO;
+    private final WalletsDAO walletsDAO;
+    private final WalletTransactionDAO walletTransactionDAO;
     private final OrderQueueProducer queueProducer;
 
     public OrderService() {
-        this(new OrderDAO(), new ProductDAO(), new CredentialDAO(), InMemoryOrderQueue.getInstance());
+        this(new OrderDAO(), new ProductDAO(), new CredentialDAO(), new WalletsDAO(),
+                new WalletTransactionDAO(), InMemoryOrderQueue.getInstance());
     }
 
     public OrderService(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
             OrderQueueProducer queueProducer) {
+        this(orderDAO, productDAO, credentialDAO, new WalletsDAO(), new WalletTransactionDAO(), queueProducer);
+    }
+
+    public OrderService(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
+            WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO, OrderQueueProducer queueProducer) {
         this.orderDAO = Objects.requireNonNull(orderDAO, "orderDAO");
         this.productDAO = Objects.requireNonNull(productDAO, "productDAO");
         this.credentialDAO = Objects.requireNonNull(credentialDAO, "credentialDAO");
+        this.walletsDAO = Objects.requireNonNull(walletsDAO, "walletsDAO");
+        this.walletTransactionDAO = Objects.requireNonNull(walletTransactionDAO, "walletTransactionDAO");
         this.queueProducer = Objects.requireNonNull(queueProducer, "queueProducer");
-        InMemoryOrderQueue.ensureWorkerInitialized(orderDAO, productDAO, credentialDAO);
+        // Đảm bảo worker bất đồng bộ được cấu hình với đầy đủ DAO khi service được khởi tạo.
+        InMemoryOrderQueue.ensureWorkerInitialized(orderDAO, productDAO, credentialDAO, walletsDAO, walletTransactionDAO);
     }
 
     public int placeOrderPending(int userId, int productId, int quantity) {
