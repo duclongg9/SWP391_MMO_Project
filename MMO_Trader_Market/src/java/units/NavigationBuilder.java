@@ -29,8 +29,8 @@ public final class NavigationBuilder {
         Integer roleId = session == null ? null : (Integer) session.getAttribute("userRole");
 
         if (isAdminRole(roleId)) {
-            items.add(createNavItem(contextPath + "/dashboard", "Dashboard",
-                    isActive(currentPath, "/dashboard")));
+            items.add(createNavItem(contextPath + RoleHomeResolver.ADMIN_HOME, "Dashboard",
+                    isActive(currentPath, RoleHomeResolver.ADMIN_HOME)));
             items.add(createNavItem(contextPath + "/orders", "Quản lý đơn hàng",
                     isActive(currentPath, "/orders")));
         }
@@ -140,6 +140,6 @@ public final class NavigationBuilder {
     }
 
     private static boolean isAdminRole(Integer roleId) {
-        return roleId != null && roleId != 3;
+        return roleId != null && roleId == 1;
     }
 }
