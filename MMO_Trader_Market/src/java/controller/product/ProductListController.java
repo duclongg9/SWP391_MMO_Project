@@ -15,7 +15,14 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Public marketplace product list controller.
+ * Điều phối luồng "Danh sách sản phẩm" trên marketplace công khai.
+ * <p>
+ * - Liệt kê sản phẩm theo danh mục với phân trang và bộ lọc cơ bản.
+ * - Hỗ trợ tìm kiếm theo từ khóa, loại sản phẩm, phân nhóm con.
+ * - Chuẩn hóa tham số đầu vào để đảm bảo trải nghiệm duyệt sản phẩm mượt mà.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 @WebServlet(name = "ProductListController", urlPatterns = {"/products"})
 public class ProductListController extends BaseController {

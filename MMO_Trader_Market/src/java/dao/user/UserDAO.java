@@ -8,6 +8,13 @@ import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DAO thao tác với bảng {@code users}, phục vụ các nghiệp vụ xác thực và hồ sơ
+ * người dùng.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 public class UserDAO extends BaseDAO {
 
     // Tên cột trong bảng users
@@ -22,7 +29,13 @@ public class UserDAO extends BaseDAO {
     private static final String COL_CREATED_AT     = "created_at";
     private static final String COL_UPDATED_AT     = "updated_at";
 
-    /** Helper: map 1 hàng ResultSet -> Users */
+    /**
+     * Chuyển đổi một hàng dữ liệu sang đối tượng {@link Users}.
+     *
+     * @param rs hàng dữ liệu cần ánh xạ
+     * @return thực thể người dùng tương ứng
+     * @throws SQLException nếu đọc dữ liệu gặp lỗi
+     */
     private Users mapRow(ResultSet rs) throws SQLException {
         Users u = new Users();
         u.setId(rs.getInt(COL_ID));
@@ -40,7 +53,12 @@ public class UserDAO extends BaseDAO {
         return u;
     }
 
-    /** Lấy user theo id (chỉ lấy user đang active) */
+    /**
+     * Lấy người dùng hoạt động theo mã định danh.
+     *
+     * @param id mã người dùng cần truy vấn
+     * @return người dùng nếu tồn tại, hoặc {@code null} khi không tìm thấy
+     */
     public Users getUserByUserId(int id) {
         final String sql = """
                 SELECT * FROM users
@@ -61,7 +79,14 @@ public class UserDAO extends BaseDAO {
         return null;
     }
 
-    /** Cập nhật tên hiển thị */
+    /**
+     * Cập nhật tên hiển thị cơ bản của người dùng.
+     *
+     * @param id   mã người dùng cần cập nhật
+     * @param name tên mới
+     * @return số hàng bị ảnh hưởng
+     * @throws SQLException khi câu lệnh SQL lỗi
+     */
     public int updateUserProfileBasic(int id, String name) throws SQLException {
         final String sql = """
                 UPDATE users
@@ -75,7 +100,15 @@ public class UserDAO extends BaseDAO {
             return ps.executeUpdate();
         }
     }
-/** Cập nhật mật khẩu đã hash */
+
+    /**
+     * Cập nhật mật khẩu đã băm cho người dùng.
+     *
+     * @param id             mã người dùng
+     * @param hashedPassword mật khẩu đã được băm
+     * @return số hàng bị ảnh hưởng
+     * @throws SQLException khi thao tác thất bại
+     */
     public int updateUserPassword(int id, String hashedPassword) throws SQLException {
         final String sql = """
                 UPDATE users
@@ -91,7 +124,14 @@ public class UserDAO extends BaseDAO {
     }
 
     /**
-     lưu tài khoản mới
+     * Tạo tài khoản mới dựa trên vai trò chỉ định.
+     *
+     * @param roleName       tên vai trò (ví dụ {@code BUYER})
+     * @param email          email đăng ký
+     * @param hashedPassword mật khẩu đã băm
+     * @param createdAt      thời điểm tạo tài khoản
+     * @return số hàng được chèn
+     * @throws SQLException khi thao tác thất bại
      */
     public int createBuyerAccount(String roleName, String email, String hashedPassword, Timestamp createdAt) throws SQLException {
         final String sql = """
@@ -114,7 +154,12 @@ public class UserDAO extends BaseDAO {
     }
 
 
-    /** (Tuỳ chọn) Lấy user theo email */
+    /**
+     * Tìm người dùng hoạt động theo email đăng ký.
+     *
+     * @param email email cần tìm
+     * @return người dùng tương ứng hoặc {@code null}
+     */
     public Users getUserByEmail(String email) {
         final String sql = """
                 SELECT * FROM users
@@ -134,7 +179,12 @@ public class UserDAO extends BaseDAO {
         return null;
     }
 
-    /** Tìm user theo google_id */
+    /**
+     * Tìm người dùng đã liên kết với Google theo mã định danh.
+     *
+     * @param googleId mã Google cần truy vấn
+     * @return người dùng nếu tồn tại, hoặc {@code null}
+     */
     public Users getUserByGoogleId(String googleId) {
         final String sql = """
                 SELECT * FROM users
@@ -153,8 +203,15 @@ public class UserDAO extends BaseDAO {
         }
         return null;
     }
-        /** Kiểm tra email đã tồn tại hay chưa */
-public boolean emailExists(String email) throws SQLException {
+
+    /**
+     * Kiểm tra email đã tồn tại trong hệ thống.
+     *
+     * @param email email cần kiểm tra
+     * @return {@code true} nếu đã tồn tại
+     * @throws SQLException khi truy vấn lỗi
+     */
+    public boolean emailExists(String email) throws SQLException {
         final String sql = """
                 SELECT 1 FROM users
                 WHERE email = ?
@@ -169,7 +226,16 @@ public boolean emailExists(String email) throws SQLException {
         }
     }
 
-    /** Tạo user mới */
+    /**
+     * Tạo người dùng nội bộ với mật khẩu được cung cấp.
+     *
+     * @param email          email đăng ký
+     * @param name           tên hiển thị
+     * @param hashedPassword mật khẩu đã băm
+     * @param roleId         mã vai trò
+     * @return người dùng vừa tạo hoặc {@code null} nếu thất bại
+     * @throws SQLException khi thao tác chèn lỗi
+     */
     public Users createUser(String email, String name, String hashedPassword, int roleId) throws SQLException {
         final String sql = """
                 INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
@@ -203,7 +269,15 @@ public boolean emailExists(String email) throws SQLException {
     }
 
     /**
-     * Tạo user mới đăng nhập bằng Google.
+     * Tạo tài khoản mới cho hình thức đăng nhập Google.
+     *
+     * @param email          email Google trả về
+     * @param name           tên hiển thị
+     * @param googleId       mã liên kết Google
+     * @param hashedPassword mật khẩu dự phòng đã băm
+     * @param roleId         vai trò hệ thống
+     * @return người dùng vừa tạo hoặc {@code null}
+     * @throws SQLException khi thao tác chèn lỗi
      */
     public Users createUserWithGoogle(String email, String name, String googleId,
             String hashedPassword, int roleId) throws SQLException {
@@ -226,7 +300,7 @@ public boolean emailExists(String email) throws SQLException {
                 if (rs.next()) {
                     Users created = new Users();
                     created.setId(rs.getInt(1));
-created.setRoleId(roleId);
+                    created.setRoleId(roleId);
                     created.setEmail(email);
                     created.setName(name);
                     created.setGoogleId(googleId);
@@ -240,7 +314,12 @@ created.setRoleId(roleId);
     }
 
     /**
-     * Liên kết tài khoản Google với user hiện tại.
+     * Gắn hoặc thay đổi mã Google cho người dùng hiện hữu.
+     *
+     * @param userId   mã người dùng
+     * @param googleId mã Google cần liên kết
+     * @return số hàng được cập nhật
+     * @throws SQLException khi truy vấn lỗi
      */
     public int updateGoogleId(int userId, String googleId) throws SQLException {
         final String sql = """
