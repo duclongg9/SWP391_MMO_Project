@@ -12,6 +12,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import service.UserService;
 
+/**
+ * Điều phối luồng "Quên mật khẩu" để hỗ trợ người dùng khôi phục truy cập.
+ * <p>
+ * - Tiếp nhận email khi người dùng quên mật khẩu và sinh đường dẫn đặt lại.
+ * - Gửi thông báo xác nhận đã gửi email hướng dẫn đặt lại mật khẩu.
+ * - Hiển thị thông báo lỗi tiếng Việt khi thông tin không hợp lệ hoặc hệ thống gặp sự cố.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 @WebServlet(name = "ForgotPasswordController", urlPatterns = {"/forgot-password"})
 public class ForgotPasswordController extends BaseController {
 
