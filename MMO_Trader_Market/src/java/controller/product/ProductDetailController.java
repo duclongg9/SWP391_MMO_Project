@@ -14,7 +14,14 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Displays detail information for a single product.
+ * Điều phối luồng "Chi tiết sản phẩm" cho từng sản phẩm cụ thể.
+ * <p>
+ * - Tải đầy đủ thông tin, hình ảnh, mô tả, giá và chi tiết người bán.
+ * - Gợi ý sản phẩm tương tự để người dùng tham khảo thêm.
+ * - Xác định quyền mua dựa trên trạng thái đăng nhập và tình trạng hàng hóa.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail"})
 public class ProductDetailController extends BaseController {

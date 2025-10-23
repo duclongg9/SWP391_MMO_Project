@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.logging.Level;
@@ -64,6 +65,30 @@ public class WalletsDAO {
             Logger.getLogger(WalletsDAO.class.getName()).log(Level.SEVERE, "Lỗi DB", e);
         }
         return null;
+    }
+
+    public Wallets ensureUserWallet(int userId) {
+        Wallets existing = getUserWallet(userId);
+        if (existing != null) {
+            return existing;
+        }
+
+        String sql = """
+                INSERT INTO wallets (user_id)
+                VALUES (?)
+                """;
+        try (Connection con = DBConnect.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        } catch (SQLIntegrityConstraintViolationException dup) {
+            // Ví đã được tạo bởi một luồng khác, bỏ qua và truy vấn lại.
+        } catch (SQLException e) {
+            Logger.getLogger(WalletsDAO.class.getName()).log(Level.SEVERE, "Lỗi DB", e);
+            return null;
+        }
+        return getUserWallet(userId);
     }
 
     public Wallets lockWalletForUpdate(Connection connection, int userId) throws SQLException {
