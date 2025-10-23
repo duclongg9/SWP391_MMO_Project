@@ -19,12 +19,24 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DAO hỗ trợ các nghiệp vụ thống kê và tạo người mua ({@code BUYER}).
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 public class BuyerDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(BuyerDAO.class.getName());
     private static final String BUYER_ROLE = "BUYER";
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /**
+     * Tìm người mua đang hoạt động theo email.
+     *
+     * @param email email đăng nhập
+     * @return người dùng nếu tồn tại
+     */
     public Optional<Users> findActiveBuyerByEmail(String email) {
         final String sql = "SELECT id, role_id, email, name, avatar_url, hashed_password, google_id, status, created_at, updated_at "
                 + "FROM users WHERE email = ? AND status = 1 LIMIT 1";
@@ -42,6 +54,11 @@ public class BuyerDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Lấy người mua có số đơn hoàn tất nhiều nhất.
+     *
+     * @return {@link Optional} chứa người mua nổi bật
+     */
     public Optional<Users> findTopBuyerByCompletedOrders() {
         final String sql = "SELECT u.id, u.role_id, u.email, u.name, u.avatar_url, u.hashed_password, u.google_id, u.status, "
                 + "u.created_at, u.updated_at "
@@ -66,6 +83,13 @@ public class BuyerDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Tạo nhanh tài khoản người mua dựa trên email.
+     *
+     * @param email email cần tạo
+     * @return thực thể người dùng mới
+     * @throws SQLException khi thao tác chèn lỗi
+     */
     public Users createBuyer(String email) throws SQLException {
         try (Connection connection = getConnection()) {
             int roleId = resolveBuyerRoleId(connection);
@@ -98,6 +122,11 @@ public class BuyerDAO extends BaseDAO {
         throw new SQLException("Không thể tạo người mua mới");
     }
 
+    /**
+     * Đếm số lượng người mua đang hoạt động.
+     *
+     * @return tổng số người mua active
+     */
     public long countActiveBuyers() {
         final String sql = "SELECT COUNT(*) FROM users u "
                 + "JOIN roles r ON r.id = u.role_id WHERE u.status = 1 AND r.name = ?";
@@ -115,6 +144,9 @@ public class BuyerDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Ánh xạ dữ liệu người dùng từ {@link ResultSet}.
+     */
     private Users mapRow(ResultSet rs) throws SQLException {
         Users user = new Users();
         user.setId(rs.getInt("id"));
@@ -130,6 +162,9 @@ public class BuyerDAO extends BaseDAO {
         return user;
     }
 
+    /**
+     * Lấy mã vai trò tương ứng với tên vai trò người mua.
+     */
     private int resolveBuyerRoleId(Connection connection) throws SQLException {
         final String sql = "SELECT id FROM roles WHERE name = ? LIMIT 1";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -143,6 +178,9 @@ public class BuyerDAO extends BaseDAO {
         throw new SQLException("Không tìm thấy vai trò BUYER trong hệ thống");
     }
 
+    /**
+     * Sinh tên hiển thị mặc định dựa trên phần local của email.
+     */
     private String deriveDisplayName(String email) {
         String localPart = email == null ? "" : email.split("@", 2)[0];
         if (localPart.isBlank()) {
@@ -151,6 +189,9 @@ public class BuyerDAO extends BaseDAO {
         return localPart.substring(0, 1).toUpperCase(Locale.ROOT) + localPart.substring(1);
     }
 
+    /**
+     * Sinh mật khẩu ngẫu nhiên đã băm để tạo tài khoản tạm.
+     */
     private String generateHashedPassword() {
         byte[] randomBytes = new byte[16];
         RANDOM.nextBytes(randomBytes);

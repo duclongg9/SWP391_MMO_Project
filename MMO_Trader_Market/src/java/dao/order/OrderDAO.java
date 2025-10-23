@@ -21,13 +21,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Data access layer for orders table, encapsulating CRUD and transactional
- * helpers.
+ * DAO thao tác với bảng {@code orders}, bao gồm tạo đơn, thống kê và hỗ trợ giao dịch.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 public class OrderDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(OrderDAO.class.getName());
 
+    /**
+     * Tạo đơn hàng ở trạng thái Pending với khóa idempotency.
+     *
+     * @param buyerId  mã người mua
+     * @param productId mã sản phẩm
+     * @param qty       số lượng đặt mua
+     * @param total     tổng tiền
+     * @param idemKey   khóa idempotent để tránh tạo trùng
+     * @return mã đơn hàng vừa tạo
+     */
     public int createPending(int buyerId, int productId, int qty, BigDecimal total, String idemKey) {
         final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
                 + "VALUES (?, ?, ?, 'Pending', ?, NOW(), NOW())";
@@ -48,6 +60,13 @@ public class OrderDAO extends BaseDAO {
         throw new IllegalStateException("Không thể tạo đơn hàng mới");
     }
 
+    /**
+     * Lấy chi tiết đơn hàng dành cho người mua sở hữu.
+     *
+     * @param orderId mã đơn hàng
+     * @param userId  mã người dùng đăng nhập
+     * @return thông tin đơn kèm sản phẩm nếu tìm thấy
+     */
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
         final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.total_amount, o.status, o.created_at, o.updated_at, "
                 + "o.payment_transaction_id, o.idempotency_key, o.hold_until, "
@@ -74,6 +93,13 @@ public class OrderDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Cập nhật trạng thái đơn hàng không ràng buộc giá trị.
+     *
+     * @param orderId mã đơn hàng
+     * @param status  trạng thái mới ở dạng chuỗi
+     * @return {@code true} nếu cập nhật thành công
+     */
     public boolean setStatus(int orderId, String status) {
         final String sql = "UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -86,6 +112,13 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Cập nhật đơn hàng sang trạng thái Completed và gán giao dịch thanh toán.
+     *
+     * @param orderId     mã đơn hàng
+     * @param paymentTxId mã giao dịch thanh toán (có thể null)
+     * @return {@code true} nếu cập nhật thành công
+     */
     public boolean setCompletedWithTx(int orderId, Integer paymentTxId) {
         final String sql = "UPDATE orders SET status = 'Completed', payment_transaction_id = ?, updated_at = NOW() WHERE id = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -102,6 +135,12 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Tìm đơn hàng theo mã.
+     *
+     * @param orderId mã đơn hàng
+     * @return {@link Optional} chứa đơn hàng nếu tồn tại
+     */
     public Optional<Orders> findById(int orderId) {
         final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
                 + "hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
@@ -118,6 +157,12 @@ public class OrderDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Tìm đơn hàng thông qua khóa idempotency.
+     *
+     * @param idemKey khóa idempotent
+     * @return {@link Optional} chứa đơn hàng nếu có
+     */
     public Optional<Orders> findByIdemKey(String idemKey) {
         final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
                 + "hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
@@ -134,6 +179,15 @@ public class OrderDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Lấy danh sách đơn hàng của người mua có phân trang.
+     *
+     * @param buyerId mã người mua
+     * @param status  trạng thái cần lọc (có thể null)
+     * @param limit   số bản ghi mỗi trang
+     * @param offset  vị trí bắt đầu
+     * @return danh sách đơn hàng rút gọn
+     */
     public List<OrderRow> findByBuyerPaged(int buyerId, String status, int limit, int offset) {
         final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
                 + "FROM orders o JOIN products p ON p.id = o.product_id "
@@ -170,6 +224,13 @@ public class OrderDAO extends BaseDAO {
         return rows;
     }
 
+    /**
+     * Đếm số đơn hàng của người mua theo trạng thái.
+     *
+     * @param buyerId mã người mua
+     * @param status  trạng thái cần lọc (có thể null)
+     * @return tổng số đơn
+     */
     public long countByBuyer(int buyerId, String status) {
         final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND (? IS NULL OR status = ?)";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -192,14 +253,33 @@ public class OrderDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Đếm tổng số đơn hàng của người mua.
+     *
+     * @param buyerId mã người mua
+     * @return tổng số đơn
+     */
     public long countByBuyer(int buyerId) {
         return countByBuyer(buyerId, (String) null);
     }
 
+    /**
+     * Đếm số đơn của người mua theo trạng thái enum.
+     *
+     * @param buyerId mã người mua
+     * @param status  trạng thái enum cần lọc
+     * @return tổng số đơn
+     */
     public long countByBuyerAndStatus(int buyerId, OrderStatus status) {
         return countByBuyer(buyerId, status == null ? null : status.toDatabaseValue());
     }
 
+    /**
+     * Đếm số đơn hàng theo trạng thái toàn hệ thống.
+     *
+     * @param status trạng thái cần thống kê
+     * @return tổng số đơn
+     */
     public long countByStatus(OrderStatus status) {
         final String sql = "SELECT COUNT(*) FROM orders WHERE (? IS NULL OR status = ?)";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -222,6 +302,14 @@ public class OrderDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Cập nhật trạng thái đơn hàng trong giao dịch hiện tại.
+     *
+     * @param connection kết nối đang dùng
+     * @param orderId    mã đơn hàng
+     * @param status     trạng thái mới
+     * @throws SQLException khi câu lệnh SQL lỗi
+     */
     public void updateStatus(Connection connection, int orderId, OrderStatus status) throws SQLException {
         final String sql = "UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -231,6 +319,14 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Gán mã giao dịch thanh toán cho đơn hàng trong giao dịch hiện tại.
+     *
+     * @param connection           kết nối sử dụng
+     * @param orderId              mã đơn hàng
+     * @param paymentTransactionId mã giao dịch (có thể null)
+     * @throws SQLException khi truy vấn lỗi
+     */
     public void assignPaymentTransaction(Connection connection, int orderId, Integer paymentTransactionId) throws SQLException {
         final String sql = "UPDATE orders SET payment_transaction_id = ?, updated_at = NOW() WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -244,6 +340,16 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Ghi nhận lịch sử thay đổi tồn kho liên quan tới đơn hàng.
+     *
+     * @param connection  kết nối giao dịch
+     * @param productId   mã sản phẩm
+     * @param orderId     mã đơn hàng
+     * @param changeAmount số lượng thay đổi
+     * @param reason      lý do
+     * @throws SQLException khi chèn bản ghi lỗi
+     */
     public void insertInventoryLog(Connection connection, int productId, int orderId, int changeAmount, String reason)
             throws SQLException {
         final String sql = "INSERT INTO inventory_logs (product_id, related_order_id, change_amount, reason, created_at) "
@@ -257,10 +363,19 @@ public class OrderDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Mở kết nối thủ công để tái sử dụng bên ngoài DAO.
+     *
+     * @return kết nối mới
+     * @throws SQLException khi không thể kết nối
+     */
     public Connection openConnection() throws SQLException {
         return getConnection();
     }
 
+    /**
+     * Ánh xạ dữ liệu {@code orders} từ ResultSet sang thực thể {@link Orders}.
+     */
     private Orders mapOrder(ResultSet rs) throws SQLException {
         Orders order = new Orders();
         order.setId(rs.getInt("id"));
@@ -277,6 +392,9 @@ public class OrderDAO extends BaseDAO {
         return order;
     }
 
+    /**
+     * Ánh xạ dữ liệu sản phẩm phục vụ chi tiết đơn hàng.
+     */
     private Products mapProduct(ResultSet rs) throws SQLException {
         Products product = new Products();
         product.setId(rs.getInt("p_id"));

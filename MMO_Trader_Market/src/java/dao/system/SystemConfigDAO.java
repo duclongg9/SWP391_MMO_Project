@@ -13,10 +13,21 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DAO lấy cấu hình hệ thống dùng để hiển thị thông báo trên trang chủ.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 public class SystemConfigDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(SystemConfigDAO.class.getName());
 
+    /**
+     * Lấy toàn bộ cấu hình hệ thống theo thứ tự hiển thị.
+     *
+     * @return danh sách cấu hình
+     */
     public List<SystemConfigs> findAll() {
         final String sql = "SELECT id, config_key, config_value, description, created_at, updated_at "
                 + "FROM system_configs ORDER BY id ASC";
@@ -34,6 +45,9 @@ public class SystemConfigDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Ánh xạ dữ liệu cấu hình sang đối tượng {@link SystemConfigs}.
+     */
     private SystemConfigs mapRow(ResultSet rs) throws SQLException {
         SystemConfigs config = new SystemConfigs();
         config.setId(rs.getInt("id"));
