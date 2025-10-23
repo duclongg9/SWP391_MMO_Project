@@ -373,8 +373,8 @@ VALUES
  'Email doanh nghiệp 50GB, bảo hành, hỗ trợ đổi mật khẩu.',
  'Tài khoản Gmail Doanh nghiệp 50GB. Bạn nhận được email và mật khẩu kèm hướng dẫn đổi bảo mật 2 lớp.',
  250000.0000,
- 'https://cdn.mmo.local/products/gmail50gb_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/gmail50gb_main.jpg','https://cdn.mmo.local/products/gmail50gb_2.jpg'),
+  'gmail.png',
+  JSON_ARRAY('gmail.png'),
  19,128,'Available','DURATION_PLAN',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','gmail-basic-1m','attributes', JSON_OBJECT('service','gmail','plan','basic','duration','1m'),'price',250000.0000,'inventory_count',10,'status','Available'),
@@ -388,8 +388,8 @@ VALUES
  'Gia hạn Spotify Premium 12 tháng, tài khoản chính chủ.',
  'Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày. Hỗ trợ kích hoạt nhanh.',
  80000.0000,
- 'https://cdn.mmo.local/products/spotify12m_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/spotify12m_main.jpg','https://cdn.mmo.local/products/spotify12m_2.jpg'),
+  'spotify.png',
+  JSON_ARRAY('spotify.png'),
  27,256,'Available','DURATION_PLAN',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','sp-1m','attributes', JSON_OBJECT('service','spotify','duration','1m'),'price',80000.0000,'inventory_count',20,'status','Available'),
@@ -417,8 +417,8 @@ VALUES
  'Facebook cổ năm 2009+, bảo hành đổi pass.',
  'Tài khoản Facebook cổ (năm tạo 2009–2012), có bảo hành đổi mật khẩu. Dùng cho chạy quảng cáo & seeding.',
  150000.0000,
- 'https://cdn.mmo.local/products/fb_old_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/fb_old_main.jpg','https://cdn.mmo.local/products/fb_old_2.jpg'),
+  'facebook.png',
+  JSON_ARRAY('facebook.png'),
  30,73,'Available','CUSTOM',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','fb-2009','attributes', JSON_OBJECT('age','2009'),'price',180000.0000,'inventory_count',10,'status','Available'),
@@ -432,8 +432,8 @@ VALUES
  'Tài khoản TikTok Pro, bảo hành đăng nhập.',
  'Tài khoản TikTok Pro, dùng quay và đăng video với analytics nâng cao.',
  99000.0000,
- 'https://cdn.mmo.local/products/tiktok_pro_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/tiktok_pro_main.jpg'),
+  'tiktok.png',
+  JSON_ARRAY('tiktok.png'),
  40,58,'Available','CUSTOM',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','tt-pro','attributes', JSON_OBJECT('tier','pro'),'price',99000.0000,'inventory_count',40,'status','Available')
@@ -446,8 +446,8 @@ VALUES
  'Nạp Valorant Points nhanh, giá tốt.',
  'Dịch vụ nạp Valorant Points (VP) nhiều mệnh giá, xử lý trong 5–10 phút.',
  95000.0000,
- 'https://cdn.mmo.local/products/valorant_vp_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/valorant_vp_main.jpg','https://cdn.mmo.local/products/valorant_vp_2.jpg'),
+  'valorant.png',
+  JSON_ARRAY('valorant.png'),
  100,121,'Available','CUSTOM',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','vp-470','attributes', JSON_OBJECT('amount','470VP'),'price',95000.0000,'inventory_count',50,'status','Available'),
@@ -461,8 +461,8 @@ VALUES
  'Canva Pro bản quyền 12 tháng, kích hoạt trực tiếp.',
  'Cung cấp tài khoản Canva Pro chính chủ, kích hoạt ngay sau khi thanh toán, bảo hành 30 ngày.',
  90000.0000,
- 'https://cdn.mmo.local/products/canva_main.jpg',
- JSON_ARRAY('https://cdn.mmo.local/products/canva_main.jpg','https://cdn.mmo.local/products/canva_2.jpg'),
+  'canva.jpg',
+  JSON_ARRAY('canva.jpg'),
  60,187,'Available','DURATION_PLAN',
  JSON_ARRAY(
    JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',40,'status','Available'),

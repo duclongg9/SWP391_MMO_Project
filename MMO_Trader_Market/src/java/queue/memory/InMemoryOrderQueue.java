@@ -3,6 +3,8 @@ package queue.memory;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import queue.OrderMessage;
 import queue.OrderQueueProducer;
 import queue.OrderWorker;
@@ -38,12 +40,16 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
         return INSTANCE;
     }
 
-    public static synchronized void ensureWorkerInitialized(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO) {
+    public static synchronized void ensureWorkerInitialized(OrderDAO orderDAO, ProductDAO productDAO,
+            CredentialDAO credentialDAO, WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO) {
+        // Khởi tạo worker duy nhất cho hàng đợi, đảm bảo có đủ DAO phục vụ xử lý ví và đơn hàng.
         if (INSTANCE.worker == null) {
             Objects.requireNonNull(orderDAO, "orderDAO");
             Objects.requireNonNull(productDAO, "productDAO");
             Objects.requireNonNull(credentialDAO, "credentialDAO");
-            INSTANCE.worker = new AsyncOrderWorker(orderDAO, productDAO, credentialDAO);
+            Objects.requireNonNull(walletsDAO, "walletsDAO");
+            Objects.requireNonNull(walletTransactionDAO, "walletTransactionDAO");
+            INSTANCE.worker = new AsyncOrderWorker(orderDAO, productDAO, credentialDAO, walletsDAO, walletTransactionDAO);
         }
     }
 
