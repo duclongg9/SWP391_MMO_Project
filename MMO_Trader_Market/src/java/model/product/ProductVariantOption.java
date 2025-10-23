@@ -33,9 +33,9 @@ public class ProductVariantOption {
         if (attributes == null || attributes.isEmpty()) {
             return Collections.emptyMap();
         }
-        if (attributes instanceof LinkedHashMap<String, String> linkedHashMap) {
-            return Collections.unmodifiableMap(linkedHashMap);
-        }
+//        if (attributes instanceof LinkedHashMap<String, String> linkedHashMap) {
+//            return Collections.unmodifiableMap(linkedHashMap);
+//        }
         return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
     }
 
