@@ -62,6 +62,7 @@
                     <th>Chủ sở hữu</th>
                     <th>Tên cửa hàng</th>
                     <th>Nội dung</th>
+                    <th>Trạng thái</th>
                     <th>Đăng ký ngày</th>
                     <th class="text-center">Hành động</th>
                 </tr>
@@ -73,6 +74,7 @@
                         <td>${s.ownerName}</td>
                         <td>${s.name}</td>
                         <td>${s.description}</td>
+                        <td>${s.status}</td>
                         <td><fmt:formatDate value="${s.createdAt}" pattern="dd/MM/yyyy HH:mm"/></td>
                         <td class="text-center">
                             <c:choose>

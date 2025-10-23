@@ -116,14 +116,22 @@ public class ManageUserDAO {
             return 0;
         }
     }
-    public int updateStatus(int id, boolean active) throws SQLException {
-        String sql = "UPDATE users SET status=?, updated_at=NOW() WHERE id=?";
+    // Chỉ đổi trạng thái nếu user thuộc role BUYER hoặc SELLER
+    public int updateStatus(int userId, int status01) throws SQLException {
+        String sql = """
+        UPDATE users u
+        JOIN roles r ON u.role_id = r.id
+        SET u.status = ?, u.updated_at = CURRENT_TIMESTAMP
+        WHERE u.id = ? AND UPPER(r.name) IN ('BUYER','SELLER')
+    """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, active ? 1 : 0);
-            ps.setInt(2, id);
+            ps.setInt(1, status01);
+            ps.setInt(2, userId);
             return ps.executeUpdate();
         }
     }
+
+
 
     /** 🔹 Map từ ResultSet sang model */
     private Users mapRow(ResultSet rs) throws SQLException {
