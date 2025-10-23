@@ -5,17 +5,21 @@
 package dao.user;
 
 import dao.connect.DBConnect;
-import java.sql.Timestamp;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.sql.Date;
-import java.util.List;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import model.TransactionType;
 import model.WalletTransactions;
 
@@ -211,5 +215,39 @@ public class WalletTransactionDAO {
         for (WalletTransactions walletTransactions : list) {
             System.out.println(walletTransactions);
         }
+    }
+
+    public int insertTransaction(Connection connection, int walletId, Integer relatedEntityId, TransactionType type,
+            BigDecimal amount, BigDecimal balanceBefore, BigDecimal balanceAfter, String note) throws SQLException {
+        // Ghi lại một giao dịch ví kèm trạng thái số dư trước/sau để phục vụ truy vết.
+        final String sql = """
+                INSERT INTO wallet_transactions
+                    (wallet_id, related_entity_id, transaction_type, amount, balance_before, balance_after, note, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, walletId);
+            if (relatedEntityId == null) {
+                ps.setNull(2, Types.INTEGER);
+            } else {
+                ps.setInt(2, relatedEntityId);
+            }
+            ps.setString(3, type.getDbValue());
+            ps.setBigDecimal(4, amount);
+            ps.setBigDecimal(5, balanceBefore);
+            ps.setBigDecimal(6, balanceAfter);
+            if (note == null || note.isBlank()) {
+                ps.setNull(7, Types.VARCHAR);
+            } else {
+                ps.setString(7, note);
+            }
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        throw new SQLException("Không thể tạo giao dịch ví mới");
     }
 }
