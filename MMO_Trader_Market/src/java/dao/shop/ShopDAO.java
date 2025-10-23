@@ -13,10 +13,22 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DAO cung cấp dữ liệu liên quan tới bảng {@code shops} cho trang chủ và thống kê.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 public class ShopDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ShopDAO.class.getName());
 
+    /**
+     * Lấy danh sách shop đang hoạt động gần nhất.
+     *
+     * @param limit số lượng shop cần trả về
+     * @return danh sách shop hoạt động
+     */
     public List<Shops> findActive(int limit) {
         final String sql = "SELECT id, owner_id, name, description, status, created_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
@@ -36,6 +48,11 @@ public class ShopDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Đếm tổng số shop đang ở trạng thái Active.
+     *
+     * @return số lượng shop hoạt động
+     */
     public long countActive() {
         final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Active'";
         try (Connection connection = getConnection();
@@ -50,6 +67,9 @@ public class ShopDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Ánh xạ dữ liệu kết quả sang đối tượng {@link Shops}.
+     */
     private Shops mapRow(ResultSet rs) throws SQLException {
         Shops shop = new Shops();
         shop.setId(rs.getInt("id"));
