@@ -23,7 +23,7 @@
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
@@ -45,6 +45,13 @@ code {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(245, 247, 250, 0.95) 100%);
 }
 
+.layout.layout--auth {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* NEW: chiếm đủ chiều cao màn hình */
+}
+
+
 .layout--center .layout__content {
     width: min(100%, 960px);
     margin: 0 auto;
@@ -56,20 +63,29 @@ code {
 
 .layout--center .layout__content.auth-page,
 .layout--auth .layout__content.auth-page {
+    flex: 1 1 auto;                /* NEW: chiếm hết không gian còn lại dưới header */
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100%;
-    padding: clamp(2rem, 8vh, 4rem) 1.5rem;
+    align-items: center;           /* NEW: căn giữa theo trục dọc */
+    justify-content: center;       /* NEW: căn giữa theo trục ngang */
+    min-height: calc(100vh - var(--auth-header, 72px) - var(--auth-footer, 0px)); /* NEW: trừ chiều cao header/footer nếu có */
+    width: 100%;
+    margin: 0 auto;
+    padding: clamp(2rem, 8vh, 4rem) 1.5rem; /* giữ như cũ */
     gap: 2rem;
+}
+
+
+.layout--auth .layout__content.auth-page {
+    flex: 1 0 auto;
 }
 
 .auth-page__inner {
     width: min(100%, 400px);
     display: grid;
     gap: 1.5rem;
+    margin: 0 auto; /* NEW: giúp giữ giữa ngang nếu có thay đổi layout */
 }
+
 
 .auth-page__header {
     display: grid;
@@ -121,25 +137,14 @@ code {
     z-index: 1000;
 }
 
-.layout__footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-}
+.layout__footer       { --auth-footer: 0px; }
 
-.layout__header--auth {
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-    background: rgba(255, 255, 255, 0.94);
-    border-bottom: 1px solid rgba(0, 91, 150, 0.08);
-    backdrop-filter: blur(6px);
-}
+.layout__header--auth { --auth-header: 72px; }
 
 .site-header__inner {
     width: min(100%, 1200px);
     margin: 0 auto;
-    display: grid;
+display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 1.5rem;
@@ -309,7 +314,7 @@ code {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+justify-content: space-between;
     gap: 1rem;
     border-bottom: 1px solid rgba(15, 23, 42, 0.06);
     background: linear-gradient(135deg, rgba(0, 91, 150, 0.08), rgba(255, 183, 3, 0.08));
@@ -317,6 +322,17 @@ code {
 
 .panel__title {
     margin: 0;
+}
+
+.panel__header-text {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.panel__subtitle {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
 }
 
 .panel__tag {
@@ -460,7 +476,7 @@ code {
 .product-card__shop {
     margin: 0;
     color: var(--text-light);
-    font-size: 0.95rem;
+font-size: 0.95rem;
 }
 
 .product-card__actions {
@@ -619,7 +635,7 @@ code {
 
 .form-card__input {
     padding: 0.85rem 1rem;
-    border-radius: var(--radius-sm);
+border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     font-size: 1rem;
     transition: var(--transition);
@@ -780,7 +796,7 @@ code {
 }
 
 .menu__item {
-    padding: 0.6rem 1rem;
+padding: 0.6rem 1rem;
     border-radius: var(--radius-sm);
     text-decoration: none;
     color: var(--primary-color);
@@ -945,7 +961,7 @@ code {
 }
 
 .pagination__item--active {
-    background: var(--primary-color);
+background: var(--primary-color);
     color: #fff;
     border-color: transparent;
 }
@@ -1096,7 +1112,7 @@ code {
 
     .site-header__user {
         flex-wrap: wrap;
-        justify-content: center;
+justify-content: center;
         gap: 0.5rem;
     }
 
@@ -1230,6 +1246,10 @@ code {
     padding: 0;
 }
 
+.landing__filters .panel__body {
+    padding: 1.5rem 2rem 2rem;
+}
+
 .landing__products {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1264,7 +1284,7 @@ code {
 
 .wallet-stat__value {
     margin: 0;
-    font-size: 1.6rem;
+font-size: 1.6rem;
     font-weight: 700;
     display: flex;
     align-items: baseline;
@@ -1425,7 +1445,7 @@ code {
     border-radius: var(--radius-md);
     padding: 1rem 1.25rem;
     background: var(--surface-color);
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
     display: grid;
     gap: 0.75rem;
 }

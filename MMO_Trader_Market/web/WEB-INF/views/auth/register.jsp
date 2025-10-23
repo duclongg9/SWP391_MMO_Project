@@ -44,7 +44,7 @@
             <button class="button button--primary" type="submit">Đăng ký</button>
             <div class="form-card__actions-row">
                 <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
-                <a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>
+                <!--<a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>-->
             </div>
         </form>
     </div>

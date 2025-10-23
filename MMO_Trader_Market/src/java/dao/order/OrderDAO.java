@@ -51,7 +51,10 @@ public class OrderDAO extends BaseDAO {
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
         final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.total_amount, o.status, o.created_at, o.updated_at, "
                 + "o.payment_transaction_id, o.idempotency_key, o.hold_until, "
-                + "p.id AS p_id, p.shop_id, p.name, p.description, p.price, p.inventory_count, p.status AS p_status, "
+                + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
+                + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
+                + "p.gallery_json AS p_gallery_json, p.inventory_count, p.sold_count AS p_sold_count, p.status AS p_status, "
+                + "p.variant_schema AS p_variant_schema, p.variants_json AS p_variants_json, "
                 + "p.created_at AS p_created_at, p.updated_at AS p_updated_at "
                 + "FROM orders o JOIN products p ON p.id = o.product_id "
                 + "WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
@@ -278,14 +281,29 @@ public class OrderDAO extends BaseDAO {
         Products product = new Products();
         product.setId(rs.getInt("p_id"));
         product.setShopId(rs.getInt("shop_id"));
+        product.setProductType(rs.getString("p_product_type"));
+        product.setProductSubtype(rs.getString("p_product_subtype"));
         product.setName(rs.getString("name"));
+        product.setShortDescription(rs.getString("p_short_description"));
         product.setDescription(rs.getString("description"));
         product.setPrice(rs.getBigDecimal("price"));
+        product.setPrimaryImageUrl(rs.getString("p_primary_image_url"));
+        product.setGalleryJson(rs.getString("p_gallery_json"));
         int inventory = rs.getInt("inventory_count");
         product.setInventoryCount(rs.wasNull() ? null : inventory);
+        int sold = rs.getInt("p_sold_count");
+        product.setSoldCount(rs.wasNull() ? null : sold);
         product.setStatus(rs.getString("p_status"));
-        product.setCreatedAt(rs.getTimestamp("p_created_at"));
-        product.setUpdatedAt(rs.getTimestamp("p_updated_at"));
+        product.setVariantSchema(rs.getString("p_variant_schema"));
+        product.setVariantsJson(rs.getString("p_variants_json"));
+        Timestamp created = rs.getTimestamp("p_created_at");
+        Timestamp updated = rs.getTimestamp("p_updated_at");
+        if (created != null) {
+            product.setCreatedAt(new java.util.Date(created.getTime()));
+        }
+        if (updated != null) {
+            product.setUpdatedAt(new java.util.Date(updated.getTime()));
+        }
         return product;
     }
 

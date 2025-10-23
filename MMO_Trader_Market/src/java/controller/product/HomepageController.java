@@ -5,12 +5,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.Products;
 import model.Shops;
 import model.SystemConfigs;
 import model.view.ConversationMessageView;
 import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
+import model.view.product.ProductSummaryView;
 import service.HomepageService;
 
 import java.io.IOException;
@@ -40,6 +40,10 @@ public class HomepageController extends BaseController {
 
         populateHomepageData(request);
 
+        request.setAttribute("query", "");
+        request.setAttribute("selectedType", "");
+        request.setAttribute("selectedSubtype", "");
+
         forward(request, response, "product/home");
     }
 
@@ -47,12 +51,14 @@ public class HomepageController extends BaseController {
         MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
         request.setAttribute("summary", summary);
 
-        List<Products> featuredProducts = homepageService.loadFeaturedProducts();
+        List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
         request.setAttribute("featuredProducts", featuredProducts);
 
         List<Shops> shops = homepageService.loadActiveShops();
         request.setAttribute("shops", shops);
         request.setAttribute("shopIcons", buildShopIconMap());
+
+        request.setAttribute("productCategories", homepageService.loadProductCategories());
 
         CustomerProfileView profile = homepageService.loadHighlightedBuyer();
         request.setAttribute("customerProfile", profile);
@@ -63,8 +69,8 @@ public class HomepageController extends BaseController {
         List<SystemConfigs> systemNotes = homepageService.loadSystemNotes();
         request.setAttribute("systemNotes", systemNotes);
 
-        request.setAttribute("productTypes", buildProductTypeList());
         request.setAttribute("faqs", buildFaqEntries());
+        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
     }
 
     private Map<String, String> buildShopIconMap() {
@@ -73,17 +79,6 @@ public class HomepageController extends BaseController {
         icons.put("Pending", "⏳");
         icons.put("Suspended", "⚠️");
         return icons;
-    }
-
-    private List<Map<String, String>> buildProductTypeList() {
-        List<Map<String, String>> types = new ArrayList<>();
-
-        types.add(createEntry("Tài khoản game", "Tài khoản đã được xác minh và đảm bảo an toàn."));
-        types.add(createEntry("Dịch vụ nâng hạng", "Gói hỗ trợ tăng cấp nhanh chóng cho nhiều tựa game."));
-        types.add(createEntry("Vật phẩm số", "Mã nạp, skin hiếm và vật phẩm sự kiện giới hạn."));
-        types.add(createEntry("Gian hàng doanh nghiệp", "Gói tuỳ chỉnh cho studio và nhà phát hành."));
-
-        return types;
     }
 
     private List<Map<String, String>> buildFaqEntries() {

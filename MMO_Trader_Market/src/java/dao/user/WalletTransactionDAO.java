@@ -58,20 +58,21 @@ public class WalletTransactionDAO {
                 while (rs.next()) {
                     WalletTransactions wt = new WalletTransactions();
                     wt.setId(rs.getInt(COL_ID));
-                    wt.setWalletId(wdao.getWalletById(rs.getInt(COL_WALLET_ID)));
-                    wt.setRelatedEntityId(rs.getInt(COL_RELATED_ENTITY));
-                    //map từ ENUM java --> enum DB
-                    String s = rs.getString(COL_TRANSACTION_TYPE); //"Deposit" | "Purchase" |
-                    TransactionType type = TransactionType.fromDbValue(s);
-
-                    wt.setAmount(rs.getDouble(COL_AMOUNT));
-                    wt.setBalanceBefore(rs.getDouble(COL_BALANCE_BEFORE));
-                    wt.setBalanceAfter(rs.getDouble(COL_BALANCE_AFTER));
+                    int walletId = rs.getInt(COL_WALLET_ID);
+                    wt.setWalletId(walletId);
+                    wt.setWallet(wdao.getWalletById(walletId));
+                    Object relatedEntity = rs.getObject(COL_RELATED_ENTITY);
+                    wt.setRelatedEntityId(relatedEntity == null ? null : ((Number) relatedEntity).intValue());
+                    String s = rs.getString(COL_TRANSACTION_TYPE);
+                    if (s != null) {
+                        wt.setTransactionType(TransactionType.fromDbValue(s));
+                    }
+                    wt.setAmount(rs.getBigDecimal(COL_AMOUNT));
+                    wt.setBalanceBefore(rs.getBigDecimal(COL_BALANCE_BEFORE));
+                    wt.setBalanceAfter(rs.getBigDecimal(COL_BALANCE_AFTER));
                     wt.setNote(rs.getString(COL_NOTE));
-
-                    //Lấy thời gian TimeStamp ở DB --> Instant trong java
                     java.sql.Timestamp c = rs.getTimestamp(COL_CREATED_AT);
-                    wt.setCreatedAt(c != null ? c.toInstant() : null);
+                    wt.setCreatedAt(c != null ? new java.util.Date(c.getTime()) : null);
                     list.add(wt);
                 }
                 return list;
@@ -178,21 +179,22 @@ public class WalletTransactionDAO {
                 while (rs.next()) {
                     WalletTransactions wt = new WalletTransactions();
                     wt.setId(rs.getInt(COL_ID));
-                    wt.setWalletId(wdao.getWalletById(rs.getInt(COL_WALLET_ID)));
-                    wt.setRelatedEntityId(rs.getInt(COL_RELATED_ENTITY));
+                    int walletId = rs.getInt(COL_WALLET_ID);
+                    wt.setWalletId(walletId);
+                    wt.setWallet(wdao.getWalletById(walletId));
+                    Object relatedEntity = rs.getObject(COL_RELATED_ENTITY);
+                    wt.setRelatedEntityId(relatedEntity == null ? null : ((Number) relatedEntity).intValue());
                     //map từ ENUM java --> enum DB
                     String s = rs.getString(COL_TRANSACTION_TYPE); //"Deposit" | "Purchase" |
                     TransactionType type = TransactionType.fromDbValue(s);
 
                     wt.setTransactionType(type);
-                    wt.setAmount(rs.getDouble(COL_AMOUNT));
-                    wt.setBalanceBefore(rs.getDouble(COL_BALANCE_BEFORE));
-                    wt.setBalanceAfter(rs.getDouble(COL_BALANCE_AFTER));
+                    wt.setAmount(rs.getBigDecimal(COL_AMOUNT));
+                    wt.setBalanceBefore(rs.getBigDecimal(COL_BALANCE_BEFORE));
+                    wt.setBalanceAfter(rs.getBigDecimal(COL_BALANCE_AFTER));
                     wt.setNote(rs.getString(COL_NOTE));
-
-                    //Lấy thời gian TimeStamp ở DB --> Instant trong java
                     java.sql.Timestamp c = rs.getTimestamp(COL_CREATED_AT);
-                    wt.setCreatedAt(c != null ? c.toInstant() : null);
+                    wt.setCreatedAt(c != null ? new java.util.Date(c.getTime()) : null);
                     list.add(wt);
                 }
                 return list;

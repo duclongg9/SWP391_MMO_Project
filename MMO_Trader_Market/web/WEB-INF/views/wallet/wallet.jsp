@@ -19,11 +19,6 @@
     List<Map<String, String>> navItems = new ArrayList<>();
     String contextPath = request.getContextPath();
 
-    Map<String, String> productLink = new HashMap<>();
-    productLink.put("href", contextPath + "/products");
-    productLink.put("label", "Danh sách sản phẩm");
-    navItems.add(productLink);
-
     Map<String, String> guideLink = new HashMap<>();
     guideLink.put("href", contextPath + "/styleguide");
     guideLink.put("label", "Thư viện giao diện");
@@ -179,13 +174,13 @@
           <td>
               <c:choose>
                 <%-- ưu tiên getter trả java.util.Date --%>
-                <c:when test="${not empty p.createdAtDate}">
-                  <fmt:formatDate value="${p.createdAtDate}"
+                <c:when test="${not empty p.createdAt}">
+                  <fmt:formatDate value="${p.createdAt}"
                                   pattern="dd/MM/yyyy HH:mm"
                                   timeZone="Asia/Ho_Chi_Minh"/>
                 </c:when>
-                <c:when test="${not empty p.createdAtDate}">
-                  <c:out value="${p.createdAtDate}" />
+                <c:when test="${not empty p.createdAt}">
+                  <c:out value="${p.createdAt}" />
                 </c:when>
                 <c:otherwise>-</c:otherwise>
               </c:choose>
