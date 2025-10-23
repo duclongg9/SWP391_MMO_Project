@@ -33,6 +33,9 @@ public class HomepageController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if (redirectAdminHome(request, response)) {
+            return;
+        }
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
 //        request.setAttribute("headerTitle", "MMO Trader Market");
