@@ -14,10 +14,22 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * DAO phục vụ việc hiển thị thông điệp hội thoại mới nhất trên trang chủ.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 public class ConversationMessageDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ConversationMessageDAO.class.getName());
 
+    /**
+     * Lấy danh sách thông điệp hội thoại mới nhất.
+     *
+     * @param limit số lượng bản ghi cần trả về
+     * @return danh sách thông điệp đã ánh xạ
+     */
     public List<ConversationMessageView> findLatest(int limit) {
         final String sql = "SELECT m.content, m.created_at, u.name AS sender_name, "
                 + "COALESCE(p1.name, p2.name) AS product_name "
@@ -44,6 +56,9 @@ public class ConversationMessageDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Ánh xạ dữ liệu kết quả thành {@link ConversationMessageView}.
+     */
     private ConversationMessageView mapRow(ResultSet rs) throws SQLException {
         String senderName = rs.getString("sender_name");
         String content = rs.getString("content");
