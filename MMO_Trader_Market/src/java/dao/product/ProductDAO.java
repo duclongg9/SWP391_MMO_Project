@@ -23,7 +23,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Data access object for the {@code products} table.
+ * DAO tương tác với bảng {@code products} để phục vụ tra cứu, thống kê và cập nhật hàng hóa.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 public class ProductDAO extends BaseDAO {
 
@@ -50,6 +53,16 @@ public class ProductDAO extends BaseDAO {
             + "FROM products p JOIN shops s ON s.id = p.shop_id "
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
+    /**
+     * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc cơ bản.
+     *
+     * @param keyword        từ khóa tìm kiếm theo tên/mô tả
+     * @param productType    loại sản phẩm lọc theo mã
+     * @param productSubtype phân loại con
+     * @param limit          số bản ghi mỗi trang
+     * @param offset         vị trí bắt đầu lấy dữ liệu
+     * @return danh sách sản phẩm kèm thông tin shop
+     */
     public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
             int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
@@ -89,6 +102,14 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc.
+     *
+     * @param keyword        từ khóa tìm kiếm
+     * @param productType    loại sản phẩm
+     * @param productSubtype phân loại con
+     * @return tổng số sản phẩm thỏa điều kiện
+     */
     public long countAvailable(String keyword, String productType, String productSubtype) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
@@ -124,6 +145,12 @@ public class ProductDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Lấy chi tiết công khai của sản phẩm theo mã số.
+     *
+     * @param productId mã sản phẩm
+     * @return thông tin chi tiết nếu tìm thấy
+     */
     public Optional<ProductDetail> findDetailById(int productId) {
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(DETAIL_SELECT)) {
@@ -139,6 +166,12 @@ public class ProductDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Lấy danh sách sản phẩm bán chạy nhất trong trạng thái khả dụng.
+     *
+     * @param limit giới hạn số sản phẩm trả về
+     * @return danh sách sản phẩm nổi bật
+     */
     public List<ProductListRow> findTopAvailable(int limit) {
         int resolvedLimit = Math.max(limit, 1);
         String sql = LIST_SELECT
@@ -160,6 +193,11 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Thống kê số lượng sản phẩm đang bán theo từng loại chính.
+     *
+     * @return bản đồ mã loại và tổng số sản phẩm
+     */
     public Map<String, Long> countAvailableByType() {
         final String sql = "SELECT p.product_type, COUNT(*) AS total "
                 + "FROM products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
@@ -181,6 +219,14 @@ public class ProductDAO extends BaseDAO {
         return result;
     }
 
+    /**
+     * Tìm sản phẩm tương tự theo loại, bỏ qua một sản phẩm cụ thể.
+     *
+     * @param productType     loại sản phẩm
+     * @param excludeProductId mã sản phẩm cần loại trừ
+     * @param limit           số lượng gợi ý mong muốn
+     * @return danh sách sản phẩm tương tự
+     */
     public List<ProductListRow> findSimilarByType(String productType, int excludeProductId, int limit) {
         if (!hasText(productType)) {
             return List.of();
@@ -207,6 +253,11 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Lấy danh sách shop có sản phẩm khả dụng để hiển thị bộ lọc.
+     *
+     * @return danh sách shop và tên tương ứng
+     */
     public List<ShopOption> findShopsWithAvailableProducts() {
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(SHOP_FILTER_SELECT);
@@ -222,6 +273,12 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Tìm sản phẩm theo mã không phụ thuộc trạng thái.
+     *
+     * @param id mã sản phẩm
+     * @return {@link Optional} chứa sản phẩm nếu tồn tại
+     */
     public Optional<Products> findById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection();
@@ -238,6 +295,12 @@ public class ProductDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Tìm sản phẩm đang khả dụng theo mã số.
+     *
+     * @param id mã sản phẩm
+     * @return {@link Optional} chứa sản phẩm nếu còn bán
+     */
     public Optional<Products> findAvailableById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS
                 + " FROM products WHERE id = ? AND status = 'Available' LIMIT 1";
@@ -255,6 +318,12 @@ public class ProductDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Lấy giá niêm yết của sản phẩm.
+     *
+     * @param productId mã sản phẩm
+     * @return giá nếu có
+     */
     public Optional<BigDecimal> findPriceById(int productId) {
         final String sql = "SELECT price FROM products WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection();
@@ -271,6 +340,13 @@ public class ProductDAO extends BaseDAO {
         return Optional.empty();
     }
 
+    /**
+     * Trừ tồn kho sản phẩm bằng câu lệnh độc lập.
+     *
+     * @param productId mã sản phẩm
+     * @param qty       số lượng cần trừ
+     * @return {@code true} nếu cập nhật thành công
+     */
     public boolean decrementInventory(int productId, int qty) {
         try (Connection connection = getConnection()) {
             return decrementInventory(connection, productId, qty);
@@ -280,6 +356,15 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Trừ tồn kho trong bối cảnh giao dịch đã có sẵn kết nối.
+     *
+     * @param connection kết nối dùng chung
+     * @param productId  mã sản phẩm
+     * @param qty        số lượng cần trừ
+     * @return {@code true} nếu tồn kho đủ và trừ thành công
+     * @throws SQLException khi câu lệnh SQL lỗi
+     */
     public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
         final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
                 + "WHERE id = ? AND inventory_count >= ?";
@@ -291,6 +376,14 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Khóa hàng tồn kho để tránh race-condition trước khi cập nhật.
+     *
+     * @param connection kết nối hiện hành
+     * @param productId  mã sản phẩm
+     * @return tồn kho hiện tại
+     * @throws SQLException khi truy vấn lỗi
+     */
     public int lockInventoryForUpdate(Connection connection, int productId) throws SQLException {
         final String sql = "SELECT inventory_count FROM products WHERE id = ? FOR UPDATE";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -304,6 +397,12 @@ public class ProductDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Đếm số sản phẩm theo từ khóa phục vụ trang quản trị.
+     *
+     * @param keyword từ khóa tìm kiếm
+     * @return tổng số sản phẩm khớp
+     */
     public int countByKeyword(String keyword) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products");
         List<String> parameters = new ArrayList<>();
@@ -321,6 +420,14 @@ public class ProductDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Tìm kiếm sản phẩm với phân trang cho giao diện quản trị.
+     *
+     * @param keyword từ khóa tìm kiếm
+     * @param limit   số bản ghi tối đa
+     * @param offset  vị trí bắt đầu
+     * @return danh sách sản phẩm phù hợp
+     */
     public List<Products> search(String keyword, int limit, int offset) {
         StringBuilder sql = new StringBuilder("SELECT ");
         sql.append(PRODUCT_COLUMNS)
@@ -345,6 +452,12 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Lấy danh sách sản phẩm nổi bật dựa vào thời gian cập nhật.
+     *
+     * @param limit số lượng cần lấy
+     * @return danh sách sản phẩm nổi bật
+     */
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
         final String sql = "SELECT " + PRODUCT_COLUMNS
@@ -365,10 +478,16 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Kiểm tra chuỗi có chứa ký tự khác trắng hay không.
+     */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
+    /**
+     * Chuẩn hóa từ khóa thành biểu thức LIKE.
+     */
     private String buildLikePattern(String keyword) {
         return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
     }
@@ -391,6 +510,9 @@ public class ProductDAO extends BaseDAO {
 //        }
 //    }
 
+    /**
+     * Gán danh sách tham số vào {@link PreparedStatement} theo thứ tự.
+     */
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
     for (int i = 0; i < params.size(); i++) {
         Object value = params.get(i);
@@ -420,6 +542,9 @@ public class ProductDAO extends BaseDAO {
     }
 }
 
+    /**
+     * Bổ sung điều kiện tìm kiếm cho câu truy vấn nếu có từ khóa.
+     */
     private void appendSearchClause(String keyword, StringBuilder sql, List<String> parameters) {
         if (keyword == null || keyword.isBlank()) {
             return;
@@ -430,6 +555,9 @@ public class ProductDAO extends BaseDAO {
         parameters.add(pattern);
     }
 
+    /**
+     * Tạo {@link PreparedStatement} và gán tham số chuỗi cho truy vấn tìm kiếm.
+     */
     private PreparedStatement prepareSearchStatement(Connection connection, String sql, List<String> parameters)
             throws SQLException {
         PreparedStatement statement = connection.prepareStatement(sql);
@@ -439,6 +567,9 @@ public class ProductDAO extends BaseDAO {
         return statement;
     }
 
+    /**
+     * Ánh xạ dữ liệu danh sách sản phẩm sang {@link ProductListRow}.
+     */
     private ProductListRow mapListRow(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
         Integer sold = (Integer) rs.getObject("sold_count");
@@ -460,6 +591,9 @@ public class ProductDAO extends BaseDAO {
         );
     }
 
+    /**
+     * Ánh xạ dữ liệu chi tiết sang {@link ProductDetail} phục vụ trang chi tiết.
+     */
     private ProductDetail mapDetail(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
         Integer sold = (Integer) rs.getObject("sold_count");
@@ -485,10 +619,16 @@ public class ProductDAO extends BaseDAO {
         );
     }
 
+    /**
+     * Ánh xạ dữ liệu shop sang đối tượng {@link ShopOption}.
+     */
     private ShopOption mapShopOption(ResultSet rs) throws SQLException {
         return new ShopOption(rs.getInt("shop_id"), rs.getString("shop_name"));
     }
 
+    /**
+     * Ánh xạ dữ liệu bảng products sang thực thể {@link Products}.
+     */
     private Products mapRow(ResultSet rs) throws SQLException {
         Products product = new Products();
         product.setId(rs.getInt("id"));
