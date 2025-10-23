@@ -372,24 +372,53 @@ public class ProductDAO extends BaseDAO {
     private String buildLikePattern(String keyword) {
         return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
     }
+//
+//    private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
+//        for (int i = 0; i < params.size(); i++) {
+//            Object value = params.get(i);
+//            int index = i + 1;
+//            if (value instanceof Integer intValue) {
+//                statement.setInt(index, intValue);
+//            } else if (value instanceof Long longValue) {
+//                statement.setLong(index, longValue);
+//            } else if (value instanceof String stringValue) {
+//                statement.setString(index, stringValue);
+//            } else if (value instanceof BigDecimal decimalValue) {
+//                statement.setBigDecimal(index, decimalValue);
+//            } else {
+//                statement.setObject(index, value);
+//            }
+//        }
+//    }
 
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
-        for (int i = 0; i < params.size(); i++) {
-            Object value = params.get(i);
-            int index = i + 1;
-            if (value instanceof Integer intValue) {
-                statement.setInt(index, intValue);
-            } else if (value instanceof Long longValue) {
-                statement.setLong(index, longValue);
-            } else if (value instanceof String stringValue) {
-                statement.setString(index, stringValue);
-            } else if (value instanceof BigDecimal decimalValue) {
-                statement.setBigDecimal(index, decimalValue);
-            } else {
-                statement.setObject(index, value);
-            }
+    for (int i = 0; i < params.size(); i++) {
+        Object value = params.get(i);
+        int index = i + 1;
+
+        if (value == null) {
+            statement.setObject(index, null);
+        } else if (value instanceof Integer) {
+            statement.setInt(index, (Integer) value);
+        } else if (value instanceof Long) {
+            statement.setLong(index, (Long) value);
+        } else if (value instanceof String) {
+            statement.setString(index, (String) value);
+        } else if (value instanceof BigDecimal) {
+            statement.setBigDecimal(index, (BigDecimal) value);
+        } else if (value instanceof java.util.Date) {
+            statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
+        } else if (value instanceof Boolean) {
+            statement.setBoolean(index, (Boolean) value);
+        } else if (value instanceof Double) {
+            statement.setDouble(index, (Double) value);
+        } else if (value instanceof Float) {
+            statement.setFloat(index, (Float) value);
+        } else {
+            statement.setObject(index, value);
         }
     }
+}
 
     private void appendSearchClause(String keyword, StringBuilder sql, List<String> parameters) {
         if (keyword == null || keyword.isBlank()) {
