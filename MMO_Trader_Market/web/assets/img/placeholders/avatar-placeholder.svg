@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <linearGradient id="avatarGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="40" fill="url(#avatarGradient)" />
+  <g fill="#ecfdf5" transform="translate(0,-4)">
+    <circle cx="80" cy="72" r="28" />
+    <path d="M40 136c8-26 32-36 40-36s32 10 40 36" />
+  </g>
+  <text x="80" y="150" fill="#ecfdf5" font-family="'Segoe UI', 'Helvetica Neue', Arial" font-size="18" text-anchor="middle" opacity="0.65">Avatar</text>
+</svg>

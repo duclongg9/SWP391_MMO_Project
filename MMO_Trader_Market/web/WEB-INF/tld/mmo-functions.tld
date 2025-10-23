@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib xmlns="https://jakarta.ee/xml/ns/jakartaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-jsptaglibrary_3_0.xsd"
+        version="3.0">
+    <description>Reusable EL functions for MMO Trader Market.</description>
+    <display-name>MMO Trader Market Functions</display-name>
+    <tlib-version>1.0</tlib-version>
+    <short-name>mmo</short-name>
+    <uri>http://mmo.trader/tags/util</uri>
+
+    <function>
+        <description>Resolve a product image URL and fall back to a local placeholder when necessary.</description>
+        <name>resolveProductImage</name>
+        <function-class>units.ImageUrlResolver</function-class>
+        <function-signature>java.lang.String resolveProductImage(java.lang.String, java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <description>Resolve an avatar image URL with fallback support.</description>
+        <name>resolveAvatarImage</name>
+        <function-class>units.ImageUrlResolver</function-class>
+        <function-signature>java.lang.String resolveAvatarImage(java.lang.String, java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <description>Resolve a document/receipt/KYC image URL with fallback support.</description>
+        <name>resolveDocumentImage</name>
+        <function-class>units.ImageUrlResolver</function-class>
+        <function-signature>java.lang.String resolveDocumentImage(java.lang.String, java.lang.String)</function-signature>
+    </function>
+
+    <function>
+        <description>Resolve the logo image URL shown in the global header.</description>
+        <name>resolveLogoImage</name>
+        <function-class>units.ImageUrlResolver</function-class>
+        <function-signature>java.lang.String resolveLogoImage(java.lang.String, java.lang.String)</function-signature>
+    </function>
+</taglib>

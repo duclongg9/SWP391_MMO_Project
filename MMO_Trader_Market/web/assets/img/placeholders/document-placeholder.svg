@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" width="200" height="260">
+  <defs>
+    <linearGradient id="docGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="260" rx="24" fill="#eef2ff" />
+  <path d="M48 32h88l32 32v164a20 20 0 0 1-20 20H48a20 20 0 0 1-20-20V52a20 20 0 0 1 20-20z" fill="#fff" />
+  <path d="M136 32v32h32" fill="#c7d2fe" />
+  <g stroke="#4f46e5" stroke-linecap="round" stroke-width="6" opacity="0.75">
+    <line x1="60" y1="112" x2="140" y2="112" />
+    <line x1="60" y1="140" x2="140" y2="140" />
+    <line x1="60" y1="168" x2="112" y2="168" />
+  </g>
+  <rect x="72" y="200" width="56" height="28" rx="14" fill="url(#docGradient)" opacity="0.85" />
+  <text x="100" y="218" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial" font-size="16" fill="#fff">KYC</text>
+</svg>

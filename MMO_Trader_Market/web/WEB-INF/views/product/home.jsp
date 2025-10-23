@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="mmo" uri="http://mmo.trader/tags/util" %>
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
@@ -95,14 +96,10 @@
                     <c:forEach var="product" items="${featuredProducts}">
                         <article class="product-card product-card--featured">
                             <div class="product-card__image">
-                                <c:choose>
-                                    <c:when test="${not empty product.primaryImageUrl}">
-                                        <img src="${product.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
-                                    </c:when>
-                                    <c:otherwise>
-                                        <div class="product-card__placeholder">Không có ảnh</div>
-                                    </c:otherwise>
-                                </c:choose>
+                                <c:set var="productImage"
+                                        value="${mmo:resolveProductImage(pageContext.request.contextPath, product.primaryImageUrl)}" />
+                                <img src="${productImage}"
+                                     alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
                             </div>
                             <div class="product-card__body">
                                 <header class="product-card__header">

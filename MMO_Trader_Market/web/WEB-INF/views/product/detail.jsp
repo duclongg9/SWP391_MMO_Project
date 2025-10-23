@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="mmo" uri="http://mmo.trader/tags/util" %>
 <fmt:setLocale value="vi_VN" scope="request" />
 <c:set var="cPath" value="${pageContext.request.contextPath}" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
@@ -11,19 +12,30 @@
         <div class="product-detail__gallery">
             <c:choose>
                 <c:when test="${empty galleryImages}">
+                    <div class="product-detail__main-image">
+                        <c:set var="placeholderImage"
+                               value="${mmo:resolveProductImage(pageContext.request.contextPath, null)}" />
+                        <img src="${placeholderImage}"
+                             alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
+                    </div>
                     <div class="product-detail__placeholder">Chưa có ảnh minh họa</div>
                 </c:when>
                 <c:otherwise>
                     <c:set var="mainImage" value="${galleryImages[0]}" />
+                    <c:set var="resolvedMainImage"
+                           value="${mmo:resolveProductImage(pageContext.request.contextPath, mainImage)}" />
                     <div class="product-detail__main-image">
-                        <img id="mainImage" src="${mainImage}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
+                        <img id="mainImage" src="${resolvedMainImage}"
+                             alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
                     </div>
                     <c:if test="${fn:length(galleryImages) gt 1}">
                         <ul class="product-detail__thumbnails">
                             <c:forEach var="image" items="${galleryImages}">
+                                <c:set var="resolvedThumbnail"
+                                       value="${mmo:resolveProductImage(pageContext.request.contextPath, image)}" />
                                 <li>
-                                    <button class="product-detail__thumbnail" type="button" data-image="${image}">
-                                        <img src="${image}" alt="Thumbnail sản phẩm" loading="lazy" />
+                                    <button class="product-detail__thumbnail" type="button" data-image="${resolvedThumbnail}">
+                                        <img src="${resolvedThumbnail}" alt="Thumbnail sản phẩm" loading="lazy" />
                                     </button>
                                 </li>
                             </c:forEach>
@@ -131,14 +143,10 @@
                 <c:forEach var="item" items="${similarProducts}">
                     <article class="product-card">
                         <div class="product-card__image">
-                            <c:choose>
-                                <c:when test="${not empty item.primaryImageUrl}">
-                                    <img src="${item.primaryImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}" loading="lazy" />
-                                </c:when>
-                                <c:otherwise>
-                                    <div class="product-card__placeholder">Không có ảnh</div>
-                                </c:otherwise>
-                            </c:choose>
+                            <c:set var="similarImage"
+                                   value="${mmo:resolveProductImage(pageContext.request.contextPath, item.primaryImageUrl)}" />
+                            <img src="${similarImage}"
+                                 alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}" loading="lazy" />
                         </div>
                         <div class="product-card__body">
                             <h4 class="product-card__title"><c:out value="${item.name}" /></h4>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="240" fill="url(#g)" rx="24" />
+  <g fill="#ffffff" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+    <text x="160" y="120" font-size="42" font-weight="600">MMO</text>
+    <text x="160" y="156" font-size="22" opacity="0.85">Product Preview</text>
+  </g>
+  <circle cx="50" cy="50" r="12" fill="#ffffff" opacity="0.25" />
+  <circle cx="275" cy="190" r="18" fill="#ffffff" opacity="0.18" />
+  <rect x="220" y="36" width="48" height="16" rx="8" fill="#ffffff" opacity="0.2" />
+  <rect x="44" y="186" width="96" height="12" rx="6" fill="#ffffff" opacity="0.2" />
+</svg>

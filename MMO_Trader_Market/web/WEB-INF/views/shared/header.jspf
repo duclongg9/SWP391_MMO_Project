@@ -1,5 +1,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib prefix="mmo" uri="http://mmo.trader/tags/util" %>
 
 <c:choose>
   <c:when test="${not empty headerBrandName}">
@@ -51,9 +52,8 @@
   <div class="site-header__inner">
     <div class="layout__brand site-header__brand">
       <a class="layout__logo site-header__logo" href="${homeHref}" title="${brandName}">
-        <c:if test="${not empty headerLogoSrc}">
-          <img class="site-header__logo-image" src="${headerLogoSrc}" alt="${brandName}" loading="lazy" />
-        </c:if>
+        <c:set var="logoSrc" value="${mmo:resolveLogoImage(pageContext.request.contextPath, headerLogoSrc)}" />
+        <img class="site-header__logo-image" src="${logoSrc}" alt="${brandName}" loading="lazy" />
         <span class="site-header__logo-text"><c:out value="${brandName}" /></span>
       </a>
 
