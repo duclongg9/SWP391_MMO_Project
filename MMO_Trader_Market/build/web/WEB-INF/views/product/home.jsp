@@ -48,10 +48,6 @@
                     </strong> người mua đã xác minh
                 </li>
             </ul>
-            <div class="landing__cta">
-                <a class="button button--primary" href="${pageContext.request.contextPath}/login.jsp">Đăng nhập</a>
-                <a class="button button--ghost" href="${pageContext.request.contextPath}/products">Quản trị sản phẩm</a>
-            </div>
         </div>
 
         <aside class="landing__categories" id="product-types">
