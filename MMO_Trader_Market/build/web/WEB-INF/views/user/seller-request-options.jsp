@@ -425,35 +425,7 @@
             </div>
         </div>
         
-        <!-- Lợi ích của KYC -->
-        <div class="benefits-section">
-            <div class="benefits-title">✨ Lợi ích khi hoàn thành KYC</div>
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <div class="benefit-icon">🛡️</div>
-                    <h4>Bảo mật & Uy tín</h4>
-                    <p>Tài khoản được xác minh, khách hàng tin tưởng hơn</p>
-                </div>
-                
-                <div class="benefit-card">
-                    <div class="benefit-icon">💰</div>
-                    <h4>Không giới hạn</h4>
-                    <p>Bán hàng không giới hạn số lượng và giá trị</p>
-                </div>
-                
-                <div class="benefit-card">
-                    <div class="benefit-icon">⚡</div>
-                    <h4>Ưu tiên hỗ trợ</h4>
-                    <p>Được hỗ trợ ưu tiên khi có vấn đề</p>
-                </div>
-                
-                <div class="benefit-card">
-                    <div class="benefit-icon">📈</div>
-                    <h4>Tăng doanh số</h4>
-                    <p>Sản phẩm được hiển thị ưu tiên trong tìm kiếm</p>
-                </div>
-            </div>
-        </div>
+ 
         
         <div class="note-section">
             <div class="note-title">
