@@ -87,9 +87,15 @@ public class OrderController extends BaseController {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .orElse(UUID.randomUUID().toString());
-        int orderId = orderService.placeOrderPending(userId, productId, quantity, idemKeyParam);
-        String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
-        response.sendRedirect(redirectUrl);
+        try {
+            int orderId = orderService.placeOrderPending(userId, productId, quantity, idemKeyParam);
+            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+            response.sendRedirect(redirectUrl);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
+        } catch (IllegalStateException ex) {
+            response.sendError(HttpServletResponse.SC_CONFLICT, ex.getMessage());
+        }
     }
 
     private void showMyOrders(HttpServletRequest request, HttpServletResponse response)
