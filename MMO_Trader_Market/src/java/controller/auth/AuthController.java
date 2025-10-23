@@ -19,7 +19,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Handles login and logout requests following the MVC pattern.
+ * Điều phối luồng "Đăng nhập" cho người dùng đã có tài khoản.
+ * <p>
+ * - Hỗ trợ đăng nhập nội bộ bằng email/mật khẩu và ghi nhớ phiên.
+ * - Chuyển hướng khách (Role Guest) sang trang đăng nhập của hệ thống khác (Google) khi cần.
+ * - Cung cấp chức năng đăng xuất và dọn dẹp phiên, cookie nhớ tài khoản.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 @WebServlet(name = "AuthController", urlPatterns = {"/auth"})
 public class AuthController extends BaseController {
