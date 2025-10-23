@@ -141,7 +141,7 @@
     <div class="filterbar__actions">
       <button type="submit" class="btn btn--primary">Lọc</button>
       <a class="btn btn--reset"
-         href="${pageContext.request.contextPath}/wallet/transactions">Xóa bộ lọc</a>
+         href="${pageContext.request.contextPath}/wallet">Xóa bộ lọc</a>
     </div>
   </div>
 
