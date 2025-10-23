@@ -13,15 +13,16 @@ public class OrderRow {
     private final BigDecimal totalAmount;
     private final String status;
     private final Date createdAt;
+ 
+    public record OrderRow(int id, String productName, BigDecimal totalAmount, String status, Date createdAt) {
 
-    public OrderRow(int id, String productName, BigDecimal totalAmount, String status, Date createdAt) {
-        this.id = id;
-        this.productName = productName;
-        this.totalAmount = totalAmount;
-        this.status = status;
-        this.createdAt = createdAt == null ? null : new Date(createdAt.getTime());
-    }
-
+    /**
+     * JSP EL resolves bean properties via conventional getters. Records only
+     * expose accessor methods matching the component name (for example
+     * {@code id()}). Tomcat's EL implementation does not treat those as bean
+     * properties, so we provide explicit getter aliases to keep the view logic
+     * unchanged.
+     */
     public int getId() {
         return id;
     }
@@ -39,8 +40,9 @@ public class OrderRow {
     }
 
     public Date getCreatedAt() {
-        return createdAt == null ? null : new Date(createdAt.getTime());
+        return createdAt;
     }
+
 
     @Override
     public String toString() {
