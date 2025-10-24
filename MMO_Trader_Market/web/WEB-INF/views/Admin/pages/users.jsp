@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <%
     // đọc lại params để set mặc định vào input
@@ -133,49 +133,69 @@
             </tr>
             </thead>
             <tbody>
-            <c:forEach var ="u" items="${userList}" varStatus="st">
-                <tr>
-                    <td class="text-center">${st.index + 1}</td>
-                    <td>${u.name}</td>
-                    <td>${u.email}</td>
-                    <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy" /></td>
-                    <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy" /></td>
-                    <td>${u.roleName}</td>
-                    <td><c:choose>
-                        <c:when test="${u.status == true}">
-                            <span class="badge bg-success">Hoạt động</span>
-                        </c:when>
-                        <c:otherwise>
-                            <span class="badge bg-secondary">Không hoạt động</span>
-                        </c:otherwise>
-                    </c:choose></td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="delUser(${u.id})">
-                            <i class="bi bi-flag"></i> Ban
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary"
-                                onclick="delUser(${u.id})">
-                            <i class="bi bi-flag"></i> UnBan
-                        </button>
-                    </td>
-                </tr>
+            <c:forEach var="u" items="${userList}" varStatus="st">
+                <c:if test="${u.roleName ne 'ADMIN'}">
+                    <tr>
+                        <td class="text-center">${st.index + 1}</td>
+                        <td>${u.name}</td>
+                        <td>${u.email}</td>
+                        <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
+                        <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
+                        <td>${u.roleName}</td>
+                        <td>
+                            <c:choose>
+                                <c:when test="${u.status == true}">
+                                    <span class="badge bg-success">Hoạt động</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="badge bg-secondary">Không hoạt động</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </td>
+
+                        <td class="text-center">
+                            <!-- Ban -->
+                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="${u.id}">
+                                <input type="hidden" name="action" value="ban">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        <c:if test="${u.status != true}">disabled</c:if>>
+                                    <i class="bi bi-flag"></i> Ban
+                                </button>
+                            </form>
+
+                            <!-- Unban -->
+                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="${u.id}">
+                                <input type="hidden" name="action" value="unban">
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        <c:if test="${u.status == true}">disabled</c:if>>
+                                    <i class="bi bi-flag"></i> Unban
+                                </button>
+                            </form>
+                        </td>
+
+                    </tr>
+                </c:if>
             </c:forEach>
             </tbody>
+
+
         </table>
     </div>
 </div>
 
 <script>
-    const base = '<c:out value="${pageContext.request.contextPath}"/>'; // "/mmo"
+    // context path, ví dụ "/mmo"
+    const base = '<c:out value="${pageContext.request.contextPath}"/>';
 
-    // Nút tìm kiếm: chỉ khi bấm mới submit
+    // Nút tìm kiếm
     document.getElementById('btnSearch').addEventListener('click', function (e) {
         e.preventDefault();
         const q    = document.getElementById('keyword').value.trim();
         const from = document.getElementById('fromDate').value.trim();
         const to   = document.getElementById('toDate').value.trim();
-        const role = document.getElementById('role').value;      // giữ nguyên đang chọn
+        const role = document.getElementById('role').value;
 
         const params = new URLSearchParams();
         if (q)    params.set('q', q);
@@ -183,10 +203,10 @@
         if (to)   params.set('to', to);
         if (role) params.set('role', role);
 
-        window.location.href = base + '/admin/users' + (params.toString()? ('?' + params.toString()) : '');
+        window.location.href = base + '/admin/users' + (params.toString() ? ('?' + params.toString()) : '');
     });
 
-    // Vai trò: đổi là lọc ngay
+    // Đổi vai trò lọc ngay
     document.getElementById('role').addEventListener('change', function () {
         const role = this.value;
         const q    = document.getElementById('keyword').value.trim();
@@ -199,20 +219,72 @@
         if (to)   params.set('to', to);
         if (role) params.set('role', role);
 
-        window.location.href = base + '/admin/users' + (params.toString()? ('?' + params.toString()) : '');
+        window.location.href = base + '/admin/users' + (params.toString() ? ('?' + params.toString()) : '');
     });
 
+    // (Giữ nếu bạn còn dùng nút xóa)
     async function delUser(id) {
-        console.log('delete id =', id);
         if (!Number.isInteger(id)) { alert('ID không hợp lệ'); return; }
         if (!confirm('Xóa người dùng này?')) return;
 
         const url = base + '/admin/users/' + id;
         const res  = await fetch(url, { method: 'DELETE' });
         const text = await res.text();
-        console.log('DELETE', res.status, url, text);
-
         if (res.ok) location.reload();
         else alert(`Xóa thất bại (HTTP ${res.status}): ${text}`);
     }
+
+    // ====== BAN / UNBAN ======
+    (function () {
+        // Có context path thì base = "/mmo"; nếu deploy ở root thì base = ""
+        const base = '<c:out value="${pageContext.request.contextPath}"/>';
+
+        function getId(btn) {
+            const id = Number(btn?.dataset?.id);
+            if (!Number.isInteger(id)) {
+                console.error('Không lấy được id từ button:', btn);
+                alert('ID không hợp lệ');
+                throw new Error('missing id');
+            }
+            return id;
+        }
+
+        window.banUser = async function (btn) {
+            const id = getId(btn);
+            if (!confirm('Ban tài khoản này?')) return;
+
+            const url = `${base}/admin/users/${id}/ban`;
+            console.log('POST', url); // debug
+
+            try {
+                const res  = await fetch(url, { method: 'POST' });
+                const text = await res.text();
+                if (res.ok) location.reload();
+                else alert(`Ban thất bại (HTTP ${res.status}): ${text}`);
+            } catch (e) {
+                console.error(e);
+                alert('Lỗi kết nối khi Ban.');
+            }
+        };
+
+        window.unbanUser = async function (btn) {
+            const id = getId(btn);
+            if (!confirm('Mở ban tài khoản này?')) return;
+
+            const url = `${base}/admin/users/${id}/unban`;
+            console.log('POST', url); // debug
+
+            try {
+                const res  = await fetch(url, { method: 'POST' });
+                const text = await res.text();
+                if (res.ok) location.reload();
+                else alert(`Unban thất bại (HTTP ${res.status}): ${text}`);
+            } catch (e) {
+                console.error(e);
+                alert('Lỗi kết nối khi Unban.');
+            }
+        };
+    })();
+
 </script>
+
