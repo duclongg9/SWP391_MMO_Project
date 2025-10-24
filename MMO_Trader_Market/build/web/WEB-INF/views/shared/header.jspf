@@ -71,28 +71,65 @@
 
     <c:if test="${not empty navItems}">
       <nav class="menu menu--horizontal site-header__nav" aria-label="Chuyển hướng chính">
+        <c:set var="navProductSelectId" value="site-nav-product-type" />
         <c:forEach var="item" items="${navItems}">
           <c:set var="itemClass" value="menu__item" />
           <c:if test="${not empty item['modifier']}">
             <c:set var="itemClass" value="${itemClass} ${item['modifier']}" />
           </c:if>
+          <c:choose>
+            <c:when test="${item['type'] == 'productDropdown'}">
+              <div class="${itemClass}">
+                <div class="menu__dropdown">
+                  <label class="menu__dropdown-label" for="${navProductSelectId}">Sản phẩm</label>
+                  <select id="${navProductSelectId}" class="menu__dropdown-select"
+                          data-base="${pageContext.request.contextPath}/products?type=">
+                    <option value="" disabled <c:if test="${empty item['currentType']}">selected</c:if>>Chọn loại</option>
+                    <c:forEach var="option" items="${item['options']}">
+                      <option value="${option.code}" <c:if test="${option.code == item['currentType']}">selected</c:if>>
+                        <c:out value="${option.label}" />
+                      </option>
+                    </c:forEach>
+                  </select>
+                </div>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
+                <c:if test="${not empty item['icon']}">
+                  <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
+                </c:if>
 
-          <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
-            <c:if test="${not empty item['icon']}">
-              <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
-            </c:if>
+                <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
+                <c:if test="${not empty textVal}">
+                  <span class="menu__text"><c:out value="${textVal}" /></span>
+                </c:if>
 
-            <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
-            <c:if test="${not empty textVal}">
-              <span class="menu__text"><c:out value="${textVal}" /></span>
-            </c:if>
-
-            <c:if test="${not empty item['srText']}">
-              <span class="sr-only"><c:out value="${item['srText']}" /></span>
-            </c:if>
-          </a>
+                <c:if test="${not empty item['srText']}">
+                  <span class="sr-only"><c:out value="${item['srText']}" /></span>
+                </c:if>
+              </a>
+            </c:otherwise>
+          </c:choose>
         </c:forEach>
       </nav>
     </c:if>
   </div>
 </header>
+<script>
+  (function() {
+    var select = document.getElementById('site-nav-product-type');
+    if (!select || select.dataset.enhanced === 'true') {
+      return;
+    }
+    select.dataset.enhanced = 'true';
+    select.addEventListener('change', function() {
+      var value = select.value;
+      if (!value) {
+        return;
+      }
+      var base = select.dataset.base || '';
+      window.location.href = base + encodeURIComponent(value);
+    });
+  })();
+</script>

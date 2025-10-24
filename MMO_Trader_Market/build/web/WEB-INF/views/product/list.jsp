@@ -8,25 +8,48 @@
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content">
     <section class="product-list">
-        <div class="product-list__header">
-            <h2>Khám phá sản phẩm</h2>
-            <p>Tìm kiếm, lọc theo shop và mua ngay những sản phẩm bạn cần.</p>
-        </div>
-        <c:set var="filterFormAction" value="${cPath}/products" />
-        <c:set var="filterIncludeSize" value="${true}" />
-        <c:set var="filterPageSize" value="${size}" />
-        <c:set var="filterQuery" value="${query}" />
-        <c:set var="filterType" value="${selectedType}" />
-        <c:set var="filterSubtype" value="${selectedSubtype}" />
-        <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
-        <div class="product-list__meta">
-            <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
-            <span>Trang ${page} / ${totalPages}</span>
-        </div>
-        <c:choose>
-            <c:when test="${not empty items}">
-                <div class="product-grid">
-                    <c:forEach var="p" items="${items}">
+        <div class="product-browser">
+            <aside class="product-browser__sidebar">
+                <form id="product-subtype-form" class="product-sidebar" method="get" action="${cPath}/products">
+                    <input type="hidden" name="type" value="${selectedType}" />
+                    <input type="hidden" name="page" value="1" />
+                    <input type="hidden" name="pageSize" value="${pageSize}" />
+                    <div class="product-sidebar__header">
+                        <h2 class="product-sidebar__title"><c:out value="${selectedTypeLabel}" /></h2>
+                        <p class="product-sidebar__subtitle">Chọn phân loại chi tiết để lọc kết quả.</p>
+                    </div>
+                    <div class="product-sidebar__group">
+                        <c:choose>
+                            <c:when test="${not empty subtypeOptions}">
+                                <c:forEach var="option" items="${subtypeOptions}">
+                                    <label class="product-sidebar__option">
+                                        <input type="checkbox" name="subtype" value="${option.code}"
+                                               <c:if test="${selectedSubtypes contains option.code}">checked</c:if> />
+                                        <span><c:out value="${option.label}" /></span>
+                                    </label>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <p class="product-sidebar__empty">Không có phân loại chi tiết cho danh mục này.</p>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                    <button class="button button--primary product-sidebar__apply" type="submit">Áp dụng lọc</button>
+                </form>
+            </aside>
+            <div class="product-browser__content">
+                <header class="product-browser__header">
+                    <h2><c:out value="${selectedTypeLabel}" /></h2>
+                    <p class="product-browser__description">Có thể chọn nhiều phân loại cùng lúc để thu hẹp danh sách sản phẩm.</p>
+                </header>
+                <div class="product-list__meta">
+                    <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
+                    <span>Trang ${page} / ${totalPages}</span>
+                </div>
+                <c:choose>
+                    <c:when test="${not empty items}">
+                        <div class="product-grid">
+                            <c:forEach var="p" items="${items}">
                         <article class="product-card">
                             <div class="product-card__image">
                                 <c:choose>
@@ -82,66 +105,73 @@
                             </div>
                         </article>
                     </c:forEach>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="product-card product-card--empty">
-                    <p>Không tìm thấy sản phẩm phù hợp.</p>
-                </div>
-            </c:otherwise>
-        </c:choose>
-        <c:if test="${totalPages gt 1}">
-            <nav class="pagination" aria-label="Phân trang sản phẩm">
-                <c:url var="prevUrl" value="/products">
-                    <c:param name="page" value="${page - 1}" />
-                    <c:param name="size" value="${size}" />
-                    <c:if test="${not empty query}">
-                        <c:param name="q" value="${query}" />
-                    </c:if>
-                    <c:if test="${not empty selectedType}">
-                        <c:param name="type" value="${selectedType}" />
-                    </c:if>
-                    <c:if test="${not empty selectedSubtype}">
-                        <c:param name="subtype" value="${selectedSubtype}" />
-                    </c:if>
-                </c:url>
-                <c:url var="nextUrl" value="/products">
-                    <c:param name="page" value="${page + 1}" />
-                    <c:param name="size" value="${size}" />
-                    <c:if test="${not empty query}">
-                        <c:param name="q" value="${query}" />
-                    </c:if>
-                    <c:if test="${not empty selectedType}">
-                        <c:param name="type" value="${selectedType}" />
-                    </c:if>
-                    <c:if test="${not empty selectedSubtype}">
-                        <c:param name="subtype" value="${selectedSubtype}" />
-                    </c:if>
-                </c:url>
-                <span class="pagination__summary">Trang ${page} / ${totalPages}</span>
-                <a class="pagination__item ${page le 1 ? 'pagination__item--disabled' : ''}" href="${page le 1 ? '#' : prevUrl}" aria-disabled="${page le 1}">«</a>
-                <c:forEach var="i" begin="1" end="${totalPages}">
-                    <c:url var="pageUrl" value="/products">
-                        <c:param name="page" value="${i}" />
-                        <c:param name="size" value="${size}" />
-                        <c:if test="${not empty query}">
-                            <c:param name="q" value="${query}" />
-                        </c:if>
-                        <c:if test="${not empty selectedType}">
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="product-card product-card--empty">
+                            <p>Không tìm thấy sản phẩm phù hợp.</p>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+                <c:if test="${totalPages gt 1}">
+                    <nav class="pagination" aria-label="Phân trang sản phẩm">
+                        <c:url var="prevUrl" value="/products">
                             <c:param name="type" value="${selectedType}" />
-                        </c:if>
-                        <c:if test="${not empty selectedSubtype}">
-                            <c:param name="subtype" value="${selectedSubtype}" />
-                        </c:if>
-                    </c:url>
-                    <a class="pagination__item ${i == page ? 'pagination__item--active' : ''}"
-                       href="${pageUrl}">${i}</a>
-                </c:forEach>
-                <a class="pagination__item ${page ge totalPages ? 'pagination__item--disabled' : ''}"
-                   href="${page ge totalPages ? '#' : nextUrl}" aria-disabled="${page ge totalPages}">»</a>
-            </nav>
-        </c:if>
+                            <c:param name="page" value="${page - 1}" />
+                            <c:param name="pageSize" value="${pageSize}" />
+                            <c:forEach var="subtype" items="${selectedSubtypes}">
+                                <c:param name="subtype" value="${subtype}" />
+                            </c:forEach>
+                        </c:url>
+                        <c:url var="nextUrl" value="/products">
+                            <c:param name="type" value="${selectedType}" />
+                            <c:param name="page" value="${page + 1}" />
+                            <c:param name="pageSize" value="${pageSize}" />
+                            <c:forEach var="subtype" items="${selectedSubtypes}">
+                                <c:param name="subtype" value="${subtype}" />
+                            </c:forEach>
+                        </c:url>
+                        <span class="pagination__summary">Trang ${page} / ${totalPages}</span>
+                        <a class="pagination__item ${page le 1 ? 'pagination__item--disabled' : ''}"
+                           href="${page le 1 ? '#' : prevUrl}" aria-disabled="${page le 1}">«</a>
+                        <c:forEach var="i" begin="1" end="${totalPages}">
+                            <c:url var="pageUrl" value="/products">
+                                <c:param name="type" value="${selectedType}" />
+                                <c:param name="page" value="${i}" />
+                                <c:param name="pageSize" value="${pageSize}" />
+                                <c:forEach var="subtype" items="${selectedSubtypes}">
+                                    <c:param name="subtype" value="${subtype}" />
+                                </c:forEach>
+                            </c:url>
+                            <a class="pagination__item ${i == page ? 'pagination__item--active' : ''}"
+                               href="${pageUrl}">${i}</a>
+                        </c:forEach>
+                        <a class="pagination__item ${page ge totalPages ? 'pagination__item--disabled' : ''}"
+                           href="${page ge totalPages ? '#' : nextUrl}" aria-disabled="${page ge totalPages}">»</a>
+                    </nav>
+                </c:if>
+            </div>
+        </div>
     </section>
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<script>
+  (function() {
+    var form = document.getElementById('product-subtype-form');
+    if (!form || form.dataset.enhanced === 'true') {
+      return;
+    }
+    form.dataset.enhanced = 'true';
+    var checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(input) {
+      input.addEventListener('change', function() {
+        var pageInput = form.querySelector('input[name="page"]');
+        if (pageInput) {
+          pageInput.value = '1';
+        }
+        form.submit();
+      });
+    });
+  })();
+</script>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
