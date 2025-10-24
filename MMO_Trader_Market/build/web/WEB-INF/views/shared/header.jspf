@@ -76,21 +76,46 @@
           <c:if test="${not empty item['modifier']}">
             <c:set var="itemClass" value="${itemClass} ${item['modifier']}" />
           </c:if>
+          <c:choose>
+            <c:when test="${item['dropdown']}">
+              <c:set var="dropdownClass" value="${itemClass} menu__item--dropdown" />
+              <c:set var="selectedLabel" value="${empty item['selectedLabel'] ? item['text'] : item['selectedLabel']}" />
+              <div class="${dropdownClass}">
+                <button class="menu__dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                  <span class="menu__text"><c:out value="${empty item['text'] ? item['label'] : item['text']}" /></span>
+                  <span class="menu__dropdown-current"><c:out value="${selectedLabel}" /></span>
+                  <span class="menu__dropdown-icon" aria-hidden="true">▾</span>
+                </button>
+                <div class="menu__dropdown-panel">
+                  <c:forEach var="child" items="${item['children']}">
+                    <c:set var="childClass" value="menu__dropdown-item" />
+                    <c:if test="${child['active']}">
+                      <c:set var="childClass" value="${childClass} menu__dropdown-item--active" />
+                    </c:if>
+                    <a class="${childClass}" href="${empty child['href'] ? '#' : child['href']}">
+                      <c:out value="${empty child['text'] ? child['label'] : child['text']}" />
+                    </a>
+                  </c:forEach>
+                </div>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
+                <c:if test="${not empty item['icon']}">
+                  <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
+                </c:if>
 
-          <a class="${itemClass}" href="${empty item['href'] ? '#' : item['href']}">
-            <c:if test="${not empty item['icon']}">
-              <span class="menu__icon" aria-hidden="true"><c:out value="${item['icon']}" /></span>
-            </c:if>
+                <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
+                <c:if test="${not empty textVal}">
+                  <span class="menu__text"><c:out value="${textVal}" /></span>
+                </c:if>
 
-            <c:set var="textVal" value="${empty item['text'] ? item['label'] : item['text']}" />
-            <c:if test="${not empty textVal}">
-              <span class="menu__text"><c:out value="${textVal}" /></span>
-            </c:if>
-
-            <c:if test="${not empty item['srText']}">
-              <span class="sr-only"><c:out value="${item['srText']}" /></span>
-            </c:if>
-          </a>
+                <c:if test="${not empty item['srText']}">
+                  <span class="sr-only"><c:out value="${item['srText']}" /></span>
+                </c:if>
+              </a>
+            </c:otherwise>
+          </c:choose>
         </c:forEach>
       </nav>
     </c:if>

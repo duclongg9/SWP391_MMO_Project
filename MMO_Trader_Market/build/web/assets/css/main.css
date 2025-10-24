@@ -379,20 +379,96 @@ justify-content: space-between;
     gap: 2rem;
 }
 
-.product-list__header {
+.product-browse {
+    display: grid;
+    gap: 1.75rem;
+}
+
+.product-browse__header {
     text-align: center;
     display: grid;
     gap: 0.4rem;
 }
 
-.product-list__header h2 {
+.product-browse__header h2 {
     margin: 0;
     font-size: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem);
 }
 
-.product-list__header p {
+.product-browse__header p {
     margin: 0;
     color: var(--text-light);
+}
+
+.product-browse__layout {
+    display: grid;
+    gap: 1.75rem;
+}
+
+.product-browse__sidebar {
+    align-self: start;
+}
+
+.product-filter-sidebar {
+    background: var(--surface-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    display: grid;
+    gap: 1rem;
+}
+
+.product-filter-sidebar__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.product-filter-sidebar__group {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.product-filter-sidebar__option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.product-filter-sidebar__option input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+.product-filter-sidebar__empty {
+    margin: 0;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.product-browse__results {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.product-browse__meta {
+    justify-content: space-between;
+}
+
+@media (min-width: 992px) {
+    .product-browse__layout {
+        grid-template-columns: minmax(220px, 260px) 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-filter-sidebar {
+        padding: 1.25rem;
+    }
 }
 
 .product-filters {
@@ -760,6 +836,10 @@ border-radius: var(--radius-sm);
     background: rgba(192, 57, 43, 0.18);
 }
 
+.button--block {
+    width: 100%;
+}
+
 /* Alerts */
 .alert {
     padding: 0.85rem 1rem;
@@ -843,6 +923,95 @@ padding: 0.6rem 1rem;
     background: var(--primary-color);
     color: #fff;
     box-shadow: 0 12px 30px rgba(0, 91, 150, 0.25);
+}
+
+.menu__item--dropdown {
+    position: relative;
+}
+
+.menu__dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.menu__dropdown-toggle:focus {
+    outline: 2px solid rgba(0, 91, 150, 0.25);
+    outline-offset: 2px;
+}
+
+.menu__item--dropdown .menu__dropdown-toggle:hover,
+.menu__item--dropdown .menu__dropdown-toggle:focus-visible,
+.menu__item--dropdown.menu__item--active .menu__dropdown-toggle {
+    background: rgba(0, 91, 150, 0.12);
+}
+
+.menu__dropdown-current {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.menu__dropdown-icon {
+    font-size: 0.65rem;
+    color: var(--text-light);
+}
+
+.menu__dropdown-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    min-width: 230px;
+    background: var(--surface-color);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: var(--transition);
+    z-index: 20;
+}
+
+.menu__item--dropdown:hover .menu__dropdown-panel,
+.menu__item--dropdown:focus-within .menu__dropdown-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu__dropdown-item {
+    display: block;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.menu__dropdown-item:hover,
+.menu__dropdown-item:focus {
+    background: rgba(0, 91, 150, 0.12);
+    color: var(--primary-color);
+}
+
+.menu__dropdown-item--active {
+    background: rgba(0, 91, 150, 0.12);
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .sr-only {
