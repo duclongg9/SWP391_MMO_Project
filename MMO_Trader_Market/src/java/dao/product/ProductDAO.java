@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -54,16 +55,15 @@ public class ProductDAO extends BaseDAO {
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
     /**
-     * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc cơ bản.
+     * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc loại/phân loại.
      *
-     * @param keyword        từ khóa tìm kiếm theo tên/mô tả
-     * @param productType    loại sản phẩm lọc theo mã
-     * @param productSubtype phân loại con
-     * @param limit          số bản ghi mỗi trang
-     * @param offset         vị trí bắt đầu lấy dữ liệu
+     * @param productType     loại sản phẩm bắt buộc
+     * @param productSubtypes danh sách phân loại con cần lọc (có thể rỗng)
+     * @param limit           số bản ghi mỗi trang
+     * @param offset          vị trí bắt đầu lấy dữ liệu
      * @return danh sách sản phẩm kèm thông tin shop
      */
-    public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
+    public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
             int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -72,15 +72,11 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
         }
         sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
@@ -103,14 +99,13 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc.
+     * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc loại/phân loại.
      *
-     * @param keyword        từ khóa tìm kiếm
-     * @param productType    loại sản phẩm
-     * @param productSubtype phân loại con
+     * @param productType     loại sản phẩm
+     * @param productSubtypes danh sách phân loại con
      * @return tổng số sản phẩm thỏa điều kiện
      */
-    public long countAvailable(String keyword, String productType, String productSubtype) {
+    public long countAvailableByType(String productType, List<String> productSubtypes) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -119,15 +114,11 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
         }
         sql.append(") AS available_products");
 
