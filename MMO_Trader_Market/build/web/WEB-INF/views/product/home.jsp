@@ -191,8 +191,8 @@
                 <ol class="tips-list">
                     <c:forEach var="config" items="${systemNotes}">
                         <li>
-                            <strong><c:out value="${config.configKey}" />:</strong>
-                            <c:out value="${config.configValue}" />
+                            <strong><c:out value="${config.description}" /></strong>
+                            <%--<c:out value="${config.configValue}" />--%>
                         </li>
                     </c:forEach>
                 </ol>
