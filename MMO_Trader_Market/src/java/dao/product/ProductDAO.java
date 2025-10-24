@@ -50,7 +50,7 @@ public class ProductDAO extends BaseDAO {
             + "FROM products p JOIN shops s ON s.id = p.shop_id "
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
-    public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
+    public List<ProductListRow> findAvailablePaged(String productType, List<String> productSubtypes,
             int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -59,15 +59,16 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            for (int i = 0; i < productSubtypes.size(); i++) {
+                if (i > 0) {
+                    sql.append(", ");
+                }
+                sql.append("?");
+            }
+            sql.append(")");
+            params.addAll(productSubtypes);
         }
         sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
@@ -89,7 +90,7 @@ public class ProductDAO extends BaseDAO {
         }
     }
 
-    public long countAvailable(String keyword, String productType, String productSubtype) {
+    public long countAvailable(String productType, List<String> productSubtypes) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -98,15 +99,16 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
-        }
-        if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
-            String pattern = buildLikePattern(keyword);
-            params.add(pattern);
-            params.add(pattern);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            for (int i = 0; i < productSubtypes.size(); i++) {
+                if (i > 0) {
+                    sql.append(", ");
+                }
+                sql.append("?");
+            }
+            sql.append(")");
+            params.addAll(productSubtypes);
         }
         sql.append(") AS available_products");
 
@@ -369,56 +371,34 @@ public class ProductDAO extends BaseDAO {
         return value != null && !value.trim().isEmpty();
     }
 
-    private String buildLikePattern(String keyword) {
-        return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
-    }
-//
-//    private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
-//        for (int i = 0; i < params.size(); i++) {
-//            Object value = params.get(i);
-//            int index = i + 1;
-//            if (value instanceof Integer intValue) {
-//                statement.setInt(index, intValue);
-//            } else if (value instanceof Long longValue) {
-//                statement.setLong(index, longValue);
-//            } else if (value instanceof String stringValue) {
-//                statement.setString(index, stringValue);
-//            } else if (value instanceof BigDecimal decimalValue) {
-//                statement.setBigDecimal(index, decimalValue);
-//            } else {
-//                statement.setObject(index, value);
-//            }
-//        }
-//    }
-
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
-    for (int i = 0; i < params.size(); i++) {
-        Object value = params.get(i);
-        int index = i + 1;
+        for (int i = 0; i < params.size(); i++) {
+            Object value = params.get(i);
+            int index = i + 1;
 
-        if (value == null) {
-            statement.setObject(index, null);
-        } else if (value instanceof Integer) {
-            statement.setInt(index, (Integer) value);
-        } else if (value instanceof Long) {
-            statement.setLong(index, (Long) value);
-        } else if (value instanceof String) {
-            statement.setString(index, (String) value);
-        } else if (value instanceof BigDecimal) {
-            statement.setBigDecimal(index, (BigDecimal) value);
-        } else if (value instanceof java.util.Date) {
-            statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
-        } else if (value instanceof Boolean) {
-            statement.setBoolean(index, (Boolean) value);
-        } else if (value instanceof Double) {
-            statement.setDouble(index, (Double) value);
-        } else if (value instanceof Float) {
-            statement.setFloat(index, (Float) value);
-        } else {
-            statement.setObject(index, value);
+            if (value == null) {
+                statement.setObject(index, null);
+            } else if (value instanceof Integer) {
+                statement.setInt(index, (Integer) value);
+            } else if (value instanceof Long) {
+                statement.setLong(index, (Long) value);
+            } else if (value instanceof String) {
+                statement.setString(index, (String) value);
+            } else if (value instanceof BigDecimal) {
+                statement.setBigDecimal(index, (BigDecimal) value);
+            } else if (value instanceof java.util.Date) {
+                statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
+            } else if (value instanceof Boolean) {
+                statement.setBoolean(index, (Boolean) value);
+            } else if (value instanceof Double) {
+                statement.setDouble(index, (Double) value);
+            } else if (value instanceof Float) {
+                statement.setFloat(index, (Float) value);
+            } else {
+                statement.setObject(index, value);
+            }
         }
     }
-}
 
     private void appendSearchClause(String keyword, StringBuilder sql, List<String> parameters) {
         if (keyword == null || keyword.isBlank()) {

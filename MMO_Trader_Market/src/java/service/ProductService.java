@@ -21,11 +21,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Contains business logic related to products.
@@ -95,22 +97,24 @@ public class ProductService {
         return summaries;
     }
 
-    public PagedResult<ProductSummaryView> searchPublicProducts(String productType, String productSubtype,
-            String keyword, int page, int size) {
+    public PagedResult<ProductSummaryView> searchPublicProducts(String productType,
+            List<String> productSubtypes, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
-        String normalizedKeyword = normalize(keyword);
         String normalizedType = normalizeFilter(productType);
-        String normalizedSubtype = normalizeSubtype(normalizedType, productSubtype);
+        if (normalizedType == null) {
+            throw new IllegalArgumentException("Loại sản phẩm không hợp lệ");
+        }
+        List<String> normalizedSubtypes = normalizeSubtypeList(normalizedType, productSubtypes);
 
-        long totalItems = productDAO.countAvailable(normalizedKeyword, normalizedType, normalizedSubtype);
+        long totalItems = productDAO.countAvailable(normalizedType, normalizedSubtypes);
         int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
         int currentPage = Math.min(safePage, totalPages);
         int offset = (currentPage - 1) * safeSize;
 
         List<ProductSummaryView> items = totalItems == 0
                 ? List.of()
-                : productDAO.findAvailablePaged(normalizedKeyword, normalizedType, normalizedSubtype, safeSize, offset)
+                : productDAO.findAvailablePaged(normalizedType, normalizedSubtypes, safeSize, offset)
                 .stream()
                 .map(this::toSummaryView)
                 .toList();
@@ -181,6 +185,24 @@ public class ProductService {
                 .findFirst()
                 .map(ProductTypeOption::getSubtypes)
                 .orElse(List.of());
+    }
+
+    public Optional<ProductTypeOption> findTypeOption(String code) {
+        String normalized = normalizeFilter(code);
+        if (normalized == null) {
+            return Optional.empty();
+        }
+        return TYPE_OPTIONS.stream()
+                .filter(option -> option.getCode().equals(normalized))
+                .findFirst();
+    }
+
+    public List<String> filterValidSubtypes(String productType, List<String> subtypes) {
+        String normalizedType = normalizeFilter(productType);
+        if (normalizedType == null) {
+            return List.of();
+        }
+        return normalizeSubtypeList(normalizedType, subtypes);
     }
 
     public List<Products> homepageHighlights() {
@@ -368,17 +390,30 @@ public class ProductService {
         return TYPE_LABELS.containsKey(upper) ? upper : null;
     }
 
-    private String normalizeSubtype(String type, String subtype) {
-        String normalizedSubtype = normalize(subtype);
-        if (normalizedSubtype == null) {
-            return null;
+    private List<String> normalizeSubtypeList(String normalizedType, List<String> subtypes) {
+        if (normalizedType == null || subtypes == null || subtypes.isEmpty()) {
+            return List.of();
         }
-        String upper = normalizedSubtype.toUpperCase(Locale.ROOT);
-        boolean exists = TYPE_OPTIONS.stream()
-                .filter(option -> type == null || option.getCode().equals(type))
-                .flatMap(option -> option.getSubtypes().stream())
-                .anyMatch(option -> option.getCode().equals(upper));
-        return exists ? upper : null;
+        Optional<ProductTypeOption> typeOption = findTypeOption(normalizedType);
+        if (typeOption.isEmpty()) {
+            return List.of();
+        }
+        Set<String> allowed = new LinkedHashSet<>();
+        for (ProductSubtypeOption option : typeOption.get().getSubtypes()) {
+            allowed.add(option.getCode());
+        }
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String subtype : subtypes) {
+            String normalizedValue = normalize(subtype);
+            if (normalizedValue == null) {
+                continue;
+            }
+            String upper = normalizedValue.toUpperCase(Locale.ROOT);
+            if (allowed.contains(upper)) {
+                normalized.add(upper);
+            }
+        }
+        return normalized.isEmpty() ? List.of() : List.copyOf(normalized);
     }
 
     private boolean hasVariants(String variantSchema) {
