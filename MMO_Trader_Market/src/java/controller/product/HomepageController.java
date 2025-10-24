@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.Shops;
 import model.SystemConfigs;
 import model.view.ConversationMessageView;
@@ -12,6 +13,7 @@ import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
 import model.view.product.ProductSummaryView;
 import service.HomepageService;
+import units.RoleHomeResolver;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,9 +24,10 @@ import java.util.Map;
 /**
  * Điều phối luồng "Trang chủ" dành cho khách truy cập.
  * <p>
- * - Hiển thị sản phẩm nổi bật, danh mục chính và thông tin tổng quan thị trường.
- * - Cung cấp dữ liệu shop, FAQ và thông điệp giúp người mới nắm được bức tranh chung.
- * - Chuẩn bị bộ lọc mặc định để người dùng bắt đầu hành trình tìm sản phẩm.
+ * - Hiển thị sản phẩm nổi bật, danh mục chính và thông tin tổng quan thị
+ * trường. - Cung cấp dữ liệu shop, FAQ và thông điệp giúp người mới nắm được
+ * bức tranh chung. - Chuẩn bị bộ lọc mặc định để người dùng bắt đầu hành trình
+ * tìm sản phẩm.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -39,7 +42,7 @@ public class HomepageController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-                if (super.redirectAdminHome(request, response)) {
+        if (redirectAdminHomeIfPossible(request, response)) {
             return;
         }
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
@@ -108,5 +111,23 @@ public class HomepageController extends BaseController {
         entry.put("title", title);
         entry.put("description", description);
         return entry;
+    }
+    
+    private boolean redirectAdminHomeIfPossible(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        try {
+            return super.redirectAdminHome(request, response);
+        } catch (NoSuchMethodError ex) {
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                return false;
+            }
+            Object role = session.getAttribute("userRole");
+            if (role instanceof Integer && (Integer) role == 1) {
+                response.sendRedirect(request.getContextPath() + RoleHomeResolver.ADMIN_HOME);
+                return true;
+            }
+            return false;
+        }
     }
 }
