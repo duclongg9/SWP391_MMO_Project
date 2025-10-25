@@ -18,7 +18,6 @@ public class KycRequests {
 
     private String idNumber;
 
-
     private Date createdAt;
 
     private Date reviewedAt;
@@ -29,36 +28,29 @@ public class KycRequests {
         return id;
     }
 
-
     public void setId(Integer id) {
         this.id = id;
     }
-
 
     public Integer getUserId() {
         return userId;
     }
 
-
     public void setUserId(Integer userId) {
         this.userId = userId;
     }
-
 
     public Integer getStatusId() {
         return statusId;
     }
 
-
     public void setStatusId(Integer statusId) {
         this.statusId = statusId;
     }
 
-
     public String getFrontImageUrl() {
         return frontImageUrl;
     }
-
 
     public void setFrontImageUrl(String frontImageUrl) {
         this.frontImageUrl = frontImageUrl;
@@ -72,16 +64,13 @@ public class KycRequests {
         this.backImageUrl = backImageUrl;
     }
 
-
     public String getSelfieImageUrl() {
         return selfieImageUrl;
     }
 
-
     public void setSelfieImageUrl(String selfieImageUrl) {
         this.selfieImageUrl = selfieImageUrl;
     }
-
 
     public String getIdNumber() {
         return idNumber;
@@ -104,31 +93,25 @@ public class KycRequests {
         this.idNumber = idNumber;
     }
 
-
     public Date getCreatedAt() {
         return createdAt;
     }
-
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
-
     public Date getReviewedAt() {
         return reviewedAt;
     }
-
 
     public void setReviewedAt(Date reviewedAt) {
         this.reviewedAt = reviewedAt;
     }
 
-
     public String getAdminFeedback() {
         return adminFeedback;
     }
-
 
     public void setAdminFeedback(String adminFeedback) {
         this.adminFeedback = adminFeedback;

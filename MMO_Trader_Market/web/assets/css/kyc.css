@@ -1,0 +1,32 @@
+/* Panel bố cục dọc để có "đáy" rõ ràng */
+.kyc-panel{
+  display:flex;
+  flex-direction:column;
+}
+
+/* Lưới 2 cột, mỗi cột 50% */
+.kyc-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr; /* 50% - 50% */
+  gap:16px 24px;
+  width:100%;
+}
+
+.kyc-col{
+  display:grid;
+  gap:12px;
+}
+
+/* Hàng nút chiếm full hàng, canh phải */
+.kyc-actions{
+  grid-column:1 / -1;          /* trải ngang toàn dòng */
+  display:flex;
+  justify-content:flex-end;     /* đẩy nút sang phải */
+  margin-top: 8px;              /* tách nhẹ khỏi nội dung trên */
+}
+
+/* Mobile: xếp dọc */
+@media (max-width: 768px){
+  .kyc-grid{ grid-template-columns: 1fr; }
+}
+
