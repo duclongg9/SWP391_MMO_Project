@@ -9,7 +9,11 @@
     <h4 class="mb-4"><i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt</h4>
 
     <c:if test="${not empty flash}">
-        <div class="alert alert-success">${flash}</div>
+        <div class="alert alert-success shadow-sm">${flash}</div>
+        <%
+            // Xóa flash ngay sau khi hiển thị (để reload trang không hiện lại)
+            session.removeAttribute("flash");
+        %>
     </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>

@@ -9,7 +9,11 @@
     <h4 class="mb-4"><i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt</h4>
 
     <c:if test="${not empty flash}">
-        <div class="alert alert-success">${flash}</div>
+        <div class="alert alert-success shadow-sm">${flash}</div>
+        <%
+            // Xóa flash ngay sau khi hiển thị (để reload trang không hiện lại)
+            session.removeAttribute("flash");
+        %>
     </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>
@@ -23,7 +27,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input id="q" name="q" type="text" class="form-control"
-                               placeholder="Tên, email, số giấy tờ..."
+                               placeholder="Tên người dùng..."
                                value="${fn:escapeXml(q)}">
                     </div>
                 </div>
@@ -33,8 +37,7 @@
                     <label class="form-label mb-1" for="from">Từ ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input id="from" name="from" type="date" class="form-control"
-                               value="${fn:escapeXml(from)}">
+                        <input id="from" name="from" type="date" class="form-control" value="${fn:escapeXml(from)}">
                     </div>
                 </div>
 
@@ -43,8 +46,7 @@
                     <label class="form-label mb-1" for="to">Đến ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="to" name="to" type="date" class="form-control"
-                               value="${fn:escapeXml(to)}">
+                        <input id="to" name="to" type="date" class="form-control" value="${fn:escapeXml(to)}">
                     </div>
                 </div>
 
@@ -53,20 +55,9 @@
                     <label class="form-label mb-1" for="status">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
                         <option value="all" ${status == 'all' ? 'selected' : ''}>Tất cả</option>
-                        <option value="1"   ${status == '1'   ? 'selected' : ''}>Pending</option>
-                        <option value="2"   ${status == '2'   ? 'selected' : ''}>Approved</option>
-                        <option value="3"   ${status == '3'   ? 'selected' : ''}>Rejected</option>
-                    </select>
-                </div>
-
-                <!-- Sắp xếp -->
-                <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" for="sort">Sắp xếp</label>
-                    <select id="sort" name="sort" class="form-select">
-                        <option value="date_desc"   ${sort == 'date_desc'   ? 'selected' : ''}>Ngày gửi: mới → cũ</option>
-                        <option value="date_asc"    ${sort == 'date_asc'    ? 'selected' : ''}>Ngày gửi: cũ → mới</option>
-                        <option value="status_asc"  ${sort == 'status_asc'  ? 'selected' : ''}>Trạng thái: A → Z</option>
-                        <option value="status_desc" ${sort == 'status_desc' ? 'selected' : ''}>Trạng thái: Z → A</option>
+                        <option value="1" ${status == '1' ? 'selected' : ''}>Pending</option>
+                        <option value="2" ${status == '2' ? 'selected' : ''}>Approved</option>
+                        <option value="3" ${status == '3' ? 'selected' : ''}>Rejected</option>
                     </select>
                 </div>
 
@@ -287,95 +278,76 @@
 </style>
 
 <script>
-    // ===== TỰ ẨN THÔNG BÁO =====
+    /* ===== TỰ ẨN THÔNG BÁO ===== */
     window.addEventListener('DOMContentLoaded', () => {
-        // Ẩn alert
         document.querySelectorAll('.alert').forEach(a => {
             setTimeout(() => { a.classList.add('fade'); a.style.opacity = 0; }, 1800);
             setTimeout(() => a.remove(), 2600);
         });
 
-        const form     = document.getElementById('kycFilter');
-        const ipQ      = document.getElementById('q');
-        const ipStatus = document.getElementById('status');
-        const ipSort   = document.getElementById('sort');
+        const form     = document.getElementById('kycFilter');   // <form id="kycFilter" ...>
+        const ipQ      = document.getElementById('q');           // <input id="q" ...>
+        const ipFrom   = document.getElementById('from');        // <input id="from" type="date" ...>
+        const ipTo     = document.getElementById('to');          // <input id="to"   type="date" ...>
+        const ipStatus = document.getElementById('status');      // <select id="status" ...>
+        const ipSort   = document.getElementById('sort');        // <select id="sort" ...>
+        const thStatus = document.getElementById('thStatus');    // <th id="thStatus">
 
-        // Debounce search theo từ khóa
-        let t;
-        ipQ.addEventListener('input', function() {
-            clearTimeout(t);
-            t = setTimeout(() => form.submit(), 300);
+        if (!form) return; // không có form thì dừng
+
+        /* ===== KHÔNG auto-submit cho từ khóa & ngày =====
+           -> Bắt buộc phải bấm nút "Lọc" mới tìm
+           -> Ngăn Enter trong các ô này để không submit form vô tình
+        */
+        [ipQ, ipFrom, ipTo].forEach(el => {
+            if (!el) return;
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // buộc người dùng bấm nút Lọc
+                }
+            });
         });
 
-        // Đổi trạng thái -> tự sắp xếp theo trạng thái & submit
-        ipStatus.addEventListener('change', () => {
-            const v = (ipStatus.value || '').toLowerCase();
-            if (v === 'all') {
-                ipSort.value = 'date_desc';
-            } else {
-                // nếu đang không phải sort theo status thì set mặc định A→Z
-                if (!/^status_/.test(ipSort.value)) ipSort.value = 'status_asc';
-            }
-            form.submit();
-        });
+        /* ===== Category (status) đổi là submit ngay =====
+           - Nếu chọn "all": đưa sort về 'date_desc'
+           - Nếu chọn 1/2/3: mặc định sort theo trạng thái (status_asc) nếu chưa ở status_*
+        */
+        if (ipStatus) {
+            ipStatus.addEventListener('change', () => {
+                const v = (ipStatus.value || '').toLowerCase();
+                if (v === 'all') {
+                    if (ipSort) ipSort.value = 'date_desc';
+                } else {
+                    if (ipSort && !/^status_/i.test(ipSort.value || '')) {
+                        ipSort.value = 'status_asc';
+                    }
+                }
+                form.submit();
+            });
+        }
 
-        // Bấm header "Trạng thái" để toggle sort
-        document.getElementById('thStatus').addEventListener('click', () => {
-            const cur = (ipSort.value || '').toLowerCase();
-            ipSort.value = (cur === 'status_asc') ? 'status_desc' : 'status_asc';
-            form.submit();
-        });
+        /* ===== Bấm header "Trạng thái" để toggle sort ngay ===== */
+        if (thStatus && ipSort) {
+            thStatus.addEventListener('click', () => {
+                const cur = (ipSort.value || '').toLowerCase();
+                ipSort.value = (cur === 'status_asc') ? 'status_desc' : 'status_asc';
+                form.submit();
+            });
+        }
 
-        // Preview ảnh chung
+        /* ===== Preview ảnh chung ===== */
         document.addEventListener('click', function (e) {
             const img = e.target.closest('.kyc-thumb');
             if (!img) return;
             const src = img.getAttribute('src');
             const modalEl  = document.getElementById('imgPreviewModal');
             const modalImg = document.getElementById('previewImg');
-            modalImg.src   = src;
-            const bsModal  = bootstrap.Modal.getOrCreateInstance(modalEl);
+            if (!modalEl || !modalImg) return;
+            modalImg.src = src;
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
             bsModal.show();
         });
     });
-
-    const base = '<c:out value="${pageContext.request.contextPath}"/>';
-    const form = document.getElementById('kycFilter');
-    const ipQ  = document.getElementById('q');
-    const ipStatus = document.getElementById('status');
-    const ipSort   = document.getElementById('sort');
-
-    // ===== AUTO SEARCH (debounce) =====
-    let t;
-    ipQ.addEventListener('input', function() {
-        clearTimeout(t);
-        t = setTimeout(() => form.submit(), 300); // gõ dừng 300ms sẽ lọc
-    });
-
-    // ===== đổi trạng thái -> lọc ngay =====
-    ipStatus.addEventListener('change', () => form.submit());
-
-    // ===== bấm header "Trạng thái" để toggle sort =====
-    document.getElementById('thStatus').addEventListener('click', () => {
-        const cur = (ipSort.value || '').toLowerCase();
-        ipSort.value = (cur === 'status_asc') ? 'status_desc' : 'status_asc';
-        form.submit();
-    });
-
-    // ===== Preview ảnh chung (giữ nguyên) =====
-    document.addEventListener('click', function (e) {
-        const img = e.target.closest('.kyc-thumb');
-        if (!img) return;
-        const src = img.getAttribute('src');
-        const modalEl  = document.getElementById('imgPreviewModal');
-        const modalImg = document.getElementById('previewImg');
-        modalImg.src   = src;
-        const bsModal  = bootstrap.Modal.getOrCreateInstance(modalEl);
-        bsModal.show();
-    });
-    ['from','to'].forEach(id=>{
-        const el = document.getElementById(id);
-        el.addEventListener('focus', ()=> el.showPicker && el.showPicker());
-    });
 </script>
+
 
