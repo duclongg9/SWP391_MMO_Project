@@ -25,7 +25,9 @@
                                 <c:forEach var="option" items="${subtypeOptions}">
                                     <label class="product-filter-sidebar__option">
                                         <input type="checkbox" name="subtype" value="${option.code}"
-                                               <c:if test="${selectedSubtypes contains option.code}">checked</c:if>
+<input type="checkbox" name="subtype" value="${option.code}"
+  <c:if test="${not empty selectedSubtypes and selectedSubtypes.contains(option.code)}">checked</c:if> />
+
                                                onchange="this.form.submit()" />
                                         <span><c:out value="${option.label}" /></span>
                                     </label>
