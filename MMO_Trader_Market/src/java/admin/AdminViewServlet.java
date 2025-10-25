@@ -111,18 +111,21 @@ public class AdminViewServlet extends HttpServlet {
             case "/kycs": {
                 try (Connection con = DBConnect.getConnection()) {
                     ManageKycDAO dao = new ManageKycDAO(con);
-                    List<KycRequests> shops = dao.getAllKyc();
-                    req.setAttribute("kycList", shops);
+                    List<KycRequests> list = dao.getAllKycRequests();
+                    req.setAttribute("kycList", list);
                 } catch (Exception e) {
-                    throw new ServletException(e);
+                    throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
                 }
 
-                req.setAttribute("pageTitle", "Quản lý kyc");
+                // Thuộc tính cho layout
+                req.setAttribute("pageTitle", "Quản lý KYC");
                 req.setAttribute("active", "kycs");
                 req.setAttribute("content", "/WEB-INF/views/Admin/pages/kycs.jsp");
+
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
             case "/systems": {
                 content = "/WEB-INF/views/Admin/pages/systems.jsp";
                 title   = "Quản lí hệ thống"; active = "systems";
@@ -270,41 +273,37 @@ public class AdminViewServlet extends HttpServlet {
         }
         if ("/kycs/status".equalsIgnoreCase(path)) {
             req.setCharacterEncoding("UTF-8");
-            String action   = safe(req.getParameter("action"));   // approve | reject
-            String idStr    = safe(req.getParameter("id"));       // kyc_id
-            String feedback = safe(req.getParameter("feedback")); // ghi chú (bắt buộc khi reject)
+            String action   = req.getParameter("action");    // approve | reject
+            String idStr    = req.getParameter("id");
+            String feedback = req.getParameter("feedback");
 
-            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai id"); return; }
-            if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
-                resp.sendError(400, "Nhập lý do khi từ chối"); return;
+            if (idStr == null || !idStr.matches("\\d+")) {
+                resp.sendError(400, "Sai ID"); return;
             }
-
             int kycId = Integer.parseInt(idStr);
 
             try (Connection con = DBConnect.getConnection()) {
                 ManageKycDAO dao = new ManageKycDAO(con);
                 int rows;
-
                 if ("approve".equalsIgnoreCase(action)) {
-                    // Đổi trạng thái KYC -> Approved và NÂNG users.role_id -> Seller (2)
-                    rows = dao.updateKycAndMaybePromoteUser(
-                            kycId, ManageKycDAO.KYC_APPROVED, ManageKycDAO.ROLE_SELLER, feedback);
+                    rows = dao.approveKycAndPromote(kycId, feedback);
                 } else if ("reject".equalsIgnoreCase(action)) {
-                    // Chỉ đổi trạng thái KYC -> Rejected (không đổi role)
-                    rows = dao.updateKycAndMaybePromoteUser(
-                            kycId, ManageKycDAO.KYC_REJECTED, null, feedback);
+                    rows = dao.rejectKyc(kycId, feedback == null ? "" : feedback);
                 } else {
                     resp.sendError(400, "Action không hợp lệ"); return;
                 }
 
-                if (rows > 0) resp.sendRedirect(req.getContextPath() + "/admin/kycs");
-                else          resp.sendError(404, "Không tìm thấy KYC");
+                // PRG: redirect về danh sách để tránh lỗi forward sai / response committed
+                req.getSession().setAttribute("flash", rows > 0 ? "Cập nhật thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
                 resp.sendError(500, e.getMessage());
+                return;
             }
-            return;
         }
+
 
         // --- Không khớp route nào ---
         resp.sendError(404);
