@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -109,22 +110,76 @@ public class AdminViewServlet extends HttpServlet {
                 return;
             }
             case "/kycs": {
+                String q      = clean(req.getParameter("q"));
+                String status = clean(req.getParameter("status"));
+                String from   = clean(req.getParameter("from"));
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
+                Integer statusId = null;
+                if (status != null && !"all".equalsIgnoreCase(status)) {
+                    try { statusId = Integer.parseInt(status); } catch (NumberFormatException ignored) {}
+                }
+
                 try (Connection con = DBConnect.getConnection()) {
                     ManageKycDAO dao = new ManageKycDAO(con);
                     List<KycRequests> list = dao.getAllKycRequests();
+
+                    // 1️⃣ Lọc theo TÊN NGƯỜI DÙNG
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(k -> k.getUserName() != null && k.getUserName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2️⃣ Lọc theo trạng thái
+                    if (statusId != null) {
+                        final int s = statusId;
+                        list = list.stream().filter(k -> k.getStatusId() == s).toList();
+                    }
+
+                    // 3️⃣ Lọc theo ngày gửi
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(k -> {
+                            java.util.Date d = k.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4️⃣ Sắp xếp mặc định: ngày mới nhất trước
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    k -> k.getCreatedAt() == null ? new java.util.Date(0) : k.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
                     req.setAttribute("kycList", list);
                 } catch (Exception e) {
                     throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
                 }
 
-                // Thuộc tính cho layout
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", from == null ? "" : from);
+                req.setAttribute("to", to == null ? "" : to);
+
                 req.setAttribute("pageTitle", "Quản lý KYC");
                 req.setAttribute("active", "kycs");
                 req.setAttribute("content", "/WEB-INF/views/Admin/pages/kycs.jsp");
-
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
 
             case "/systems": {
                 content = "/WEB-INF/views/Admin/pages/systems.jsp";
