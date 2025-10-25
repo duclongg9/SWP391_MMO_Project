@@ -95,13 +95,72 @@ public class AdminViewServlet extends HttpServlet {
                 break;
             }
             case "/shops": {
+                // lấy tham số
+                String q      = clean(req.getParameter("q"));        // tìm theo TÊN cửa hàng
+                String status = clean(req.getParameter("status"));   // Active/Banned/Rejected/Inactive/all
+                String from   = clean(req.getParameter("from"));     // yyyy-MM-dd | dd-MM-yyyy | dd/MM/yyyy
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
                 try (Connection con = DBConnect.getConnection()) {
                     ManageShopDAO dao = new ManageShopDAO(con);
-                    List<Shops> shops = dao.getAllShops();
-                    req.setAttribute("shopList", shops);
+                    List<Shops> list = dao.getAllShops();
+
+                    // 1) Lọc theo TÊN cửa hàng (chỉ name)
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2) Lọc theo trạng thái (String)
+                    if (status != null && !"all".equalsIgnoreCase(status)) {
+                        final String st = status;
+                        list = list.stream()
+                                .filter(s -> s.getStatus() != null && s.getStatus().equalsIgnoreCase(st))
+                                .toList();
+                    }
+
+                    // 3) Lọc theo ngày tạo
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(s -> {
+                            java.util.Date d = s.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4) Sắp xếp mặc định: mới → cũ
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
+                    req.setAttribute("shopList", list);
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }
+
+                // Giữ lại giá trị filter cho JSP
+                // LƯU Ý: input type="date" cần yyyy-MM-dd
+                String fromIso = (fromD == null ? "" : fromD.toString()); // yyyy-MM-dd
+                String toIso   = (toD   == null ? "" : toD.toString());   // yyyy-MM-dd
+
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", fromIso);
+                req.setAttribute("to", toIso);
 
                 req.setAttribute("pageTitle", "Quản lý cửa hàng");
                 req.setAttribute("active", "shops");
@@ -109,6 +168,7 @@ public class AdminViewServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
             case "/kycs": {
                 String q      = clean(req.getParameter("q"));
                 String status = clean(req.getParameter("status"));
@@ -358,6 +418,30 @@ public class AdminViewServlet extends HttpServlet {
                 return;
             }
         }
+        // POST /admin/shops/status   (action=accept|reject, id=<shopId>)
+        if ("/shops/status".equalsIgnoreCase(path)) {
+            String idStr  = req.getParameter("id");
+            String action = req.getParameter("action"); // accept | reject
+
+            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai ID"); return; }
+            if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
+                resp.sendError(400, "Action không hợp lệ"); return;
+            }
+
+            int shopId = Integer.parseInt(idStr);
+            String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
+
+            try (Connection con = DBConnect.getConnection()) {
+                ManageShopDAO dao = new ManageShopDAO(con);
+                boolean ok = dao.updateStatus(shopId, newStatus);
+                req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+            } catch (Exception e) {
+                e.printStackTrace(); resp.sendError(500, e.getMessage());
+            }
+            return;
+        }
+
 
 
         // --- Không khớp route nào ---
