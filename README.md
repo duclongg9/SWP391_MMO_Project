@@ -79,3 +79,14 @@ plantuml docs/diagrams/architecture-overview.puml
 ```
 
 The generated PNG/SVG files can be embedded into documentation or shared with your team.
+
+## Troubleshooting
+
+* Gặp lỗi Google Sign-In `DEVELOPER_ERROR (10)` khi build ứng dụng Android? Tham khảo hướng dẫn chi tiết trong [`docs/troubleshooting-google-signin.md`](docs/troubleshooting-google-signin.md) để rà soát lại SHA fingerprint, package name và cấu hình OAuth trên Google Cloud.
+* Muốn tự động điền `google.clientId`, `google.clientSecret` và `google.redirectUri` trong cấu hình web? Tải file OAuth JSON từ Google Cloud rồi chạy:
+
+  ```bash
+  ./scripts/apply_google_oauth.py path/to/client_secret.json
+  ```
+
+  Script sẽ cập nhật cả `MMO_Trader_Market/src/conf/database.properties` và `MMO_Trader_Market/conf/database.properties` bằng giá trị mới. Dùng tùy chọn `--redirect` nếu muốn override redirect URI mặc định trong JSON.
