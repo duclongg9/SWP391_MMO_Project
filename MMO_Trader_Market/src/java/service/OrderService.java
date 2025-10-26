@@ -1,5 +1,8 @@
 package service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
@@ -9,15 +12,19 @@ import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
 import model.Products;
+import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
 import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +47,8 @@ public class OrderService {
     private final WalletsDAO walletsDAO;
     private final WalletTransactionDAO walletTransactionDAO;
     private final OrderQueueProducer queueProducer;
+    private final Gson gson = new Gson();
+    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
 
     public OrderService() {
         this(new OrderDAO(), new ProductDAO(), new CredentialDAO(), new WalletsDAO(),
@@ -64,10 +73,14 @@ public class OrderService {
     }
 
     public int placeOrderPending(int userId, int productId, int quantity) {
-        return placeOrderPending(userId, productId, quantity, UUID.randomUUID().toString());
+        return placeOrderPending(userId, productId, quantity, null, UUID.randomUUID().toString());
     }
 
     public int placeOrderPending(int userId, int productId, int quantity, String idempotencyKey) {
+        return placeOrderPending(userId, productId, quantity, null, idempotencyKey);
+    }
+
+    public int placeOrderPending(int userId, int productId, int quantity, String variantCode, String idempotencyKey) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Số lượng mua phải lớn hơn 0");
         }
@@ -75,6 +88,7 @@ public class OrderService {
         if (trimmedKey.isEmpty()) {
             trimmedKey = UUID.randomUUID().toString();
         }
+        String normalizedVariant = normalizeVariantCode(variantCode);
         Optional<Orders> existing = orderDAO.findByIdemKey(trimmedKey);
         if (existing.isPresent()) {
             Orders order = existing.get();
@@ -88,10 +102,36 @@ public class OrderService {
             trimmedKey = UUID.randomUUID().toString();
         }
         Products product = productDAO.findAvailableById(productId)
-                .filter(p -> p.getInventoryCount() != null && p.getInventoryCount() >= quantity)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
-        BigDecimal price = productDAO.findPriceById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Không thể xác định giá sản phẩm."));
+        if (product.getInventoryCount() == null || product.getInventoryCount() < quantity) {
+            throw new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ.");
+        }
+        Optional<ProductVariantOption> variantOpt = Optional.empty();
+        if (normalizedVariant != null) {
+            variantOpt = findVariantOption(product, normalizedVariant);
+            ProductVariantOption variant = variantOpt
+                    .filter(ProductVariantOption::isAvailable)
+                    .orElseThrow(() -> new IllegalArgumentException("Biến thể sản phẩm không khả dụng."));
+            Integer variantInventory = variant.getInventoryCount();
+            if (variantInventory == null || variantInventory < quantity) {
+                throw new IllegalArgumentException("Biến thể sản phẩm không đủ tồn kho.");
+            }
+        } else if (hasVariants(product.getVariantSchema())) {
+            throw new IllegalArgumentException("Vui lòng chọn biến thể sản phẩm trước khi đặt mua.");
+        }
+        BigDecimal price;
+        if (variantOpt.isPresent()) {
+            BigDecimal variantPrice = variantOpt.get().getPrice();
+            if (variantPrice == null) {
+                throw new IllegalArgumentException("Không thể xác định giá sản phẩm.");
+            }
+            price = variantPrice;
+        } else {
+            price = product.getPrice();
+            if (price == null) {
+                throw new IllegalArgumentException("Không thể xác định giá sản phẩm.");
+            }
+        }
         BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
 
         var credentialAvailability = credentialDAO.fetchAvailability(productId);
@@ -165,6 +205,55 @@ public class OrderService {
     private boolean isOrderActive(String status) {
         OrderStatus orderStatus = OrderStatus.fromDatabaseValue(status);
         return orderStatus == OrderStatus.PENDING || orderStatus == OrderStatus.PROCESSING;
+    }
+
+    private Optional<ProductVariantOption> findVariantOption(Products product, String variantCode) {
+        List<ProductVariantOption> variants = parseVariants(product.getVariantSchema(), product.getVariantsJson());
+        if (variants.isEmpty()) {
+            return Optional.empty();
+        }
+        String target = variantCode.toLowerCase(Locale.ROOT);
+        return variants.stream()
+                .filter(Objects::nonNull)
+                .filter(ProductVariantOption::isAvailable)
+                .filter(variant -> {
+                    String code = variant.getVariantCode();
+                    return code != null && code.toLowerCase(Locale.ROOT).equals(target);
+                })
+                .findFirst();
+    }
+
+    private List<ProductVariantOption> parseVariants(String variantSchema, String variantsJson) {
+        if (!hasVariants(variantSchema) || variantsJson == null || variantsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<ProductVariantOption> variants = gson.fromJson(variantsJson, variantListType);
+            if (variants == null || variants.isEmpty()) {
+                return List.of();
+            }
+            List<ProductVariantOption> normalized = new ArrayList<>();
+            for (ProductVariantOption option : variants) {
+                if (option != null) {
+                    normalized.add(option);
+                }
+            }
+            return List.copyOf(normalized);
+        } catch (JsonSyntaxException ex) {
+            return List.of();
+        }
+    }
+
+    private boolean hasVariants(String variantSchema) {
+        return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema);
+    }
+
+    private String normalizeVariantCode(String variantCode) {
+        if (variantCode == null) {
+            return null;
+        }
+        String trimmed = variantCode.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static Map<OrderStatus, String> buildStatusLabels() {
