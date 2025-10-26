@@ -45,6 +45,9 @@ public class ProductDetailController extends BaseController {
             HttpSession session = request.getSession(false);
             boolean isAuthenticated = session != null && session.getAttribute("userId") != null;
 
+            boolean canBuy = isAuthenticated && product.isAvailable()
+                    && productService.hasDeliverableCredentials(product.getId());
+
             request.setAttribute("pageTitle", product.getName());
             request.setAttribute("headerTitle", product.getName());
             request.setAttribute("headerSubtitle", "Thông tin chi tiết sản phẩm");
@@ -56,7 +59,7 @@ public class ProductDetailController extends BaseController {
             request.setAttribute("variantSchema", product.getVariantSchema());
             request.setAttribute("variantOptionsJson", product.getVariantsJson());
             request.setAttribute("similarProducts", similarProducts);
-            request.setAttribute("canBuy", isAuthenticated && product.isAvailable());
+            request.setAttribute("canBuy", canBuy);
             request.setAttribute("isAuthenticated", isAuthenticated);
             forward(request, response, "product/detail");
         } catch (IllegalArgumentException ex) {
