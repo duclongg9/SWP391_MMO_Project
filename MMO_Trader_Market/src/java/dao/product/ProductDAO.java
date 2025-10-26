@@ -499,14 +499,14 @@ public class ProductDAO extends BaseDAO {
         for (int i = 0; i < params.size(); i++) {
             Object value = params.get(i);
             int index = i + 1;
-            if (value instanceof Integer intValue) {
-                statement.setInt(index, intValue);
-            } else if (value instanceof Long longValue) {
-                statement.setLong(index, longValue);
-            } else if (value instanceof String stringValue) {
-                statement.setString(index, stringValue);
-            } else if (value instanceof BigDecimal decimalValue) {
-                statement.setBigDecimal(index, decimalValue);
+            if (value instanceof Integer) {
+                statement.setInt(index, (Integer) value);
+            } else if (value instanceof Long) {
+                statement.setLong(index, (Long) value);
+            } else if (value instanceof String) {
+                statement.setString(index, (String) value);
+            } else if (value instanceof BigDecimal) {
+                statement.setBigDecimal(index, (BigDecimal) value);
             } else {
                 statement.setObject(index, value);
             }
