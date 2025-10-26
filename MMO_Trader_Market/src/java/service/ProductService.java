@@ -3,6 +3,7 @@ package service;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import dao.order.CredentialDAO;
 import dao.product.ProductDAO;
 import model.PaginatedResult;
 import model.Products;
@@ -76,6 +77,7 @@ public class ProductService {
     }
 
     private final ProductDAO productDAO = new ProductDAO();
+    private final CredentialDAO credentialDAO = new CredentialDAO();
     private final Gson gson = new Gson();
     private final Type stringListType = new TypeToken<List<String>>() { }.getType();
     private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
@@ -194,6 +196,14 @@ public class ProductService {
 
     public Optional<Products> findOptionalById(int id) {
         return productDAO.findById(id);
+    }
+
+    public boolean hasDeliverableCredentials(int productId) {
+        CredentialDAO.CredentialAvailability availability = credentialDAO.fetchAvailability(productId);
+        if (availability.total() == 0) {
+            return true;
+        }
+        return availability.available() > 0;
     }
 
     public PaginatedResult<Products> search(String keyword, int page, int pageSize) {
