@@ -130,9 +130,10 @@ public class OrderService {
             }
         }
 
+        Integer variantId = selectedVariant == null ? null : selectedVariant.getVariantId();
         CredentialDAO.CredentialAvailability credentialAvailability;
         if (resolvedVariantCode != null) {
-            credentialAvailability = credentialDAO.fetchAvailability(productId, resolvedVariantCode);
+            credentialAvailability = credentialDAO.fetchAvailability(productId, variantId, resolvedVariantCode);
             if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
                 throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
             }
@@ -161,8 +162,8 @@ public class OrderService {
         if (balance.compareTo(total) < 0) {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
-        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, resolvedVariantCode, trimmedKey);
-        queueProducer.publish(orderId, trimmedKey, productId, quantity, resolvedVariantCode);
+        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, variantId, resolvedVariantCode, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity, variantId, resolvedVariantCode);
         return orderId;
     }
 

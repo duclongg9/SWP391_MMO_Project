@@ -214,7 +214,7 @@ public class ProductService {
                     continue;
                 }
                 CredentialDAO.CredentialAvailability variantAvailability =
-                        credentialDAO.fetchAvailability(productId, variant.getVariantCode());
+                        credentialDAO.fetchAvailability(productId, variant.getVariantId(), variant.getVariantCode());
                 if (variantAvailability.total() == 0 || variantAvailability.available() > 0) {
                     return true;
                 }

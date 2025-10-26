@@ -23,8 +23,12 @@ public class CredentialDAO extends BaseDAO {
     }
 
     public List<Integer> pickFreeCredentialIds(int productId, int qty, String variantCode) {
+        return pickFreeCredentialIds(productId, qty, null, variantCode);
+    }
+
+    public List<Integer> pickFreeCredentialIds(int productId, int qty, Integer variantId, String variantCode) {
         try (Connection connection = getConnection()) {
-            return pickFreeCredentialIds(connection, productId, qty, variantCode);
+            return pickFreeCredentialIds(connection, productId, qty, variantId, variantCode);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể khóa credentials", ex);
             return List.of();
@@ -36,10 +40,17 @@ public class CredentialDAO extends BaseDAO {
     }
 
     public List<Integer> pickFreeCredentialIds(Connection connection, int productId, int qty, String variantCode) throws SQLException {
+        return pickFreeCredentialIds(connection, productId, qty, null, variantCode);
+    }
+
+    public List<Integer> pickFreeCredentialIds(Connection connection, int productId, int qty, Integer variantId,
+            String variantCode) throws SQLException {
         String normalized = normalizeVariantCode(variantCode);
         StringBuilder sql = new StringBuilder("SELECT id FROM product_credentials WHERE product_id = ? AND is_sold = 0");
-        if (normalized == null) {
-            sql.append(" AND variant_code IS NULL");
+        if (variantId != null) {
+            sql.append(" AND variant_id = ?");
+        } else if (normalized == null) {
+            sql.append(" AND variant_id IS NULL");
         } else {
             sql.append(" AND LOWER(variant_code) = ?");
         }
@@ -48,7 +59,9 @@ public class CredentialDAO extends BaseDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
             statement.setInt(index++, productId);
-            if (normalized != null) {
+            if (variantId != null) {
+                statement.setInt(index++, variantId);
+            } else if (normalized != null) {
                 statement.setString(index++, normalized);
             }
             statement.setInt(index, qty);
@@ -85,17 +98,32 @@ public class CredentialDAO extends BaseDAO {
     }
 
     public CredentialAvailability fetchAvailability(int productId, String variantCode) {
+        return fetchAvailability(productId, null, variantCode);
+    }
+
+    public CredentialAvailability fetchAvailability(int productId, Integer variantId, String variantCode) {
         String normalized = normalizeVariantCode(variantCode);
-        if (normalized == null) {
+        if (variantId == null && normalized == null) {
             return fetchAvailability(productId);
         }
-        final String sql = "SELECT COUNT(*) AS total, "
-                + "SUM(CASE WHEN is_sold = 0 THEN 1 ELSE 0 END) AS available "
-                + "FROM product_credentials WHERE product_id = ? AND LOWER(variant_code) = ?";
+        final String sql;
+        if (variantId != null) {
+            sql = "SELECT COUNT(*) AS total, "
+                    + "SUM(CASE WHEN is_sold = 0 THEN 1 ELSE 0 END) AS available "
+                    + "FROM product_credentials WHERE product_id = ? AND variant_id = ?";
+        } else {
+            sql = "SELECT COUNT(*) AS total, "
+                    + "SUM(CASE WHEN is_sold = 0 THEN 1 ELSE 0 END) AS available "
+                    + "FROM product_credentials WHERE product_id = ? AND LOWER(variant_code) = ?";
+        }
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
-            statement.setString(2, normalized);
+            if (variantId != null) {
+                statement.setInt(2, variantId);
+            } else {
+                statement.setString(2, normalized);
+            }
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     int total = rs.getInt("total");

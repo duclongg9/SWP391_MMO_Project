@@ -1,6 +1,7 @@
 package dao.order;
 
 import dao.BaseDAO;
+import dao.product.ProductDAO;
 import model.OrderStatus;
 import model.Orders;
 import model.Products;
@@ -15,7 +16,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,6 +33,16 @@ public class OrderDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(OrderDAO.class.getName());
 
+    private static final String PRODUCT_INVENTORY_JOIN =
+            " LEFT JOIN (" +
+                    "SELECT product_id, " +
+                    "       SUM(available_quantity) AS available_quantity, " +
+                    "       SUM(sold_quantity) AS sold_quantity " +
+                    "FROM product_quantities GROUP BY product_id" +
+                    ") pq ON pq.product_id = p.id";
+
+    private final ProductDAO productDAO = new ProductDAO();
+
     /**
      * Tạo đơn hàng ở trạng thái Pending với khóa idempotency.
      *
@@ -43,21 +56,26 @@ public class OrderDAO extends BaseDAO {
      * @return mã đơn hàng vừa tạo
      */
     public int createPending(int buyerId, int productId, int qty, BigDecimal unitPrice, BigDecimal total,
-            String variantCode, String idemKey) {
-        final String sql = "INSERT INTO orders (buyer_id, product_id, quantity, unit_price, total_amount, status, variant_code, idempotency_key, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, NOW(), NOW())";
+            Integer variantId, String variantCode, String idemKey) {
+        final String sql = "INSERT INTO orders (buyer_id, product_id, quantity, unit_price, total_amount, status, variant_id, variant_code, idempotency_key, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, NOW(), NOW())";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, buyerId);
             statement.setInt(2, productId);
             statement.setInt(3, qty);
             statement.setBigDecimal(4, unitPrice);
             statement.setBigDecimal(5, total);
-            if (variantCode == null || variantCode.isBlank()) {
-                statement.setNull(6, java.sql.Types.VARCHAR);
+            if (variantId == null) {
+                statement.setNull(6, java.sql.Types.INTEGER);
             } else {
-                statement.setString(6, variantCode);
+                statement.setInt(6, variantId);
             }
-            statement.setString(7, idemKey);
+            if (variantCode == null || variantCode.isBlank()) {
+                statement.setNull(7, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(7, variantCode);
+            }
+            statement.setString(8, idemKey);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -79,14 +97,15 @@ public class OrderDAO extends BaseDAO {
      */
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
         final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.quantity, o.unit_price, o.total_amount, o.status, "
-                + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_code, "
+                + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_id, o.variant_code, "
                 + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
                 + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
-                + "p.gallery_json AS p_gallery_json, p.inventory_count, p.sold_count AS p_sold_count, p.status AS p_status, "
-                + "p.variant_schema AS p_variant_schema, p.variants_json AS p_variants_json, "
-                + "p.created_at AS p_created_at, p.updated_at AS p_updated_at "
-                + "FROM orders o JOIN products p ON p.id = o.product_id "
-                + "WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
+                + "p.gallery_json AS p_gallery_json, COALESCE(pq.available_quantity, 0) AS p_inventory_count, "
+                + "COALESCE(pq.sold_quantity, 0) AS p_sold_count, p.status AS p_status, "
+                + "p.variant_schema AS p_variant_schema, p.created_at AS p_created_at, p.updated_at AS p_updated_at "
+                + "FROM orders o JOIN products p ON p.id = o.product_id"
+                + PRODUCT_INVENTORY_JOIN
+                + " WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             statement.setInt(2, userId);
@@ -94,6 +113,19 @@ public class OrderDAO extends BaseDAO {
                 if (rs.next()) {
                     Orders order = mapOrder(rs);
                     Products product = mapProduct(rs);
+                    if (product.getVariantSchema() != null
+                            && !product.getVariantSchema().trim().isEmpty()
+                            && !"NONE".equalsIgnoreCase(product.getVariantSchema().trim())) {
+                        try {
+                            Map<Integer, String> variantMap = productDAO.findVariantsJson(connection,
+                                    Collections.singletonList(product.getId()));
+                            product.setVariantsJson(variantMap.get(product.getId()));
+                        } catch (SQLException ex) {
+                            LOGGER.log(Level.WARNING,
+                                    "Không thể tải dữ liệu biến thể cho đơn hàng {0}", new Object[]{orderId});
+                            LOGGER.log(Level.FINE, "Chi tiết lỗi tải biến thể", ex);
+                        }
+                    }
                     return Optional.of(new OrderDetailView(order, product, List.of()));
                 }
             }
@@ -153,7 +185,7 @@ public class OrderDAO extends BaseDAO {
      */
     public Optional<Orders> findById(int orderId) {
         final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
-                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
+                + "variant_id, variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -175,7 +207,7 @@ public class OrderDAO extends BaseDAO {
      */
     public Optional<Orders> findByIdemKey(String idemKey) {
         final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
-                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
+                + "variant_id, variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, idemKey);
             try (ResultSet rs = statement.executeQuery()) {
@@ -398,6 +430,12 @@ public class OrderDAO extends BaseDAO {
                 ? null : rs.getInt("payment_transaction_id"));
         order.setTotalAmount(rs.getBigDecimal("total_amount"));
         order.setStatus(rs.getString("status"));
+        Object variantIdValue = rs.getObject("variant_id");
+        if (variantIdValue == null) {
+            order.setVariantId(null);
+        } else {
+            order.setVariantId(((Number) variantIdValue).intValue());
+        }
         order.setVariantCode(rs.getString("variant_code"));
         order.setIdempotencyKey(rs.getString("idempotency_key"));
         order.setHoldUntil(rs.getTimestamp("hold_until"));
@@ -421,13 +459,12 @@ public class OrderDAO extends BaseDAO {
         product.setPrice(rs.getBigDecimal("price"));
         product.setPrimaryImageUrl(rs.getString("p_primary_image_url"));
         product.setGalleryJson(rs.getString("p_gallery_json"));
-        int inventory = rs.getInt("inventory_count");
+        int inventory = rs.getInt("p_inventory_count");
         product.setInventoryCount(rs.wasNull() ? null : inventory);
         int sold = rs.getInt("p_sold_count");
         product.setSoldCount(rs.wasNull() ? null : sold);
         product.setStatus(rs.getString("p_status"));
         product.setVariantSchema(rs.getString("p_variant_schema"));
-        product.setVariantsJson(rs.getString("p_variants_json"));
         Timestamp created = rs.getTimestamp("p_created_at");
         Timestamp updated = rs.getTimestamp("p_updated_at");
         if (created != null) {

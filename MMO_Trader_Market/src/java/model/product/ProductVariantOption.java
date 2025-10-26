@@ -13,6 +13,9 @@ import java.util.Objects;
  */
 public class ProductVariantOption {
 
+    @SerializedName("variant_id")
+    private Integer variantId;
+
     @SerializedName("variant_code")
     private String variantCode;
 
@@ -25,8 +28,39 @@ public class ProductVariantOption {
 
     private String status;
 
+    public ProductVariantOption() {
+    }
+
+    public ProductVariantOption(Integer variantId, String variantCode, Map<String, String> attributes,
+            BigDecimal price, Integer inventoryCount, String status) {
+        this.variantId = variantId;
+        this.variantCode = variantCode;
+        if (attributes == null) {
+            this.attributes = Collections.emptyMap();
+        } else if (attributes instanceof LinkedHashMap<String, String> linkedHashMap) {
+            this.attributes = linkedHashMap;
+        } else {
+            this.attributes = new LinkedHashMap<>(attributes);
+        }
+        this.price = price;
+        this.inventoryCount = inventoryCount;
+        this.status = status;
+    }
+
+    public Integer getVariantId() {
+        return variantId;
+    }
+
+    public void setVariantId(Integer variantId) {
+        this.variantId = variantId;
+    }
+
     public String getVariantCode() {
         return variantCode;
+    }
+
+    public void setVariantCode(String variantCode) {
+        this.variantCode = variantCode;
     }
 
     public Map<String, String> getAttributes() {
@@ -39,8 +73,22 @@ public class ProductVariantOption {
         return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
     }
 
+    public void setAttributes(Map<String, String> attributes) {
+        if (attributes == null || attributes.isEmpty()) {
+            this.attributes = Collections.emptyMap();
+        } else if (attributes instanceof LinkedHashMap<String, String> linkedHashMap) {
+            this.attributes = linkedHashMap;
+        } else {
+            this.attributes = new LinkedHashMap<>(attributes);
+        }
+    }
+
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     public Integer getInventoryCount() {
@@ -66,7 +114,8 @@ public class ProductVariantOption {
     @Override
     public String toString() {
         return "ProductVariantOption{" +
-                "variantCode='" + variantCode + '\'' +
+                "variantId=" + variantId +
+                ", variantCode='" + variantCode + '\'' +
                 ", attributes=" + attributes +
                 ", price=" + price +
                 ", inventoryCount=" + inventoryCount +
@@ -76,7 +125,7 @@ public class ProductVariantOption {
 
     @Override
     public int hashCode() {
-        return Objects.hash(variantCode, attributes, price, inventoryCount, status);
+        return Objects.hash(variantId, variantCode, attributes, price, inventoryCount, status);
     }
 
     @Override
@@ -88,7 +137,8 @@ public class ProductVariantOption {
             return false;
         }
         ProductVariantOption other = (ProductVariantOption) obj;
-        return Objects.equals(variantCode, other.variantCode)
+        return Objects.equals(variantId, other.variantId)
+                && Objects.equals(variantCode, other.variantCode)
                 && Objects.equals(attributes, other.attributes)
                 && Objects.equals(price, other.price)
                 && Objects.equals(inventoryCount, other.inventoryCount)

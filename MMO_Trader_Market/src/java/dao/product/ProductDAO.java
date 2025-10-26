@@ -1,11 +1,15 @@
 package dao.product;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import dao.BaseDAO;
 import model.Products;
 import model.product.ProductDetail;
 import model.product.ProductListRow;
+import model.product.ProductVariantOption;
 import model.product.ShopOption;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 
 import java.sql.Connection;
@@ -14,13 +18,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * DAO tương tác với bảng {@code products} để phục vụ tra cứu, thống kê và cập nhật hàng hóa.
@@ -32,26 +39,41 @@ public class ProductDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
 
-    private static final String PRODUCT_COLUMNS = String.join(", ",
-            "id", "shop_id", "product_type", "product_subtype", "name",
-            "short_description", "description", "price", "primary_image_url",
-            "gallery_json", "inventory_count", "sold_count", "status",
-            "variant_schema", "variants_json", "created_at", "updated_at");
+    private static final String INVENTORY_JOIN =
+            " LEFT JOIN (" +
+                    "SELECT product_id, " +
+                    "       SUM(available_quantity) AS available_quantity, " +
+                    "       SUM(sold_quantity) AS sold_quantity " +
+                    "FROM product_quantities GROUP BY product_id" +
+                    ") q ON q.product_id = p.id";
 
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.price, p.inventory_count, p.sold_count, p.status, "
-            + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id";
+            + "p.short_description, p.price, COALESCE(q.available_quantity, 0) AS inventory_count, "
+            + "COALESCE(q.sold_quantity, 0) AS sold_count, p.status, "
+            + "p.primary_image_url, p.variant_schema, s.id AS shop_id, s.name AS shop_name "
+            + "FROM products p JOIN shops s ON s.id = p.shop_id" + INVENTORY_JOIN;
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.description, p.price, p.inventory_count, p.sold_count, p.status, "
-            + "p.primary_image_url, p.gallery_json, p.variant_schema, p.variants_json, "
+            + "p.short_description, p.description, p.price, COALESCE(q.available_quantity, 0) AS inventory_count, "
+            + "COALESCE(q.sold_quantity, 0) AS sold_count, p.status, "
+            + "p.primary_image_url, p.gallery_json, p.variant_schema, "
             + "s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
+            + "FROM products p JOIN shops s ON s.id = p.shop_id" + INVENTORY_JOIN
+            + " WHERE p.id = ? LIMIT 1";
+
+    private static final String PRODUCT_BASE_SELECT = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, "
+            + "p.short_description, p.description, p.price, p.primary_image_url, p.gallery_json, "
+            + "COALESCE(q.available_quantity, 0) AS inventory_count, COALESCE(q.sold_quantity, 0) AS sold_count, "
+            + "p.status, p.variant_schema, p.created_at, p.updated_at "
+            + "FROM products p" + INVENTORY_JOIN;
 
     private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
-            + "FROM products p JOIN shops s ON s.id = p.shop_id "
-            + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
+            + "FROM products p JOIN shops s ON s.id = p.shop_id" + INVENTORY_JOIN
+            + " WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0 ORDER BY s.name ASC";
+
+    private final Gson gson = new Gson();
+    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
+    private final Type attributeMapType = new TypeToken<Map<String, String>>() { }.getType();
 
     /**
      * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc cơ bản.
@@ -66,7 +88,7 @@ public class ProductDAO extends BaseDAO {
     public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
             int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
-                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
+                .append(" WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0");
         List<Object> params = new ArrayList<>();
         if (hasText(productType)) {
             sql.append(" AND p.product_type = ?");
@@ -89,11 +111,16 @@ public class ProductDAO extends BaseDAO {
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
-            List<ProductListRow> rows = new ArrayList<>();
+            List<RawProductListRow> rawRows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    rows.add(mapListRow(rs));
+                    rawRows.add(mapRawListRow(rs));
                 }
+            }
+            Map<Integer, String> variantsJson = loadVariantsJson(connection, rawRows);
+            List<ProductListRow> rows = new ArrayList<>(rawRows.size());
+            for (RawProductListRow raw : rawRows) {
+                rows.add(raw.toProductListRow(variantsJson.get(raw.id())));
             }
             return rows;
         } catch (SQLException ex) {
@@ -113,7 +140,7 @@ public class ProductDAO extends BaseDAO {
     public long countAvailable(String keyword, String productType, String productSubtype) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
-                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
+                .append(" WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0");
         List<Object> params = new ArrayList<>();
         if (hasText(productType)) {
             sql.append(" AND p.product_type = ?");
@@ -157,7 +184,13 @@ public class ProductDAO extends BaseDAO {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapDetail(rs));
+                    RawProductDetailRow raw = mapRawDetailRow(rs);
+                    String variantsJson = null;
+                    if (hasVariantSchema(raw.variantSchema())) {
+                        variantsJson = loadVariantsJson(connection, Collections.singletonList(raw.id()))
+                                .get(raw.id());
+                    }
+                    return Optional.of(raw.toProductDetail(variantsJson));
                 }
             }
         } catch (SQLException ex) {
@@ -175,16 +208,21 @@ public class ProductDAO extends BaseDAO {
     public List<ProductListRow> findTopAvailable(int limit) {
         int resolvedLimit = Math.max(limit, 1);
         String sql = LIST_SELECT
-                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
-                + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
+                + " WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0"
+                + " ORDER BY COALESCE(q.sold_quantity, 0) DESC, p.created_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
-            List<ProductListRow> rows = new ArrayList<>();
+            List<RawProductListRow> rawRows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    rows.add(mapListRow(rs));
+                    rawRows.add(mapRawListRow(rs));
                 }
+            }
+            Map<Integer, String> variantsJson = loadVariantsJson(connection, rawRows);
+            List<ProductListRow> rows = new ArrayList<>(rawRows.size());
+            for (RawProductListRow raw : rawRows) {
+                rows.add(raw.toProductListRow(variantsJson.get(raw.id())));
             }
             return rows;
         } catch (SQLException ex) {
@@ -200,7 +238,8 @@ public class ProductDAO extends BaseDAO {
      */
     public Map<String, Long> countAvailableByType() {
         final String sql = "SELECT p.product_type, COUNT(*) AS total "
-                + "FROM products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
+                + "FROM products p" + INVENTORY_JOIN
+                + " WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0 "
                 + "GROUP BY p.product_type";
         Map<String, Long> result = new HashMap<>();
         try (Connection connection = getConnection();
@@ -232,19 +271,24 @@ public class ProductDAO extends BaseDAO {
             return List.of();
         }
         String sql = LIST_SELECT
-                + " WHERE p.status = 'Available' AND p.inventory_count > 0"
+                + " WHERE p.status = 'Available' AND COALESCE(q.available_quantity, 0) > 0"
                 + " AND p.product_type = ? AND p.id <> ?"
-                + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
+                + " ORDER BY COALESCE(q.sold_quantity, 0) DESC, p.created_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productType);
             statement.setInt(2, excludeProductId);
             statement.setInt(3, Math.max(limit, 1));
-            List<ProductListRow> rows = new ArrayList<>();
+            List<RawProductListRow> rawRows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    rows.add(mapListRow(rs));
+                    rawRows.add(mapRawListRow(rs));
                 }
+            }
+            Map<Integer, String> variantsJson = loadVariantsJson(connection, rawRows);
+            List<ProductListRow> rows = new ArrayList<>(rawRows.size());
+            for (RawProductListRow raw : rawRows) {
+                rows.add(raw.toProductListRow(variantsJson.get(raw.id())));
             }
             return rows;
         } catch (SQLException ex) {
@@ -280,13 +324,20 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu tồn tại
      */
     public Optional<Products> findById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
+        final String sql = PRODUCT_BASE_SELECT + " WHERE p.id = ? LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRow(rs));
+                    int productId = rs.getInt("id");
+                    String variantSchema = rs.getString("variant_schema");
+                    String variantsJson = null;
+                    if (hasVariantSchema(variantSchema)) {
+                        variantsJson = loadVariantsJson(connection, Collections.singletonList(productId))
+                                .get(productId);
+                    }
+                    return Optional.of(mapRow(rs, variantsJson));
                 }
             }
         } catch (SQLException ex) {
@@ -302,20 +353,31 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu còn bán
      */
     public Optional<Products> findAvailableById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products WHERE id = ? AND status = 'Available' LIMIT 1";
+        final String sql = PRODUCT_BASE_SELECT
+                + " WHERE p.id = ? AND p.status = 'Available' LIMIT 1";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRow(rs));
+                    int productId = rs.getInt("id");
+                    String variantSchema = rs.getString("variant_schema");
+                    String variantsJson = null;
+                    if (hasVariantSchema(variantSchema)) {
+                        variantsJson = loadVariantsJson(connection, Collections.singletonList(productId))
+                                .get(productId);
+                    }
+                    return Optional.of(mapRow(rs, variantsJson));
                 }
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm khả dụng", ex);
         }
         return Optional.empty();
+    }
+
+    public Map<Integer, String> findVariantsJson(Connection connection, List<Integer> productIds) throws SQLException {
+        return loadVariantsJson(connection, productIds);
     }
 
     /**
@@ -348,8 +410,12 @@ public class ProductDAO extends BaseDAO {
      * @return {@code true} nếu cập nhật thành công
      */
     public boolean decrementInventory(int productId, int qty) {
+        return decrementInventory(productId, null, qty);
+    }
+
+    public boolean decrementInventory(int productId, Integer variantId, int qty) {
         try (Connection connection = getConnection()) {
-            return decrementInventory(connection, productId, qty);
+            return decrementInventory(connection, productId, variantId, qty);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể trừ tồn kho", ex);
             return false;
@@ -361,17 +427,31 @@ public class ProductDAO extends BaseDAO {
      *
      * @param connection kết nối dùng chung
      * @param productId  mã sản phẩm
+     * @param variantId  mã biến thể (có thể null nếu sản phẩm không có biến thể)
      * @param qty        số lượng cần trừ
      * @return {@code true} nếu tồn kho đủ và trừ thành công
      * @throws SQLException khi câu lệnh SQL lỗi
      */
-    public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
-                + "WHERE id = ? AND inventory_count >= ?";
+    public boolean decrementInventory(Connection connection, int productId, Integer variantId, int qty) throws SQLException {
+        String sql;
+        if (variantId == null) {
+            sql = "UPDATE product_quantities SET available_quantity = available_quantity - ?, "
+                    + "sold_quantity = sold_quantity + ?, updated_at = CURRENT_TIMESTAMP "
+                    + "WHERE product_id = ? AND variant_id IS NULL AND available_quantity >= ?";
+        } else {
+            sql = "UPDATE product_quantities SET available_quantity = available_quantity - ?, "
+                    + "sold_quantity = sold_quantity + ?, updated_at = CURRENT_TIMESTAMP "
+                    + "WHERE product_id = ? AND variant_id = ? AND available_quantity >= ?";
+        }
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, qty);
-            statement.setInt(2, productId);
-            statement.setInt(3, qty);
+            int index = 1;
+            statement.setInt(index++, qty);
+            statement.setInt(index++, qty);
+            statement.setInt(index++, productId);
+            if (variantId != null) {
+                statement.setInt(index++, variantId);
+            }
+            statement.setInt(index, qty);
             return statement.executeUpdate() > 0;
         }
     }
@@ -390,32 +470,40 @@ public class ProductDAO extends BaseDAO {
     }
 
     public ProductInventoryLock lockProductForUpdate(Connection connection, int productId) throws SQLException {
-        final String sql = "SELECT inventory_count, variant_schema, variants_json FROM products WHERE id = ? FOR UPDATE";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        String variantSchema = null;
+        final String productSql = "SELECT variant_schema FROM products WHERE id = ? FOR UPDATE";
+        try (PreparedStatement statement = connection.prepareStatement(productSql)) {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    Integer inventory = (Integer) rs.getObject("inventory_count");
-                    String schema = rs.getString("variant_schema");
-                    String variants = rs.getString("variants_json");
-                    return new ProductInventoryLock(inventory, schema, variants);
+                    variantSchema = rs.getString("variant_schema");
                 }
             }
         }
-        return new ProductInventoryLock(0, null, null);
-    }
-
-    public void updateVariantsJson(Connection connection, int productId, String variantsJson) throws SQLException {
-        final String sql = "UPDATE products SET variants_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            if (variantsJson == null) {
-                statement.setNull(1, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(1, variantsJson);
+        int totalInventory = 0;
+        List<ProductVariantOption> variants = new ArrayList<>();
+        final String quantitySql = "SELECT pq.available_quantity, pv.id AS variant_id, pv.variant_code, "
+                + "pv.attributes_json, pv.price, pv.status "
+                + "FROM product_quantities pq "
+                + "LEFT JOIN product_variants pv ON pq.variant_id = pv.id "
+                + "WHERE pq.product_id = ? FOR UPDATE";
+        try (PreparedStatement statement = connection.prepareStatement(quantitySql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Integer available = (Integer) rs.getObject("available_quantity");
+                    if (available != null) {
+                        totalInventory += available;
+                    }
+                    Integer variantId = (Integer) rs.getObject("variant_id");
+                    if (variantId != null && hasVariantSchema(variantSchema)) {
+                        variants.add(mapVariantOption(rs));
+                    }
+                }
             }
-            statement.setInt(2, productId);
-            statement.executeUpdate();
         }
+        String variantsJson = variants.isEmpty() ? null : gson.toJson(variants, variantListType);
+        return new ProductInventoryLock(totalInventory, variantSchema, variantsJson);
     }
 
     /**
@@ -425,7 +513,7 @@ public class ProductDAO extends BaseDAO {
      * @return tổng số sản phẩm khớp
      */
     public int countByKeyword(String keyword) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products p");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         try (Connection connection = getConnection();
@@ -450,20 +538,29 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm phù hợp
      */
     public List<Products> search(String keyword, int limit, int offset) {
-        StringBuilder sql = new StringBuilder("SELECT ");
-        sql.append(PRODUCT_COLUMNS)
-                .append(" FROM products");
+        StringBuilder sql = new StringBuilder(PRODUCT_BASE_SELECT);
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
-        sql.append(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
+        sql.append(" ORDER BY p.updated_at DESC LIMIT ? OFFSET ?");
         try (Connection connection = getConnection();
              PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
             statement.setInt(parameters.size() + 1, limit);
             statement.setInt(parameters.size() + 2, offset);
             List<Products> products = new ArrayList<>();
+            List<Integer> variantProductIds = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    products.add(mapRow(rs));
+                    Products product = mapRow(rs, null);
+                    products.add(product);
+                    if (hasVariantSchema(product.getVariantSchema())) {
+                        variantProductIds.add(product.getId());
+                    }
+                }
+            }
+            Map<Integer, String> variantsJson = loadVariantsJson(connection, variantProductIds);
+            for (Products product : products) {
+                if (hasVariantSchema(product.getVariantSchema())) {
+                    product.setVariantsJson(variantsJson.get(product.getId()));
                 }
             }
             return products;
@@ -481,15 +578,25 @@ public class ProductDAO extends BaseDAO {
      */
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products ORDER BY updated_at DESC LIMIT ?";
+        final String sql = PRODUCT_BASE_SELECT + " ORDER BY p.updated_at DESC LIMIT ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
             List<Products> products = new ArrayList<>();
+            List<Integer> variantProductIds = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    products.add(mapRow(rs));
+                    Products product = mapRow(rs, null);
+                    products.add(product);
+                    if (hasVariantSchema(product.getVariantSchema())) {
+                        variantProductIds.add(product.getId());
+                    }
+                }
+            }
+            Map<Integer, String> variantsJson = loadVariantsJson(connection, variantProductIds);
+            for (Products product : products) {
+                if (hasVariantSchema(product.getVariantSchema())) {
+                    product.setVariantsJson(variantsJson.get(product.getId()));
                 }
             }
             return products;
@@ -541,7 +648,7 @@ public class ProductDAO extends BaseDAO {
         if (keyword == null || keyword.isBlank()) {
             return;
         }
-        sql.append(" WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ?");
+        sql.append(" WHERE LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?");
         String pattern = '%' + keyword.toLowerCase(Locale.ROOT) + '%';
         parameters.add(pattern);
         parameters.add(pattern);
@@ -559,13 +666,10 @@ public class ProductDAO extends BaseDAO {
         return statement;
     }
 
-    /**
-     * Ánh xạ dữ liệu danh sách sản phẩm sang {@link ProductListRow}.
-     */
-    private ProductListRow mapListRow(ResultSet rs) throws SQLException {
+    private RawProductListRow mapRawListRow(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
         Integer sold = (Integer) rs.getObject("sold_count");
-        return new ProductListRow(
+        return new RawProductListRow(
                 rs.getInt("id"),
                 rs.getString("product_type"),
                 rs.getString("product_subtype"),
@@ -577,20 +681,16 @@ public class ProductDAO extends BaseDAO {
                 rs.getString("status"),
                 rs.getString("primary_image_url"),
                 rs.getString("variant_schema"),
-                rs.getString("variants_json"),
                 rs.getInt("shop_id"),
                 rs.getString("shop_name")
         );
     }
 
-    /**
-     * Ánh xạ dữ liệu chi tiết sang {@link ProductDetail} phục vụ trang chi tiết.
-     */
-    private ProductDetail mapDetail(ResultSet rs) throws SQLException {
+    private RawProductDetailRow mapRawDetailRow(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
         Integer sold = (Integer) rs.getObject("sold_count");
         Integer ownerId = (Integer) rs.getObject("shop_owner_id");
-        return new ProductDetail(
+        return new RawProductDetailRow(
                 rs.getInt("id"),
                 rs.getString("product_type"),
                 rs.getString("product_subtype"),
@@ -604,24 +704,13 @@ public class ProductDAO extends BaseDAO {
                 rs.getString("primary_image_url"),
                 rs.getString("gallery_json"),
                 rs.getString("variant_schema"),
-                rs.getString("variants_json"),
                 rs.getInt("shop_id"),
                 rs.getString("shop_name"),
                 ownerId
         );
     }
 
-    /**
-     * Ánh xạ dữ liệu shop sang đối tượng {@link ShopOption}.
-     */
-    private ShopOption mapShopOption(ResultSet rs) throws SQLException {
-        return new ShopOption(rs.getInt("shop_id"), rs.getString("shop_name"));
-    }
-
-    /**
-     * Ánh xạ dữ liệu bảng products sang thực thể {@link Products}.
-     */
-    private Products mapRow(ResultSet rs) throws SQLException {
+    private Products mapRow(ResultSet rs, String variantsJson) throws SQLException {
         Products product = new Products();
         product.setId(rs.getInt("id"));
         product.setShopId(rs.getInt("shop_id"));
@@ -639,7 +728,7 @@ public class ProductDAO extends BaseDAO {
         product.setSoldCount(sold);
         product.setStatus(rs.getString("status"));
         product.setVariantSchema(rs.getString("variant_schema"));
-        product.setVariantsJson(rs.getString("variants_json"));
+        product.setVariantsJson(variantsJson);
         Timestamp createdAt = rs.getTimestamp("created_at");
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         if (createdAt != null) {
@@ -651,7 +740,115 @@ public class ProductDAO extends BaseDAO {
         return product;
     }
 
+    private Map<Integer, String> loadVariantsJson(Connection connection, List<RawProductListRow> rows) throws SQLException {
+        if (rows == null || rows.isEmpty()) {
+            return Map.of();
+        }
+        List<Integer> productIds = rows.stream()
+                .filter(row -> hasVariantSchema(row.variantSchema()))
+                .map(RawProductListRow::id)
+                .collect(Collectors.toList());
+        return loadVariantsJson(connection, productIds);
+    }
+
+    private Map<Integer, String> loadVariantsJson(Connection connection, List<Integer> productIds) throws SQLException {
+        if (productIds == null || productIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = productIds.stream().map(id -> "?").collect(Collectors.joining(", "));
+        String sql = "SELECT pv.product_id, pv.id AS variant_id, pv.variant_code, pv.attributes_json, pv.price, pv.status, "
+                + "COALESCE(pq.available_quantity, 0) AS available_quantity "
+                + "FROM product_variants pv "
+                + "LEFT JOIN product_quantities pq ON pq.variant_id = pv.id "
+                + "WHERE pv.product_id IN (" + placeholders + ") "
+                + "ORDER BY pv.product_id ASC, pv.id ASC";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < productIds.size(); i++) {
+                statement.setInt(i + 1, productIds.get(i));
+            }
+            Map<Integer, List<ProductVariantOption>> variantsByProduct = new LinkedHashMap<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    int productId = rs.getInt("product_id");
+                    variantsByProduct.computeIfAbsent(productId, key -> new ArrayList<>())
+                            .add(mapVariantOption(rs));
+                }
+            }
+            Map<Integer, String> jsonMap = new HashMap<>();
+            for (Map.Entry<Integer, List<ProductVariantOption>> entry : variantsByProduct.entrySet()) {
+                String json = gson.toJson(entry.getValue(), variantListType);
+                jsonMap.put(entry.getKey(), json);
+            }
+            return jsonMap;
+        }
+    }
+
+    private ProductVariantOption mapVariantOption(ResultSet rs) throws SQLException {
+        Integer variantId = (Integer) rs.getObject("variant_id");
+        String variantCode = rs.getString("variant_code");
+        String attributesJson = rs.getString("attributes_json");
+        Map<String, String> attributes = parseAttributes(attributesJson);
+        BigDecimal price = rs.getBigDecimal("price");
+        Integer available = (Integer) rs.getObject("available_quantity");
+        String status = rs.getString("status");
+        return new ProductVariantOption(variantId, variantCode, attributes, price, available, status);
+    }
+
+    private Map<String, String> parseAttributes(String attributesJson) {
+        if (attributesJson == null || attributesJson.isBlank()) {
+            return Map.of();
+        }
+        Map<String, String> attributes = gson.fromJson(attributesJson, attributeMapType);
+        if (attributes == null || attributes.isEmpty()) {
+            return Map.of();
+        }
+        return new LinkedHashMap<>(attributes);
+    }
+
+    private boolean hasVariantSchema(String variantSchema) {
+        if (variantSchema == null) {
+            return false;
+        }
+        String normalized = variantSchema.trim();
+        return !normalized.isEmpty() && !"NONE".equalsIgnoreCase(normalized);
+    }
+
+    /**
+     * Ánh xạ dữ liệu shop sang đối tượng {@link ShopOption}.
+     */
+    private ShopOption mapShopOption(ResultSet rs) throws SQLException {
+        return new ShopOption(rs.getInt("shop_id"), rs.getString("shop_name"));
+    }
+
+    private Products mapRow(ResultSet rs) throws SQLException {
+        return mapRow(rs, null);
+    }
+
     public record ProductInventoryLock(Integer inventoryCount, String variantSchema, String variantsJson) {
+    }
+
+    private record RawProductListRow(int id, String productType, String productSubtype, String name,
+                                     String shortDescription, BigDecimal price, Integer inventoryCount,
+                                     Integer soldCount, String status, String primaryImageUrl,
+                                     String variantSchema, int shopId, String shopName) {
+
+        private ProductListRow toProductListRow(String variantsJson) {
+            return new ProductListRow(id, productType, productSubtype, name, shortDescription, price,
+                    inventoryCount, soldCount, status, primaryImageUrl, variantSchema, variantsJson, shopId, shopName);
+        }
+    }
+
+    private record RawProductDetailRow(int id, String productType, String productSubtype, String name,
+                                       String shortDescription, String description, BigDecimal price,
+                                       Integer inventoryCount, Integer soldCount, String status,
+                                       String primaryImageUrl, String galleryJson, String variantSchema,
+                                       int shopId, String shopName, Integer shopOwnerId) {
+
+        private ProductDetail toProductDetail(String variantsJson) {
+            return new ProductDetail(id, productType, productSubtype, name, shortDescription, description,
+                    price, inventoryCount, soldCount, status, primaryImageUrl, galleryJson, variantSchema,
+                    variantsJson, shopId, shopName, shopOwnerId);
+        }
     }
 }
 

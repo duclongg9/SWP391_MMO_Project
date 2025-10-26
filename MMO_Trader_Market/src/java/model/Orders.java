@@ -17,6 +17,8 @@ public class Orders {
 
     private BigDecimal unitPrice;
 
+    private Integer variantId;
+
     private String variantCode;
 
     private BigDecimal totalAmount;
@@ -77,6 +79,14 @@ public class Orders {
 
     public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
+    }
+
+    public Integer getVariantId() {
+        return variantId;
+    }
+
+    public void setVariantId(Integer variantId) {
+        this.variantId = variantId;
     }
 
     public String getVariantCode() {

@@ -102,7 +102,11 @@ public class AsyncOrderWorker implements OrderWorker {
                     return;
                 }
                 // 3. Khóa tồn kho và credential của sản phẩm để chắc chắn còn đủ hàng.
+                Integer variantId = msg.variantId();
                 String variantCode = msg.variantCode();
+                if (variantId == null) {
+                    variantId = order.getVariantId();
+                }
                 if (variantCode == null || variantCode.isBlank()) {
                     variantCode = order.getVariantCode();
                 }
@@ -116,15 +120,22 @@ public class AsyncOrderWorker implements OrderWorker {
                 List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                         lockedProduct.variantSchema(), lockedProduct.variantsJson());
                 ProductVariantOption variant = null;
-                if (variantCode != null && !variantCode.isBlank()) {
-                    String normalized = ProductVariantUtils.normalizeCode(variantCode);
-                    Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalized);
+                if (variantId != null || (variantCode != null && !variantCode.isBlank())) {
+                    Optional<ProductVariantOption> variantOpt;
+                    if (variantId != null) {
+                        variantOpt = ProductVariantUtils.findVariantById(variants, variantId);
+                    } else {
+                        String normalized = ProductVariantUtils.normalizeCode(variantCode);
+                        variantOpt = ProductVariantUtils.findVariant(variants, normalized);
+                    }
                     if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
                         orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                         connection.commit();
                         return;
                     }
                     variant = variantOpt.get();
+                    variantId = variant.getVariantId();
+                    variantCode = variant.getVariantCode();
                     Integer variantInventory = variant.getInventoryCount();
                     if (variantInventory == null || variantInventory < msg.qty()) {
                         orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
@@ -132,20 +143,16 @@ public class AsyncOrderWorker implements OrderWorker {
                         return;
                     }
                 }
-                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), variantCode);
+                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), variantId, variantCode);
                 if (credentialIds.size() < msg.qty()) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                     connection.commit();
                     return;
                 }
-                boolean decremented = productDAO.decrementInventory(connection, msg.productId(), msg.qty());
+                Integer variantIdForUpdate = variant == null ? null : variant.getVariantId();
+                boolean decremented = productDAO.decrementInventory(connection, msg.productId(), variantIdForUpdate, msg.qty());
                 if (!decremented) {
                     throw new SQLException("Không thể trừ tồn kho");
-                }
-                if (variant != null) {
-                    ProductVariantUtils.decreaseInventory(variant, msg.qty());
-                    String updatedJson = ProductVariantUtils.toJson(variants);
-                    productDAO.updateVariantsJson(connection, msg.productId(), updatedJson);
                 }
                 // 4. Trừ tiền trong ví và ghi nhận giao dịch thanh toán.
                 BigDecimal balanceAfter = balanceBefore.subtract(totalAmount);

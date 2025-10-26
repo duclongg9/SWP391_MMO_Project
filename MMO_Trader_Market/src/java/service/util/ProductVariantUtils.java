@@ -78,6 +78,16 @@ public final class ProductVariantUtils {
                 .findFirst();
     }
 
+    public static Optional<ProductVariantOption> findVariantById(List<ProductVariantOption> variants, Integer variantId) {
+        if (variantId == null || variants == null || variants.isEmpty()) {
+            return Optional.empty();
+        }
+        return variants.stream()
+                .filter(Objects::nonNull)
+                .filter(variant -> Objects.equals(variantId, variant.getVariantId()))
+                .findFirst();
+    }
+
     public static BigDecimal resolveUnitPrice(Products product, Optional<ProductVariantOption> variantOpt) {
         if (variantOpt.isPresent()) {
             BigDecimal price = variantOpt.get().getPrice();

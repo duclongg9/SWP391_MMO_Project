@@ -75,15 +75,10 @@ CREATE TABLE `products` (
   `price` decimal(18,4) NOT NULL,                -- giá cơ sở (min price nếu có biến thể)
   `primary_image_url` varchar(512) DEFAULT NULL, -- ảnh đại diện
   `gallery_json` json DEFAULT NULL,              -- mảng URL ảnh
-
-  `inventory_count` int NOT NULL DEFAULT 0,
-  `sold_count` int NOT NULL DEFAULT 0,
-
   `status` enum('Available','OutOfStock','Unlisted') NOT NULL DEFAULT 'Available',
 
   -- Biến thể gọn trong 1 cột JSON + schema để UI render
   `variant_schema` ENUM('NONE','COLOR_SIZE','DURATION_PLAN','EDITION_LICENSE','CUSTOM') NOT NULL DEFAULT 'NONE',
-  `variants_json` json DEFAULT NULL,             -- [{variant_code, attributes:{...}, price, inventory_count, status}]
 
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -91,15 +86,51 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `product_credentials`;
+DROP TABLE IF EXISTS `product_quantities`;
+DROP TABLE IF EXISTS `product_variants`;
+
+CREATE TABLE `product_variants` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `product_id` int NOT NULL,
+  `variant_code` varchar(100) NOT NULL,
+  `display_name` varchar(255) DEFAULT NULL,
+  `attributes_json` json DEFAULT NULL,
+  `price` decimal(18,4) NOT NULL,
+  `status` enum('Available','Unavailable','Unlisted') NOT NULL DEFAULT 'Available',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_variant_code` (`product_id`,`variant_code`),
+  CONSTRAINT `fk_variant_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `product_quantities` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `product_id` int NOT NULL,
+  `variant_id` int DEFAULT NULL,
+  `available_quantity` int NOT NULL DEFAULT 0,
+  `sold_quantity` int NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_variant_quantity` (`product_id`,`variant_id`),
+  CONSTRAINT `fk_quantity_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_quantity_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE `product_credentials` (
   `id` int NOT NULL AUTO_INCREMENT,
   `product_id` int NOT NULL,
   `order_id` int DEFAULT NULL,
   `encrypted_value` text NOT NULL,
   `variant_code` varchar(100) DEFAULT NULL,
+  `variant_id` int DEFAULT NULL,
   `is_sold` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_product_credentials_variant` (`variant_id`),
+  CONSTRAINT `fk_credentials_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_credentials_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- =================================================================
@@ -166,11 +197,13 @@ CREATE TABLE `orders` (
   `total_amount` decimal(18,4) NOT NULL,
   `status` enum('Pending','Processing','Completed','Failed','Refunded','Disputed') NOT NULL,
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
+  `variant_id` int DEFAULT NULL,
   `variant_code` varchar(100) DEFAULT NULL,
   `hold_until` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_orders_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `deposit_requests`;
@@ -330,6 +363,8 @@ ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_order_id` FOREIGN KEY 
 -- =================================================================
 CREATE INDEX `idx_users_email` ON `users`(`email`);
 CREATE INDEX `idx_shops_owner_id` ON `shops`(`owner_id`);
+CREATE INDEX `idx_product_variants_product_id` ON `product_variants`(`product_id`);
+CREATE INDEX `idx_product_quantities_product_id` ON `product_quantities`(`product_id`);
 CREATE INDEX `idx_products_shop_id` ON `products`(`shop_id`);
 CREATE INDEX `idx_products_type_subtype` ON `products`(`product_type`,`product_subtype`);
 CREATE INDEX `idx_products_status_created` ON `products`(`status`,`created_at`);
@@ -369,7 +404,7 @@ INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`status`,`created_at`)
 
 -- Products (6 sản phẩm mẫu, đủ loại/subtype; tiếng Việt, có biến thể JSON)
 INSERT INTO `products`
-(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
+(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`status`,`variant_schema`,`created_at`,`updated_at`)
 VALUES
 -- 1001: EMAIL/GMAIL
 (1001,1,'EMAIL','GMAIL',
@@ -379,11 +414,7 @@ VALUES
  250000.0000,
   'gmail.png',
   JSON_ARRAY('gmail.png'),
- 19,128,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','gmail-basic-1m','attributes', JSON_OBJECT('service','gmail','plan','basic','duration','1m'),'price',250000.0000,'inventory_count',10,'status','Available'),
-   JSON_OBJECT('variant_code','gmail-premium-12m','attributes', JSON_OBJECT('service','gmail','plan','premium','duration','12m'),'price',1200000.0000,'inventory_count',9,'status','Available')
- ),
+ 'Available','DURATION_PLAN',
  '2024-01-14 11:00:00','2024-01-20 12:00:00'),
 
 -- 1002: SOFTWARE/OTHER (Spotify)
@@ -394,11 +425,7 @@ VALUES
  80000.0000,
   'spotify.png',
   JSON_ARRAY('spotify.png'),
- 27,256,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','sp-1m','attributes', JSON_OBJECT('service','spotify','duration','1m'),'price',80000.0000,'inventory_count',20,'status','Available'),
-   JSON_OBJECT('variant_code','sp-12m','attributes', JSON_OBJECT('service','spotify','duration','12m'),'price',185000.0000,'inventory_count',7,'status','Available')
- ),
+ 'Available','DURATION_PLAN',
  '2024-01-18 09:15:00','2024-01-26 08:30:00'),
 
 -- 1003: SOFTWARE/OTHER (Windows key) - Unlisted
@@ -409,10 +436,7 @@ VALUES
  390000.0000,
  'https://cdn.mmo.local/products/win11pro_main.jpg',
  JSON_ARRAY('https://cdn.mmo.local/products/win11pro_main.jpg'),
- 50,42,'Unlisted','EDITION_LICENSE',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',50,'status','Unlisted')
- ),
+ 'Unlisted','EDITION_LICENSE',
  '2024-01-19 15:45:00','2024-01-19 15:45:00'),
 
 -- 1004: SOCIAL/FACEBOOK
@@ -423,11 +447,7 @@ VALUES
  150000.0000,
   'facebook.png',
   JSON_ARRAY('facebook.png'),
- 30,73,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','fb-2009','attributes', JSON_OBJECT('age','2009'),'price',180000.0000,'inventory_count',10,'status','Available'),
-   JSON_OBJECT('variant_code','fb-2012','attributes', JSON_OBJECT('age','2012'),'price',150000.0000,'inventory_count',20,'status','Available')
- ),
+ 'Available','CUSTOM',
  NOW(),NOW()),
 
 -- 1005: SOCIAL/TIKTOK
@@ -438,10 +458,7 @@ VALUES
  99000.0000,
   'tiktok.png',
   JSON_ARRAY('tiktok.png'),
- 40,58,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','tt-pro','attributes', JSON_OBJECT('tier','pro'),'price',99000.0000,'inventory_count',40,'status','Available')
- ),
+ 'Available','CUSTOM',
  NOW(),NOW()),
 
 -- 1006: GAME/VALORANT
@@ -452,11 +469,7 @@ VALUES
  95000.0000,
   'valorant.png',
   JSON_ARRAY('valorant.png'),
- 100,121,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','vp-470','attributes', JSON_OBJECT('amount','470VP'),'price',95000.0000,'inventory_count',50,'status','Available'),
-   JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375VP'),'price',270000.0000,'inventory_count',50,'status','Available')
- ),
+ 'Available','CUSTOM',
  NOW(),NOW()),
 
 -- 1007: SOFTWARE/CANVA
@@ -467,18 +480,60 @@ VALUES
  90000.0000,
   'canva.jpg',
   JSON_ARRAY('canva.jpg'),
- 60,187,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',40,'status','Available'),
-   JSON_OBJECT('variant_code','canva-12m','attributes',JSON_OBJECT('duration','12m'),'price',750000.0000,'inventory_count',20,'status','Available')
- ),
+ 'Available','DURATION_PLAN',
  '2024-01-18 10:00:00','2024-01-28 08:00:00');
 
+-- Product variants
+INSERT INTO `product_variants`
+(`id`,`product_id`,`variant_code`,`display_name`,`attributes_json`,`price`,`status`,`created_at`,`updated_at`)
+VALUES
+(2001,1001,'gmail-basic-1m','Gmail Basic 1 tháng',
+ JSON_OBJECT('service','gmail','plan','basic','duration','1m'),250000.0000,'Available','2024-01-14 11:00:00','2024-01-20 12:00:00'),
+(2002,1001,'gmail-premium-12m','Gmail Premium 12 tháng',
+ JSON_OBJECT('service','gmail','plan','premium','duration','12m'),1200000.0000,'Available','2024-01-14 11:00:00','2024-01-20 12:00:00'),
+(2003,1002,'sp-1m','Spotify Premium 1 tháng',
+ JSON_OBJECT('service','spotify','duration','1m'),80000.0000,'Available','2024-01-18 09:15:00','2024-01-26 08:30:00'),
+(2004,1002,'sp-12m','Spotify Premium 12 tháng',
+ JSON_OBJECT('service','spotify','duration','12m'),185000.0000,'Available','2024-01-18 09:15:00','2024-01-26 08:30:00'),
+(2005,1003,'win11pro-oem','Windows 11 Pro OEM',
+ JSON_OBJECT('edition','pro','license','oem'),390000.0000,'Unlisted','2024-01-19 15:45:00','2024-01-19 15:45:00'),
+(2006,1004,'fb-2009','Facebook cổ 2009',
+ JSON_OBJECT('age','2009'),180000.0000,'Available',NOW(),NOW()),
+(2007,1004,'fb-2012','Facebook cổ 2012',
+ JSON_OBJECT('age','2012'),150000.0000,'Available',NOW(),NOW()),
+(2008,1005,'tt-pro','TikTok Pro',
+ JSON_OBJECT('tier','pro'),99000.0000,'Available',NOW(),NOW()),
+(2009,1006,'vp-470','Valorant VP 470',
+ JSON_OBJECT('amount','470VP'),95000.0000,'Available',NOW(),NOW()),
+(2010,1006,'vp-1375','Valorant VP 1375',
+ JSON_OBJECT('amount','1375VP'),270000.0000,'Available',NOW(),NOW()),
+(2011,1007,'canva-1m','Canva Pro 1 tháng',
+ JSON_OBJECT('duration','1m'),90000.0000,'Available','2024-01-18 10:00:00','2024-01-28 08:00:00'),
+(2012,1007,'canva-12m','Canva Pro 12 tháng',
+ JSON_OBJECT('duration','12m'),750000.0000,'Available','2024-01-18 10:00:00','2024-01-28 08:00:00');
+
+-- Product inventory snapshots
+INSERT INTO `product_quantities`
+(`product_id`,`variant_id`,`available_quantity`,`sold_quantity`)
+VALUES
+(1001,2001,10,70),
+(1001,2002,9,58),
+(1002,2003,20,150),
+(1002,2004,7,106),
+(1003,2005,50,42),
+(1004,2006,10,35),
+(1004,2007,20,38),
+(1005,2008,40,58),
+(1006,2009,50,60),
+(1006,2010,50,61),
+(1007,2011,40,90),
+(1007,2012,20,97);
+
 -- Credentials (ví dụ ràng buộc với đơn)
-INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
- (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
- (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
- (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00');
+INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`variant_id`,`is_sold`,`created_at`) VALUES
+ (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',2001,1,'2024-01-20 12:05:00'),
+ (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',2002,0,'2024-01-21 10:20:00'),
+ (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',2004,0,'2024-01-26 08:30:00');
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
@@ -497,9 +552,9 @@ INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transac
  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
 
 -- Orders (ví dụ Completed + Disputed)
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
- (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
- (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
+INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_id`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
+ (5001,3,1001,1,250000.0000,2,250000.0000,'Completed',2001,'gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+ (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed',2004,'sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
 
 -- Withdrawals
 INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES
