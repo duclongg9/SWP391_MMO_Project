@@ -41,9 +41,9 @@
                                 <c:forEach var="option" items="${subtypeOptions}">
                                     <label class="product-filter-sidebar__option">
                                         <input type="checkbox" name="subtype" value="${fn:escapeXml(option.code)}"
-                                            <c:if test="${not empty selectedSubtypes and selectedSubtypes.contains(option.code)}">checked</c:if>
-                                            onchange="this.form.submit()" />
-                                        <span><c:out value="${option.label}" /></span>
+                                               <c:if test="${not empty selectedSubtypes and selectedSubtypes.contains(option.code)}">checked</c:if>
+                                                   onchange="this.form.submit()" />
+                                               <span><c:out value="${option.label}" /></span>
                                     </label>
                                 </c:forEach>
                             </c:when>
@@ -53,7 +53,7 @@
                         </c:choose>
                     </div>
                     <noscript>
-                        <button class="button button--primary button--block" type="submit">Áp dụng bộ lọc</button>
+                    <button class="button button--primary button--block" type="submit">Áp dụng bộ lọc</button>
                     </noscript>
                 </form>
             </aside>
@@ -73,10 +73,10 @@
                                                 <c:set var="productImageSource" value="${p.primaryImageUrl}" />
                                                 <c:choose>
                                                     <c:when test="${fn:startsWith(productImageSource, 'http://')
-                                                        or fn:startsWith(productImageSource, 'https://')
-                                                        or fn:startsWith(productImageSource, '//')
-                                                        or fn:startsWith(productImageSource, 'data:')
-                                                        or fn:startsWith(productImageSource, cPath)}">
+                                                                    or fn:startsWith(productImageSource, 'https://')
+                                                                    or fn:startsWith(productImageSource, '//')
+                                                                    or fn:startsWith(productImageSource, 'data:')
+                                                                    or fn:startsWith(productImageSource, cPath)}">
                                                         <c:set var="productImageUrl" value="${productImageSource}" />
                                                     </c:when>
                                                     <c:otherwise>
@@ -135,7 +135,7 @@
                     <c:if test="${not empty selectedSubtypes}">
                         <c:forEach var="s" items="${selectedSubtypes}">
                             <c:set var="subtypeQuery"
-                                   value="${fn:concat(subtypeQuery, fn:concat('&subtype=', fn:escapeXml(s)))}" />
+                                   value="${subtypeQuery}${'&subtype='}${fn:escapeXml(s)}" />
                         </c:forEach>
                     </c:if>
                     <nav class="pagination">
