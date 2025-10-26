@@ -81,7 +81,11 @@ public class OrderService {
             if (!Objects.equals(order.getBuyerId(), userId)) {
                 throw new IllegalStateException("Khóa idempotency đã được sử dụng bởi tài khoản khác.");
             }
-            return order.getId();
+            if (isOrderActive(order.getStatus())) {
+                return order.getId();
+            }
+            // Đơn hàng cũ đã kết thúc vòng đời, cấp một khóa mới để tạo giao dịch mới.
+            trimmedKey = UUID.randomUUID().toString();
         }
         Products product = productDAO.findAvailableById(productId)
                 .filter(p -> p.getInventoryCount() != null && p.getInventoryCount() >= quantity)
@@ -151,6 +155,11 @@ public class OrderService {
         }
         String normalized = Character.toUpperCase(status.charAt(0)) + status.substring(1).toLowerCase();
         return ALLOWED_STATUSES.contains(normalized) ? normalized : null;
+    }
+
+    private boolean isOrderActive(String status) {
+        OrderStatus orderStatus = OrderStatus.fromDatabaseValue(status);
+        return orderStatus == OrderStatus.PENDING || orderStatus == OrderStatus.PROCESSING;
     }
 
     private static Map<OrderStatus, String> buildStatusLabels() {
