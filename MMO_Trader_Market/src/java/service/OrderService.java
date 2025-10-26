@@ -1,5 +1,8 @@
 package service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
@@ -17,9 +20,12 @@ import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
 import service.util.ProductVariantUtils;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -212,6 +218,55 @@ public class OrderService {
     private boolean isOrderActive(String status) {
         OrderStatus orderStatus = OrderStatus.fromDatabaseValue(status);
         return orderStatus == OrderStatus.PENDING || orderStatus == OrderStatus.PROCESSING;
+    }
+
+    private Optional<ProductVariantOption> findVariantOption(Products product, String variantCode) {
+        List<ProductVariantOption> variants = parseVariants(product.getVariantSchema(), product.getVariantsJson());
+        if (variants.isEmpty()) {
+            return Optional.empty();
+        }
+        String target = variantCode.toLowerCase(Locale.ROOT);
+        return variants.stream()
+                .filter(Objects::nonNull)
+                .filter(ProductVariantOption::isAvailable)
+                .filter(variant -> {
+                    String code = variant.getVariantCode();
+                    return code != null && code.toLowerCase(Locale.ROOT).equals(target);
+                })
+                .findFirst();
+    }
+
+    private List<ProductVariantOption> parseVariants(String variantSchema, String variantsJson) {
+        if (!hasVariants(variantSchema) || variantsJson == null || variantsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<ProductVariantOption> variants = gson.fromJson(variantsJson, variantListType);
+            if (variants == null || variants.isEmpty()) {
+                return List.of();
+            }
+            List<ProductVariantOption> normalized = new ArrayList<>();
+            for (ProductVariantOption option : variants) {
+                if (option != null) {
+                    normalized.add(option);
+                }
+            }
+            return List.copyOf(normalized);
+        } catch (JsonSyntaxException ex) {
+            return List.of();
+        }
+    }
+
+    private boolean hasVariants(String variantSchema) {
+        return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema);
+    }
+
+    private String normalizeVariantCode(String variantCode) {
+        if (variantCode == null) {
+            return null;
+        }
+        String trimmed = variantCode.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static Map<OrderStatus, String> buildStatusLabels() {
