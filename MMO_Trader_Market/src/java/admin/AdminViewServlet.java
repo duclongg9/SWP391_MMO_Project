@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -94,13 +95,72 @@ public class AdminViewServlet extends HttpServlet {
                 break;
             }
             case "/shops": {
+                // lấy tham số
+                String q      = clean(req.getParameter("q"));        // tìm theo TÊN cửa hàng
+                String status = clean(req.getParameter("status"));   // Active/Banned/Rejected/Inactive/all
+                String from   = clean(req.getParameter("from"));     // yyyy-MM-dd | dd-MM-yyyy | dd/MM/yyyy
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
                 try (Connection con = DBConnect.getConnection()) {
                     ManageShopDAO dao = new ManageShopDAO(con);
-                    List<Shops> shops = dao.getAllShops();
-                    req.setAttribute("shopList", shops);
+                    List<Shops> list = dao.getAllShops();
+
+                    // 1) Lọc theo TÊN cửa hàng (chỉ name)
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2) Lọc theo trạng thái (String)
+                    if (status != null && !"all".equalsIgnoreCase(status)) {
+                        final String st = status;
+                        list = list.stream()
+                                .filter(s -> s.getStatus() != null && s.getStatus().equalsIgnoreCase(st))
+                                .toList();
+                    }
+
+                    // 3) Lọc theo ngày tạo
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(s -> {
+                            java.util.Date d = s.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4) Sắp xếp mặc định: mới → cũ
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
+                    req.setAttribute("shopList", list);
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }
+
+                // Giữ lại giá trị filter cho JSP
+                // LƯU Ý: input type="date" cần yyyy-MM-dd
+                String fromIso = (fromD == null ? "" : fromD.toString()); // yyyy-MM-dd
+                String toIso   = (toD   == null ? "" : toD.toString());   // yyyy-MM-dd
+
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", fromIso);
+                req.setAttribute("to", toIso);
 
                 req.setAttribute("pageTitle", "Quản lý cửa hàng");
                 req.setAttribute("active", "shops");
@@ -108,21 +168,79 @@ public class AdminViewServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
             case "/kycs": {
-                try (Connection con = DBConnect.getConnection()) {
-                    ManageKycDAO dao = new ManageKycDAO(con);
-                    List<KycRequests> shops = dao.getAllKyc();
-                    req.setAttribute("kycList", shops);
-                } catch (Exception e) {
-                    throw new ServletException(e);
+                String q      = clean(req.getParameter("q"));
+                String status = clean(req.getParameter("status"));
+                String from   = clean(req.getParameter("from"));
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
+                Integer statusId = null;
+                if (status != null && !"all".equalsIgnoreCase(status)) {
+                    try { statusId = Integer.parseInt(status); } catch (NumberFormatException ignored) {}
                 }
 
-                req.setAttribute("pageTitle", "Quản lý kyc");
+                try (Connection con = DBConnect.getConnection()) {
+                    ManageKycDAO dao = new ManageKycDAO(con);
+                    List<KycRequests> list = dao.getAllKycRequests();
+
+                    // 1️⃣ Lọc theo TÊN NGƯỜI DÙNG
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(k -> k.getUserName() != null && k.getUserName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2️⃣ Lọc theo trạng thái
+                    if (statusId != null) {
+                        final int s = statusId;
+                        list = list.stream().filter(k -> k.getStatusId() == s).toList();
+                    }
+
+                    // 3️⃣ Lọc theo ngày gửi
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(k -> {
+                            java.util.Date d = k.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4️⃣ Sắp xếp mặc định: ngày mới nhất trước
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    k -> k.getCreatedAt() == null ? new java.util.Date(0) : k.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
+                    req.setAttribute("kycList", list);
+                } catch (Exception e) {
+                    throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
+                }
+
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", from == null ? "" : from);
+                req.setAttribute("to", to == null ? "" : to);
+
+                req.setAttribute("pageTitle", "Quản lý KYC");
                 req.setAttribute("active", "kycs");
                 req.setAttribute("content", "/WEB-INF/views/Admin/pages/kycs.jsp");
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
+
             case "/systems": {
                 content = "/WEB-INF/views/Admin/pages/systems.jsp";
                 title   = "Quản lí hệ thống"; active = "systems";
@@ -270,41 +388,61 @@ public class AdminViewServlet extends HttpServlet {
         }
         if ("/kycs/status".equalsIgnoreCase(path)) {
             req.setCharacterEncoding("UTF-8");
-            String action   = safe(req.getParameter("action"));   // approve | reject
-            String idStr    = safe(req.getParameter("id"));       // kyc_id
-            String feedback = safe(req.getParameter("feedback")); // ghi chú (bắt buộc khi reject)
+            String action   = req.getParameter("action");    // approve | reject
+            String idStr    = req.getParameter("id");
+            String feedback = req.getParameter("feedback");
 
-            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai id"); return; }
-            if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
-                resp.sendError(400, "Nhập lý do khi từ chối"); return;
+            if (idStr == null || !idStr.matches("\\d+")) {
+                resp.sendError(400, "Sai ID"); return;
             }
-
             int kycId = Integer.parseInt(idStr);
 
             try (Connection con = DBConnect.getConnection()) {
                 ManageKycDAO dao = new ManageKycDAO(con);
                 int rows;
-
                 if ("approve".equalsIgnoreCase(action)) {
-                    // Đổi trạng thái KYC -> Approved và NÂNG users.role_id -> Seller (2)
-                    rows = dao.updateKycAndMaybePromoteUser(
-                            kycId, ManageKycDAO.KYC_APPROVED, ManageKycDAO.ROLE_SELLER, feedback);
+                    rows = dao.approveKycAndPromote(kycId, feedback);
                 } else if ("reject".equalsIgnoreCase(action)) {
-                    // Chỉ đổi trạng thái KYC -> Rejected (không đổi role)
-                    rows = dao.updateKycAndMaybePromoteUser(
-                            kycId, ManageKycDAO.KYC_REJECTED, null, feedback);
+                    rows = dao.rejectKyc(kycId, feedback == null ? "" : feedback);
                 } else {
                     resp.sendError(400, "Action không hợp lệ"); return;
                 }
 
-                if (rows > 0) resp.sendRedirect(req.getContextPath() + "/admin/kycs");
-                else          resp.sendError(404, "Không tìm thấy KYC");
+                // PRG: redirect về danh sách để tránh lỗi forward sai / response committed
+                req.getSession().setAttribute("flash", rows > 0 ? "Cập nhật thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
                 resp.sendError(500, e.getMessage());
+                return;
+            }
+        }
+        // POST /admin/shops/status   (action=accept|reject, id=<shopId>)
+        if ("/shops/status".equalsIgnoreCase(path)) {
+            String idStr  = req.getParameter("id");
+            String action = req.getParameter("action"); // accept | reject
+
+            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai ID"); return; }
+            if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
+                resp.sendError(400, "Action không hợp lệ"); return;
+            }
+
+            int shopId = Integer.parseInt(idStr);
+            String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
+
+            try (Connection con = DBConnect.getConnection()) {
+                ManageShopDAO dao = new ManageShopDAO(con);
+                boolean ok = dao.updateStatus(shopId, newStatus);
+                req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+            } catch (Exception e) {
+                e.printStackTrace(); resp.sendError(500, e.getMessage());
             }
             return;
         }
+
+
 
         // --- Không khớp route nào ---
         resp.sendError(404);
