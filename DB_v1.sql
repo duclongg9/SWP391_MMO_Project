@@ -96,6 +96,7 @@ CREATE TABLE `product_credentials` (
   `product_id` int NOT NULL,
   `order_id` int DEFAULT NULL,
   `encrypted_value` text NOT NULL,
+  `variant_code` varchar(100) DEFAULT NULL,
   `is_sold` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -159,10 +160,13 @@ CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `buyer_id` int NOT NULL,
   `product_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `unit_price` decimal(18,4) NOT NULL,
   `payment_transaction_id` int DEFAULT NULL,
   `total_amount` decimal(18,4) NOT NULL,
   `status` enum('Pending','Processing','Completed','Failed','Refunded','Disputed') NOT NULL,
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
+  `variant_code` varchar(100) DEFAULT NULL,
   `hold_until` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -471,10 +475,10 @@ VALUES
  '2024-01-18 10:00:00','2024-01-28 08:00:00');
 
 -- Credentials (ví dụ ràng buộc với đơn)
-INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`is_sold`,`created_at`) VALUES
- (1,1001,5001,'ENCRYPTED-CODE-001',1,'2024-01-20 12:05:00'),
- (2,1001,NULL,'ENCRYPTED-CODE-002',0,'2024-01-21 10:20:00'),
- (3,1002,NULL,'ENCRYPTED-CODE-201',0,'2024-01-26 08:30:00');
+INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+ (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
+ (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
+ (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00');
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
@@ -493,9 +497,9 @@ INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transac
  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
 
 -- Orders (ví dụ Completed + Disputed)
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`payment_transaction_id`,`total_amount`,`status`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
- (5001,3,1001,2,250000.0000,'Completed','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
- (5002,3,1002,NULL,185000.0000,'Disputed','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
+INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
+ (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+ (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
 
 -- Withdrawals
 INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES

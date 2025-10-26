@@ -54,8 +54,8 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
     }
 
     @Override
-    public void publish(int orderId, String idemKey, int productId, int qty) {
-        queue.offer(new OrderMessage(orderId, idemKey, productId, qty));
+    public void publish(int orderId, String idemKey, int productId, int qty, String variantCode) {
+        queue.offer(new OrderMessage(orderId, idemKey, productId, qty, variantCode));
     }
 
     private void dispatchLoop() {

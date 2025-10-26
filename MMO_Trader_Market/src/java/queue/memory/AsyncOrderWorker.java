@@ -9,8 +9,10 @@ import model.OrderStatus;
 import model.Orders;
 import model.TransactionType;
 import model.Wallets;
+import model.product.ProductVariantOption;
 import queue.OrderMessage;
 import queue.OrderWorker;
+import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -100,13 +102,37 @@ public class AsyncOrderWorker implements OrderWorker {
                     return;
                 }
                 // 3. Khóa tồn kho và credential của sản phẩm để chắc chắn còn đủ hàng.
-                int inventory = productDAO.lockInventoryForUpdate(connection, msg.productId());
+                String variantCode = msg.variantCode();
+                if (variantCode == null || variantCode.isBlank()) {
+                    variantCode = order.getVariantCode();
+                }
+                ProductDAO.ProductInventoryLock lockedProduct = productDAO.lockProductForUpdate(connection, msg.productId());
+                int inventory = lockedProduct.inventoryCount() == null ? 0 : lockedProduct.inventoryCount();
                 if (inventory < msg.qty()) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                     connection.commit();
                     return;
                 }
-                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty());
+                List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
+                        lockedProduct.variantSchema(), lockedProduct.variantsJson());
+                ProductVariantOption variant = null;
+                if (variantCode != null && !variantCode.isBlank()) {
+                    String normalized = ProductVariantUtils.normalizeCode(variantCode);
+                    Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalized);
+                    if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
+                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
+                        connection.commit();
+                        return;
+                    }
+                    variant = variantOpt.get();
+                    Integer variantInventory = variant.getInventoryCount();
+                    if (variantInventory == null || variantInventory < msg.qty()) {
+                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
+                        connection.commit();
+                        return;
+                    }
+                }
+                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), variantCode);
                 if (credentialIds.size() < msg.qty()) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                     connection.commit();
@@ -115,6 +141,11 @@ public class AsyncOrderWorker implements OrderWorker {
                 boolean decremented = productDAO.decrementInventory(connection, msg.productId(), msg.qty());
                 if (!decremented) {
                     throw new SQLException("Không thể trừ tồn kho");
+                }
+                if (variant != null) {
+                    ProductVariantUtils.decreaseInventory(variant, msg.qty());
+                    String updatedJson = ProductVariantUtils.toJson(variants);
+                    productDAO.updateVariantsJson(connection, msg.productId(), updatedJson);
                 }
                 // 4. Trừ tiền trong ví và ghi nhận giao dịch thanh toán.
                 BigDecimal balanceAfter = balanceBefore.subtract(totalAmount);
