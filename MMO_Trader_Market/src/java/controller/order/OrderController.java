@@ -79,6 +79,7 @@ public class OrderController extends BaseController {
         Integer userId = (Integer) session.getAttribute("userId");
         int productId = parsePositiveInt(request.getParameter("productId"));
         int quantity = parsePositiveInt(request.getParameter("qty"));
+        String variantCode = normalize(request.getParameter("variantCode"));
         if (userId == null || productId <= 0 || quantity <= 0) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -88,7 +89,7 @@ public class OrderController extends BaseController {
                 .filter(s -> !s.isEmpty())
                 .orElse(UUID.randomUUID().toString());
         try {
-            int orderId = orderService.placeOrderPending(userId, productId, quantity, idemKeyParam);
+            int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
             String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {

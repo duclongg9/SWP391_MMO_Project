@@ -29,6 +29,10 @@ public class ProductVariantOption {
         return variantCode;
     }
 
+    public void setVariantCode(String variantCode) {
+        this.variantCode = variantCode;
+    }
+
     public Map<String, String> getAttributes() {
         if (attributes == null || attributes.isEmpty()) {
             return Collections.emptyMap();
@@ -47,8 +51,16 @@ public class ProductVariantOption {
         return inventoryCount;
     }
 
+    public void setInventoryCount(Integer inventoryCount) {
+        this.inventoryCount = inventoryCount;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public boolean isAvailable() {
