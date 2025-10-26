@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title><%
+        String title = (String) request.getAttribute("pageTitle");
+        if (title == null || title.trim().isEmpty()) {
+            title = "MMO Trader Market";
+        }
+        out.print(title);
+    %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/main.css">
+</head>
+<%
+    String bodyClass = (String) request.getAttribute("bodyClass");
+    if (bodyClass == null || bodyClass.trim().isEmpty()) {
+        bodyClass = "layout";
+    }
+%>
+<body class="<%= bodyClass %>">
