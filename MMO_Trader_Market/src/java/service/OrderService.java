@@ -18,6 +18,7 @@ import model.view.OrderRow;
 import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
+import service.util.ProductVariantUtils;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -47,9 +48,6 @@ public class OrderService {
     private final WalletsDAO walletsDAO;
     private final WalletTransactionDAO walletTransactionDAO;
     private final OrderQueueProducer queueProducer;
-    private final Gson gson = new Gson();
-    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
-
     public OrderService() {
         this(new OrderDAO(), new ProductDAO(), new CredentialDAO(), new WalletsDAO(),
                 new WalletTransactionDAO(), InMemoryOrderQueue.getInstance());
@@ -88,7 +86,7 @@ public class OrderService {
         if (trimmedKey.isEmpty()) {
             trimmedKey = UUID.randomUUID().toString();
         }
-        String normalizedVariant = normalizeVariantCode(variantCode);
+        String normalizedVariant = ProductVariantUtils.normalizeCode(variantCode);
         Optional<Orders> existing = orderDAO.findByIdemKey(trimmedKey);
         if (existing.isPresent()) {
             Orders order = existing.get();
@@ -106,37 +104,52 @@ public class OrderService {
         if (product.getInventoryCount() == null || product.getInventoryCount() < quantity) {
             throw new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ.");
         }
-        Optional<ProductVariantOption> variantOpt = Optional.empty();
+        List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
+                product.getVariantSchema(), product.getVariantsJson());
+        Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedVariant);
+        ProductVariantOption selectedVariant = variantOpt.orElse(null);
         if (normalizedVariant != null) {
-            variantOpt = findVariantOption(product, normalizedVariant);
-            ProductVariantOption variant = variantOpt
-                    .filter(ProductVariantOption::isAvailable)
-                    .orElseThrow(() -> new IllegalArgumentException("Biến thể sản phẩm không khả dụng."));
-            Integer variantInventory = variant.getInventoryCount();
+            if (selectedVariant == null) {
+                throw new IllegalArgumentException("Biến thể sản phẩm không khả dụng.");
+            }
+            if (!selectedVariant.isAvailable()) {
+                throw new IllegalArgumentException("Biến thể sản phẩm không khả dụng.");
+            }
+            Integer variantInventory = selectedVariant.getInventoryCount();
             if (variantInventory == null || variantInventory < quantity) {
                 throw new IllegalArgumentException("Biến thể sản phẩm không đủ tồn kho.");
             }
-        } else if (hasVariants(product.getVariantSchema())) {
+        } else if (ProductVariantUtils.hasVariants(product.getVariantSchema())) {
             throw new IllegalArgumentException("Vui lòng chọn biến thể sản phẩm trước khi đặt mua.");
         }
-        BigDecimal price;
-        if (variantOpt.isPresent()) {
-            BigDecimal variantPrice = variantOpt.get().getPrice();
-            if (variantPrice == null) {
-                throw new IllegalArgumentException("Không thể xác định giá sản phẩm.");
-            }
-            price = variantPrice;
-        } else {
-            price = product.getPrice();
-            if (price == null) {
-                throw new IllegalArgumentException("Không thể xác định giá sản phẩm.");
+        BigDecimal unitPrice = ProductVariantUtils.resolveUnitPrice(product, variantOpt);
+        BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+        String resolvedVariantCode = selectedVariant == null ? null : selectedVariant.getVariantCode();
+        if (resolvedVariantCode != null) {
+            resolvedVariantCode = resolvedVariantCode.trim();
+            if (resolvedVariantCode.isEmpty()) {
+                resolvedVariantCode = null;
             }
         }
-        BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
 
-        var credentialAvailability = credentialDAO.fetchAvailability(productId);
-        if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
-            throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+        CredentialDAO.CredentialAvailability credentialAvailability;
+        if (resolvedVariantCode != null) {
+            credentialAvailability = credentialDAO.fetchAvailability(productId, resolvedVariantCode);
+            if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
+                throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+            }
+            if (credentialAvailability.total() == 0) {
+                CredentialDAO.CredentialAvailability overall = credentialDAO.fetchAvailability(productId);
+                if (overall.total() > 0) {
+                    throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+                }
+            }
+        } else {
+            credentialAvailability = credentialDAO.fetchAvailability(productId);
+            if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
+                throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+            }
         }
 
         // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
@@ -151,8 +164,8 @@ public class OrderService {
         if (balance.compareTo(total) < 0) {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
-        int orderId = orderDAO.createPending(userId, productId, quantity, total, trimmedKey);
-        queueProducer.publish(orderId, trimmedKey, productId, quantity);
+        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, resolvedVariantCode, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity, resolvedVariantCode);
         return orderId;
     }
 
