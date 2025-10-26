@@ -35,19 +35,29 @@ public class OrderDAO extends BaseDAO {
      *
      * @param buyerId  mã người mua
      * @param productId mã sản phẩm
-     * @param qty       số lượng đặt mua
-     * @param total     tổng tiền
-     * @param idemKey   khóa idempotent để tránh tạo trùng
+     * @param qty         số lượng đặt mua
+     * @param unitPrice   đơn giá tại thời điểm đặt
+     * @param total       tổng tiền
+     * @param variantCode mã biến thể (có thể null)
+     * @param idemKey     khóa idempotent để tránh tạo trùng
      * @return mã đơn hàng vừa tạo
      */
-    public int createPending(int buyerId, int productId, int qty, BigDecimal total, String idemKey) {
-        final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
-                + "VALUES (?, ?, ?, 'Pending', ?, NOW(), NOW())";
+    public int createPending(int buyerId, int productId, int qty, BigDecimal unitPrice, BigDecimal total,
+            String variantCode, String idemKey) {
+        final String sql = "INSERT INTO orders (buyer_id, product_id, quantity, unit_price, total_amount, status, variant_code, idempotency_key, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, NOW(), NOW())";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, buyerId);
             statement.setInt(2, productId);
-            statement.setBigDecimal(3, total);
-            statement.setString(4, idemKey);
+            statement.setInt(3, qty);
+            statement.setBigDecimal(4, unitPrice);
+            statement.setBigDecimal(5, total);
+            if (variantCode == null || variantCode.isBlank()) {
+                statement.setNull(6, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(6, variantCode);
+            }
+            statement.setString(7, idemKey);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -68,8 +78,8 @@ public class OrderDAO extends BaseDAO {
      * @return thông tin đơn kèm sản phẩm nếu tìm thấy
      */
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
-        final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.total_amount, o.status, o.created_at, o.updated_at, "
-                + "o.payment_transaction_id, o.idempotency_key, o.hold_until, "
+        final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.quantity, o.unit_price, o.total_amount, o.status, "
+                + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_code, "
                 + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
                 + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
                 + "p.gallery_json AS p_gallery_json, p.inventory_count, p.sold_count AS p_sold_count, p.status AS p_status, "
@@ -142,8 +152,8 @@ public class OrderDAO extends BaseDAO {
      * @return {@link Optional} chứa đơn hàng nếu tồn tại
      */
     public Optional<Orders> findById(int orderId) {
-        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
-                + "hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -164,8 +174,8 @@ public class OrderDAO extends BaseDAO {
      * @return {@link Optional} chứa đơn hàng nếu có
      */
     public Optional<Orders> findByIdemKey(String idemKey) {
-        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
-                + "hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, idemKey);
             try (ResultSet rs = statement.executeQuery()) {
@@ -381,10 +391,14 @@ public class OrderDAO extends BaseDAO {
         order.setId(rs.getInt("id"));
         order.setBuyerId(rs.getInt("buyer_id"));
         order.setProductId(rs.getInt("product_id"));
+        int qty = rs.getInt("quantity");
+        order.setQuantity(rs.wasNull() ? null : qty);
+        order.setUnitPrice(rs.getBigDecimal("unit_price"));
         order.setPaymentTransactionId(rs.getObject("payment_transaction_id") == null
                 ? null : rs.getInt("payment_transaction_id"));
         order.setTotalAmount(rs.getBigDecimal("total_amount"));
         order.setStatus(rs.getString("status"));
+        order.setVariantCode(rs.getString("variant_code"));
         order.setIdempotencyKey(rs.getString("idempotency_key"));
         order.setHoldUntil(rs.getTimestamp("hold_until"));
         order.setCreatedAt(rs.getTimestamp("created_at"));

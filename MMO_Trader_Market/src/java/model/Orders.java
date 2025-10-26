@@ -13,6 +13,12 @@ public class Orders {
 
     private Integer paymentTransactionId;
 
+    private Integer quantity;
+
+    private BigDecimal unitPrice;
+
+    private String variantCode;
+
     private BigDecimal totalAmount;
 
     private String status;
@@ -55,6 +61,30 @@ public class Orders {
 
     public void setPaymentTransactionId(Integer paymentTransactionId) {
         this.paymentTransactionId = paymentTransactionId;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+    }
+
+    public String getVariantCode() {
+        return variantCode;
+    }
+
+    public void setVariantCode(String variantCode) {
+        this.variantCode = variantCode;
     }
     public BigDecimal getTotalAmount() {
         return totalAmount;

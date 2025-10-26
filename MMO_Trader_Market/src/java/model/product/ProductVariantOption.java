@@ -47,8 +47,16 @@ public class ProductVariantOption {
         return inventoryCount;
     }
 
+    public void setInventoryCount(Integer inventoryCount) {
+        this.inventoryCount = inventoryCount;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public boolean isAvailable() {
