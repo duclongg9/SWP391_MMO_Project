@@ -1937,3 +1937,98 @@ box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
         padding: 1.25rem 1.5rem;
     }
 }
+
+/* ==== Featured Products – Equalized Cards ==== */
+
+/* Dùng chung grid cho mục nổi bật */
+.landing__products,
+.landing__products .product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  align-items: stretch; /* các card cao bằng nhau */
+}
+
+/* Card xếp cột + kéo footer về đáy */
+.product-card.product-card--featured {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Media khung vuông 1:1 + ảnh contain */
+.product-card__media {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-card__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Thân card chiếm toàn bộ, để footer về đáy */
+.product-card__body,
+.product-card__body--stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+}
+
+/* Tiêu đề tối đa 2 dòng để cao đều */
+.product-card__header h4 {
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mô tả tối đa 3 dòng để không đội chiều cao */
+.product-card__description {
+  color: #4b5563;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 4.2em; /* ~ 3 dòng * 1.4em để đồng đều khi không đủ 3 dòng */
+}
+
+/* Giá nổi bật */
+.product-card__price { color: #f4b400; font-weight: 800; }
+
+/* Footer luôn chạm đáy card */
+.product-card__footer {
+  margin-top: auto;
+}
+
+/* Hàng nút trong footer căn theo trái, nút đồng nhất */
+.product-card__actions,
+.product-card__actions--justify {
+  display: flex;
+  justify-content: flex-start;
+}
+.product-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #0a5bd3;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.product-card__cta:hover { filter: brightness(1.05); }
+
+/* Ổn định khoảng cách meta & stats */
+.product-card__meta--stats { margin-top: 6px; color: #6b7280; }

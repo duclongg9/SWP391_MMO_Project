@@ -90,8 +90,8 @@
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="product" items="${featuredProducts}">
-                        <article class="product-card product-card--featured">
-                            <div class="product-card__image">
+                        <article class="product-card product-card--featured product-card--grid">
+                            <div class="product-card__image product-card__media">
                                 <c:choose>
                                     <c:when test="${not empty product.primaryImageUrl}">
                                         <c:set var="featuredImageSource" value="${product.primaryImageUrl}" />
@@ -107,14 +107,14 @@
                                                 <c:url var="featuredImageUrl" value="${featuredImageSource}" />
                                             </c:otherwise>
                                         </c:choose>
-                                        <img src="${featuredImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
+                                        <img class="product-card__img" src="${featuredImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
                                     </c:when>
                                     <c:otherwise>
                                         <div class="product-card__placeholder">Không có ảnh</div>
                                     </c:otherwise>
                                 </c:choose>
                             </div>
-                            <div class="product-card__body">
+                            <div class="product-card__body product-card__body--stack">
                                 <header class="product-card__header">
                                     <h4><c:out value="${product.name}" /></h4>
                                 </header>
@@ -145,7 +145,9 @@
                                     <c:url var="detailUrl" value="/product/detail">
                                         <c:param name="id" value="${product.id}" />
                                     </c:url>
-                                    <a class="button button--primary" href="${detailUrl}">Xem chi tiết</a>
+                                    <div class="product-card__actions product-card__actions--justify">
+                                        <a class="button button--primary product-card__cta" href="${detailUrl}">Xem chi tiết</a>
+                                    </div>
                                 </footer>
                             </div>
                         </article>
