@@ -126,7 +126,9 @@
                         <button class="button button--primary" id="buyButton" type="submit">Mua ngay</button>
                     </c:when>
                     <c:when test="${not isAuthenticated}">
-                        <a class="button button--primary" href="${cPath}/login.jsp">Đăng nhập để mua hàng</a>
+                        <!--<a class="button button--primary" href="${cPath}/login.jsp">Đăng nhập để mua hàng</a>-->
+                                                <c:url var="loginUrl" value="/auth" />
+                        <a class="button button--primary" href="${loginUrl}">Đăng nhập để mua hàng</a>
                     </c:when>
                     <c:otherwise>
                         <div class="product-detail__soldout">Sản phẩm tạm hết hàng</div>
