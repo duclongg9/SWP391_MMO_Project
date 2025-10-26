@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -54,17 +55,16 @@ public class ProductDAO extends BaseDAO {
             + "WHERE p.status = 'Available' AND p.inventory_count > 0 ORDER BY s.name ASC";
 
     /**
-     * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc cơ bản.
+     * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc loại/phân loại.
      *
-     * @param keyword        từ khóa tìm kiếm theo tên/mô tả
-     * @param productType    loại sản phẩm lọc theo mã
-     * @param productSubtype phân loại con
-     * @param limit          số bản ghi mỗi trang
-     * @param offset         vị trí bắt đầu lấy dữ liệu
+     * @param productType     loại sản phẩm bắt buộc
+     * @param productSubtypes danh sách phân loại con cần lọc (có thể rỗng)
+     * @param limit           số bản ghi mỗi trang
+     * @param offset          vị trí bắt đầu lấy dữ liệu
      * @return danh sách sản phẩm kèm thông tin shop
      */
-    public List<ProductListRow> findAvailablePaged(String keyword, String productType, String productSubtype,
-            int limit, int offset) {
+    public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
+            String keyword, int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
@@ -72,13 +72,18 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
             String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
             params.add(pattern);
             params.add(pattern);
         }
@@ -103,14 +108,13 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc.
+     * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc loại/phân loại.
      *
-     * @param keyword        từ khóa tìm kiếm
-     * @param productType    loại sản phẩm
-     * @param productSubtype phân loại con
+     * @param productType     loại sản phẩm
+     * @param productSubtypes danh sách phân loại con
      * @return tổng số sản phẩm thỏa điều kiện
      */
-    public long countAvailable(String keyword, String productType, String productSubtype) {
+    public long countAvailableByType(String productType, List<String> productSubtypes, String keyword) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -119,13 +123,18 @@ public class ProductDAO extends BaseDAO {
             sql.append(" AND p.product_type = ?");
             params.add(productType);
         }
-        if (hasText(productSubtype)) {
-            sql.append(" AND p.product_subtype = ?");
-            params.add(productSubtype);
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
         }
         if (hasText(keyword)) {
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ?)");
             String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
             params.add(pattern);
             params.add(pattern);
         }
@@ -143,6 +152,35 @@ public class ProductDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm khả dụng", ex);
         }
         return 0;
+    }
+
+    public List<String> findAvailableSubtypeCodes(String productType) {
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.product_subtype FROM products p "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0");
+        List<Object> params = new ArrayList<>();
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        sql.append(" ORDER BY p.product_subtype ASC");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_subtype");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code);
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách phân loại sản phẩm", ex);
+            return List.of();
+        }
     }
 
     /**
@@ -512,27 +550,56 @@ public class ProductDAO extends BaseDAO {
     private String buildLikePattern(String keyword) {
         return "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
     }
+//
+//    private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
+//        for (int i = 0; i < params.size(); i++) {
+//            Object value = params.get(i);
+//            int index = i + 1;
+//            if (value instanceof Integer intValue) {
+//                statement.setInt(index, intValue);
+//            } else if (value instanceof Long longValue) {
+//                statement.setLong(index, longValue);
+//            } else if (value instanceof String stringValue) {
+//                statement.setString(index, stringValue);
+//            } else if (value instanceof BigDecimal decimalValue) {
+//                statement.setBigDecimal(index, decimalValue);
+//            } else {
+//                statement.setObject(index, value);
+//            }
+//        }
+//    }
 
     /**
      * Gán danh sách tham số vào {@link PreparedStatement} theo thứ tự.
      */
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
-        for (int i = 0; i < params.size(); i++) {
-            Object value = params.get(i);
-            int index = i + 1;
-            if (value instanceof Integer intValue) {
-                statement.setInt(index, intValue);
-            } else if (value instanceof Long longValue) {
-                statement.setLong(index, longValue);
-            } else if (value instanceof String stringValue) {
-                statement.setString(index, stringValue);
-            } else if (value instanceof BigDecimal decimalValue) {
-                statement.setBigDecimal(index, decimalValue);
-            } else {
-                statement.setObject(index, value);
-            }
+    for (int i = 0; i < params.size(); i++) {
+        Object value = params.get(i);
+        int index = i + 1;
+
+        if (value == null) {
+            statement.setObject(index, null);
+        } else if (value instanceof Integer) {
+            statement.setInt(index, (Integer) value);
+        } else if (value instanceof Long) {
+            statement.setLong(index, (Long) value);
+        } else if (value instanceof String) {
+            statement.setString(index, (String) value);
+        } else if (value instanceof BigDecimal) {
+            statement.setBigDecimal(index, (BigDecimal) value);
+        } else if (value instanceof java.util.Date) {
+            statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
+        } else if (value instanceof Boolean) {
+            statement.setBoolean(index, (Boolean) value);
+        } else if (value instanceof Double) {
+            statement.setDouble(index, (Double) value);
+        } else if (value instanceof Float) {
+            statement.setFloat(index, (Float) value);
+        } else {
+            statement.setObject(index, value);
         }
     }
+}
 
     /**
      * Bổ sung điều kiện tìm kiếm cho câu truy vấn nếu có từ khóa.

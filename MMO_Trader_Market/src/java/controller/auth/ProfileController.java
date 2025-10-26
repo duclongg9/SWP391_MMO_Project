@@ -59,7 +59,8 @@ public class ProfileController extends HttpServlet {
         /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
         Integer user = (Integer)request.getSession().getAttribute("userId");
         if(user == null){
-           response.sendRedirect(request.getContextPath() + "/login.jsp");
+//           response.sendRedirect(request.getContextPath() + "/login.jsp");
+           response.sendRedirect(request.getContextPath() + "/auth");
            return;
         }
         try {
@@ -85,7 +86,8 @@ public class ProfileController extends HttpServlet {
         /*Kiểm tra tài khoản đã được đăng nhập hay chưa*/
         Integer user = (Integer)request.getSession().getAttribute("userId");
         if(user == null){
-           response.sendRedirect(request.getContextPath() + "/login.jsp");
+//           response.sendRedirect(request.getContextPath() + "/login.jsp");
+           response.sendRedirect(request.getContextPath() + "/auth");
            return;
         }
 
