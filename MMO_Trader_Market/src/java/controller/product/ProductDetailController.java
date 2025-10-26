@@ -46,7 +46,7 @@ public class ProductDetailController extends BaseController {
             boolean isAuthenticated = session != null && session.getAttribute("userId") != null;
 
             boolean canBuy = isAuthenticated && product.isAvailable()
-                    && productService.hasDeliverableCredentials(product.getId());
+                    && productService.hasDeliverableCredentials(product.getId(), product.getVariants());
 
             request.setAttribute("pageTitle", product.getName());
             request.setAttribute("headerTitle", product.getName());

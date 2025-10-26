@@ -95,9 +95,7 @@ public class OrderService {
         }
         Products product = productDAO.findAvailableById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
-        if (product.getInventoryCount() == null || product.getInventoryCount() < quantity) {
-            throw new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ.");
-        }
+        Integer productInventory = product.getInventoryCount();
         List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                 product.getVariantSchema(), product.getVariantsJson());
         Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedVariant);
@@ -113,8 +111,13 @@ public class OrderService {
             if (variantInventory == null || variantInventory < quantity) {
                 throw new IllegalArgumentException("Biến thể sản phẩm không đủ tồn kho.");
             }
+            if (productInventory != null && productInventory < quantity) {
+                throw new IllegalStateException("Tồn kho sản phẩm không đồng bộ với biến thể, vui lòng liên hệ hỗ trợ.");
+            }
         } else if (ProductVariantUtils.hasVariants(product.getVariantSchema())) {
             throw new IllegalArgumentException("Vui lòng chọn biến thể sản phẩm trước khi đặt mua.");
+        } else if (productInventory == null || productInventory < quantity) {
+            throw new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ.");
         }
         BigDecimal unitPrice = ProductVariantUtils.resolveUnitPrice(product, variantOpt);
         BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(quantity));

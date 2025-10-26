@@ -5,6 +5,7 @@ import model.product.ProductVariantOption;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Comprehensive product detail view model for the public product detail page.
@@ -167,6 +168,15 @@ public class ProductDetailView {
         if (!"Available".equalsIgnoreCase(status)) {
             return false;
         }
-        return inventoryCount != null && inventoryCount > 0;
+        if (inventoryCount != null && inventoryCount > 0) {
+            return true;
+        }
+        if (hasVariants()) {
+            return variants.stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(variant -> variant.isAvailable()
+                            && (variant.getInventoryCount() == null || variant.getInventoryCount() > 0));
+        }
+        return false;
     }
 }
