@@ -57,11 +57,18 @@ public class ProductListController extends BaseController {
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
         int size = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
 
+        String rawKeyword = request.getParameter("keyword");
+        String normalizedKeyword = rawKeyword == null ? null : rawKeyword.trim();
+        if (normalizedKeyword != null && normalizedKeyword.isBlank()) {
+            normalizedKeyword = null;
+        }
+
         List<String> subtypeFilters = productService.normalizeSubtypeCodes(normalizedType,
                 request.getParameterValues("subtype"));
         Set<String> selectedSubtypeSet = new LinkedHashSet<>(subtypeFilters);
 
-        PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters, page, size);
+        PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
+                normalizedKeyword, page, size);
         List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(normalizedType);
         String currentTypeLabel = typeOptions.stream()
                 .filter(option -> option.getCode().equals(normalizedType))
@@ -78,6 +85,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("selectedType", normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
+        request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
         request.setAttribute("typeOptions", typeOptions);
         request.setAttribute("subtypeOptions", subtypeOptions);
         request.setAttribute("currentTypeLabel", currentTypeLabel);
