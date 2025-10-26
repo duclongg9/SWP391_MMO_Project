@@ -199,6 +199,27 @@ public class ProductService {
     }
 
     public boolean hasDeliverableCredentials(int productId) {
+        return hasDeliverableCredentials(productId, List.of());
+    }
+
+    public boolean hasDeliverableCredentials(int productId, List<ProductVariantOption> variants) {
+        boolean hasVariantData = variants != null && !variants.isEmpty();
+        if (hasVariantData) {
+            for (ProductVariantOption variant : variants) {
+                if (variant == null || !variant.isAvailable()) {
+                    continue;
+                }
+                Integer variantInventory = variant.getInventoryCount();
+                if (variantInventory != null && variantInventory <= 0) {
+                    continue;
+                }
+                CredentialDAO.CredentialAvailability variantAvailability =
+                        credentialDAO.fetchAvailability(productId, variant.getVariantCode());
+                if (variantAvailability.total() == 0 || variantAvailability.available() > 0) {
+                    return true;
+                }
+            }
+        }
         CredentialDAO.CredentialAvailability availability = credentialDAO.fetchAvailability(productId);
         if (availability.total() == 0) {
             return true;
