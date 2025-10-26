@@ -10,7 +10,6 @@
     <section class="product-browse">
         <div class="product-browse__header">
             <h2><c:out value="${currentTypeLabel}" /></h2>
-            <p>Lọc theo phân loại chi tiết để tìm sản phẩm phù hợp nhất với nhu cầu của bạn.</p>
         </div>
         <div class="product-browse__layout">
             <aside class="product-browse__sidebar">
@@ -18,7 +17,7 @@
                     <input type="hidden" name="type" value="${selectedType}" />
                     <input type="hidden" name="page" value="1" />
                     <input type="hidden" name="pageSize" value="${pageSize}" />
-                    <h3 class="product-filter-sidebar__title">Phân loại chi tiết</h3>
+                    <h3 class="product-filter-sidebar__title">Bộ Lọc</h3>
                     <div class="product-filter-sidebar__group">
                         <c:choose>
                             <c:when test="${not empty subtypeOptions}">

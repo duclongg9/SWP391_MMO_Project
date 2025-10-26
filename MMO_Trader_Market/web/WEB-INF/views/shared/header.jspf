@@ -31,7 +31,6 @@
                 or fn:contains(currentUri, '/reset-password')}" />
 <c:set var="isLoggedIn" value="${not empty sessionScope.authUser}" />
 
-<!-- Mặc định headerModifier là chuỗi rỗng nếu chưa set -->
 <c:if test="${empty headerModifier}">
   <c:set var="headerModifier" value="" />
 </c:if>
@@ -83,8 +82,7 @@
               <div class="${dropdownClass}">
                 <button class="menu__dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
                   <span class="menu__text"><c:out value="${empty item['text'] ? item['label'] : item['text']}" /></span>
-                  <span class="menu__dropdown-current"><c:out value="${selectedLabel}" /></span>
-                  <span class="menu__dropdown-icon" aria-hidden="true">▾</span>
+                 
                 </button>
                 <div class="menu__dropdown-panel">
                   <c:forEach var="child" items="${item['children']}">
