@@ -70,6 +70,14 @@ public class AdminViewServlet extends HttpServlet {
                 String from = clean(req.getParameter("from"));
                 String to   = clean(req.getParameter("to"));
 
+                // --- phân trang ---
+                final int DEFAULT_SIZE = 8;
+                int page, size;
+                try { page = Integer.parseInt(clean(req.getParameter("page"))); } catch (Exception e) { page = 1; }
+                try { size = Integer.parseInt(clean(req.getParameter("size"))); } catch (Exception e) { size = DEFAULT_SIZE; }
+                if (page < 1) page = 1;
+                if (size <= 0) size = DEFAULT_SIZE;
+
                 Timestamp fromAt = null, toAt = null;
                 LocalDate fromD = tryParseDate(from);
                 LocalDate toD   = tryParseDate(to);
@@ -79,32 +87,145 @@ public class AdminViewServlet extends HttpServlet {
 
                 try (Connection con = DBConnect.getConnection()) {
                     ManageUserDAO dao = new ManageUserDAO(con);
-                    List<Users> users = dao.searchUsers(q, role, fromAt, toAt);
-                    req.setAttribute("userList", users);
+                    List<Users> list = dao.searchUsers(q, role, fromAt, toAt); // đã lọc bằng DAO
+
+                    // (tuỳ chọn) sắp xếp mới -> cũ theo createdAt nếu có; không có thì thôi
+                    try {
+                        list = list.stream()
+                                .sorted(Comparator.comparing(
+                                        u -> u.getCreatedAt() == null ? new java.util.Date(0) : u.getCreatedAt(),
+                                        Comparator.reverseOrder()
+                                ))
+                                .toList();
+                    } catch (Exception ignore){}
+
+                    // --- cắt trang ---
+                    int total = list.size();
+                    int pages = (int)Math.ceil(total / (double)size);
+                    if (pages > 0 && page > pages) page = pages;
+
+                    int fromIdx = Math.max(0, (page - 1) * size);
+                    int toIdx   = Math.min(total, fromIdx + size);
+                    List<Users> pageList = list.subList(fromIdx, toIdx);
+
+                    req.setAttribute("userList", pageList);
+                    req.setAttribute("pg_total", total);
+                    req.setAttribute("pg_page",  page);
+                    req.setAttribute("pg_size",  size);
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }
+
+                // giữ lại filter cho JSP
+                String fromIso = (fromD == null ? "" : fromD.toString());
+                String toIso   = (toD   == null ? "" : toD.toString());
+                req.setAttribute("q",    q == null ? "" : q);
+                req.setAttribute("role", role == null ? "all" : role);
+                req.setAttribute("from", fromIso);
+                req.setAttribute("to",   toIso);
 
                 content = "/WEB-INF/views/Admin/pages/users.jsp";
                 title   = "Quản lý người dùng"; active = "users";
                 break;
             }
+
             case "/cashs": {
-                content = "/WEB-INF/views/Admin/pages/cashs.jsp";
-                title   = "Nạp / Rút"; active = "cashs";
-                break;
+                // ---- Đọc tham số filter ----
+                String type   = clean(req.getParameter("type"));      // all | Deposit | Withdrawal
+                String q      = clean(req.getParameter("q"));         // search theo userName
+                String status = clean(req.getParameter("status"));    // all | Pending | Completed | Rejected
+                String order  = clean(req.getParameter("order"));     // newest | oldest
+
+                // ---- Phân trang ----
+                final int DEFAULT_SIZE = 8;
+                int page;  // 1-based
+                int size;
+
+                try { page = Integer.parseInt(clean(req.getParameter("page"))); } catch (Exception ignore) { page = 1; }
+                try { size = Integer.parseInt(clean(req.getParameter("size"))); } catch (Exception ignore) { size = DEFAULT_SIZE; }
+                if (page < 1) page = 1;
+                if (size <= 0) size = DEFAULT_SIZE;
+
+                try (Connection con = DBConnect.getConnection()) {
+                    dao.admin.CashDAO dao = new dao.admin.CashDAO(con);
+                    java.util.List<model.CashTxn> txns = dao.listAll();   // lấy tất cả, chưa đụng DAO
+
+                    // ---- Lọc theo loại ----
+                    if (type != null && !"all".equalsIgnoreCase(type)) {
+                        final String t = type;
+                        txns = txns.stream().filter(x -> t.equalsIgnoreCase(x.getType())).toList();
+                    }
+
+                    // ---- Lọc theo keyword userName ----
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        txns = txns.stream()
+                                .filter(x -> x.getUserName() != null && x.getUserName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // ---- Lọc theo trạng thái ----
+                    if (status != null && !"all".equalsIgnoreCase(status)) {
+                        final String s = status;
+                        txns = txns.stream().filter(x -> s.equalsIgnoreCase(x.getStatus())).toList();
+                    }
+
+                    // ---- Sắp xếp theo ngày tạo ----
+                    boolean newestFirst = (order == null || order.isBlank() || "newest".equalsIgnoreCase(order));
+                    java.util.Comparator<model.CashTxn> cmp =
+                            java.util.Comparator.comparing(x -> x.getCreatedAt() == null ? new java.util.Date(0) : x.getCreatedAt());
+                    txns = newestFirst ? txns.stream().sorted(cmp.reversed()).toList()
+                            : txns.stream().sorted(cmp).toList();
+
+                    // ---- CẮT TRANG ----
+                    int total = txns.size();
+                    int pages = (int) Math.ceil(total / (double) size);
+                    if (page > pages && pages > 0) page = pages;
+
+                    int from = Math.max(0, (page - 1) * size);
+                    int to   = Math.min(total, from + size);
+                    java.util.List<model.CashTxn> pageList = txns.subList(from, to);
+
+                    // ---- Gán cho JSP ----
+                    req.setAttribute("txList", pageList);
+                    req.setAttribute("pg_total", total);
+                    req.setAttribute("pg_page",  page);
+                    req.setAttribute("pg_size",  size);
+                } catch (Exception e) {
+                    throw new ServletException("Lỗi tải giao dịch: " + e.getMessage(), e);
+                }
+
+                // giữ lại filter cho JSP
+                req.setAttribute("f_type",   type   == null ? "all"    : type);
+                req.setAttribute("f_q",      q      == null ? ""       : q);
+                req.setAttribute("f_status", status == null ? "all"    : status);
+                req.setAttribute("f_order",  order  == null ? "newest" : order);
+
+                req.setAttribute("pageTitle", "Nạp / Rút");
+                req.setAttribute("active", "cashs");
+                req.setAttribute("content", "/WEB-INF/views/Admin/pages/cashs.jsp");
+                req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+                return;
             }
+
+
             case "/shops": {
-                // lấy tham số
-                String q      = clean(req.getParameter("q"));        // tìm theo TÊN cửa hàng
-                String status = clean(req.getParameter("status"));   // Active/Banned/Rejected/Inactive/all
-                String from   = clean(req.getParameter("from"));     // yyyy-MM-dd | dd-MM-yyyy | dd/MM/yyyy
+                String q      = clean(req.getParameter("q"));
+                String status = clean(req.getParameter("status"));
+                String from   = clean(req.getParameter("from"));
                 String to     = clean(req.getParameter("to"));
+
+                // --- phân trang ---
+                final int DEFAULT_SIZE = 8;
+                int page, size;
+                try { page = Integer.parseInt(clean(req.getParameter("page"))); } catch (Exception e) { page = 1; }
+                try { size = Integer.parseInt(clean(req.getParameter("size"))); } catch (Exception e) { size = DEFAULT_SIZE; }
+                if (page < 1) page = 1;
+                if (size <= 0) size = DEFAULT_SIZE;
 
                 Timestamp fromAt = null, toAt = null;
                 LocalDate fromD = tryParseDate(from);
                 LocalDate toD   = tryParseDate(to);
-
                 if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
                 if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
 
@@ -112,23 +233,21 @@ public class AdminViewServlet extends HttpServlet {
                     ManageShopDAO dao = new ManageShopDAO(con);
                     List<Shops> list = dao.getAllShops();
 
-                    // 1) Lọc theo TÊN cửa hàng (chỉ name)
+                    // 1) lọc tên
                     if (q != null && !q.isEmpty()) {
                         final String qLower = q.toLowerCase();
                         list = list.stream()
                                 .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(qLower))
                                 .toList();
                     }
-
-                    // 2) Lọc theo trạng thái (String)
+                    // 2) lọc trạng thái
                     if (status != null && !"all".equalsIgnoreCase(status)) {
                         final String st = status;
                         list = list.stream()
                                 .filter(s -> s.getStatus() != null && s.getStatus().equalsIgnoreCase(st))
                                 .toList();
                     }
-
-                    // 3) Lọc theo ngày tạo
+                    // 3) lọc ngày
                     if (fromAt != null || toAt != null) {
                         final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
                         final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
@@ -138,8 +257,7 @@ public class AdminViewServlet extends HttpServlet {
                             return t >= fromMs && t <= toMs;
                         }).toList();
                     }
-
-                    // 4) Sắp xếp mặc định: mới → cũ
+                    // 4) sắp xếp mới -> cũ
                     list = list.stream()
                             .sorted(Comparator.comparing(
                                     s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt(),
@@ -147,16 +265,26 @@ public class AdminViewServlet extends HttpServlet {
                             ))
                             .toList();
 
-                    req.setAttribute("shopList", list);
+                    // --- cắt trang ---
+                    int total = list.size();
+                    int pages = (int)Math.ceil(total / (double)size);
+                    if (pages > 0 && page > pages) page = pages;
+
+                    int fromIdx = Math.max(0, (page - 1) * size);
+                    int toIdx   = Math.min(total, fromIdx + size);
+                    List<Shops> pageList = list.subList(fromIdx, toIdx);
+
+                    req.setAttribute("shopList", pageList);
+                    req.setAttribute("pg_total", total);
+                    req.setAttribute("pg_page",  page);
+                    req.setAttribute("pg_size",  size);
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }
 
-                // Giữ lại giá trị filter cho JSP
-                // LƯU Ý: input type="date" cần yyyy-MM-dd
-                String fromIso = (fromD == null ? "" : fromD.toString()); // yyyy-MM-dd
-                String toIso   = (toD   == null ? "" : toD.toString());   // yyyy-MM-dd
-
+                // giữ filter + chuẩn yyyy-MM-dd cho input date
+                String fromIso = (fromD == null ? "" : fromD.toString());
+                String toIso   = (toD   == null ? "" : toD.toString());
                 req.setAttribute("q", q == null ? "" : q);
                 req.setAttribute("status", status == null ? "all" : status);
                 req.setAttribute("from", fromIso);
@@ -169,11 +297,21 @@ public class AdminViewServlet extends HttpServlet {
                 return;
             }
 
+
             case "/kycs": {
                 String q      = clean(req.getParameter("q"));
-                String status = clean(req.getParameter("status"));
+                String status = clean(req.getParameter("status"));      // all | 1 | 2 | 3
                 String from   = clean(req.getParameter("from"));
                 String to     = clean(req.getParameter("to"));
+                String sort   = clean(req.getParameter("sort"));        // date_desc | date_asc | status_asc | status_desc
+
+                // --- phân trang ---
+                final int DEFAULT_SIZE = 8;
+                int page, size;
+                try { page = Integer.parseInt(clean(req.getParameter("page"))); } catch (Exception e) { page = 1; }
+                try { size = Integer.parseInt(clean(req.getParameter("size"))); } catch (Exception e) { size = DEFAULT_SIZE; }
+                if (page < 1) page = 1;
+                if (size <= 0) size = DEFAULT_SIZE;
 
                 Timestamp fromAt = null, toAt = null;
                 LocalDate fromD = tryParseDate(from);
@@ -190,7 +328,7 @@ public class AdminViewServlet extends HttpServlet {
                     ManageKycDAO dao = new ManageKycDAO(con);
                     List<KycRequests> list = dao.getAllKycRequests();
 
-                    // 1️⃣ Lọc theo TÊN NGƯỜI DÙNG
+                    // lọc theo tên
                     if (q != null && !q.isEmpty()) {
                         final String qLower = q.toLowerCase();
                         list = list.stream()
@@ -198,13 +336,13 @@ public class AdminViewServlet extends HttpServlet {
                                 .toList();
                     }
 
-                    // 2️⃣ Lọc theo trạng thái
+                    // lọc theo trạng thái
                     if (statusId != null) {
                         final int s = statusId;
                         list = list.stream().filter(k -> k.getStatusId() == s).toList();
                     }
 
-                    // 3️⃣ Lọc theo ngày gửi
+                    // lọc theo ngày gửi
                     if (fromAt != null || toAt != null) {
                         final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
                         final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
@@ -215,23 +353,50 @@ public class AdminViewServlet extends HttpServlet {
                         }).toList();
                     }
 
-                    // 4️⃣ Sắp xếp mặc định: ngày mới nhất trước
-                    list = list.stream()
-                            .sorted(Comparator.comparing(
-                                    k -> k.getCreatedAt() == null ? new java.util.Date(0) : k.getCreatedAt(),
-                                    Comparator.reverseOrder()
-                            ))
-                            .toList();
+                    // sắp xếp
+                    String s = (sort == null || sort.isBlank()) ? "date_desc" : sort;
+                    java.util.Comparator<KycRequests> byDate =
+                            java.util.Comparator.comparing(k -> k.getCreatedAt() == null ? new java.util.Date(0) : k.getCreatedAt());
+                    java.util.function.Function<Integer,Integer> statusRank = v -> switch (v == null ? 0 : v) {
+                        case 1 -> 1;  // Pending
+                        case 2 -> 2;  // Approved
+                        case 3 -> 3;  // Rejected
+                        default -> 9;
+                    };
+                    java.util.Comparator<KycRequests> byStatus =
+                            java.util.Comparator.comparing(k -> statusRank.apply(k.getStatusId()));
 
-                    req.setAttribute("kycList", list);
+                    list = switch (s) {
+                        case "date_asc"     -> list.stream().sorted(byDate).toList();
+                        case "status_asc"   -> list.stream().sorted(byStatus).toList();
+                        case "status_desc"  -> list.stream().sorted(byStatus.reversed()).toList();
+                        default /*date_desc*/-> list.stream().sorted(byDate.reversed()).toList();
+                    };
+
+                    // cắt trang
+                    int total = list.size();
+                    int pages = (int)Math.ceil(total / (double)size);
+                    if (pages > 0 && page > pages) page = pages;
+
+                    int fromIdx = Math.max(0, (page - 1) * size);
+                    int toIdx   = Math.min(total, fromIdx + size);
+                    List<KycRequests> pageList = list.subList(fromIdx, toIdx);
+
+                    // đẩy ra JSP
+                    req.setAttribute("kycList", pageList);
+                    req.setAttribute("pg_total", total);
+                    req.setAttribute("pg_page",  page);
+                    req.setAttribute("pg_size",  size);
                 } catch (Exception e) {
                     throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
                 }
 
-                req.setAttribute("q", q == null ? "" : q);
+                // giữ filter cho JSP
+                req.setAttribute("q",      q == null ? "" : q);
                 req.setAttribute("status", status == null ? "all" : status);
-                req.setAttribute("from", from == null ? "" : from);
-                req.setAttribute("to", to == null ? "" : to);
+                req.setAttribute("from",   from == null ? "" : from);
+                req.setAttribute("to",     to   == null ? "" : to);
+                req.setAttribute("sort",   (sort == null || sort.isBlank()) ? "date_desc" : sort);
 
                 req.setAttribute("pageTitle", "Quản lý KYC");
                 req.setAttribute("active", "kycs");
@@ -239,6 +404,7 @@ public class AdminViewServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
+
 
 
             case "/systems": {
@@ -442,6 +608,62 @@ public class AdminViewServlet extends HttpServlet {
             return;
         }
 
+        if ("/cashs/withdraw/status".equalsIgnoreCase(path)) {
+            req.setCharacterEncoding("UTF-8");
+            String idStr   = req.getParameter("id");
+            String action  = req.getParameter("action"); // accept | reject
+            String note    = req.getParameter("note");   // tạm time: text tự do
+            String proof   = req.getParameter("proof_url");
+
+            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai ID"); return; }
+            if (!"accept".equalsIgnoreCase(action) && !"reject".equalsIgnoreCase(action)) {
+                resp.sendError(400, "Action không hợp lệ"); return;
+            }
+            int wid = Integer.parseInt(idStr);
+
+            try (Connection con = DBConnect.getConnection()) {
+                // Nếu DB của bạn CHƯA có cột admin_note trong withdrawal_requests:
+                // - Accept: cập nhật status + processed_at + (tuỳ chọn) admin_proof_url
+                // - Reject: cập nhật status + processed_at
+                // - (Tuỳ chọn) nếu bạn muốn lưu note: tạm thời có thể bỏ qua,
+                //   hoặc thêm cột admin_note sau này.
+
+                int updated;
+                if ("accept".equalsIgnoreCase(action)) {
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "UPDATE withdrawal_requests " +
+                                    "SET status='Completed', processed_at=NOW(), admin_proof_url = COALESCE(?, admin_proof_url) " +
+                                    "WHERE id=? AND status='Pending'")) {
+                        ps.setString(1, proof);
+                        ps.setInt(2, wid);
+                        updated = ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "UPDATE withdrawal_requests " +
+                                    "SET status='Rejected', processed_at=NOW() " +
+                                    "WHERE id=? AND status='Pending'")) {
+                        ps.setInt(1, wid);
+                        updated = ps.executeUpdate();
+                    }
+                    // Nếu bạn có bảng reason_map và muốn ghim 1 reason mặc định:
+                    // try (PreparedStatement rp = con.prepareStatement(
+                    //   "INSERT INTO withdrawal_request_reasons_map(request_id, reason_id) VALUES (?, 2)")) {
+                    //   rp.setInt(1, wid);
+                    //   rp.executeUpdate();
+                    // }
+                }
+
+                req.getSession().setAttribute("flash", updated > 0 ? "Cập nhật giao dịch thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.sendError(500, e.getMessage());
+                return;
+            }
+        }
 
 
         // --- Không khớp route nào ---
