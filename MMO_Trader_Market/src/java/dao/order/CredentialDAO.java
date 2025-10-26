@@ -43,6 +43,29 @@ public class CredentialDAO extends BaseDAO {
         return ids;
     }
 
+    public CredentialAvailability fetchAvailability(int productId) {
+        final String sql = "SELECT COUNT(*) AS total, "
+                + "SUM(CASE WHEN is_sold = 0 THEN 1 ELSE 0 END) AS available "
+                + "FROM product_credentials WHERE product_id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    int total = rs.getInt("total");
+                    int available = rs.getInt("available");
+                    if (rs.wasNull()) {
+                        available = 0;
+                    }
+                    return new CredentialAvailability(total, available);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể thống kê credential khả dụng", ex);
+        }
+        return new CredentialAvailability(0, 0);
+    }
+
     public void markCredentialsSold(int orderId, List<Integer> ids) {
         try (Connection connection = getConnection()) {
             markCredentialsSold(connection, orderId, ids);
@@ -81,5 +104,8 @@ public class CredentialDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải credentials của đơn hàng", ex);
         }
         return results;
+    }
+
+    public record CredentialAvailability(int total, int available) {
     }
 }
