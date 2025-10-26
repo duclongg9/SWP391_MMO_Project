@@ -16,6 +16,17 @@
                     <ul class="definition-list">
                         <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
                         <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
+                        <c:if test="${not empty order.variantCode}">
+                            <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                        </c:if>
+                        <c:if test="${order.quantity ne null}">
+                            <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                        </c:if>
+                        <c:if test="${order.unitPrice ne null}">
+                            <li><span>Đơn giá:</span>
+                                <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
+                            </li>
+                        </c:if>
                         <li><span>Tổng tiền:</span>
                             <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
                         </li>
