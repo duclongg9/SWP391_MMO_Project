@@ -64,7 +64,7 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm kèm thông tin shop
      */
     public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
-            int limit, int offset) {
+            String keyword, int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
@@ -77,6 +77,15 @@ public class ProductDAO extends BaseDAO {
             sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
             sql.append(')');
             params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
         }
         sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
         params.add(limit);
@@ -105,7 +114,7 @@ public class ProductDAO extends BaseDAO {
      * @param productSubtypes danh sách phân loại con
      * @return tổng số sản phẩm thỏa điều kiện
      */
-    public long countAvailableByType(String productType, List<String> productSubtypes) {
+    public long countAvailableByType(String productType, List<String> productSubtypes, String keyword) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
                 .append(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -119,6 +128,15 @@ public class ProductDAO extends BaseDAO {
             sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
             sql.append(')');
             params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
         }
         sql.append(") AS available_products");
 
@@ -134,6 +152,35 @@ public class ProductDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm khả dụng", ex);
         }
         return 0;
+    }
+
+    public List<String> findAvailableSubtypeCodes(String productType) {
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.product_subtype FROM products p "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0");
+        List<Object> params = new ArrayList<>();
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        sql.append(" ORDER BY p.product_subtype ASC");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_subtype");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code);
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách phân loại sản phẩm", ex);
+            return List.of();
+        }
     }
 
     /**
