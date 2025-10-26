@@ -9,9 +9,11 @@ import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
 import model.Products;
+import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
 import model.Wallets;
+import service.support.VariantSupport;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
 
@@ -64,10 +66,14 @@ public class OrderService {
     }
 
     public int placeOrderPending(int userId, int productId, int quantity) {
-        return placeOrderPending(userId, productId, quantity, UUID.randomUUID().toString());
+        return placeOrderPending(userId, productId, quantity, UUID.randomUUID().toString(), null);
     }
 
     public int placeOrderPending(int userId, int productId, int quantity, String idempotencyKey) {
+        return placeOrderPending(userId, productId, quantity, idempotencyKey, null);
+    }
+
+    public int placeOrderPending(int userId, int productId, int quantity, String idempotencyKey, String variantCode) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Số lượng mua phải lớn hơn 0");
         }
@@ -75,20 +81,31 @@ public class OrderService {
         if (trimmedKey.isEmpty()) {
             trimmedKey = UUID.randomUUID().toString();
         }
+        String normalizedVariant = variantCode == null ? null : variantCode.trim();
         Optional<Orders> existing = orderDAO.findByIdemKey(trimmedKey);
         if (existing.isPresent()) {
             Orders order = existing.get();
             if (!Objects.equals(order.getBuyerId(), userId)) {
                 throw new IllegalStateException("Khóa idempotency đã được sử dụng bởi tài khoản khác.");
             }
-            return order.getId();
+            if (isOrderActive(order.getStatus())) {
+                return order.getId();
+            }
+            // Đơn hàng cũ đã kết thúc vòng đời, cấp một khóa mới để tạo giao dịch mới.
+            trimmedKey = UUID.randomUUID().toString();
         }
         Products product = productDAO.findAvailableById(productId)
                 .filter(p -> p.getInventoryCount() != null && p.getInventoryCount() >= quantity)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
-        BigDecimal price = productDAO.findPriceById(productId)
+        BigDecimal basePrice = productDAO.findPriceById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không thể xác định giá sản phẩm."));
-        BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
+        VariantResolution resolution = resolveVariantSelection(product, basePrice, normalizedVariant, quantity);
+        BigDecimal total = resolution.unitPrice().multiply(BigDecimal.valueOf(quantity));
+
+        var credentialAvailability = credentialDAO.fetchAvailability(productId);
+        if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
+            throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+        }
 
         // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
         Wallets wallet = walletsDAO.ensureUserWallet(userId);
@@ -102,7 +119,7 @@ public class OrderService {
         if (balance.compareTo(total) < 0) {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
-        int orderId = orderDAO.createPending(userId, productId, quantity, total, trimmedKey);
+        int orderId = orderDAO.createPending(userId, productId, quantity, resolution.unitPrice(), total, trimmedKey, resolution.variantCode());
         queueProducer.publish(orderId, trimmedKey, productId, quantity);
         return orderId;
     }
@@ -127,7 +144,14 @@ public class OrderService {
                     if ("Completed".equalsIgnoreCase(detail.order().getStatus())) {
                         credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
                     }
-                    return new OrderDetailView(detail.order(), detail.product(), credentials);
+                    ProductVariantOption selectedVariant = null;
+                    String variantCode = detail.order().getVariantCode();
+                    if (variantCode != null && !variantCode.isBlank()) {
+                        List<ProductVariantOption> variants = VariantSupport.parseVariants(
+                                detail.product().getVariantSchema(), detail.product().getVariantsJson());
+                        selectedVariant = VariantSupport.findVariant(variants, variantCode).orElse(null);
+                    }
+                    return new OrderDetailView(detail.order(), detail.product(), credentials, selectedVariant);
                 });
     }
 
@@ -151,6 +175,45 @@ public class OrderService {
         }
         String normalized = Character.toUpperCase(status.charAt(0)) + status.substring(1).toLowerCase();
         return ALLOWED_STATUSES.contains(normalized) ? normalized : null;
+    }
+
+    private boolean isOrderActive(String status) {
+        OrderStatus orderStatus = OrderStatus.fromDatabaseValue(status);
+        return orderStatus == OrderStatus.PENDING || orderStatus == OrderStatus.PROCESSING;
+    }
+
+    private VariantResolution resolveVariantSelection(Products product, BigDecimal basePrice, String variantCode, int quantity) {
+        if (!VariantSupport.hasVariants(product.getVariantSchema())) {
+            return new VariantResolution(requireUnitPrice(basePrice), null);
+        }
+        List<ProductVariantOption> variants = VariantSupport.parseVariants(product.getVariantSchema(), product.getVariantsJson());
+        if (variants.isEmpty()) {
+            return new VariantResolution(requireUnitPrice(basePrice), null);
+        }
+        if (variantCode == null || variantCode.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng chọn gói sản phẩm trước khi mua.");
+        }
+        ProductVariantOption option = VariantSupport.findVariant(variants, variantCode)
+                .orElseThrow(() -> new IllegalArgumentException("Biến thể sản phẩm không hợp lệ."));
+        if (!option.isAvailable()) {
+            throw new IllegalStateException("Biến thể sản phẩm đã tạm ngưng bán.");
+        }
+        Integer variantInventory = option.getInventoryCount();
+        if (variantInventory != null && variantInventory < quantity) {
+            throw new IllegalStateException("Số lượng mua vượt quá tồn kho của biến thể.");
+        }
+        BigDecimal unitPrice = option.getPrice() != null ? option.getPrice() : basePrice;
+        return new VariantResolution(requireUnitPrice(unitPrice), option.getVariantCode());
+    }
+
+    private BigDecimal requireUnitPrice(BigDecimal price) {
+        if (price == null) {
+            throw new IllegalArgumentException("Không thể xác định giá sản phẩm.");
+        }
+        return price;
+    }
+
+    private record VariantResolution(BigDecimal unitPrice, String variantCode) {
     }
 
     private static Map<OrderStatus, String> buildStatusLabels() {

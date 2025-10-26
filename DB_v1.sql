@@ -159,10 +159,13 @@ CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `buyer_id` int NOT NULL,
   `product_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `unit_price` decimal(18,4) NOT NULL,
   `payment_transaction_id` int DEFAULT NULL,
   `total_amount` decimal(18,4) NOT NULL,
   `status` enum('Pending','Processing','Completed','Failed','Refunded','Disputed') NOT NULL,
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
+  `variant_code` varchar(100) DEFAULT NULL,
   `hold_until` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -493,9 +496,9 @@ INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transac
  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
 
 -- Orders (ví dụ Completed + Disputed)
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`payment_transaction_id`,`total_amount`,`status`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
- (5001,3,1001,2,250000.0000,'Completed','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
- (5002,3,1002,NULL,185000.0000,'Disputed','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
+INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`total_amount`,`status`,`variant_code`,`payment_transaction_id`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
+ (5001,3,1001,1,250000.0000,250000.0000,'Completed','gmail-basic-1m',2,'ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+ (5002,3,1002,1,185000.0000,185000.0000,'Disputed','sp-12m',NULL,'ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
 
 -- Withdrawals
 INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES

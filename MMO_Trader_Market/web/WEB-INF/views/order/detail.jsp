@@ -16,6 +16,24 @@
                     <ul class="definition-list">
                         <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
                         <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
+                        <li><span>Đơn giá:</span>
+                            <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
+                        </li>
+                        <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                        <c:if test="${not empty selectedVariant}">
+                            <li><span>Biến thể:</span>
+                                <div class="order-detail__variant">
+                                    <strong><c:out value="${selectedVariant.variantCode}" /></strong>
+                                    <c:if test="${not empty selectedVariant.attributes}">
+                                        <ul class="order-detail__variant-attributes">
+                                            <c:forEach var="entry" items="${selectedVariant.attributes}">
+                                                <li><c:out value="${entry.key}" />: <c:out value="${entry.value}" /></li>
+                                            </c:forEach>
+                                        </ul>
+                                    </c:if>
+                                </div>
+                            </li>
+                        </c:if>
                         <li><span>Tổng tiền:</span>
                             <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
                         </li>

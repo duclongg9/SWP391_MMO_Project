@@ -71,6 +71,7 @@ public class AsyncOrderWorker implements OrderWorker {
         if (isTerminal(order.getStatus())) {
             return;
         }
+        int effectiveQty = order.getQuantity() != null ? order.getQuantity() : msg.qty();
         try (Connection connection = orderDAO.openConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -101,18 +102,18 @@ public class AsyncOrderWorker implements OrderWorker {
                 }
                 // 3. Khóa tồn kho và credential của sản phẩm để chắc chắn còn đủ hàng.
                 int inventory = productDAO.lockInventoryForUpdate(connection, msg.productId());
-                if (inventory < msg.qty()) {
+                if (inventory < effectiveQty) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                     connection.commit();
                     return;
                 }
-                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty());
-                if (credentialIds.size() < msg.qty()) {
+                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), effectiveQty);
+                if (credentialIds.size() < effectiveQty) {
                     orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
                     connection.commit();
                     return;
                 }
-                boolean decremented = productDAO.decrementInventory(connection, msg.productId(), msg.qty());
+                boolean decremented = productDAO.decrementInventory(connection, msg.productId(), effectiveQty);
                 if (!decremented) {
                     throw new SQLException("Không thể trừ tồn kho");
                 }
@@ -128,7 +129,7 @@ public class AsyncOrderWorker implements OrderWorker {
                 orderDAO.assignPaymentTransaction(connection, order.getId(), walletTxId);
                 // 5. Giao credential cho người mua và ghi nhận log tồn kho.
                 credentialDAO.markCredentialsSold(connection, msg.orderId(), credentialIds);
-                orderDAO.insertInventoryLog(connection, msg.productId(), msg.orderId(), -msg.qty(), "Sale");
+                orderDAO.insertInventoryLog(connection, msg.productId(), msg.orderId(), -effectiveQty, "Sale");
                 // 6. Hoàn tất đơn hàng.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
                 connection.commit();

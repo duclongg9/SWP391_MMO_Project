@@ -3,6 +3,7 @@ package service;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import dao.order.CredentialDAO;
 import dao.product.ProductDAO;
 import model.PaginatedResult;
 import model.Products;
@@ -15,6 +16,7 @@ import model.view.product.ProductDetailView;
 import model.view.product.ProductSubtypeOption;
 import model.view.product.ProductSummaryView;
 import model.view.product.ProductTypeOption;
+import service.support.VariantSupport;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -76,9 +78,9 @@ public class ProductService {
     }
 
     private final ProductDAO productDAO = new ProductDAO();
+    private final CredentialDAO credentialDAO = new CredentialDAO();
     private final Gson gson = new Gson();
     private final Type stringListType = new TypeToken<List<String>>() { }.getType();
-    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
 
     public List<ProductSummaryView> getHomepageHighlights() {
         List<ProductListRow> rows = productDAO.findTopAvailable(DEFAULT_HOMEPAGE_LIMIT);
@@ -196,6 +198,30 @@ public class ProductService {
         return productDAO.findById(id);
     }
 
+    public boolean hasDeliverableCredentials(int productId) {
+        Products product = productDAO.findById(productId).orElse(null);
+        if (product == null) {
+            return false;
+        }
+        if (product.getInventoryCount() == null || product.getInventoryCount() <= 0) {
+            return false;
+        }
+        if (VariantSupport.hasVariants(product.getVariantSchema())) {
+            List<ProductVariantOption> variants = VariantSupport.parseVariants(product.getVariantSchema(), product.getVariantsJson());
+            boolean hasVariantStock = variants.stream()
+                    .filter(ProductVariantOption::isAvailable)
+                    .anyMatch(option -> option.getInventoryCount() == null || option.getInventoryCount() > 0);
+            if (!hasVariantStock) {
+                return false;
+            }
+        }
+        CredentialDAO.CredentialAvailability availability = credentialDAO.fetchAvailability(productId);
+        if (availability.total() == 0) {
+            return true;
+        }
+        return availability.available() > 0;
+    }
+
     public PaginatedResult<Products> search(String keyword, int page, int pageSize) {
         if (pageSize <= 0) {
             throw new IllegalArgumentException("Số lượng mỗi trang phải lớn hơn 0.");
@@ -239,25 +265,7 @@ public class ProductService {
     }
 
     private List<ProductVariantOption> parseVariants(String variantSchema, String variantsJson) {
-        if (!hasVariants(variantSchema) || variantsJson == null || variantsJson.isBlank()) {
-            return List.of();
-        }
-        try {
-            List<ProductVariantOption> variants = gson.fromJson(variantsJson, variantListType);
-            if (variants == null) {
-                return List.of();
-            }
-            List<ProductVariantOption> normalized = new ArrayList<>();
-            for (ProductVariantOption option : variants) {
-                if (option == null) {
-                    continue;
-                }
-                normalized.add(option);
-            }
-            return List.copyOf(normalized);
-        } catch (JsonSyntaxException ex) {
-            return List.of();
-        }
+        return VariantSupport.parseVariants(variantSchema, variantsJson);
     }
 
     private List<String> parseGallery(String galleryJson, String fallback) {
@@ -382,7 +390,7 @@ public class ProductService {
     }
 
     private boolean hasVariants(String variantSchema) {
-        return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema);
+        return VariantSupport.hasVariants(variantSchema);
     }
 
     private record PriceRange(BigDecimal min, BigDecimal max) {
