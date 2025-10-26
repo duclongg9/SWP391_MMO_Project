@@ -94,5 +94,15 @@
         </c:forEach>
       </nav>
     </c:if>
+    
+    <%-- Seller Navigation Menu --%>
+    
+      <nav class="menu menu--horizontal site-header__seller-nav" aria-label="Seller Menu">
+        <a class="menu__item" href="${pageContext.request.contextPath}/seller/dashboard">
+          <span class="menu__text">Seller Dashboard</span>
+        </a>
+        
+      </nav>
+    
   </div>
 </header>
