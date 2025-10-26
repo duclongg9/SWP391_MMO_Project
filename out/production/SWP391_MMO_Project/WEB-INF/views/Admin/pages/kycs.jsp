@@ -348,6 +348,25 @@
             bsModal.show();
         });
     });
+    (function () {
+        const form = document.getElementById('cashFilter');
+        if (!form) return;
+
+        const statusSelect = document.getElementById('statusSelect');
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function () {
+                form.submit(); // tự submit khi đổi trạng thái
+            });
+        }
+
+        // Không submit khi bấm Enter trong ô tìm kiếm (tránh reload bất ngờ)
+        const qInput = form.querySelector('input[name="q"]');
+        if (qInput) {
+            qInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') e.preventDefault();
+            });
+        }
+    })();
 </script>
 
 

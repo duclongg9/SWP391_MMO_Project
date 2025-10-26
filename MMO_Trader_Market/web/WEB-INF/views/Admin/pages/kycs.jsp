@@ -1,9 +1,15 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"  %>
-<%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="base" value="${pageContext.request.contextPath}" />
+
+<!-- Biến phân trang (ưu tiên pg_* từ servlet; fallback = độ dài kycList) -->
+<c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
+<c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
+<c:set var="total"    value="${pg_total != null ? pg_total : (kycList != null ? fn:length(kycList) : 0)}" />
+<c:set var="pages"    value="${(total + pageSize - 1) / pageSize}" />
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt</h4>
@@ -18,9 +24,16 @@
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>
     </c:if>
+
+    <!-- Filter -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <form id="kycFilter" class="row g-2 align-items-end" action="${base}/admin/kycs" method="get">
+                <!-- Giữ page/size/sort; khi đổi filter sẽ reset page=1 -->
+                <input type="hidden" name="page"  id="pageInput" value="${pageNow}">
+                <input type="hidden" name="size"               value="${pageSize}">
+                <input type="hidden" name="sort"  id="sort"    value="${sort}"/>
+
                 <!-- Từ khóa -->
                 <div class="col-12 col-md-3">
                     <label class="form-label mb-1" for="q">Từ khóa</label>
@@ -55,9 +68,9 @@
                     <label class="form-label mb-1" for="status">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
                         <option value="all" ${status == 'all' ? 'selected' : ''}>Tất cả</option>
-                        <option value="1" ${status == '1' ? 'selected' : ''}>Pending</option>
-                        <option value="2" ${status == '2' ? 'selected' : ''}>Approved</option>
-                        <option value="3" ${status == '3' ? 'selected' : ''}>Rejected</option>
+                        <option value="1"   ${status == '1'   ? 'selected' : ''}>Pending</option>
+                        <option value="2"   ${status == '2'   ? 'selected' : ''}>Approved</option>
+                        <option value="3"   ${status == '3'   ? 'selected' : ''}>Rejected</option>
                     </select>
                 </div>
 
@@ -73,6 +86,8 @@
             </form>
         </div>
     </div>
+
+    <!-- Table -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -86,18 +101,12 @@
                         <th class="text-center">Selfie</th>
                         <th>Số giấy tờ</th>
                         <th>Ngày gửi</th>
-
-                        <!-- Bấm để toggle status_asc/status_desc -->
+                        <!-- Toggle sort status_asc/status_desc -->
                         <th id="thStatus" class="cursor-pointer" style="user-select:none">
                             Trạng thái
-                            <c:if test="${sort == 'status_asc'}">
-                                <i class="bi bi-caret-up-fill ms-1"></i>
-                            </c:if>
-                            <c:if test="${sort == 'status_desc'}">
-                                <i class="bi bi-caret-down-fill ms-1"></i>
-                            </c:if>
+                            <c:if test="${sort == 'status_asc'}"><i class="bi bi-caret-up-fill ms-1"></i></c:if>
+                            <c:if test="${sort == 'status_desc'}"><i class="bi bi-caret-down-fill ms-1"></i></c:if>
                         </th>
-
                         <th class="text-center" style="width:140px">Hành động</th>
                     </tr>
                     </thead>
@@ -107,7 +116,7 @@
                         <c:when test="${not empty kycList}">
                             <c:forEach var="k" items="${kycList}" varStatus="st">
                                 <tr>
-                                    <td>${st.index + 1}</td>
+                                    <td>${(pageNow-1)*pageSize + st.index + 1}</td>
 
                                     <td>
                                         <div class="fw-semibold">${k.userName}</div>
@@ -147,14 +156,13 @@
                                             </c:choose>
                                         </c:set>
 
-
                                         <span class="badge
-                      <c:choose>
-                        <c:when test="${k.statusId == 1}">bg-warning text-dark</c:when>
-                        <c:when test="${k.statusId == 2}">bg-success</c:when>
-                        <c:when test="${k.statusId == 3}">bg-danger</c:when>
-                        <c:otherwise>bg-secondary</c:otherwise>
-                      </c:choose>">
+                                          <c:choose>
+                                            <c:when test='${k.statusId == 1}'>bg-warning text-dark</c:when>
+                                            <c:when test='${k.statusId == 2}'>bg-success</c:when>
+                                            <c:when test='${k.statusId == 3}'>bg-danger</c:when>
+                                            <c:otherwise>bg-secondary</c:otherwise>
+                                          </c:choose>'">
                                                 ${statusText}
                                         </span>
                                     </td>
@@ -215,7 +223,6 @@
                                                                       <c:if test="${k.statusId != 1}">disabled</c:if>>${k.adminFeedback}</textarea>
 
                                                             <div class="d-flex gap-2 mt-3">
-                                                                    <%-- Chỉ thao tác khi còn Pending --%>
                                                                 <c:choose>
                                                                     <c:when test="${k.statusId == 1}">
                                                                         <button class="btn btn-success" name="action" value="approve">
@@ -230,7 +237,6 @@
                                                                         <span class="text-muted align-self-center">Hồ sơ đã xử lý.</span>
                                                                     </c:otherwise>
                                                                 </c:choose>
-
                                                                 <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">
                                                                     Đóng
                                                                 </button>
@@ -257,6 +263,90 @@
             </div>
         </div>
     </div>
+
+    <!-- Pagination -->
+    <c:url var="kycsPath" value="/admin/kycs"/>
+    <c:if test="${pages > 1}">
+        <nav aria-label="Pagination">
+            <ul class="pagination justify-content-center mt-3">
+
+                <!-- Prev -->
+                <li class="page-item ${pageNow<=1?'disabled':''}">
+                    <c:url var="uPrev" value="${kycsPath}">
+                        <c:param name="q"      value="${q}" />
+                        <c:param name="from"   value="${from}" />
+                        <c:param name="to"     value="${to}" />
+                        <c:param name="status" value="${status}" />
+                        <c:param name="sort"   value="${sort}" />
+                        <c:param name="size"   value="${pageSize}" />
+                        <c:param name="page"   value="${pageNow-1}" />
+                    </c:url>
+                    <a class="page-link" href="${uPrev}" aria-label="Previous">&laquo;</a>
+                </li>
+
+                <!-- window pages -->
+                <c:set var="start" value="${pageNow-2 < 1 ? 1 : pageNow-2}" />
+                <c:set var="end"   value="${pageNow+2 > pages ? pages : pageNow+2}" />
+
+                <c:if test="${start > 1}">
+                    <c:url var="u1" value="${kycsPath}">
+                        <c:param name="q"      value="${q}" />
+                        <c:param name="from"   value="${from}" />
+                        <c:param name="to"     value="${to}" />
+                        <c:param name="status" value="${status}" />
+                        <c:param name="sort"   value="${sort}" />
+                        <c:param name="size"   value="${pageSize}" />
+                        <c:param name="page"   value="1" />
+                    </c:url>
+                    <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                </c:if>
+
+                <c:forEach var="i" begin="${start}" end="${end}">
+                    <c:url var="ui" value="${kycsPath}">
+                        <c:param name="q"      value="${q}" />
+                        <c:param name="from"   value="${from}" />
+                        <c:param name="to"     value="${to}" />
+                        <c:param name="status" value="${status}" />
+                        <c:param name="sort"   value="${sort}" />
+                        <c:param name="size"   value="${pageSize}" />
+                        <c:param name="page"   value="${i}" />
+                    </c:url>
+                    <li class="page-item ${i==pageNow?'active':''}">
+                        <a class="page-link" href="${ui}">${i}</a>
+                    </li>
+                </c:forEach>
+
+                <c:if test="${end < pages}">
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    <c:url var="uLast" value="${kycsPath}">
+                        <c:param name="q"      value="${q}" />
+                        <c:param name="from"   value="${from}" />
+                        <c:param name="to"     value="${to}" />
+                        <c:param name="status" value="${status}" />
+                        <c:param name="sort"   value="${sort}" />
+                        <c:param name="size"   value="${pageSize}" />
+                        <c:param name="page"   value="${pages}" />
+                    </c:url>
+                    <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
+                </c:if>
+
+                <!-- Next -->
+                <li class="page-item ${pageNow>=pages?'disabled':''}">
+                    <c:url var="uNext" value="${kycsPath}">
+                        <c:param name="q"      value="${q}" />
+                        <c:param name="from"   value="${from}" />
+                        <c:param name="to"     value="${to}" />
+                        <c:param name="status" value="${status}" />
+                        <c:param name="sort"   value="${sort}" />
+                        <c:param name="size"   value="${pageSize}" />
+                        <c:param name="page"   value="${pageNow+1}" />
+                    </c:url>
+                    <a class="page-link" href="${uNext}" aria-label="Next">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </c:if>
 </div>
 
 <!-- Modal xem ảnh lớn dùng chung -->
@@ -264,8 +354,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content bg-dark">
             <div class="modal-body p-0">
-                <img id="previewImg" class="w-100" alt="preview"
-                     style="max-height:90vh;object-fit:contain;">
+                <img id="previewImg" class="w-100" alt="preview" style="max-height:90vh;object-fit:contain;">
             </div>
         </div>
     </div>
@@ -278,64 +367,55 @@
 </style>
 
 <script>
-    /* ===== TỰ ẨN THÔNG BÁO ===== */
+    /* ===== TỰ ẨN THÔNG BÁO + FILTER BEHAVIOR ===== */
     window.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.alert').forEach(a => {
             setTimeout(() => { a.classList.add('fade'); a.style.opacity = 0; }, 1800);
             setTimeout(() => a.remove(), 2600);
         });
 
-        const form     = document.getElementById('kycFilter');   // <form id="kycFilter" ...>
-        const ipQ      = document.getElementById('q');           // <input id="q" ...>
-        const ipFrom   = document.getElementById('from');        // <input id="from" type="date" ...>
-        const ipTo     = document.getElementById('to');          // <input id="to"   type="date" ...>
-        const ipStatus = document.getElementById('status');      // <select id="status" ...>
-        const ipSort   = document.getElementById('sort');        // <select id="sort" ...>
-        const thStatus = document.getElementById('thStatus');    // <th id="thStatus">
+        const form     = document.getElementById('kycFilter');
+        const ipQ      = document.getElementById('q');
+        const ipFrom   = document.getElementById('from');
+        const ipTo     = document.getElementById('to');
+        const ipStatus = document.getElementById('status');
+        const ipSort   = document.getElementById('sort');
+        const thStatus = document.getElementById('thStatus');
+        const pageInput= document.getElementById('pageInput');
 
-        if (!form) return; // không có form thì dừng
+        if (!form) return;
 
-        /* ===== KHÔNG auto-submit cho từ khóa & ngày =====
-           -> Bắt buộc phải bấm nút "Lọc" mới tìm
-           -> Ngăn Enter trong các ô này để không submit form vô tình
-        */
+        // Ngăn Enter auto-submit; chỉ submit khi bấm Lọc
         [ipQ, ipFrom, ipTo].forEach(el => {
             if (!el) return;
-            el.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // buộc người dùng bấm nút Lọc
-                }
-            });
+            el.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
         });
 
-        /* ===== Category (status) đổi là submit ngay =====
-           - Nếu chọn "all": đưa sort về 'date_desc'
-           - Nếu chọn 1/2/3: mặc định sort theo trạng thái (status_asc) nếu chưa ở status_*
-        */
+        // Nút Lọc -> reset page = 1
+        form.addEventListener('submit', () => { if (pageInput) pageInput.value = 1; });
+
+        // Đổi trạng thái -> set sort hợp lý + reset page = 1 + submit
         if (ipStatus) {
             ipStatus.addEventListener('change', () => {
                 const v = (ipStatus.value || '').toLowerCase();
-                if (v === 'all') {
-                    if (ipSort) ipSort.value = 'date_desc';
-                } else {
-                    if (ipSort && !/^status_/i.test(ipSort.value || '')) {
-                        ipSort.value = 'status_asc';
-                    }
-                }
+                if (v === 'all')  { if (ipSort) ipSort.value = 'date_desc'; }
+                else              { if (ipSort && !/^status_/i.test(ipSort.value||'')) ipSort.value = 'status_asc'; }
+                if (pageInput) pageInput.value = 1;
                 form.submit();
             });
         }
 
-        /* ===== Bấm header "Trạng thái" để toggle sort ngay ===== */
+        // Bấm header "Trạng thái" để toggle sort status_asc/status_desc
         if (thStatus && ipSort) {
             thStatus.addEventListener('click', () => {
                 const cur = (ipSort.value || '').toLowerCase();
                 ipSort.value = (cur === 'status_asc') ? 'status_desc' : 'status_asc';
+                if (pageInput) pageInput.value = 1;
                 form.submit();
             });
         }
 
-        /* ===== Preview ảnh chung ===== */
+        // Preview ảnh
         document.addEventListener('click', function (e) {
             const img = e.target.closest('.kyc-thumb');
             if (!img) return;
@@ -349,5 +429,3 @@
         });
     });
 </script>
-
-
