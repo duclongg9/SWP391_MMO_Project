@@ -17,7 +17,6 @@ import java.util.logging.Logger;
  */
 @WebListener
 public class ApplicationShutdownListener implements ServletContextListener {
-
     private static final Logger LOGGER = Logger.getLogger(ApplicationShutdownListener.class.getName());
 
     @Override
@@ -27,23 +26,21 @@ public class ApplicationShutdownListener implements ServletContextListener {
     }
 
     private void shutdownAbandonedCleanupThread() {
-        try {
-            AbandonedConnectionCleanupThread.checkedShutdown();
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            LOGGER.log(Level.WARNING, "Interrupted while shutting down MySQL abandoned connection cleanup thread", ex);
-        }
+        AbandonedConnectionCleanupThread.uncheckedShutdown(); // hoặc checkedShutdown() và bỏ catch
     }
 
     private void deregisterJdbcDrivers() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Enumeration<Driver> drivers = DriverManager.getDrivers();
         while (drivers.hasMoreElements()) {
             Driver driver = drivers.nextElement();
-            try {
-                DriverManager.deregisterDriver(driver);
-                LOGGER.log(Level.FINE, "Deregistered JDBC driver {0}", driver);
-            } catch (SQLException ex) {
-                LOGGER.log(Level.WARNING, "Unable to deregister JDBC driver " + driver, ex);
+            if (driver.getClass().getClassLoader() == cl) {
+                try {
+                    DriverManager.deregisterDriver(driver);
+                    LOGGER.log(Level.FINE, "Deregistered JDBC driver {0}", driver);
+                } catch (SQLException ex) {
+                    LOGGER.log(Level.WARNING, "Unable to deregister JDBC driver " + driver, ex);
+                }
             }
         }
     }
