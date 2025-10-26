@@ -2032,3 +2032,40 @@ box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
 
 /* Ổn định khoảng cách meta & stats */
 .product-card__meta--stats { margin-top: 6px; color: #6b7280; }
+
+/* ==== Similar products (compact cards) ==== */
+.product-grid--compact{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
+  align-items:stretch; /* mọi card cao bằng nhau */
+}
+
+.product-card{ display:flex; flex-direction:column; height:100%; }
+
+/* Khung ảnh vuông 1:1, tránh méo/phóng to */
+.product-card__media{
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.product-card__media img.product-card__img{
+  width:100%; height:100%;
+  object-fit:contain; display:block;
+}
+
+.product-card__body{ flex:1; display:flex; flex-direction:column; gap:8px; }
+.product-card__title{
+  font-weight:700; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.product-card__meta{ color:#6b7280; }
+.product-card__price{ color:#f4b400; font-weight:800; }
+
+/* Đưa CTA về đáy để mọi nút cùng hàng */
+.product-card__cta, .product-card__actions, .button--ghost{
+  margin-top:auto;
+}
