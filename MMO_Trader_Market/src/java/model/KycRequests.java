@@ -15,7 +15,7 @@ public class KycRequests {
     private String backImageUrl;
 
     private String selfieImageUrl;
-
+    private String userEmail;
     private String idNumber;
 
     private String userName;
@@ -140,4 +140,6 @@ public class KycRequests {
     public void setAdminFeedback(String adminFeedback) {
         this.adminFeedback = adminFeedback;
     }
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
 }

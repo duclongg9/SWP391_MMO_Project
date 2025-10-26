@@ -8,5 +8,7 @@
     <PostResources base="C:/Users/Admin/Downloads/gson-2.13.1 (1).jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/gson-2.13.1 (1).jar"/>
     <PostResources base="C:/Users/Admin/Downloads/jakarta.mail-2.0.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.mail-2.0.1.jar"/>
     <PostResources base="C:/Users/Admin/Downloads/jbcrypt-0.4.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jbcrypt-0.4.jar"/>
+    <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet.jsp.jstl-api-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar"/>
+    <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet.jsp.jstl-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-2.0.0.jar"/>
   </Resources>
 </Context>

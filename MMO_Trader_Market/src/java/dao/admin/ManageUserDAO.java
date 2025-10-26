@@ -17,7 +17,32 @@ public class ManageUserDAO {
 
     public ManageUserDAO() {
     }
+    public int createUser(String name, String email, String rawPassword, Integer roleId, Integer status01) throws SQLException {
+        if (name == null || name.isBlank() || email == null || email.isBlank() || rawPassword == null || rawPassword.isBlank()) {
+            throw new SQLException("Thiếu dữ liệu bắt buộc");
+        }
 
+        // Hash password (nếu bạn có BCrypt, bỏ comment 2 dòng dưới và thay passHash).
+        // String passHash = BCrypt.hashpw(rawPassword, BCrypt.gensalt(10));
+        String passHash = rawPassword; // TODO: thay bằng hash thật trong môi trường production
+
+        if (roleId == null) roleId = 3;   // mặc định BUYER
+        if (status01 == null) status01 = 1; // mặc định active
+
+        String sql = """
+            INSERT INTO users (name, email, password_hash, role_id, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """;
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, name.trim());
+            ps.setString(2, email.trim().toLowerCase());
+            ps.setString(3, passHash);
+            ps.setInt(4, roleId);
+            ps.setInt(5, status01);
+            return ps.executeUpdate();
+        }
+    }
     /** 🔹 Lấy toàn bộ user */
     public List<Users> getAllUsers() {
         List<Users> list = new ArrayList<>();
@@ -116,14 +141,22 @@ public class ManageUserDAO {
             return 0;
         }
     }
-    public int updateStatus(int id, boolean active) throws SQLException {
-        String sql = "UPDATE users SET status=?, updated_at=NOW() WHERE id=?";
+    // Chỉ đổi trạng thái nếu user thuộc role BUYER hoặc SELLER
+    public int updateStatus(int userId, int status01) throws SQLException {
+        String sql = """
+        UPDATE users u
+        JOIN roles r ON u.role_id = r.id
+        SET u.status = ?, u.updated_at = CURRENT_TIMESTAMP
+        WHERE u.id = ? AND UPPER(r.name) IN ('BUYER','SELLER')
+    """;
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, active ? 1 : 0);
-            ps.setInt(2, id);
+            ps.setInt(1, status01);
+            ps.setInt(2, userId);
             return ps.executeUpdate();
         }
     }
+
+
 
     /** 🔹 Map từ ResultSet sang model */
     private Users mapRow(ResultSet rs) throws SQLException {

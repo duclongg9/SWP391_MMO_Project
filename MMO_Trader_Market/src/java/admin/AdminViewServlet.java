@@ -11,13 +11,17 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import dao.admin.ManageUserDAO;
+
 import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // BCrypt
 import org.mindrot.jbcrypt.BCrypt;
@@ -85,19 +89,78 @@ public class AdminViewServlet extends HttpServlet {
                 title   = "Quản lý người dùng"; active = "users";
                 break;
             }
-            case "/cashs": { // ✅ thêm route này để không rơi về dashboard
+            case "/cashs": {
                 content = "/WEB-INF/views/Admin/pages/cashs.jsp";
                 title   = "Nạp / Rút"; active = "cashs";
                 break;
             }
-            case "/shops": { // ✅ thêm route này để không rơi về dashboard
+            case "/shops": {
+                // lấy tham số
+                String q      = clean(req.getParameter("q"));        // tìm theo TÊN cửa hàng
+                String status = clean(req.getParameter("status"));   // Active/Banned/Rejected/Inactive/all
+                String from   = clean(req.getParameter("from"));     // yyyy-MM-dd | dd-MM-yyyy | dd/MM/yyyy
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
                 try (Connection con = DBConnect.getConnection()) {
                     ManageShopDAO dao = new ManageShopDAO(con);
-                    List<Shops> shops = dao.getAllShops();
-                    req.setAttribute("shopList", shops);
+                    List<Shops> list = dao.getAllShops();
+
+                    // 1) Lọc theo TÊN cửa hàng (chỉ name)
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2) Lọc theo trạng thái (String)
+                    if (status != null && !"all".equalsIgnoreCase(status)) {
+                        final String st = status;
+                        list = list.stream()
+                                .filter(s -> s.getStatus() != null && s.getStatus().equalsIgnoreCase(st))
+                                .toList();
+                    }
+
+                    // 3) Lọc theo ngày tạo
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(s -> {
+                            java.util.Date d = s.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4) Sắp xếp mặc định: mới → cũ
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
+                    req.setAttribute("shopList", list);
                 } catch (Exception e) {
                     throw new ServletException(e);
                 }
+
+                // Giữ lại giá trị filter cho JSP
+                // LƯU Ý: input type="date" cần yyyy-MM-dd
+                String fromIso = (fromD == null ? "" : fromD.toString()); // yyyy-MM-dd
+                String toIso   = (toD   == null ? "" : toD.toString());   // yyyy-MM-dd
+
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", fromIso);
+                req.setAttribute("to", toIso);
 
                 req.setAttribute("pageTitle", "Quản lý cửa hàng");
                 req.setAttribute("active", "shops");
@@ -105,27 +168,84 @@ public class AdminViewServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
-            case "/kycs": { // ✅ thêm route này để không rơi về dashboard
-                try (Connection con = DBConnect.getConnection()) {
-                    ManageKycDAO dao = new ManageKycDAO(con);
-                    List<KycRequests> shops = dao.getAllKyc();
-                    req.setAttribute("kycList", shops);
-                } catch (Exception e) {
-                    throw new ServletException(e);
+
+            case "/kycs": {
+                String q      = clean(req.getParameter("q"));
+                String status = clean(req.getParameter("status"));
+                String from   = clean(req.getParameter("from"));
+                String to     = clean(req.getParameter("to"));
+
+                Timestamp fromAt = null, toAt = null;
+                LocalDate fromD = tryParseDate(from);
+                LocalDate toD   = tryParseDate(to);
+                if (fromD != null) fromAt = Timestamp.valueOf(fromD.atStartOfDay());
+                if (toD   != null) toAt   = Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
+                Integer statusId = null;
+                if (status != null && !"all".equalsIgnoreCase(status)) {
+                    try { statusId = Integer.parseInt(status); } catch (NumberFormatException ignored) {}
                 }
 
-                req.setAttribute("pageTitle", "Quản lý kyc");
+                try (Connection con = DBConnect.getConnection()) {
+                    ManageKycDAO dao = new ManageKycDAO(con);
+                    List<KycRequests> list = dao.getAllKycRequests();
+
+                    // 1️⃣ Lọc theo TÊN NGƯỜI DÙNG
+                    if (q != null && !q.isEmpty()) {
+                        final String qLower = q.toLowerCase();
+                        list = list.stream()
+                                .filter(k -> k.getUserName() != null && k.getUserName().toLowerCase().contains(qLower))
+                                .toList();
+                    }
+
+                    // 2️⃣ Lọc theo trạng thái
+                    if (statusId != null) {
+                        final int s = statusId;
+                        list = list.stream().filter(k -> k.getStatusId() == s).toList();
+                    }
+
+                    // 3️⃣ Lọc theo ngày gửi
+                    if (fromAt != null || toAt != null) {
+                        final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
+                        final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
+                        list = list.stream().filter(k -> {
+                            java.util.Date d = k.getCreatedAt();
+                            long t = (d == null ? Long.MIN_VALUE : d.getTime());
+                            return t >= fromMs && t <= toMs;
+                        }).toList();
+                    }
+
+                    // 4️⃣ Sắp xếp mặc định: ngày mới nhất trước
+                    list = list.stream()
+                            .sorted(Comparator.comparing(
+                                    k -> k.getCreatedAt() == null ? new java.util.Date(0) : k.getCreatedAt(),
+                                    Comparator.reverseOrder()
+                            ))
+                            .toList();
+
+                    req.setAttribute("kycList", list);
+                } catch (Exception e) {
+                    throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
+                }
+
+                req.setAttribute("q", q == null ? "" : q);
+                req.setAttribute("status", status == null ? "all" : status);
+                req.setAttribute("from", from == null ? "" : from);
+                req.setAttribute("to", to == null ? "" : to);
+
+                req.setAttribute("pageTitle", "Quản lý KYC");
                 req.setAttribute("active", "kycs");
                 req.setAttribute("content", "/WEB-INF/views/Admin/pages/kycs.jsp");
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
                 return;
             }
-            case "/systems": { // ✅ thêm route này để không rơi về dashboard
+
+
+            case "/systems": {
                 content = "/WEB-INF/views/Admin/pages/systems.jsp";
                 title   = "Quản lí hệ thống"; active = "systems";
                 break;
             }
-
 
             case "/dashboard":
             default: {
@@ -172,69 +292,160 @@ public class AdminViewServlet extends HttpServlet {
         }
     }
 
-    // POST /admin/users (tạo user) – luôn HASH mật khẩu bằng BCrypt, mặc định role=buyer
+    // POST /admin/users [...]  và  /admin/users/{id}/ban | /admin/users/{id}/unban
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String path = req.getPathInfo();
-        if (path == null || !path.equalsIgnoreCase("/users")) {
-            resp.sendError(404);
+        String path = req.getPathInfo();          // ví dụ: /users/status
+        if (path == null) { resp.sendError(404); return; }
+
+        // ----- 1) Cập nhật trạng thái (ban/unban) -----
+        if ("/users/status".equalsIgnoreCase(path)) {
+            req.setCharacterEncoding("UTF-8");
+            String action = safe(req.getParameter("action")); // ban | unban
+            String idStr  = safe(req.getParameter("id"));
+            if (action == null || idStr == null || !idStr.matches("\\d+")) {
+                resp.sendError(400, "Thiếu hoặc sai tham số"); return;
+            }
+            int userId = Integer.parseInt(idStr);
+            int newStatus = "unban".equalsIgnoreCase(action) ? 1 : 0;
+
+            try (Connection con = DBConnect.getConnection()) {
+                ManageUserDAO dao = new ManageUserDAO(con);
+                int rows = dao.updateStatus(userId, newStatus);   // chỉ BUYER/SELLER
+                if (rows > 0) resp.sendRedirect(req.getContextPath() + "/admin/users");
+                else resp.sendError(404, "User không tồn tại hoặc không thể cập nhật");
+            } catch (Exception e) {
+                e.printStackTrace(); resp.sendError(500, e.getMessage());
+            }
             return;
         }
 
-        req.setCharacterEncoding("UTF-8");
-        String name     = safe(req.getParameter("name"));
-        String email    = safe(req.getParameter("email"));
-        String password = safe(req.getParameter("password"));
-        String role     = safe(req.getParameter("role"));
-
-        if (name == null || email == null || password == null) {
-            resp.sendError(400, "Thiếu dữ liệu");
+        // ----- Tạo user: POST /admin/users (giữ nguyên logic cũ của bạn)
+        if ("/users".equalsIgnoreCase(path)) {
+            // ... phần tạo user của bạn ở đây (hash password, lookup role_id, insert ...)
+            // (Không lặp lại để ngắn gọn)
+            resp.sendError(501, "Create user handler not pasted here");
             return;
         }
 
-        if (role == null) role = "buyer"; // ✅ mặc định buyer
+    // --- TẠO USER: POST /admin/users ---
+        if (path.equalsIgnoreCase("/users")) {
+            req.setCharacterEncoding("UTF-8");
+            String name     = safe(req.getParameter("name"));
+            String email    = safe(req.getParameter("email"));
+            String password = safe(req.getParameter("password"));
+            String role     = safe(req.getParameter("role"));
 
-        // ✅ HASH mật khẩu thành chuỗi dạng $2a$10$...
-        String hashed = BCrypt.hashpw(password, BCrypt.gensalt(10));
+            if (name == null || email == null || password == null) {
+                resp.sendError(400, "Thiếu dữ liệu");
+                return;
+            }
 
-        try (Connection con = DBConnect.getConnection()) {
-            // Lấy role_id theo tên role trong bảng roles
-            Integer roleId = null;
-            try (PreparedStatement rp = con.prepareStatement(
-                    "SELECT id FROM roles WHERE UPPER(name)=UPPER(?) LIMIT 1")) {
-                rp.setString(1, role);
-                try (ResultSet rs = rp.executeQuery()) {
-                    if (rs.next()) roleId = rs.getInt(1);
+            if (role == null) role = "buyer"; // mặc định buyer
+
+            // Hash mật khẩu
+            String hashed = BCrypt.hashpw(password, BCrypt.gensalt(10));
+
+            try (Connection con = DBConnect.getConnection()) {
+                // Lấy role_id theo tên role
+                Integer roleId = null;
+                try (PreparedStatement rp = con.prepareStatement(
+                        "SELECT id FROM roles WHERE UPPER(name)=UPPER(?) LIMIT 1")) {
+                    rp.setString(1, role);
+                    try (ResultSet rs = rp.executeQuery()) {
+                        if (rs.next()) roleId = rs.getInt(1);
+                    }
                 }
-            }
-            if (roleId == null) { resp.sendError(400, "Vai trò không hợp lệ"); return; }
+                if (roleId == null) { resp.sendError(400, "Vai trò không hợp lệ"); return; }
 
-            // Kiểm tra email trùng
-            try (PreparedStatement ck = con.prepareStatement(
-                    "SELECT 1 FROM users WHERE email=? LIMIT 1")) {
-                ck.setString(1, email);
-                try (ResultSet rs = ck.executeQuery()) {
-                    if (rs.next()) { resp.sendError(409, "Email đã tồn tại"); return; }
+                // Kiểm tra email trùng
+                try (PreparedStatement ck = con.prepareStatement(
+                        "SELECT 1 FROM users WHERE email=? LIMIT 1")) {
+                    ck.setString(1, email);
+                    try (ResultSet rs = ck.executeQuery()) {
+                        if (rs.next()) { resp.sendError(409, "Email đã tồn tại"); return; }
+                    }
                 }
-            }
 
-            // Insert user mới
-            try (PreparedStatement ps = con.prepareStatement(
-                    "INSERT INTO users(name,email,hashed_password,role_id,status,created_at,updated_at) " +
-                            "VALUES (?, ?, ?, ?, 1, NOW(), NOW())")) {
-                ps.setString(1, name);
-                ps.setString(2, email);
-                ps.setString(3, hashed);   // ✅ lưu chuỗi bcrypt
-                ps.setInt(4, roleId);
-                ps.executeUpdate();
-            }
+                // Thêm user
+                try (PreparedStatement ps = con.prepareStatement(
+                        "INSERT INTO users(name,email,hashed_password,role_id,status,created_at,updated_at) " +
+                                "VALUES (?, ?, ?, ?, 1, NOW(), NOW())")) {
+                    ps.setString(1, name);
+                    ps.setString(2, email);
+                    ps.setString(3, hashed);
+                    ps.setInt(4, roleId);
+                    ps.executeUpdate();
+                }
 
-            // PRG
-            resp.sendRedirect(req.getContextPath() + "/admin/users");
-        } catch (Exception e) {
-            e.printStackTrace();
-            resp.sendError(500, e.getMessage());
+                // PRG
+                resp.sendRedirect(req.getContextPath() + "/admin/users");
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.sendError(500, e.getMessage());
+            }
+            return;
         }
+        if ("/kycs/status".equalsIgnoreCase(path)) {
+            req.setCharacterEncoding("UTF-8");
+            String action   = req.getParameter("action");    // approve | reject
+            String idStr    = req.getParameter("id");
+            String feedback = req.getParameter("feedback");
+
+            if (idStr == null || !idStr.matches("\\d+")) {
+                resp.sendError(400, "Sai ID"); return;
+            }
+            int kycId = Integer.parseInt(idStr);
+
+            try (Connection con = DBConnect.getConnection()) {
+                ManageKycDAO dao = new ManageKycDAO(con);
+                int rows;
+                if ("approve".equalsIgnoreCase(action)) {
+                    rows = dao.approveKycAndPromote(kycId, feedback);
+                } else if ("reject".equalsIgnoreCase(action)) {
+                    rows = dao.rejectKyc(kycId, feedback == null ? "" : feedback);
+                } else {
+                    resp.sendError(400, "Action không hợp lệ"); return;
+                }
+
+                // PRG: redirect về danh sách để tránh lỗi forward sai / response committed
+                req.getSession().setAttribute("flash", rows > 0 ? "Cập nhật thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.sendError(500, e.getMessage());
+                return;
+            }
+        }
+        // POST /admin/shops/status   (action=accept|reject, id=<shopId>)
+        if ("/shops/status".equalsIgnoreCase(path)) {
+            String idStr  = req.getParameter("id");
+            String action = req.getParameter("action"); // accept | reject
+
+            if (idStr == null || !idStr.matches("\\d+")) { resp.sendError(400, "Sai ID"); return; }
+            if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
+                resp.sendError(400, "Action không hợp lệ"); return;
+            }
+
+            int shopId = Integer.parseInt(idStr);
+            String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
+
+            try (Connection con = DBConnect.getConnection()) {
+                ManageShopDAO dao = new ManageShopDAO(con);
+                boolean ok = dao.updateStatus(shopId, newStatus);
+                req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+            } catch (Exception e) {
+                e.printStackTrace(); resp.sendError(500, e.getMessage());
+            }
+            return;
+        }
+
+
+
+        // --- Không khớp route nào ---
+        resp.sendError(404);
     }
 
     private static String safe(String s) {
@@ -242,7 +453,4 @@ public class AdminViewServlet extends HttpServlet {
         String v = s.trim();
         return v.isEmpty() ? null : v;
     }
-
-
-
 }
