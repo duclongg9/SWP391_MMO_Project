@@ -74,7 +74,7 @@ public final class NavigationBuilder {
         } else {
             items.add(createNavItem(contextPath + "/products", "Sản phẩm", isActive(currentPath, "/products")));
         }
-        items.add(createNavItem(contextPath + "/home#faq", "FAQ", false));
+        items.add(createNavItem(contextPath + "/faq", "FAQ", isActive(currentPath, "/faq")));
     }
 
     private static Map<String, Object> createNavItem(String href, String text, boolean active) {
