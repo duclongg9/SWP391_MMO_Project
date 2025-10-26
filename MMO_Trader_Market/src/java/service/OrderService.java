@@ -94,6 +94,11 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Không thể xác định giá sản phẩm."));
         BigDecimal total = price.multiply(BigDecimal.valueOf(quantity));
 
+        var credentialAvailability = credentialDAO.fetchAvailability(productId);
+        if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
+            throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
+        }
+
         // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
         Wallets wallet = walletsDAO.ensureUserWallet(userId);
         if (wallet == null) {
