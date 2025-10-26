@@ -17,7 +17,32 @@ public class ManageUserDAO {
 
     public ManageUserDAO() {
     }
+    public int createUser(String name, String email, String rawPassword, Integer roleId, Integer status01) throws SQLException {
+        if (name == null || name.isBlank() || email == null || email.isBlank() || rawPassword == null || rawPassword.isBlank()) {
+            throw new SQLException("Thiếu dữ liệu bắt buộc");
+        }
 
+        // Hash password (nếu bạn có BCrypt, bỏ comment 2 dòng dưới và thay passHash).
+        // String passHash = BCrypt.hashpw(rawPassword, BCrypt.gensalt(10));
+        String passHash = rawPassword; // TODO: thay bằng hash thật trong môi trường production
+
+        if (roleId == null) roleId = 3;   // mặc định BUYER
+        if (status01 == null) status01 = 1; // mặc định active
+
+        String sql = """
+            INSERT INTO users (name, email, password_hash, role_id, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """;
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, name.trim());
+            ps.setString(2, email.trim().toLowerCase());
+            ps.setString(3, passHash);
+            ps.setInt(4, roleId);
+            ps.setInt(5, status01);
+            return ps.executeUpdate();
+        }
+    }
     /** 🔹 Lấy toàn bộ user */
     public List<Users> getAllUsers() {
         List<Users> list = new ArrayList<>();
