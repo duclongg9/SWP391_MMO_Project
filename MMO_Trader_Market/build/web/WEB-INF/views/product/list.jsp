@@ -5,7 +5,7 @@
 <fmt:setLocale value="vi_VN" scope="request" />
 <c:set var="cPath" value="${pageContext.request.contextPath}" />
 <c:set var="type" value="${not empty param.type ? param.type : (not empty selectedType ? selectedType : '')}" />
-<c:set var="keyword" value="${not empty param.keyword ? param.keyword : (not empty keyword ? keyword : '')}" />
+<c:set var="keyword" value="${not empty requestScope.keyword ? requestScope.keyword : (not empty param.keyword ? param.keyword : '')}" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content">
@@ -140,13 +140,13 @@
                     </c:if>
                     <nav class="pagination">
                         <a class="page-btn ${page==1?'disabled':''}"
-                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&page=${page==1 ? page : page-1}">&laquo;</a>
+                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${page==1 ? page : page-1}">&laquo;</a>
                         <c:forEach var="p" begin="1" end="${totalPages}">
                             <a class="page-num ${p==page?'active':''}"
-                               href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&page=${p}">${p}</a>
+                               href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${p}">${p}</a>
                         </c:forEach>
                         <a class="page-btn ${page==totalPages?'disabled':''}"
-                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&page=${page==totalPages ? page : page+1}">&raquo;</a>
+                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${page==totalPages ? page : page+1}">&raquo;</a>
                     </nav>
                 </c:if>
             </div>

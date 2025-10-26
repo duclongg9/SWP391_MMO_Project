@@ -7,7 +7,6 @@
     <section class="faq">
         <header class="faq__header">
             <h1>Câu hỏi thường gặp</h1>
-            <p class="faq__meta">Xem thêm &gt;&gt; <a href="${cPath}/terms" class="faq__link">Điều khoản sử dụng</a></p>
         </header>
         <div class="faq__groups">
             <article class="faq__group">
