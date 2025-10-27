@@ -33,7 +33,8 @@ import java.util.UUID;
     "/order/buy-now",
     "/orders",
     "/orders/my",
-    "/orders/detail"
+    "/orders/detail",
+    "/orders/unlock"
 })
 public class OrderController extends BaseController {
 
@@ -60,6 +61,9 @@ public class OrderController extends BaseController {
         String path = request.getServletPath();
         if ("/order/buy-now".equals(path)) {
             handleBuyNow(request, response);
+            return;
+        } else if ("/orders/unlock".equals(path)) {
+            handleUnlockCredentials(request, response);
             return;
         }
         response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -131,7 +135,7 @@ public class OrderController extends BaseController {
                 .orElse(UUID.randomUUID().toString());
         try {
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
-            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId + "&processing=1";
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
@@ -213,7 +217,19 @@ public class OrderController extends BaseController {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        OrderDetailView detail = detailOpt.get();
+        String unlockSuccess = null;
+        String unlockError = null;
+        if (session != null) {
+            unlockSuccess = (String) session.getAttribute("orderUnlockSuccess");
+            unlockError = (String) session.getAttribute("orderUnlockError");
+            session.removeAttribute("orderUnlockSuccess");
+            session.removeAttribute("orderUnlockError");
+        }
+        boolean unlocked = orderService.hasUnlockedCredentials(orderId, userId);
+        boolean includeCredentials = unlocked || unlockSuccess != null;
+        OrderDetailView detail = includeCredentials
+                ? orderService.getDetail(orderId, userId, true).orElse(detailOpt.get())
+                : detailOpt.get();
         Orders order = detail.order();
         Products product = detail.product();
         List<String> credentials = detail.credentials();
@@ -222,8 +238,52 @@ public class OrderController extends BaseController {
         request.setAttribute("product", product);
         request.setAttribute("credentials", credentials);
         request.setAttribute("statusLabel", orderService.getStatusLabel(order.getStatus()));
+        boolean showProcessingModal = "1".equals(request.getParameter("processing"));
+        request.setAttribute("showProcessingModal", showProcessingModal);
+        request.setAttribute("credentialsUnlocked", includeCredentials);
+        request.setAttribute("unlockSuccessMessage", unlockSuccess);
+        request.setAttribute("unlockErrorMessage", unlockError);
+        request.setAttribute("unlockJustConfirmed", unlockSuccess != null);
 
         forward(request, response, "order/detail");
+    }
+
+    /**
+     * Xác nhận mở khóa thông tin bàn giao.
+     */
+    private void handleUnlockCredentials(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        int orderId = parsePositiveInt(request.getParameter("orderId"));
+        if (orderId <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        String clientIp = resolveClientIp(request);
+        try {
+            OrderService.CredentialUnlockResult result = orderService.unlockCredentials(orderId, userId, clientIp);
+            String message = result.firstView()
+                    ? "Thông tin bàn giao đã được mở khóa và ghi nhận lượt xem đầu tiên."
+                    : "Bạn đã mở khóa thông tin bàn giao trước đó, hệ thống cập nhật thời gian truy cập mới.";
+            session.setAttribute("orderUnlockSuccess", message);
+            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId + "&unlocked=1";
+            response.sendRedirect(redirectUrl);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        } catch (IllegalStateException ex) {
+            session.setAttribute("orderUnlockError", ex.getMessage());
+            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+            response.sendRedirect(redirectUrl);
+        }
     }
 
     /**
@@ -269,5 +329,17 @@ public class OrderController extends BaseController {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /**
+     * Ưu tiên đọc IP thực tế từ header proxy (X-Forwarded-For) trước khi fallback về địa chỉ kết nối.
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int commaIndex = forwarded.indexOf(',');
+            return commaIndex >= 0 ? forwarded.substring(0, commaIndex).trim() : forwarded.trim();
+        }
+        return request.getRemoteAddr();
     }
 }
