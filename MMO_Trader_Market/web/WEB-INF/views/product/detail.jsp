@@ -89,7 +89,7 @@
                 <p class="product-detail__summary"><c:out value="${product.shortDescription}" /></p>
             </c:if>
             <form class="product-detail__form" method="post" action="${cPath}/order/buy-now">
-                <input type="hidden" name="productId" value="${product.id}" />
+                <input type="hidden" name="productId" value="${product.encodedId}" />
                 <c:if test="${product.hasVariants}">
                     <fieldset class="product-detail__variants">
                         <legend>Chọn gói sản phẩm</legend>
@@ -207,9 +207,7 @@
               </c:choose>
             </p>
 
-            <c:url var="relatedUrl" value="/product/detail">
-              <c:param name="id" value="${item.id}" />
-            </c:url>
+            <c:url var="relatedUrl" value="/product/detail/${item.encodedId}" />
             <a class="button button--ghost product-card__cta" href="${relatedUrl}">Xem chi tiết</a>
           </div>
         </article>

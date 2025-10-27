@@ -10,8 +10,12 @@ import model.Orders;
 import model.Products;
 import model.view.OrderDetailView;
 import service.OrderService;
+import units.IdObfuscator;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +37,7 @@ import java.util.UUID;
     "/order/buy-now",
     "/orders",
     "/orders/my",
-    "/orders/detail",
+    "/orders/detail/*",
     "/orders/unlock"
 })
 public class OrderController extends BaseController {
@@ -74,7 +78,7 @@ public class OrderController extends BaseController {
      * <ul>
      *     <li><code>/orders</code>: chuyển hướng 302 tới trang lịch sử cá nhân để tái sử dụng logic phân trang.</li>
      *     <li><code>/orders/my</code>: tải danh sách đơn có lọc, gán vào request attribute để JSP dựng bảng.</li>
-     *     <li><code>/orders/detail</code>: hiển thị chi tiết kèm credential nếu đã bàn giao.</li>
+     *     <li><code>/orders/detail/&lt;token&gt;</code>: hiển thị chi tiết kèm credential nếu đã bàn giao.</li>
      * </ul>
      * Nếu đường dẫn không khớp sẽ phản hồi HTTP 404.
      */
@@ -122,7 +126,7 @@ public class OrderController extends BaseController {
             return;
         }
         Integer userId = (Integer) session.getAttribute("userId");
-        int productId = parsePositiveInt(request.getParameter("productId"));
+        int productId = decodeIdentifier(request.getParameter("productId"));
         int quantity = parsePositiveInt(request.getParameter("qty"));
         String variantCode = normalize(request.getParameter("variantCode"));
         if (userId == null || productId <= 0 || quantity <= 0) {
@@ -135,7 +139,8 @@ public class OrderController extends BaseController {
                 .orElse(UUID.randomUUID().toString());
         try {
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
-            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId + "&processing=1";
+            String token = IdObfuscator.encode(orderId);
+            String redirectUrl = request.getContextPath() + "/orders/detail/" + token + "?processing=1";
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
@@ -207,9 +212,22 @@ public class OrderController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-        int orderId = parsePositiveInt(request.getParameter("id"));
-        if (orderId <= 0) {
+        String token = extractTokenFromPath(request);
+        if (token == null) {
+            int legacyId = parsePositiveInt(request.getParameter("id"));
+            if (legacyId > 0) {
+                String redirectUrl = buildOrderDetailRedirect(request, legacyId);
+                response.sendRedirect(redirectUrl);
+                return;
+            }
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        int orderId;
+        try {
+            orderId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
         Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
@@ -244,6 +262,7 @@ public class OrderController extends BaseController {
         request.setAttribute("unlockSuccessMessage", unlockSuccess);
         request.setAttribute("unlockErrorMessage", unlockError);
         request.setAttribute("unlockJustConfirmed", unlockSuccess != null);
+        request.setAttribute("orderToken", IdObfuscator.encode(orderId));
 
         forward(request, response, "order/detail");
     }
@@ -263,7 +282,8 @@ public class OrderController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-        int orderId = parsePositiveInt(request.getParameter("orderId"));
+        String token = normalize(request.getParameter("orderToken"));
+        int orderId = decodeIdentifier(token);
         if (orderId <= 0) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -275,13 +295,15 @@ public class OrderController extends BaseController {
                     ? "Thông tin bàn giao đã được mở khóa và ghi nhận lượt xem đầu tiên."
                     : "Bạn đã mở khóa thông tin bàn giao trước đó, hệ thống cập nhật thời gian truy cập mới.";
             session.setAttribute("orderUnlockSuccess", message);
-            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId + "&unlocked=1";
+            String canonicalToken = IdObfuscator.encode(orderId);
+            String redirectUrl = request.getContextPath() + "/orders/detail/" + canonicalToken + "?unlocked=1";
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         } catch (IllegalStateException ex) {
             session.setAttribute("orderUnlockError", ex.getMessage());
-            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+            String canonicalToken = IdObfuscator.encode(orderId);
+            String redirectUrl = request.getContextPath() + "/orders/detail/" + canonicalToken;
             response.sendRedirect(redirectUrl);
         }
     }
@@ -329,6 +351,58 @@ public class OrderController extends BaseController {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String extractTokenFromPath(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || pathInfo.isBlank() || "/".equals(pathInfo)) {
+            return null;
+        }
+        String token = pathInfo.charAt(0) == '/' ? pathInfo.substring(1) : pathInfo;
+        int slashIndex = token.indexOf('/');
+        if (slashIndex >= 0) {
+            token = token.substring(0, slashIndex);
+        }
+        return token.isBlank() ? null : token;
+    }
+
+    private String buildOrderDetailRedirect(HttpServletRequest request, int orderId) {
+        StringBuilder url = new StringBuilder(request.getContextPath())
+                .append("/orders/detail/")
+                .append(IdObfuscator.encode(orderId));
+        List<String> queryParts = new ArrayList<>();
+        request.getParameterMap().forEach((key, values) -> {
+            if ("id".equals(key) || values == null) {
+                return;
+            }
+            for (String value : values) {
+                if (value == null) {
+                    continue;
+                }
+                String encodedKey = URLEncoder.encode(key, StandardCharsets.UTF_8);
+                String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+                queryParts.add(encodedKey + "=" + encodedValue);
+            }
+        });
+        if (!queryParts.isEmpty()) {
+            url.append('?').append(String.join("&", queryParts));
+        }
+        return url.toString();
+    }
+
+    private int decodeIdentifier(String value) {
+        if (value == null) {
+            return -1;
+        }
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return -1;
+        }
+        try {
+            return IdObfuscator.decode(normalized);
+        } catch (IllegalArgumentException ex) {
+            return parsePositiveInt(normalized);
+        }
     }
 
     /**
