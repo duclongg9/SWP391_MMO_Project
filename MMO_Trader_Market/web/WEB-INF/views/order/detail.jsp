@@ -155,19 +155,144 @@
                     <h3 class="panel__title">Thông tin bàn giao</h3>
                 </div>
                 <div class="panel__body">
+                    <c:if test="${not empty unlockSuccessMessage}">
+                        <div class="alert alert--success" role="status" aria-live="polite">
+                            <c:out value="${unlockSuccessMessage}" />
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty unlockErrorMessage}">
+                        <div class="alert alert--error" role="alert" aria-live="assertive">
+                            <c:out value="${unlockErrorMessage}" />
+                        </div>
+                    </c:if>
+                    <style>
+                        /* Modal xác nhận mở khóa thông tin bàn giao và ghi log người xem */
+                        .unlock-modal {
+                            position: fixed;
+                            inset: 0;
+                            display: none;
+                            align-items: center;
+                            justify-content: center;
+                            z-index: 1100;
+                        }
+
+                        .unlock-modal.is-visible {
+                            display: flex;
+                        }
+
+                        .unlock-modal__backdrop {
+                            position: absolute;
+                            inset: 0;
+                            background: rgba(15, 23, 42, 0.55);
+                        }
+
+                        .unlock-modal__dialog {
+                            position: relative;
+                            background: #fff;
+                            border-radius: 12px;
+                            padding: 2rem;
+                            max-width: 460px;
+                            width: calc(100% - 2rem);
+                            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+                            z-index: 1;
+                        }
+
+                        .unlock-modal__dialog h3 {
+                            margin: 0 0 0.75rem 0;
+                            font-size: 1.2rem;
+                            font-weight: 600;
+                        }
+
+                        .unlock-modal__dialog p {
+                            margin: 0 0 1.5rem 0;
+                            color: #475569;
+                            line-height: 1.6;
+                        }
+
+                        .unlock-modal__actions {
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 0.75rem;
+                        }
+
+                        .credential-unlock__helper {
+                            margin-bottom: 1.5rem;
+                            color: #475569;
+                            line-height: 1.6;
+                        }
+                    </style>
                     <%-- Nếu đơn đã hoàn thành, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
                     <c:choose>
                         <c:when test="${order.status eq 'Completed'}">
-                            <c:if test="${not empty credentials}">
-                                <ul class="list">
-                                    <c:forEach var="cred" items="${credentials}">
-                                        <li><c:out value="${cred}" /></li>
-                                    </c:forEach>
-                                </ul>
-                            </c:if>
-                            <c:if test="${empty credentials}">
-                                <p class="empty">Đơn hàng đã hoàn thành nhưng chưa có dữ liệu bàn giao.</p>
-                            </c:if>
+                            <c:choose>
+                                <c:when test="${credentialsUnlocked and not empty credentials}">
+                                    <ul class="list">
+                                        <c:forEach var="cred" items="${credentials}">
+                                            <li><c:out value="${cred}" /></li>
+                                        </c:forEach>
+                                    </ul>
+                                </c:when>
+                                <c:when test="${credentialsUnlocked and empty credentials}">
+                                    <p class="empty">Đơn hàng đã hoàn thành nhưng chưa có dữ liệu bàn giao.</p>
+                                </c:when>
+                                <c:otherwise>
+                                    <p class="credential-unlock__helper">
+                                        Vì lý do bảo mật, hệ thống cần bạn xác nhận mở khóa trước khi hiển thị tài khoản
+                                        và mật khẩu. Hành động này sẽ được ghi lại để admin có thể kiểm tra lịch sử xem.
+                                    </p>
+                                    <c:url var="unlockActionUrl" value="/orders/unlock" />
+                                    <form id="credentialUnlockForm" method="post" action="${unlockActionUrl}" style="display:none;">
+                                        <input type="hidden" name="orderId" value="${order.id}" />
+                                    </form>
+                                    <button type="button" class="button button--primary" id="credentialUnlockTrigger">
+                                        Xác nhận mở khóa thông tin bàn giao
+                                    </button>
+                                    <div class="unlock-modal" id="credentialUnlockModal">
+                                        <div class="unlock-modal__backdrop" id="credentialUnlockBackdrop"></div>
+                                        <div class="unlock-modal__dialog" role="dialog" aria-modal="true"
+                                             aria-labelledby="credentialUnlockTitle" aria-describedby="credentialUnlockMessage">
+                                            <h3 id="credentialUnlockTitle">Xác nhận mở khóa</h3>
+                                            <p id="credentialUnlockMessage">
+                                                Khi mở khóa, hệ thống sẽ lưu lại thời gian và địa chỉ IP của bạn để đối soát.
+                                                Vui lòng không chia sẻ thông tin bàn giao cho bên thứ ba nếu chưa có sự đồng ý của shop.
+                                            </p>
+                                            <div class="unlock-modal__actions">
+                                                <button type="button" class="button button--ghost" id="credentialUnlockCancel">Hủy</button>
+                                                <button type="button" class="button button--primary" id="credentialUnlockConfirm">Tôi đồng ý</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <script>
+                                        // Hiển thị modal xác nhận và submit form khi người dùng đồng ý mở khóa.
+                                        document.addEventListener('DOMContentLoaded', function () {
+                                            const trigger = document.getElementById('credentialUnlockTrigger');
+                                            const modal = document.getElementById('credentialUnlockModal');
+                                            const backdrop = document.getElementById('credentialUnlockBackdrop');
+                                            const cancelBtn = document.getElementById('credentialUnlockCancel');
+                                            const confirmBtn = document.getElementById('credentialUnlockConfirm');
+                                            const form = document.getElementById('credentialUnlockForm');
+                                            if (!trigger || !modal || !form) {
+                                                return;
+                                            }
+                                            const closeModal = () => modal.classList.remove('is-visible');
+                                            trigger.addEventListener('click', () => {
+                                                modal.classList.add('is-visible');
+                                            });
+                                            if (backdrop) {
+                                                backdrop.addEventListener('click', closeModal);
+                                            }
+                                            if (cancelBtn) {
+                                                cancelBtn.addEventListener('click', closeModal);
+                                            }
+                                            if (confirmBtn) {
+                                                confirmBtn.addEventListener('click', () => {
+                                                    form.submit();
+                                                });
+                                            }
+                                        });
+                                    </script>
+                                </c:otherwise>
+                            </c:choose>
                         </c:when>
                         <c:otherwise>
                             <p class="empty">Đơn đang được xử lý, vui lòng chờ...</p>
