@@ -9,7 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Represents a purchasable variant entry parsed from the variants_json column.
+ * <p>Đại diện cho từng lựa chọn biến thể (SKU con) được parse từ cột {@code variants_json}.</p>
+ * <p>Được {@link service.ProductService} dựng từ JSON của sản phẩm và truyền xuống JSP để hiển thị
+ * dropdown lựa chọn. Thông tin tồn kho/giá tùy biến theo từng biến thể.</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductVariantOption {
 
@@ -29,13 +33,15 @@ public class ProductVariantOption {
         return variantCode;
     }
 
+    /**
+     * Trả về map thuộc tính theo thứ tự ban đầu. Nếu JSON rỗng thì trả về {@link Collections#emptyMap()} để
+     * front-end không phải kiểm tra null. Khi có dữ liệu, tạo bản sao {@link LinkedHashMap} nhằm khóa thứ tự
+     * hiển thị trên giao diện.
+     */
     public Map<String, String> getAttributes() {
         if (attributes == null || attributes.isEmpty()) {
             return Collections.emptyMap();
         }
-//        if (attributes instanceof LinkedHashMap<String, String> linkedHashMap) {
-//            return Collections.unmodifiableMap(linkedHashMap);
-//        }
         return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
     }
 
@@ -47,10 +53,21 @@ public class ProductVariantOption {
         return inventoryCount;
     }
 
+    public void setInventoryCount(Integer inventoryCount) {
+        this.inventoryCount = inventoryCount;
+    }
+
     public String getStatus() {
         return status;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
+     * Cho biết biến thể có thể bán hay không dựa trên trạng thái.
+     */
     public boolean isAvailable() {
         return "Available".equalsIgnoreCase(status);
     }

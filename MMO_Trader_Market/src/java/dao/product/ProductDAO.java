@@ -423,16 +423,37 @@ public class ProductDAO extends BaseDAO {
      * @throws SQLException khi truy vấn lỗi
      */
     public int lockInventoryForUpdate(Connection connection, int productId) throws SQLException {
-        final String sql = "SELECT inventory_count FROM products WHERE id = ? FOR UPDATE";
+        ProductInventoryLock lock = lockProductForUpdate(connection, productId);
+        return lock.inventoryCount() == null ? 0 : lock.inventoryCount();
+    }
+
+    public ProductInventoryLock lockProductForUpdate(Connection connection, int productId) throws SQLException {
+        final String sql = "SELECT inventory_count, variant_schema, variants_json FROM products WHERE id = ? FOR UPDATE";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("inventory_count");
+                    Integer inventory = (Integer) rs.getObject("inventory_count");
+                    String schema = rs.getString("variant_schema");
+                    String variants = rs.getString("variants_json");
+                    return new ProductInventoryLock(inventory, schema, variants);
                 }
             }
         }
-        return 0;
+        return new ProductInventoryLock(0, null, null);
+    }
+
+    public void updateVariantsJson(Connection connection, int productId, String variantsJson) throws SQLException {
+        final String sql = "UPDATE products SET variants_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (variantsJson == null) {
+                statement.setNull(1, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(1, variantsJson);
+            }
+            statement.setInt(2, productId);
+            statement.executeUpdate();
+        }
     }
 
     /**
@@ -695,6 +716,9 @@ public class ProductDAO extends BaseDAO {
             product.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
         }
         return product;
+    }
+
+    public record ProductInventoryLock(Integer inventoryCount, String variantSchema, String variantsJson) {
     }
 }
 
