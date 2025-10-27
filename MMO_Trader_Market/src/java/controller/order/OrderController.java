@@ -131,7 +131,7 @@ public class OrderController extends BaseController {
                 .orElse(UUID.randomUUID().toString());
         try {
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
-            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId;
+            String redirectUrl = request.getContextPath() + "/orders/detail?id=" + orderId + "&processing=1";
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
@@ -222,6 +222,8 @@ public class OrderController extends BaseController {
         request.setAttribute("product", product);
         request.setAttribute("credentials", credentials);
         request.setAttribute("statusLabel", orderService.getStatusLabel(order.getStatus()));
+        boolean showProcessingModal = "1".equals(request.getParameter("processing"));
+        request.setAttribute("showProcessingModal", showProcessingModal);
 
         forward(request, response, "order/detail");
     }
