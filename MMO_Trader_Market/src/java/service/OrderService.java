@@ -196,24 +196,15 @@ public class OrderService {
             }
         }
 
-        // 3. Đối chiếu tồn kho credential theo biến thể nhằm đảm bảo khi worker chạy sẽ có dữ liệu bàn giao.
-        CredentialDAO.CredentialAvailability credentialAvailability;
+        // 3. Đối chiếu và tự động bổ sung credential theo biến thể nhằm đảm bảo khi worker chạy sẽ có dữ liệu bàn giao.
+        CredentialDAO.CredentialAvailability credentialAvailability = credentialDAO
+                .ensureAvailabilityForOrder(productId, resolvedVariantCode, quantity);
         if (resolvedVariantCode != null) {
-            credentialAvailability = credentialDAO.fetchAvailability(productId, resolvedVariantCode);
-            if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
+            if (credentialAvailability.available() < quantity) {
                 throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
             }
-            if (credentialAvailability.total() == 0) {
-                CredentialDAO.CredentialAvailability overall = credentialDAO.fetchAvailability(productId);
-                if (overall.total() > 0) {
-                    throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
-                }
-            }
-        } else {
-            credentialAvailability = credentialDAO.fetchAvailability(productId);
-            if (credentialAvailability.total() > 0 && credentialAvailability.available() < quantity) {
-                throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
-            }
+        } else if (credentialAvailability.available() < quantity) {
+            throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
         }
 
         // Kiểm tra nhanh số dư ví trước khi tạo đơn, việc trừ tiền thực tế vẫn diễn ra trong worker.
