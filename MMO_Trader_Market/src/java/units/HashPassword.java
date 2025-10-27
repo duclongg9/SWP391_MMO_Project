@@ -29,7 +29,7 @@ public class HashPassword {
     }
     
     public static void main(String[] args) {
-        String test = "admin";
+        String test = "buyer";
         System.out.println(toSHA1(test));
     }
 }
