@@ -14,7 +14,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * DAO cung cấp dữ liệu liên quan tới bảng {@code shops} cho trang chủ và thống kê.
+ * DAO cung cấp dữ liệu liên quan tới bảng {@code shops} cho trang chủ và thống
+ * kê.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -32,8 +33,7 @@ public class ShopDAO extends BaseDAO {
     public List<Shops> findActive(int limit) {
         final String sql = "SELECT id, owner_id, name, description, status, created_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
             List<Shops> shops = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -55,9 +55,7 @@ public class ShopDAO extends BaseDAO {
      */
     public long countActive() {
         final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Active'";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             if (rs.next()) {
                 return rs.getLong(1);
             }
@@ -84,4 +82,3 @@ public class ShopDAO extends BaseDAO {
         return shop;
     }
 }
-

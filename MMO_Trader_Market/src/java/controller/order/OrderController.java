@@ -24,13 +24,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * <p>Servlet điều phối toàn bộ luồng mua sản phẩm của người mua từ lúc gửi yêu cầu "Mua ngay"
- * tới khi người dùng truy cập lịch sử đơn và xem dữ liệu bàn giao.</p>
- * <p>Controller này chịu trách nhiệm:</p>
+ * <p>
+ * Servlet điều phối toàn bộ luồng mua sản phẩm của người mua từ lúc gửi yêu cầu
+ * "Mua ngay" tới khi người dùng truy cập lịch sử đơn và xem dữ liệu bàn
+ * giao.</p>
+ * <p>
+ * Controller này chịu trách nhiệm:</p>
  * <ul>
- *     <li>Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử lý nghiệp vụ.</li>
- *     <li>Định tuyến tới đúng trang JSP, truyền dữ liệu view model (OrderRow, OrderDetailView)</li>
- *     <li>Gắn kết với hàng đợi xử lý bất đồng bộ thông qua {@link service.OrderService#placeOrderPending}</li>
+ * <li>Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử
+ * lý nghiệp vụ.</li>
+ * <li>Định tuyến tới đúng trang JSP, truyền dữ liệu view model (OrderRow,
+ * OrderDetailView)</li>
+ * <li>Gắn kết với hàng đợi xử lý bất đồng bộ thông qua
+ * {@link service.OrderService#placeOrderPending}</li>
  * </ul>
  *
  * @author longpdhe171902
@@ -53,12 +59,14 @@ public class OrderController extends BaseController {
     private final OrderService orderService = new OrderService();
 
     /**
-     * Xử lý các yêu cầu POST. Ở thời điểm hiện tại chỉ có một entry point duy nhất là
-     * <code>/order/buy-now</code>. Dòng chảy cụ thể:
+     * Xử lý các yêu cầu POST. Ở thời điểm hiện tại chỉ có một entry point duy
+     * nhất là <code>/order/buy-now</code>. Dòng chảy cụ thể:
      * <ol>
-     *     <li>Đọc {@code servletPath} để xác định hành động.</li>
-     *     <li>Nếu là "buy-now" thì chuyển cho {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}.</li>
-     *     <li>Nếu không khớp, trả về HTTP 405 để thông báo phương thức không được hỗ trợ.</li>
+     * <li>Đọc {@code servletPath} để xác định hành động.</li>
+     * <li>Nếu là "buy-now" thì chuyển cho
+     * {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}.</li>
+     * <li>Nếu không khớp, trả về HTTP 405 để thông báo phương thức không được
+     * hỗ trợ.</li>
      * </ol>
      */
     @Override
@@ -78,9 +86,12 @@ public class OrderController extends BaseController {
     /**
      * Xử lý các yêu cầu GET cho ba đường dẫn:
      * <ul>
-     *     <li><code>/orders</code>: chuyển hướng 302 tới trang lịch sử cá nhân để tái sử dụng logic phân trang.</li>
-     *     <li><code>/orders/my</code>: tải danh sách đơn có lọc, gán vào request attribute để JSP dựng bảng.</li>
-     *     <li><code>/orders/detail/&lt;token&gt;</code>: hiển thị chi tiết kèm credential nếu đã bàn giao.</li>
+     * <li><code>/orders</code>: chuyển hướng 302 tới trang lịch sử cá nhân để
+     * tái sử dụng logic phân trang.</li>
+     * <li><code>/orders/my</code>: tải danh sách đơn có lọc, gán vào request
+     * attribute để JSP dựng bảng.</li>
+     * <li><code>/orders/detail/&lt;token&gt;</code>: hiển thị chi tiết kèm
+     * credential nếu đã bàn giao.</li>
      * </ul>
      * Nếu đường dẫn không khớp sẽ phản hồi HTTP 404.
      */
@@ -110,14 +121,19 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Tiếp nhận yêu cầu mua ngay từ trang chi tiết sản phẩm. Hàm này xử lý toàn bộ phần
-     * đầu luồng cho tới khi đơn được đưa vào hàng đợi:
+     * Tiếp nhận yêu cầu mua ngay từ trang chi tiết sản phẩm. Hàm này xử lý toàn
+     * bộ phần đầu luồng cho tới khi đơn được đưa vào hàng đợi:
      * <ol>
-     *     <li>Kiểm tra người dùng đăng nhập và có vai trò buyer/seller để được phép mua.</li>
-     *     <li>Đọc các tham số {@code productId}, {@code qty}, {@code variantCode} do form gửi lên.</li>
-     *     <li>Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi thì sinh ngẫu nhiên) để chống double-submit.</li>
-     *     <li>Ủy quyền cho {@link OrderService#placeOrderPending(int, int, int, String, String)}.</li>
-     *     <li>Nếu thành công, redirect sang trang chi tiết đơn; nếu lỗi nghiệp vụ -> HTTP 400/409.</li>
+     * <li>Kiểm tra người dùng đăng nhập và có vai trò buyer/seller để được phép
+     * mua.</li>
+     * <li>Đọc các tham số {@code productId}, {@code qty}, {@code variantCode}
+     * do form gửi lên.</li>
+     * <li>Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi thì sinh
+     * ngẫu nhiên) để chống double-submit.</li>
+     * <li>Ủy quyền cho
+     * {@link OrderService#placeOrderPending(int, int, int, String, String)}.</li>
+     * <li>Nếu thành công, redirect sang trang chi tiết đơn; nếu lỗi nghiệp vụ
+     * -> HTTP 400/409.</li>
      * </ol>
      */
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
@@ -152,13 +168,18 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Hiển thị danh sách đơn hàng của người mua kèm phân trang và lọc trạng thái.
-     * Tầng controller chịu trách nhiệm thu thập tham số và chuyển dữ liệu xuống JSP:
+     * Hiển thị danh sách đơn hàng của người mua kèm phân trang và lọc trạng
+     * thái. Tầng controller chịu trách nhiệm thu thập tham số và chuyển dữ liệu
+     * xuống JSP:
      * <ol>
-     *     <li>Lấy trạng thái filter, số trang, kích thước trang từ query string.</li>
-     *     <li>Gọi {@link OrderService#getMyOrders(int, String, int, int)} để truy vấn DB qua DAO.</li>
-     *     <li>Đổ danh sách {@code OrderRow} và meta phân trang vào request attribute "items", "total", ...</li>
-     *     <li>Forward tới view <code>/WEB-INF/views/order/my.jsp</code> để dựng giao diện.</li>
+     * <li>Lấy trạng thái filter, số trang, kích thước trang từ query
+     * string.</li>
+     * <li>Gọi {@link OrderService#getMyOrders(int, String, int, int)} để truy
+     * vấn DB qua DAO.</li>
+     * <li>Đổ danh sách {@code OrderRow} và meta phân trang vào request
+     * attribute "items", "total", ...</li>
+     * <li>Forward tới view <code>/WEB-INF/views/order/my.jsp</code> để dựng
+     * giao diện.</li>
      * </ol>
      */
     private void showMyOrders(HttpServletRequest request, HttpServletResponse response)
@@ -207,13 +228,16 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Hiển thị chi tiết một đơn hàng cụ thể nếu thuộc sở hữu người dùng.
-     * Sau khi qua bước kiểm tra quyền truy cập, controller sẽ:
+     * Hiển thị chi tiết một đơn hàng cụ thể nếu thuộc sở hữu người dùng. Sau
+     * khi qua bước kiểm tra quyền truy cập, controller sẽ:
      * <ol>
-     *     <li>Đọc {@code id} của đơn từ query string và validate.</li>
-     *     <li>Gọi {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và credential.</li>
-     *     <li>Đưa các đối tượng domain vào request attribute cho JSP: {@code order}, {@code product}, {@code credentials}.</li>
-     *     <li>Tính sẵn nhãn trạng thái tiếng Việt thông qua {@link OrderService#getStatusLabel(String)}.</li>
+     * <li>Đọc {@code id} của đơn từ query string và validate.</li>
+     * <li>Gọi {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và
+     * credential.</li>
+     * <li>Đưa các đối tượng domain vào request attribute cho JSP:
+     * {@code order}, {@code product}, {@code credentials}.</li>
+     * <li>Tính sẵn nhãn trạng thái tiếng Việt thông qua
+     * {@link OrderService#getStatusLabel(String)}.</li>
      * </ol>
      */
     private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
@@ -351,7 +375,8 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Chuyển chuỗi sang số nguyên dương, trả về giá trị mặc định khi không hợp lệ.
+     * Chuyển chuỗi sang số nguyên dương, trả về giá trị mặc định khi không hợp
+     * lệ.
      */
     private int parsePositiveIntOrDefault(String value, int defaultValue) {
         int parsed = parsePositiveInt(value);
@@ -455,7 +480,8 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Ưu tiên đọc IP thực tế từ header proxy (X-Forwarded-For) trước khi fallback về địa chỉ kết nối.
+     * Ưu tiên đọc IP thực tế từ header proxy (X-Forwarded-For) trước khi
+     * fallback về địa chỉ kết nối.
      */
     private String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");

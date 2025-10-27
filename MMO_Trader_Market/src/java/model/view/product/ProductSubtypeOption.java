@@ -1,8 +1,11 @@
 package model.view.product;
 
 /**
- * <p>Một lựa chọn loại con (subtype) trong bộ lọc sản phẩm.</p>
- * <p>Kết hợp cùng {@link ProductTypeOption} để hiển thị cấu trúc danh mục hai tầng ở trang browse.</p>
+ * <p>
+ * Một lựa chọn loại con (subtype) trong bộ lọc sản phẩm.</p>
+ * <p>
+ * Kết hợp cùng {@link ProductTypeOption} để hiển thị cấu trúc danh mục hai tầng
+ * ở trang browse.</p>
  *
  * @author longpdhe171902
  */

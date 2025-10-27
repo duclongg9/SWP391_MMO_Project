@@ -74,33 +74,33 @@
                     <%-- Bảng dữ liệu sử dụng trực tiếp OrderRow để giảm bước chuyển đổi ở JSP. --%>
                     <table class="table table--interactive">
                         <thead>
-                        <tr>
-                            <th>Mã đơn</th>
-                            <th>Sản phẩm</th>
-                            <th>Tổng tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày tạo</th>
-                            <th class="table__actions">Chi tiết</th>
-                        </tr>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Sản phẩm</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th class="table__actions">Chi tiết</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <c:forEach var="item" items="${items}">
-                            <tr>
-                                <td>#<c:out value="${item.id}" /></td>
-                                <td><c:out value="${item.productName}" /></td>
-                                <td>
-                                    <fmt:formatNumber value="${item.totalAmount}" type="currency" currencySymbol="" /> đ
-                                </td>
-                                <td><c:out value="${statusLabels[item.status]}" /></td>
-                                <td>
-                                    <fmt:formatDate value="${item.createdAt}" pattern="dd/MM/yyyy HH:mm" />
-                                </td>
-                                <td class="table__actions">
-                                    <c:url var="detailUrl" value="/orders/detail/${item.encodedId}" />
-                                    <a class="button button--ghost" href="${detailUrl}">Xem</a>
-                                </td>
-                            </tr>
-                        </c:forEach>
+                            <c:forEach var="item" items="${items}">
+                                <tr>
+                                    <td>#<c:out value="${item.id}" /></td>
+                                    <td><c:out value="${item.productName}" /></td>
+                                    <td>
+                                        <fmt:formatNumber value="${item.totalAmount}" type="currency" currencySymbol="" /> đ
+                                    </td>
+                                    <td><c:out value="${statusLabels[item.status]}" /></td>
+                                    <td>
+                                        <fmt:formatDate value="${item.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                    </td>
+                                    <td class="table__actions">
+                                        <c:url var="detailUrl" value="/orders/detail/${item.encodedId}" />
+                                        <a class="button button--ghost" href="${detailUrl}">Xem</a>
+                                    </td>
+                                </tr>
+                            </c:forEach>
                         </tbody>
                     </table>
                 </c:when>

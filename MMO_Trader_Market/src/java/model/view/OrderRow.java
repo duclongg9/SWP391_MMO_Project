@@ -1,7 +1,5 @@
 package model.view;
 
-
-
 import java.math.BigDecimal;
 
 import java.util.Date;
@@ -10,18 +8,15 @@ import units.IdObfuscator;
 
 import java.util.Objects;
 
-
-
 /**
  * View model dạng rút gọn cho từng dòng hiển thị tại bảng lịch sử đơn hàng.
- * <p>Được dựng từ truy vấn {@link dao.order.OrderDAO#findByBuyerPaged} để truyền thẳng tới
- * JSP {@code order/my.jsp} mà không cần convert thêm.</p>
+ * <p>
+ * Được dựng từ truy vấn {@link dao.order.OrderDAO#findByBuyerPaged} để truyền
+ * thẳng tới JSP {@code order/my.jsp} mà không cần convert thêm.</p>
  *
  * @author longpdhe171902
  */
 public final class OrderRow {
-
-
 
     private final int id;
 
@@ -32,8 +27,6 @@ public final class OrderRow {
     private final String status;
 
     private final Date createdAt;
-
-
 
     public OrderRow(int id, String productName, BigDecimal totalAmount, String status, Date createdAt) {
 
@@ -49,15 +42,11 @@ public final class OrderRow {
 
     }
 
-
-
     public int getId() {
 
         return id;
 
     }
-
-
 
     public String getProductName() {
 
@@ -65,23 +54,17 @@ public final class OrderRow {
 
     }
 
-
-
     public BigDecimal getTotalAmount() {
 
         return totalAmount;
 
     }
 
-
-
     public String getStatus() {
 
         return status;
 
     }
-
-
 
     public Date getCreatedAt() {
 
@@ -95,29 +78,19 @@ public final class OrderRow {
 
     }
 
-
-
     @Override
 
     public String toString() {
 
-        return "OrderRow{" +
-
-                "id=" + id +
-
-                ", productName='" + productName + '\'' +
-
-                ", totalAmount=" + totalAmount +
-
-                ", status='" + status + '\'' +
-
-                ", createdAt=" + createdAt +
-
-                '}';
+        return "OrderRow{"
+                + "id=" + id
+                + ", productName='" + productName + '\''
+                + ", totalAmount=" + totalAmount
+                + ", status='" + status + '\''
+                + ", createdAt=" + createdAt
+                + '}';
 
     }
-
-
 
     @Override
 
@@ -138,18 +111,12 @@ public final class OrderRow {
         OrderRow orderRow = (OrderRow) o;
 
         return id == orderRow.id
-
                 && Objects.equals(productName, orderRow.productName)
-
                 && Objects.equals(totalAmount, orderRow.totalAmount)
-
                 && Objects.equals(status, orderRow.status)
-
                 && Objects.equals(createdAt, orderRow.createdAt);
 
     }
-
-
 
     @Override
 

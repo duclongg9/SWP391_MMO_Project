@@ -18,16 +18,16 @@ import java.util.logging.Logger;
 public class UserDAO extends BaseDAO {
 
     // Tên cột trong bảng users
-    private static final String COL_ID             = "id";
-    private static final String COL_ROLE_ID        = "role_id";
-    private static final String COL_EMAIL          = "email";
-    private static final String COL_NAME           = "name";
-    private static final String COL_AVATAR_URL     = "avatar_url";
-    private static final String COL_HASHED_PWD     = "hashed_password";
-    private static final String COL_GOOGLE_ID      = "google_id";
-    private static final String COL_STATUS         = "status";
-    private static final String COL_CREATED_AT     = "created_at";
-    private static final String COL_UPDATED_AT     = "updated_at";
+    private static final String COL_ID = "id";
+    private static final String COL_ROLE_ID = "role_id";
+    private static final String COL_EMAIL = "email";
+    private static final String COL_NAME = "name";
+    private static final String COL_AVATAR_URL = "avatar_url";
+    private static final String COL_HASHED_PWD = "hashed_password";
+    private static final String COL_GOOGLE_ID = "google_id";
+    private static final String COL_STATUS = "status";
+    private static final String COL_CREATED_AT = "created_at";
+    private static final String COL_UPDATED_AT = "updated_at";
 
     /**
      * Chuyển đổi một hàng dữ liệu sang đối tượng {@link Users}.
@@ -65,12 +65,13 @@ public class UserDAO extends BaseDAO {
                 WHERE id = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
             }
         } catch (SQLException e) {
             Logger.getLogger(UserDAO.class.getName())
@@ -82,7 +83,7 @@ public class UserDAO extends BaseDAO {
     /**
      * Cập nhật tên hiển thị cơ bản của người dùng.
      *
-     * @param id   mã người dùng cần cập nhật
+     * @param id mã người dùng cần cập nhật
      * @param name tên mới
      * @return số hàng bị ảnh hưởng
      * @throws SQLException khi câu lệnh SQL lỗi
@@ -93,8 +94,7 @@ public class UserDAO extends BaseDAO {
                 SET name = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, id);
             return ps.executeUpdate();
@@ -104,7 +104,7 @@ public class UserDAO extends BaseDAO {
     /**
      * Cập nhật mật khẩu đã băm cho người dùng.
      *
-     * @param id             mã người dùng
+     * @param id mã người dùng
      * @param hashedPassword mật khẩu đã được băm
      * @return số hàng bị ảnh hưởng
      * @throws SQLException khi thao tác thất bại
@@ -115,8 +115,7 @@ public class UserDAO extends BaseDAO {
                 SET hashed_password = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, hashedPassword);
             ps.setInt(2, id);
             return ps.executeUpdate();
@@ -126,10 +125,10 @@ public class UserDAO extends BaseDAO {
     /**
      * Tạo tài khoản mới dựa trên vai trò chỉ định.
      *
-     * @param roleName       tên vai trò (ví dụ {@code BUYER})
-     * @param email          email đăng ký
+     * @param roleName tên vai trò (ví dụ {@code BUYER})
+     * @param email email đăng ký
      * @param hashedPassword mật khẩu đã băm
-     * @param createdAt      thời điểm tạo tài khoản
+     * @param createdAt thời điểm tạo tài khoản
      * @return số hàng được chèn
      * @throws SQLException khi thao tác thất bại
      */
@@ -141,8 +140,7 @@ public class UserDAO extends BaseDAO {
                 WHERE name = ?
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, email);
             ps.setString(2, hashedPassword);
@@ -152,7 +150,6 @@ public class UserDAO extends BaseDAO {
             return ps.executeUpdate();
         }
     }
-
 
     /**
      * Tìm người dùng hoạt động theo email đăng ký.
@@ -166,11 +163,12 @@ public class UserDAO extends BaseDAO {
                 WHERE email = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
             }
         } catch (SQLException e) {
             Logger.getLogger(UserDAO.class.getName())
@@ -191,11 +189,12 @@ public class UserDAO extends BaseDAO {
                 WHERE google_id = ? AND status = 1
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, googleId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
             }
         } catch (SQLException e) {
             Logger.getLogger(UserDAO.class.getName())
@@ -217,8 +216,7 @@ public class UserDAO extends BaseDAO {
                 WHERE email = ?
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -229,10 +227,10 @@ public class UserDAO extends BaseDAO {
     /**
      * Tạo người dùng nội bộ với mật khẩu được cung cấp.
      *
-     * @param email          email đăng ký
-     * @param name           tên hiển thị
+     * @param email email đăng ký
+     * @param name tên hiển thị
      * @param hashedPassword mật khẩu đã băm
-     * @param roleId         mã vai trò
+     * @param roleId mã vai trò
      * @return người dùng vừa tạo hoặc {@code null} nếu thất bại
      * @throws SQLException khi thao tác chèn lỗi
      */
@@ -241,8 +239,7 @@ public class UserDAO extends BaseDAO {
                 INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, roleId);
             ps.setString(2, email);
             ps.setString(3, name);
@@ -271,11 +268,11 @@ public class UserDAO extends BaseDAO {
     /**
      * Tạo tài khoản mới cho hình thức đăng nhập Google.
      *
-     * @param email          email Google trả về
-     * @param name           tên hiển thị
-     * @param googleId       mã liên kết Google
+     * @param email email Google trả về
+     * @param name tên hiển thị
+     * @param googleId mã liên kết Google
      * @param hashedPassword mật khẩu dự phòng đã băm
-     * @param roleId         vai trò hệ thống
+     * @param roleId vai trò hệ thống
      * @return người dùng vừa tạo hoặc {@code null}
      * @throws SQLException khi thao tác chèn lỗi
      */
@@ -285,8 +282,7 @@ public class UserDAO extends BaseDAO {
                 INSERT INTO users (role_id, email, name, hashed_password, google_id, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, roleId);
             ps.setString(2, email);
             ps.setString(3, name);
@@ -316,7 +312,7 @@ public class UserDAO extends BaseDAO {
     /**
      * Gắn hoặc thay đổi mã Google cho người dùng hiện hữu.
      *
-     * @param userId   mã người dùng
+     * @param userId mã người dùng
      * @param googleId mã Google cần liên kết
      * @return số hàng được cập nhật
      * @throws SQLException khi truy vấn lỗi
@@ -327,8 +323,7 @@ public class UserDAO extends BaseDAO {
                 SET google_id = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, googleId);
             ps.setInt(2, userId);
             return ps.executeUpdate();

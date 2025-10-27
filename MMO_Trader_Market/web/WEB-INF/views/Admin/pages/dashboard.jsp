@@ -43,17 +43,17 @@
         new Chart(document.getElementById("chartRevenue"), {
             type: "line",
             data: {
-                labels: ["T2","T3","T4","T5","T6","T7","CN"],
+                labels: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
                 datasets: [{
-                    label: "Doanh thu (triệu ₫)",
-                    data: [12, 15, 11, 9, 18, 20, 14],
-                    borderColor: "#2563eb",
-                    backgroundColor: "rgba(37,99,235,0.1)",
-                    fill: true,
-                    tension: 0.4
-                }]
+                        label: "Doanh thu (triệu ₫)",
+                        data: [12, 15, 11, 9, 18, 20, 14],
+                        borderColor: "#2563eb",
+                        backgroundColor: "rgba(37,99,235,0.1)",
+                        fill: true,
+                        tension: 0.4
+                    }]
             },
-            options: { plugins: { legend: { display: false } } }
+            options: {plugins: {legend: {display: false}}}
         });
     </script>
 </div>

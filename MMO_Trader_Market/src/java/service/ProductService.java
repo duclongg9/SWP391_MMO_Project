@@ -32,11 +32,18 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * <p>Dịch vụ nghiệp vụ cho toàn bộ luồng hiển thị sản phẩm: trang chủ, trang duyệt, trang chi tiết.</p>
- * <p>Lớp này nhận dữ liệu thô từ {@link dao.product.ProductDAO} và {@link dao.order.CredentialDAO}, chuẩn hóa,
- * ghép nhãn tiếng Việt, parse JSON biến thể bằng Gson rồi chuyển thành các view model sử dụng trực tiếp ở JSP.</p>
- * <p>Các phương thức chính mô tả rõ quy trình lọc theo danh mục, phân trang, xác định khoảng giá, kiểm tra tồn kho
- * và tính toán số lượng credential còn bàn giao được.</p>
+ * <p>
+ * Dịch vụ nghiệp vụ cho toàn bộ luồng hiển thị sản phẩm: trang chủ, trang
+ * duyệt, trang chi tiết.</p>
+ * <p>
+ * Lớp này nhận dữ liệu thô từ {@link dao.product.ProductDAO} và
+ * {@link dao.order.CredentialDAO}, chuẩn hóa, ghép nhãn tiếng Việt, parse JSON
+ * biến thể bằng Gson rồi chuyển thành các view model sử dụng trực tiếp ở
+ * JSP.</p>
+ * <p>
+ * Các phương thức chính mô tả rõ quy trình lọc theo danh mục, phân trang, xác
+ * định khoảng giá, kiểm tra tồn kho và tính toán số lượng credential còn bàn
+ * giao được.</p>
  *
  * @author longpdhe171902
  */
@@ -89,12 +96,15 @@ public class ProductService {
     private final ProductDAO productDAO = new ProductDAO();
     private final CredentialDAO credentialDAO = new CredentialDAO();
     private final Gson gson = new Gson();
-    private final Type stringListType = new TypeToken<List<String>>() { }.getType();
-    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() { }.getType();
+    private final Type stringListType = new TypeToken<List<String>>() {
+    }.getType();
+    private final Type variantListType = new TypeToken<List<ProductVariantOption>>() {
+    }.getType();
 
     /**
-     * Lấy danh sách sản phẩm nổi bật hiển thị tại trang chủ.
-     * DAO trả về {@link model.product.ProductListRow}, sau đó convert thành {@link ProductSummaryView}.
+     * Lấy danh sách sản phẩm nổi bật hiển thị tại trang chủ. DAO trả về
+     * {@link model.product.ProductListRow}, sau đó convert thành
+     * {@link ProductSummaryView}.
      */
     public List<ProductSummaryView> getHomepageHighlights() {
         List<ProductListRow> rows = productDAO.findTopAvailable(DEFAULT_HOMEPAGE_LIMIT);
@@ -102,9 +112,9 @@ public class ProductService {
     }
 
     /**
-     * Tính toán số lượng sản phẩm theo loại để render menu danh mục.
-     * Quy trình: gọi {@link dao.product.ProductDAO#countAvailableByType()}, ghép nhãn hiển thị rồi
-     * truyền xuống view.
+     * Tính toán số lượng sản phẩm theo loại để render menu danh mục. Quy trình:
+     * gọi {@link dao.product.ProductDAO#countAvailableByType()}, ghép nhãn hiển
+     * thị rồi truyền xuống view.
      */
     public List<ProductCategorySummary> getHomepageCategories() {
         Map<String, Long> counts = productDAO.countAvailableByType();
@@ -119,9 +129,11 @@ public class ProductService {
     /**
      * Phân trang sản phẩm theo loại, subtype và từ khóa.
      * <ol>
-     *     <li>Chuẩn hóa input (mã loại, danh sách subtype, keyword) để tránh SQL injection và dữ liệu bẩn.</li>
-     *     <li>Đếm tổng số bản ghi thỏa điều kiện để tính tổng trang.</li>
-     *     <li>Query danh sách sản phẩm khả dụng và ánh xạ sang {@link ProductSummaryView}.</li>
+     * <li>Chuẩn hóa input (mã loại, danh sách subtype, keyword) để tránh SQL
+     * injection và dữ liệu bẩn.</li>
+     * <li>Đếm tổng số bản ghi thỏa điều kiện để tính tổng trang.</li>
+     * <li>Query danh sách sản phẩm khả dụng và ánh xạ sang
+     * {@link ProductSummaryView}.</li>
      * </ol>
      */
     public PagedResult<ProductSummaryView> browseByType(String productType, List<String> productSubtypes,
@@ -143,20 +155,21 @@ public class ProductService {
         List<ProductSummaryView> items = totalItems == 0
                 ? List.of()
                 : productDAO.findAvailableByType(normalizedType, normalizedSubtypes, normalizedKeyword, safeSize, offset)
-                .stream()
-                .map(this::toSummaryView)
-                .toList();
+                        .stream()
+                        .map(this::toSummaryView)
+                        .toList();
 
         return new PagedResult<>(items, currentPage, safeSize, totalPages, totalItems);
     }
 
     /**
-     * Lấy thông tin chi tiết sản phẩm cho trang công khai.
-     * Thuật toán:
+     * Lấy thông tin chi tiết sản phẩm cho trang công khai. Thuật toán:
      * <ol>
-     *     <li>Xác thực {@code productId} và trạng thái {@code Available}.</li>
-     *     <li>Parse JSON biến thể/gallery bằng Gson, chuyển đổi đường dẫn ảnh về base path chuẩn.</li>
-     *     <li>Tính giá min/max, ghép nhãn loại sản phẩm, tổng hợp dữ liệu shop.</li>
+     * <li>Xác thực {@code productId} và trạng thái {@code Available}.</li>
+     * <li>Parse JSON biến thể/gallery bằng Gson, chuyển đổi đường dẫn ảnh về
+     * base path chuẩn.</li>
+     * <li>Tính giá min/max, ghép nhãn loại sản phẩm, tổng hợp dữ liệu
+     * shop.</li>
      * </ol>
      */
     public ProductDetailView getPublicDetail(int productId) {
@@ -201,7 +214,8 @@ public class ProductService {
     }
 
     /**
-     * Lấy danh sách sản phẩm tương tự theo cùng loại để hiển thị trong khối gợi ý.
+     * Lấy danh sách sản phẩm tương tự theo cùng loại để hiển thị trong khối gợi
+     * ý.
      */
     public List<ProductSummaryView> findSimilarProducts(String productType, int excludeProductId) {
         String normalizedType = normalizeFilter(productType);
@@ -222,7 +236,8 @@ public class ProductService {
     }
 
     /**
-     * Lọc danh sách subtype có hàng dựa theo loại, đồng thời fallback về cấu hình mặc định nếu DB rỗng.
+     * Lọc danh sách subtype có hàng dựa theo loại, đồng thời fallback về cấu
+     * hình mặc định nếu DB rỗng.
      */
     public List<ProductSubtypeOption> getSubtypeOptions(String productType) {
         String normalizedType = normalizeFilter(productType);
@@ -262,7 +277,8 @@ public class ProductService {
     }
 
     /**
-     * Chuẩn hóa danh sách subtype theo cùng loại, tránh duplicate và giá trị sai.
+     * Chuẩn hóa danh sách subtype theo cùng loại, tránh duplicate và giá trị
+     * sai.
      */
     public List<String> normalizeSubtypeCodes(String productType, String[] values) {
         if (values == null || values.length == 0) {
@@ -290,7 +306,8 @@ public class ProductService {
     }
 
     /**
-     * Truy xuất bản ghi {@link model.Products} theo id, dùng cho trang quản trị.
+     * Truy xuất bản ghi {@link model.Products} theo id, dùng cho trang quản
+     * trị.
      */
     public Products detail(int id) {
         return productDAO.findById(id)
@@ -305,7 +322,8 @@ public class ProductService {
     }
 
     /**
-     * Kiểm tra số lượng credential có thể bàn giao cho sản phẩm khi không truyền biến thể cụ thể.
+     * Kiểm tra số lượng credential có thể bàn giao cho sản phẩm khi không
+     * truyền biến thể cụ thể.
      */
     public boolean hasDeliverableCredentials(int productId) {
         return hasDeliverableCredentials(productId, List.of());
@@ -314,9 +332,12 @@ public class ProductService {
     /**
      * Đánh giá khả năng bàn giao credential cho sản phẩm hoặc từng biến thể.
      * <ol>
-     *     <li>Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả dụng và tồn kho.</li>
-     *     <li>Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số lượng credential còn lại.</li>
-     *     <li>Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ liệu.</li>
+     * <li>Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả
+     * dụng và tồn kho.</li>
+     * <li>Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số
+     * lượng credential còn lại.</li>
+     * <li>Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ
+     * liệu.</li>
      * </ol>
      */
     public boolean hasDeliverableCredentials(int productId, List<ProductVariantOption> variants) {
@@ -330,8 +351,8 @@ public class ProductService {
                 if (variantInventory != null && variantInventory <= 0) {
                     continue;
                 }
-                CredentialDAO.CredentialAvailability variantAvailability =
-                        credentialDAO.fetchAvailability(productId, variant.getVariantCode());
+                CredentialDAO.CredentialAvailability variantAvailability
+                        = credentialDAO.fetchAvailability(productId, variant.getVariantCode());
                 if (variantAvailability.total() == 0 || variantAvailability.available() > 0) {
                     return true;
                 }
@@ -345,7 +366,8 @@ public class ProductService {
     }
 
     /**
-     * Tìm kiếm sản phẩm theo từ khóa cho trang quản trị (trả về entity gốc và phân trang).
+     * Tìm kiếm sản phẩm theo từ khóa cho trang quản trị (trả về entity gốc và
+     * phân trang).
      */
     public PaginatedResult<Products> search(String keyword, int page, int pageSize) {
         if (pageSize <= 0) {
@@ -418,7 +440,8 @@ public class ProductService {
     }
 
     /**
-     * Parse danh sách ảnh gallery, đảm bảo luôn có ảnh fallback nếu dữ liệu rỗng.
+     * Parse danh sách ảnh gallery, đảm bảo luôn có ảnh fallback nếu dữ liệu
+     * rỗng.
      */
     private List<String> parseGallery(String galleryJson, String fallback) {
         String normalizedFallback = resolveImagePath(fallback);
@@ -447,7 +470,8 @@ public class ProductService {
     }
 
     /**
-     * Chuẩn hóa đường dẫn ảnh: trả về URL tuyệt đối hoặc thêm prefix thư mục tài nguyên.
+     * Chuẩn hóa đường dẫn ảnh: trả về URL tuyệt đối hoặc thêm prefix thư mục
+     * tài nguyên.
      */
     private String resolveImagePath(String path) {
         String normalized = normalize(path);
@@ -535,7 +559,8 @@ public class ProductService {
     }
 
     /**
-     * Chuẩn hóa mã loại trước khi query, chỉ nhận giá trị nằm trong bảng cấu hình.
+     * Chuẩn hóa mã loại trước khi query, chỉ nhận giá trị nằm trong bảng cấu
+     * hình.
      */
     private String normalizeFilter(String value) {
         String normalized = normalize(value);
@@ -547,7 +572,8 @@ public class ProductService {
     }
 
     /**
-     * Chuẩn hóa subtype theo loại, đảm bảo chỉ giữ giá trị hợp lệ trong cấu hình.
+     * Chuẩn hóa subtype theo loại, đảm bảo chỉ giữ giá trị hợp lệ trong cấu
+     * hình.
      */
     private String normalizeSubtype(String type, String subtype) {
         String normalizedSubtype = normalize(subtype);
@@ -566,7 +592,8 @@ public class ProductService {
     }
 
     /**
-     * Chuẩn hóa danh sách subtype: bỏ null, bỏ trùng và cố định thứ tự lựa chọn.
+     * Chuẩn hóa danh sách subtype: bỏ null, bỏ trùng và cố định thứ tự lựa
+     * chọn.
      */
     private List<String> normalizeSubtypeList(String type, List<String> subtypes) {
         if (subtypes == null || subtypes.isEmpty()) {
@@ -590,6 +617,7 @@ public class ProductService {
     }
 
     private record PriceRange(BigDecimal min, BigDecimal max) {
+
     }
 
     /**

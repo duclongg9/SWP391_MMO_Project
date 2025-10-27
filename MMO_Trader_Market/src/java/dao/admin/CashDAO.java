@@ -6,12 +6,17 @@ import java.sql.*;
 import java.util.*;
 
 public class CashDAO {
+
     private final Connection con;
-    public CashDAO(Connection con) { this.con = con; }
 
-    /** Lấy giao dịch nạp+rút, kèm tên user */
+    public CashDAO(Connection con) {
+        this.con = con;
+    }
+
+    /**
+     * Lấy giao dịch nạp+rút, kèm tên user
+     */
     public List<CashTxn> listAll() throws SQLException {
-
 
         String sql = """
             SELECT * FROM (
@@ -51,8 +56,7 @@ public class CashDAO {
         """;
 
         List<CashTxn> list = new ArrayList<>();
-        try (PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 CashTxn t = new CashTxn();
                 t.setType(rs.getString("type"));                 // Deposit | Withdrawal

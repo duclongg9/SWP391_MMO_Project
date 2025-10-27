@@ -3,9 +3,12 @@ package model.view;
 import java.time.LocalDate;
 
 /**
- * <p>View model cho khối "Khách hàng tiêu biểu" trên homepage.</p>
- * <p>Được {@link service.HomepageService} dựng từ bản ghi {@link model.Users} cùng thống kê đơn hàng,
- * truyền xuống JSP để hiển thị tên, email, thời gian tham gia và điểm hài lòng.</p>
+ * <p>
+ * View model cho khối "Khách hàng tiêu biểu" trên homepage.</p>
+ * <p>
+ * Được {@link service.HomepageService} dựng từ bản ghi {@link model.Users} cùng
+ * thống kê đơn hàng, truyền xuống JSP để hiển thị tên, email, thời gian tham
+ * gia và điểm hài lòng.</p>
  *
  * @author longpdhe171902
  */
@@ -58,4 +61,3 @@ public class CustomerProfileView {
         return satisfactionScore;
     }
 }
-

@@ -143,8 +143,11 @@ public class CredentialDAO extends BaseDAO {
     }
 
     /**
-     * Đảm bảo kho credential của sản phẩm (hoặc biến thể) có đủ số lượng khả dụng để tạo đơn hàng mới.
-     * <p>Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và trả về số liệu mới nhất.</p>
+     * Đảm bảo kho credential của sản phẩm (hoặc biến thể) có đủ số lượng khả
+     * dụng để tạo đơn hàng mới.
+     * <p>
+     * Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và
+     * trả về số liệu mới nhất.</p>
      */
     public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
         String normalized = normalizeVariantCode(variantCode);
@@ -209,8 +212,7 @@ public class CredentialDAO extends BaseDAO {
     public List<String> findPlainCredentialsByOrder(int orderId) {
         final String sql = "SELECT encrypted_value FROM product_credentials WHERE order_id = ? ORDER BY id ASC";
         List<String> results = new ArrayList<>();
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -225,8 +227,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Kiểm tra người mua đã từng mở khóa thông tin bàn giao hay chưa.
-     * <p>Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa vào đây để quyết định
-     * có tải plaintext cho người dùng hay yêu cầu xác nhận lại.</p>
+     * <p>
+     * Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa
+     * vào đây để quyết định có tải plaintext cho người dùng hay yêu cầu xác
+     * nhận lại.</p>
      */
     public boolean hasViewLog(int orderId, int buyerId) {
         final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
@@ -244,9 +248,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Ghi nhận hành động mở khóa credential của người mua.
-     * <p>Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm bảo vệ dữ liệu:
-     * nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để controller có thể báo lỗi và không hiển thị
-     * thông tin nhạy cảm.</p>
+     * <p>
+     * Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm
+     * bảo vệ dữ liệu: nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để
+     * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.</p>
      */
     public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
         final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
@@ -273,9 +278,12 @@ public class CredentialDAO extends BaseDAO {
     }
 
     /**
-     * Truy vấn toàn bộ lịch sử mở khóa credential của một đơn hàng để phục vụ giao diện quản trị.
-     * <p>Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời điểm, IP) để admin
-     * có thể rà soát khi phát sinh tranh chấp về việc đã xem dữ liệu hay chưa.</p>
+     * Truy vấn toàn bộ lịch sử mở khóa credential của một đơn hàng để phục vụ
+     * giao diện quản trị.
+     * <p>
+     * Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời
+     * điểm, IP) để admin có thể rà soát khi phát sinh tranh chấp về việc đã xem
+     * dữ liệu hay chưa.</p>
      */
     public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
         final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
@@ -301,14 +309,17 @@ public class CredentialDAO extends BaseDAO {
     }
 
     public record CredentialAvailability(int total, int available) {
+
     }
 
     public record CredentialViewLogEntry(int orderId, int productId, int buyerId, String variantCode,
-                                         String viewerIp, Timestamp viewedAt) {
+            String viewerIp, Timestamp viewedAt) {
+
     }
 
     /**
-     * Sinh thêm credential ảo cho sản phẩm/biến thể để bảo đảm mỗi đơn vị hàng hóa đều có dữ liệu bàn giao riêng biệt.
+     * Sinh thêm credential ảo cho sản phẩm/biến thể để bảo đảm mỗi đơn vị hàng
+     * hóa đều có dữ liệu bàn giao riêng biệt.
      */
     public void generateFakeCredentials(Connection connection, int productId, String variantCode, int quantity)
             throws SQLException {

@@ -9,7 +9,8 @@ package units;
  * @author D E L L
  */
 public class TestSendMail {
-     public static void main(String[] args) {
+
+    public static void main(String[] args) {
         try {
             String toEmail = "aanhtuankiet@gmail.com"; // Email bạn muốn nhận để test
             String subject = "KIETNGUYENCEO";

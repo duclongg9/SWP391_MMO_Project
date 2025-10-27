@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * <p>Model hàng rút gọn cho danh sách sản phẩm trong trang browse/checkout.</p>
- * <p>DAO trả về lớp này để {@link service.ProductService} có đủ thông tin render danh sách, đồng thời
- * giúp JSP truy cập trực tiếp các trường cần hiển thị (tên, giá, tồn kho, trạng thái).</p>
+ * <p>
+ * Model hàng rút gọn cho danh sách sản phẩm trong trang browse/checkout.</p>
+ * <p>
+ * DAO trả về lớp này để {@link service.ProductService} có đủ thông tin render
+ * danh sách, đồng thời giúp JSP truy cập trực tiếp các trường cần hiển thị
+ * (tên, giá, tồn kho, trạng thái).</p>
  *
  * @author longpdhe171902
  */
@@ -28,8 +31,8 @@ public class ProductListRow {
     private final String shopName;
 
     /**
-     * Chuẩn hóa các giá trị văn bản để tránh {@code null} khi render và giữ nguyên số liệu định lượng
-     * (giá, tồn kho) phục vụ tính toán trong service.
+     * Chuẩn hóa các giá trị văn bản để tránh {@code null} khi render và giữ
+     * nguyên số liệu định lượng (giá, tồn kho) phục vụ tính toán trong service.
      */
     public ProductListRow(int id, String productType, String productSubtype, String name,
             String shortDescription, BigDecimal price, Integer inventoryCount,

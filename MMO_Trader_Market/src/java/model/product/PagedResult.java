@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * <p>Đối tượng bao gói kết quả phân trang cho các luồng duyệt sản phẩm.</p>
- * <p>Dữ liệu được dựng từ các truy vấn DAO trả về danh sách record/raw model và được
- * chuyển thành {@code items} để truyền xuống JSP. Thông tin trang/size/tổng mục giúp
- * controller render phân trang chính xác.</p>
+ * <p>
+ * Đối tượng bao gói kết quả phân trang cho các luồng duyệt sản phẩm.</p>
+ * <p>
+ * Dữ liệu được dựng từ các truy vấn DAO trả về danh sách record/raw model và
+ * được chuyển thành {@code items} để truyền xuống JSP. Thông tin
+ * trang/size/tổng mục giúp controller render phân trang chính xác.</p>
  *
  * @param <T> kiểu phần tử trong danh sách sản phẩm
  * @author longpdhe171902

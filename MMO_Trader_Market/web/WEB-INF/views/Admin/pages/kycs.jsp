@@ -93,90 +93,90 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Người dùng</th>
-                        <th class="text-center">Mặt trước</th>
-                        <th class="text-center">Mặt sau</th>
-                        <th class="text-center">Selfie</th>
-                        <th>Số giấy tờ</th>
-                        <th>Ngày gửi</th>
-                        <!-- Toggle sort status_asc/status_desc -->
-                        <th id="thStatus" class="cursor-pointer" style="user-select:none">
-                            Trạng thái
-                            <c:if test="${sort == 'status_asc'}"><i class="bi bi-caret-up-fill ms-1"></i></c:if>
-                            <c:if test="${sort == 'status_desc'}"><i class="bi bi-caret-down-fill ms-1"></i></c:if>
-                        </th>
-                        <th class="text-center" style="width:140px">Hành động</th>
-                    </tr>
-                    </thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Người dùng</th>
+                            <th class="text-center">Mặt trước</th>
+                            <th class="text-center">Mặt sau</th>
+                            <th class="text-center">Selfie</th>
+                            <th>Số giấy tờ</th>
+                            <th>Ngày gửi</th>
+                            <!-- Toggle sort status_asc/status_desc -->
+                            <th id="thStatus" class="cursor-pointer" style="user-select:none">
+                                Trạng thái
+                                <c:if test="${sort == 'status_asc'}"><i class="bi bi-caret-up-fill ms-1"></i></c:if>
+                                <c:if test="${sort == 'status_desc'}"><i class="bi bi-caret-down-fill ms-1"></i></c:if>
+                                </th>
+                                <th class="text-center" style="width:140px">Hành động</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                    <c:choose>
-                        <c:when test="${not empty kycList}">
-                            <c:forEach var="k" items="${kycList}" varStatus="st">
-                                <tr>
-                                    <td>${(pageNow-1)*pageSize + st.index + 1}</td>
+                        <tbody>
+                        <c:choose>
+                            <c:when test="${not empty kycList}">
+                                <c:forEach var="k" items="${kycList}" varStatus="st">
+                                    <tr>
+                                        <td>${(pageNow-1)*pageSize + st.index + 1}</td>
 
-                                    <td>
-                                        <div class="fw-semibold">${k.userName}</div>
-                                        <div class="text-muted small">${k.userEmail}</div>
-                                    </td>
+                                        <td>
+                                            <div class="fw-semibold">${k.userName}</div>
+                                            <div class="text-muted small">${k.userEmail}</div>
+                                        </td>
 
-                                    <td class="text-center">
-                                        <img src="${k.frontImageUrl}" alt="front"
-                                             class="img-thumbnail kyc-thumb"
-                                             style="width:80px;height:56px;object-fit:cover;"
-                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.frontImageUrl}'">
-                                    </td>
-                                    <td class="text-center">
-                                        <img src="${k.backImageUrl}" alt="back"
-                                             class="img-thumbnail kyc-thumb"
-                                             style="width:80px;height:56px;object-fit:cover;"
-                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.backImageUrl}'">
-                                    </td>
-                                    <td class="text-center">
-                                        <img src="${k.selfieImageUrl}" alt="selfie"
-                                             class="img-thumbnail kyc-thumb"
-                                             style="width:80px;height:56px;object-fit:cover;"
-                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.selfieImageUrl}'">
-                                    </td>
+                                        <td class="text-center">
+                                            <img src="${k.frontImageUrl}" alt="front"
+                                                 class="img-thumbnail kyc-thumb"
+                                                 style="width:80px;height:56px;object-fit:cover;"
+                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.frontImageUrl}'">
+                                        </td>
+                                        <td class="text-center">
+                                            <img src="${k.backImageUrl}" alt="back"
+                                                 class="img-thumbnail kyc-thumb"
+                                                 style="width:80px;height:56px;object-fit:cover;"
+                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.backImageUrl}'">
+                                        </td>
+                                        <td class="text-center">
+                                            <img src="${k.selfieImageUrl}" alt="selfie"
+                                                 class="img-thumbnail kyc-thumb"
+                                                 style="width:80px;height:56px;object-fit:cover;"
+                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.selfieImageUrl}'">
+                                        </td>
 
-                                    <td>${k.idNumber}</td>
-                                    <td><fmt:formatDate value="${k.createdAt}" pattern="dd-MM-yyyy"/></td>
+                                        <td>${k.idNumber}</td>
+                                        <td><fmt:formatDate value="${k.createdAt}" pattern="dd-MM-yyyy"/></td>
 
-                                    <td>
-                                        <c:set var="statusText">
-                                            <c:choose>
-                                                <c:when test="${not empty k.statusName}">${k.statusName}</c:when>
-                                                <c:when test="${k.statusId == 1}">Pending</c:when>
-                                                <c:when test="${k.statusId == 2}">Approved</c:when>
-                                                <c:when test="${k.statusId == 3}">Rejected</c:when>
-                                                <c:otherwise>Unknown</c:otherwise>
-                                            </c:choose>
-                                        </c:set>
+                                        <td>
+                                            <c:set var="statusText">
+                                                <c:choose>
+                                                    <c:when test="${not empty k.statusName}">${k.statusName}</c:when>
+                                                    <c:when test="${k.statusId == 1}">Pending</c:when>
+                                                    <c:when test="${k.statusId == 2}">Approved</c:when>
+                                                    <c:when test="${k.statusId == 3}">Rejected</c:when>
+                                                    <c:otherwise>Unknown</c:otherwise>
+                                                </c:choose>
+                                            </c:set>
 
-                                        <span class="badge
-                                          <c:choose>
-                                            <c:when test='${k.statusId == 1}'>bg-warning text-dark</c:when>
-                                            <c:when test='${k.statusId == 2}'>bg-success</c:when>
-                                            <c:when test='${k.statusId == 3}'>bg-danger</c:when>
-                                            <c:otherwise>bg-secondary</c:otherwise>
-                                          </c:choose>'">
+                                            <span class="badge
+                                                  <c:choose>
+                                                      <c:when test='${k.statusId == 1}'>bg-warning text-dark</c:when>
+                                                      <c:when test='${k.statusId == 2}'>bg-success</c:when>
+                                                      <c:when test='${k.statusId == 3}'>bg-danger</c:when>
+                                                      <c:otherwise>bg-secondary</c:otherwise>
+                                                  </c:choose>'">
                                                 ${statusText}
-                                        </span>
-                                    </td>
+                                            </span>
+                                        </td>
 
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-primary"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#kycModal_${k.id}">
-                                            <i class="bi bi-eye"></i> Xem chi tiết
-                                        </button>
-                                    </td>
-                                </tr>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#kycModal_${k.id}">
+                                                <i class="bi bi-eye"></i> Xem chi tiết
+                                            </button>
+                                        </td>
+                                    </tr>
 
-                                <!-- Modal chi tiết -->
+                                    <!-- Modal chi tiết -->
                                 <div class="modal fade" id="kycModal_${k.id}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -222,24 +222,24 @@
                                                                       placeholder="Ghi chú cho người dùng (bắt buộc khi từ chối)"
                                                                       <c:if test="${k.statusId != 1}">disabled</c:if>>${k.adminFeedback}</textarea>
 
-                                                            <div class="d-flex gap-2 mt-3">
-                                                                <c:choose>
-                                                                    <c:when test="${k.statusId == 1}">
-                                                                        <button class="btn btn-success" name="action" value="approve">
-                                                                            <i class="bi bi-check-circle"></i> Accept
-                                                                        </button>
-                                                                        <button class="btn btn-danger" name="action" value="reject"
-                                                                                onclick="return confirm('Từ chối KYC này?');">
-                                                                            <i class="bi bi-x-circle"></i> Reject
-                                                                        </button>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span class="text-muted align-self-center">Hồ sơ đã xử lý.</span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
-                                                                <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">
-                                                                    Đóng
-                                                                </button>
+                                                                      <div class="d-flex gap-2 mt-3">
+                                                                      <c:choose>
+                                                                          <c:when test="${k.statusId == 1}">
+                                                                              <button class="btn btn-success" name="action" value="approve">
+                                                                                  <i class="bi bi-check-circle"></i> Accept
+                                                                              </button>
+                                                                              <button class="btn btn-danger" name="action" value="reject"
+                                                                                      onclick="return confirm('Từ chối KYC này?');">
+                                                                                  <i class="bi bi-x-circle"></i> Reject
+                                                                              </button>
+                                                                          </c:when>
+                                                                          <c:otherwise>
+                                                                              <span class="text-muted align-self-center">Hồ sơ đã xử lý.</span>
+                                                                          </c:otherwise>
+                                                                      </c:choose>
+                                                                      <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">
+                                                                          Đóng
+                                                                      </button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -300,7 +300,7 @@
                     </c:url>
                     <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                </c:if>
+                    </c:if>
 
                 <c:forEach var="i" begin="${start}" end="${end}">
                     <c:url var="ui" value="${kycsPath}">
@@ -319,17 +319,17 @@
 
                 <c:if test="${end < pages}">
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                    <c:url var="uLast" value="${kycsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="page"   value="${pages}" />
-                    </c:url>
+                        <c:url var="uLast" value="${kycsPath}">
+                            <c:param name="q"      value="${q}" />
+                            <c:param name="from"   value="${from}" />
+                            <c:param name="to"     value="${to}" />
+                            <c:param name="status" value="${status}" />
+                            <c:param name="sort"   value="${sort}" />
+                            <c:param name="size"   value="${pageSize}" />
+                            <c:param name="page"   value="${pages}" />
+                        </c:url>
                     <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                </c:if>
+                    </c:if>
 
                 <!-- Next -->
                 <li class="page-item ${pageNow>=pages?'disabled':''}">
@@ -361,46 +361,69 @@
 </div>
 
 <style>
-    .table td,.table th{vertical-align:middle}
-    .kyc-thumb{cursor:zoom-in}
-    .cursor-pointer{cursor:pointer}
+    .table td,.table th{
+        vertical-align:middle
+    }
+    .kyc-thumb{
+        cursor:zoom-in
+    }
+    .cursor-pointer{
+        cursor:pointer
+    }
 </style>
 
 <script>
     /* ===== TỰ ẨN THÔNG BÁO + FILTER BEHAVIOR ===== */
     window.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.alert').forEach(a => {
-            setTimeout(() => { a.classList.add('fade'); a.style.opacity = 0; }, 1800);
+            setTimeout(() => {
+                a.classList.add('fade');
+                a.style.opacity = 0;
+            }, 1800);
             setTimeout(() => a.remove(), 2600);
         });
 
-        const form     = document.getElementById('kycFilter');
-        const ipQ      = document.getElementById('q');
-        const ipFrom   = document.getElementById('from');
-        const ipTo     = document.getElementById('to');
+        const form = document.getElementById('kycFilter');
+        const ipQ = document.getElementById('q');
+        const ipFrom = document.getElementById('from');
+        const ipTo = document.getElementById('to');
         const ipStatus = document.getElementById('status');
-        const ipSort   = document.getElementById('sort');
+        const ipSort = document.getElementById('sort');
         const thStatus = document.getElementById('thStatus');
-        const pageInput= document.getElementById('pageInput');
+        const pageInput = document.getElementById('pageInput');
 
-        if (!form) return;
+        if (!form)
+            return;
 
         // Ngăn Enter auto-submit; chỉ submit khi bấm Lọc
         [ipQ, ipFrom, ipTo].forEach(el => {
-            if (!el) return;
-            el.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+            if (!el)
+                return;
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter')
+                    e.preventDefault();
+            });
         });
 
         // Nút Lọc -> reset page = 1
-        form.addEventListener('submit', () => { if (pageInput) pageInput.value = 1; });
+        form.addEventListener('submit', () => {
+            if (pageInput)
+                pageInput.value = 1;
+        });
 
         // Đổi trạng thái -> set sort hợp lý + reset page = 1 + submit
         if (ipStatus) {
             ipStatus.addEventListener('change', () => {
                 const v = (ipStatus.value || '').toLowerCase();
-                if (v === 'all')  { if (ipSort) ipSort.value = 'date_desc'; }
-                else              { if (ipSort && !/^status_/i.test(ipSort.value||'')) ipSort.value = 'status_asc'; }
-                if (pageInput) pageInput.value = 1;
+                if (v === 'all') {
+                    if (ipSort)
+                        ipSort.value = 'date_desc';
+                } else {
+                    if (ipSort && !/^status_/i.test(ipSort.value || ''))
+                        ipSort.value = 'status_asc';
+                }
+                if (pageInput)
+                    pageInput.value = 1;
                 form.submit();
             });
         }
@@ -410,7 +433,8 @@
             thStatus.addEventListener('click', () => {
                 const cur = (ipSort.value || '').toLowerCase();
                 ipSort.value = (cur === 'status_asc') ? 'status_desc' : 'status_asc';
-                if (pageInput) pageInput.value = 1;
+                if (pageInput)
+                    pageInput.value = 1;
                 form.submit();
             });
         }
@@ -418,11 +442,13 @@
         // Preview ảnh
         document.addEventListener('click', function (e) {
             const img = e.target.closest('.kyc-thumb');
-            if (!img) return;
+            if (!img)
+                return;
             const src = img.getAttribute('src');
-            const modalEl  = document.getElementById('imgPreviewModal');
+            const modalEl = document.getElementById('imgPreviewModal');
             const modalImg = document.getElementById('previewImg');
-            if (!modalEl || !modalImg) return;
+            if (!modalEl || !modalImg)
+                return;
             modalImg.src = src;
             const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
             bsModal.show();

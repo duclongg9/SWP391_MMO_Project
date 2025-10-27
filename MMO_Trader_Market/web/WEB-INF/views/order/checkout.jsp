@@ -30,7 +30,7 @@
                                 Giá bán:
                                 <strong>
                                     <fmt:formatNumber value="${product.price}" type="number" minFractionDigits="0"
-                                                     maxFractionDigits="0" /> đ
+                                                      maxFractionDigits="0" /> đ
                                 </strong>
                             </p>
                         </div>

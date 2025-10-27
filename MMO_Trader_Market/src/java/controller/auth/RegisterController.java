@@ -18,8 +18,8 @@ import java.util.logging.Logger;
 /**
  * Điều khiển luồng "Đăng ký tài khoản" cho khách truy cập chưa có tài khoản.
  * <p>
- * - Thu thập thông tin email, họ tên, mật khẩu và xác nhận điều khoản.
- * - Tạo mới tài khoản khách (Role Guest) để người dùng có thể đăng nhập vào hệ thống.
+ * - Thu thập thông tin email, họ tên, mật khẩu và xác nhận điều khoản. - Tạo
+ * mới tài khoản khách (Role Guest) để người dùng có thể đăng nhập vào hệ thống.
  * - Hiển thị thông báo thành công và chuyển hướng về trang đăng nhập.
  *
  * @version 1.0 27/05/2024

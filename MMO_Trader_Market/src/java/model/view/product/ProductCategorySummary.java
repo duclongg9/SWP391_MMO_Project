@@ -1,9 +1,13 @@
 package model.view.product;
 
 /**
- * <p>Tóm tắt số lượng sản phẩm theo từng loại để hiển thị ở điều hướng trang chủ.</p>
- * <p>Được {@link service.ProductService#getHomepageCategories()} tính toán dựa trên dữ liệu DB và truyền
- * thẳng xuống JSP giúp người dùng chọn danh mục nhanh.</p>
+ * <p>
+ * Tóm tắt số lượng sản phẩm theo từng loại để hiển thị ở điều hướng trang
+ * chủ.</p>
+ * <p>
+ * Được {@link service.ProductService#getHomepageCategories()} tính toán dựa
+ * trên dữ liệu DB và truyền thẳng xuống JSP giúp người dùng chọn danh mục
+ * nhanh.</p>
  *
  * @author longpdhe171902
  */

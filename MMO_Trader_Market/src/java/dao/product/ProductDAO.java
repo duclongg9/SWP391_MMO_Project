@@ -24,7 +24,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * DAO tương tác với bảng {@code products} để phục vụ tra cứu, thống kê và cập nhật hàng hóa.
+ * DAO tương tác với bảng {@code products} để phục vụ tra cứu, thống kê và cập
+ * nhật hàng hóa.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -57,10 +58,10 @@ public class ProductDAO extends BaseDAO {
     /**
      * Lấy danh sách sản phẩm đang mở bán theo trang và bộ lọc loại/phân loại.
      *
-     * @param productType     loại sản phẩm bắt buộc
+     * @param productType loại sản phẩm bắt buộc
      * @param productSubtypes danh sách phân loại con cần lọc (có thể rỗng)
-     * @param limit           số bản ghi mỗi trang
-     * @param offset          vị trí bắt đầu lấy dữ liệu
+     * @param limit số bản ghi mỗi trang
+     * @param offset vị trí bắt đầu lấy dữ liệu
      * @return danh sách sản phẩm kèm thông tin shop
      */
     public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
@@ -91,8 +92,7 @@ public class ProductDAO extends BaseDAO {
         params.add(limit);
         params.add(offset);
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
             List<ProductListRow> rows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -110,7 +110,7 @@ public class ProductDAO extends BaseDAO {
     /**
      * Đếm số sản phẩm đang mở bán phù hợp với bộ lọc loại/phân loại.
      *
-     * @param productType     loại sản phẩm
+     * @param productType loại sản phẩm
      * @param productSubtypes danh sách phân loại con
      * @return tổng số sản phẩm thỏa điều kiện
      */
@@ -140,8 +140,7 @@ public class ProductDAO extends BaseDAO {
         }
         sql.append(") AS available_products");
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -164,8 +163,7 @@ public class ProductDAO extends BaseDAO {
         }
         sql.append(" ORDER BY p.product_subtype ASC");
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             setParameters(statement, params);
             List<String> codes = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -190,8 +188,7 @@ public class ProductDAO extends BaseDAO {
      * @return thông tin chi tiết nếu tìm thấy
      */
     public Optional<ProductDetail> findDetailById(int productId) {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(DETAIL_SELECT)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(DETAIL_SELECT)) {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -215,8 +212,7 @@ public class ProductDAO extends BaseDAO {
         String sql = LIST_SELECT
                 + " WHERE p.status = 'Available' AND p.inventory_count > 0"
                 + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
             List<ProductListRow> rows = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -241,9 +237,7 @@ public class ProductDAO extends BaseDAO {
                 + "FROM products p WHERE p.status = 'Available' AND p.inventory_count > 0 "
                 + "GROUP BY p.product_type";
         Map<String, Long> result = new HashMap<>();
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             while (rs.next()) {
                 String type = rs.getString("product_type");
                 long total = rs.getLong("total");
@@ -260,9 +254,9 @@ public class ProductDAO extends BaseDAO {
     /**
      * Tìm sản phẩm tương tự theo loại, bỏ qua một sản phẩm cụ thể.
      *
-     * @param productType     loại sản phẩm
+     * @param productType loại sản phẩm
      * @param excludeProductId mã sản phẩm cần loại trừ
-     * @param limit           số lượng gợi ý mong muốn
+     * @param limit số lượng gợi ý mong muốn
      * @return danh sách sản phẩm tương tự
      */
     public List<ProductListRow> findSimilarByType(String productType, int excludeProductId, int limit) {
@@ -273,8 +267,7 @@ public class ProductDAO extends BaseDAO {
                 + " WHERE p.status = 'Available' AND p.inventory_count > 0"
                 + " AND p.product_type = ? AND p.id <> ?"
                 + " ORDER BY p.sold_count DESC, p.created_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productType);
             statement.setInt(2, excludeProductId);
             statement.setInt(3, Math.max(limit, 1));
@@ -297,9 +290,7 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách shop và tên tương ứng
      */
     public List<ShopOption> findShopsWithAvailableProducts() {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(SHOP_FILTER_SELECT);
-             ResultSet rs = statement.executeQuery()) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(SHOP_FILTER_SELECT); ResultSet rs = statement.executeQuery()) {
             List<ShopOption> shops = new ArrayList<>();
             while (rs.next()) {
                 shops.add(mapShopOption(rs));
@@ -319,8 +310,7 @@ public class ProductDAO extends BaseDAO {
      */
     public Optional<Products> findById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -342,8 +332,7 @@ public class ProductDAO extends BaseDAO {
     public Optional<Products> findAvailableById(int id) {
         final String sql = "SELECT " + PRODUCT_COLUMNS
                 + " FROM products WHERE id = ? AND status = 'Available' LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -364,8 +353,7 @@ public class ProductDAO extends BaseDAO {
      */
     public Optional<BigDecimal> findPriceById(int productId) {
         final String sql = "SELECT price FROM products WHERE id = ? LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -382,7 +370,7 @@ public class ProductDAO extends BaseDAO {
      * Trừ tồn kho sản phẩm bằng câu lệnh độc lập.
      *
      * @param productId mã sản phẩm
-     * @param qty       số lượng cần trừ
+     * @param qty số lượng cần trừ
      * @return {@code true} nếu cập nhật thành công
      */
     public boolean decrementInventory(int productId, int qty) {
@@ -398,8 +386,8 @@ public class ProductDAO extends BaseDAO {
      * Trừ tồn kho trong bối cảnh giao dịch đã có sẵn kết nối.
      *
      * @param connection kết nối dùng chung
-     * @param productId  mã sản phẩm
-     * @param qty        số lượng cần trừ
+     * @param productId mã sản phẩm
+     * @param qty số lượng cần trừ
      * @return {@code true} nếu tồn kho đủ và trừ thành công
      * @throws SQLException khi câu lệnh SQL lỗi
      */
@@ -418,7 +406,7 @@ public class ProductDAO extends BaseDAO {
      * Khóa hàng tồn kho để tránh race-condition trước khi cập nhật.
      *
      * @param connection kết nối hiện hành
-     * @param productId  mã sản phẩm
+     * @param productId mã sản phẩm
      * @return tồn kho hiện tại
      * @throws SQLException khi truy vấn lỗi
      */
@@ -466,8 +454,7 @@ public class ProductDAO extends BaseDAO {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
-        try (Connection connection = getConnection();
-             PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);
@@ -483,8 +470,8 @@ public class ProductDAO extends BaseDAO {
      * Tìm kiếm sản phẩm với phân trang cho giao diện quản trị.
      *
      * @param keyword từ khóa tìm kiếm
-     * @param limit   số bản ghi tối đa
-     * @param offset  vị trí bắt đầu
+     * @param limit số bản ghi tối đa
+     * @param offset vị trí bắt đầu
      * @return danh sách sản phẩm phù hợp
      */
     public List<Products> search(String keyword, int limit, int offset) {
@@ -494,8 +481,7 @@ public class ProductDAO extends BaseDAO {
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         sql.append(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
-        try (Connection connection = getConnection();
-             PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = prepareSearchStatement(connection, sql.toString(), parameters)) {
             statement.setInt(parameters.size() + 1, limit);
             statement.setInt(parameters.size() + 2, offset);
             List<Products> products = new ArrayList<>();
@@ -521,8 +507,7 @@ public class ProductDAO extends BaseDAO {
         int resolvedLimit = limit > 0 ? limit : 3;
         final String sql = "SELECT " + PRODUCT_COLUMNS
                 + " FROM products ORDER BY updated_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
             List<Products> products = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -573,33 +558,33 @@ public class ProductDAO extends BaseDAO {
      * Gán danh sách tham số vào {@link PreparedStatement} theo thứ tự.
      */
     private void setParameters(PreparedStatement statement, List<Object> params) throws SQLException {
-    for (int i = 0; i < params.size(); i++) {
-        Object value = params.get(i);
-        int index = i + 1;
+        for (int i = 0; i < params.size(); i++) {
+            Object value = params.get(i);
+            int index = i + 1;
 
-        if (value == null) {
-            statement.setObject(index, null);
-        } else if (value instanceof Integer) {
-            statement.setInt(index, (Integer) value);
-        } else if (value instanceof Long) {
-            statement.setLong(index, (Long) value);
-        } else if (value instanceof String) {
-            statement.setString(index, (String) value);
-        } else if (value instanceof BigDecimal) {
-            statement.setBigDecimal(index, (BigDecimal) value);
-        } else if (value instanceof java.util.Date) {
-            statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
-        } else if (value instanceof Boolean) {
-            statement.setBoolean(index, (Boolean) value);
-        } else if (value instanceof Double) {
-            statement.setDouble(index, (Double) value);
-        } else if (value instanceof Float) {
-            statement.setFloat(index, (Float) value);
-        } else {
-            statement.setObject(index, value);
+            if (value == null) {
+                statement.setObject(index, null);
+            } else if (value instanceof Integer) {
+                statement.setInt(index, (Integer) value);
+            } else if (value instanceof Long) {
+                statement.setLong(index, (Long) value);
+            } else if (value instanceof String) {
+                statement.setString(index, (String) value);
+            } else if (value instanceof BigDecimal) {
+                statement.setBigDecimal(index, (BigDecimal) value);
+            } else if (value instanceof java.util.Date) {
+                statement.setTimestamp(index, new java.sql.Timestamp(((java.util.Date) value).getTime()));
+            } else if (value instanceof Boolean) {
+                statement.setBoolean(index, (Boolean) value);
+            } else if (value instanceof Double) {
+                statement.setDouble(index, (Double) value);
+            } else if (value instanceof Float) {
+                statement.setFloat(index, (Float) value);
+            } else {
+                statement.setObject(index, value);
+            }
         }
     }
-}
 
     /**
      * Bổ sung điều kiện tìm kiếm cho câu truy vấn nếu có từ khóa.
@@ -651,7 +636,8 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Ánh xạ dữ liệu chi tiết sang {@link ProductDetail} phục vụ trang chi tiết.
+     * Ánh xạ dữ liệu chi tiết sang {@link ProductDetail} phục vụ trang chi
+     * tiết.
      */
     private ProductDetail mapDetail(ResultSet rs) throws SQLException {
         Integer inventory = (Integer) rs.getObject("inventory_count");
@@ -719,6 +705,6 @@ public class ProductDAO extends BaseDAO {
     }
 
     public record ProductInventoryLock(Integer inventoryCount, String variantSchema, String variantsJson) {
+
     }
 }
-

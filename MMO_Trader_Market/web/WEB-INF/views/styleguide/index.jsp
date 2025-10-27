@@ -71,38 +71,38 @@
         <div class="panel__body">
             <table class="table table--interactive">
                 <thead>
-                <tr>
-                    <th>Mã</th>
-                    <th>Tên</th>
-                    <th>Mô tả</th>
-                    <th>Giá</th>
-                    <th>Trạng thái</th>
-                    <th class="table__actions">Actions</th>
-                </tr>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Tên</th>
+                        <th>Mô tả</th>
+                        <th>Giá</th>
+                        <th>Trạng thái</th>
+                        <th class="table__actions">Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>SP-001</td>
-                    <td>Gói coin VIP</td>
-                    <td>2.000 coin dùng trong game</td>
-                    <td>350.000 đ</td>
-                    <td><span class="badge">ACTIVE</span></td>
-                    <td class="table__actions">
-                        <button class="button button--ghost" type="button">Sửa</button>
-                        <button class="button button--danger" type="button">Xóa</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>SP-002</td>
-                    <td>Tài khoản luyện sẵn</td>
-                    <td>Level 80, trang bị full</td>
-                    <td>1.500.000 đ</td>
-                    <td><span class="badge badge--warning">PENDING</span></td>
-                    <td class="table__actions">
-                        <button class="button button--ghost" type="button">Sửa</button>
-                        <button class="button button--danger" type="button">Xóa</button>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>SP-001</td>
+                        <td>Gói coin VIP</td>
+                        <td>2.000 coin dùng trong game</td>
+                        <td>350.000 đ</td>
+                        <td><span class="badge">ACTIVE</span></td>
+                        <td class="table__actions">
+                            <button class="button button--ghost" type="button">Sửa</button>
+                            <button class="button button--danger" type="button">Xóa</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>SP-002</td>
+                        <td>Tài khoản luyện sẵn</td>
+                        <td>Level 80, trang bị full</td>
+                        <td>1.500.000 đ</td>
+                        <td><span class="badge badge--warning">PENDING</span></td>
+                        <td class="table__actions">
+                            <button class="button button--ghost" type="button">Sửa</button>
+                            <button class="button button--danger" type="button">Xóa</button>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <pre class="code-block"><code>&lt;table class="table table--interactive"&gt;

@@ -11,6 +11,7 @@ import java.security.MessageDigest;
  * @author admin
  */
 public class HashPassword {
+
     // md5
     // sha-1 => thường được sử dụng
     public static String toSHA1(String str) {
@@ -27,10 +28,9 @@ public class HashPassword {
         }
         return result;
     }
-    
+
     public static void main(String[] args) {
         String test = "buyer";
         System.out.println(toSHA1(test));
     }
 }
-
