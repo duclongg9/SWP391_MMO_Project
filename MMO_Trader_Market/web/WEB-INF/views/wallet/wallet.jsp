@@ -25,33 +25,27 @@
     guideLink.put("href", contextPath + "/styleguide");
     navItems.add(guideLink);
 
-    Map<String, String> logoutLink = new HashMap<>();
-    logoutLink.put("href", contextPath + "/auth?action=logout");
-    logoutLink.put("label", "Đăng xuất");
-    logoutLink.put("modifier", "menu__item--danger");
-    navItems.add(logoutLink);
-
     request.setAttribute("navItems", navItems);
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content grid-2">
     <section class="panel profile-grid" >
- 
-      
-      
 
-        
+
+
+
+
         <!--Alerts -->
-  <div style="grid-column: 1 / -1;">
-    <c:if test="${not empty msg}">
-      <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
-    </c:if>
-    <c:if test="${not empty emg}">
-      <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
-    </c:if>
-  </div>
-        
+        <div style="grid-column: 1 / -1;">
+            <c:if test="${not empty msg}">
+                <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
+            </c:if>
+            <c:if test="${not empty emg}">
+                <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
+            </c:if>
+        </div>
+
         <!--Thông tin ví -->
     <input type="hidden" name="action" value="updateProfile">
   <div class="panel__header">
