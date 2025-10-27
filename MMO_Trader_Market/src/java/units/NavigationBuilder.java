@@ -50,19 +50,6 @@ public final class NavigationBuilder {
             return items;
         }
 
-        if (isBuyerRole(roleId)) {
-            items.add(createNavItem(contextPath + "/wallet", "Ví của tôi",
-                    isActive(currentPath, "/wallet")));
-            items.add(createNavItem(contextPath + "/orders", "Đơn hàng",
-                    isActive(currentPath, "/orders")));
-            items.add(createIconItem(contextPath + "/profile", "👤", "Tài khoản", false,
-                    isActive(currentPath, "/profile")));
-        } else {
-            items.add(createIconItem(contextPath + "/profile", "👤", "Quản trị viên", false,
-                    isActive(currentPath, "/profile")));
-        }
-
-        items.add(createLogoutItem(contextPath));
         return items;
     }
 
@@ -100,18 +87,6 @@ public final class NavigationBuilder {
         Map<String, Object> item = createNavItem(href, text, active, extraClasses);
         item.put("icon", icon);
         item.put("srText", text);
-        return item;
-    }
-
-    private static Map<String, Object> createLogoutItem(String contextPath) {
-        Map<String, Object> item = createNavItem(contextPath + "/auth?action=logout", "Đăng xuất", false);
-        String existingModifier = (String) item.get("modifier");
-        StringBuilder modifierBuilder = new StringBuilder();
-        if (existingModifier != null && !existingModifier.isBlank()) {
-            modifierBuilder.append(existingModifier.trim()).append(' ');
-        }
-        modifierBuilder.append("menu__item--danger menu__item--logout");
-        item.put("modifier", modifierBuilder.toString());
         return item;
     }
 
@@ -184,9 +159,6 @@ public final class NavigationBuilder {
         return uri;
     }
 
-    private static boolean isBuyerRole(Integer roleId) {
-        return roleId != null && roleId == 3;
-    }
 
     private static boolean isAdminRole(Integer roleId) {
         return roleId != null && roleId == 1;
