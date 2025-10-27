@@ -147,8 +147,24 @@ public class OrderController extends BaseController {
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (IllegalStateException ex) {
-            response.sendError(HttpServletResponse.SC_CONFLICT, ex.getMessage());
+            if (!redirectBackWithError(request, response, session, productId, ex.getMessage())) {
+                response.sendError(HttpServletResponse.SC_CONFLICT, ex.getMessage());
+            }
         }
+    }
+
+    private boolean redirectBackWithError(HttpServletRequest request, HttpServletResponse response,
+                                          HttpSession session, int productId, String message) throws IOException {
+        if (session == null || productId <= 0) {
+            return false;
+        }
+        String resolvedMessage = (message == null || message.isBlank())
+                ? "Không thể xử lý giao dịch. Vui lòng thử lại sau."
+                : message;
+        session.setAttribute("purchaseError", resolvedMessage);
+        String target = request.getContextPath() + "/product/detail/" + IdObfuscator.encode(productId);
+        response.sendRedirect(target);
+        return true;
     }
 
     /**
