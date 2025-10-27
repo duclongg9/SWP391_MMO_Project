@@ -16,12 +16,18 @@ import java.util.Objects;
  */
 public class PagedResult<T> {
 
+    // Danh sách phần tử ở trang hiện tại.
     private final List<T> items;
+    // Chỉ số trang hiện tại (bắt đầu từ 1).
     private final int page;
+    // Số lượng phần tử trên mỗi trang.
     private final int size;
+    // Tổng số trang dựa trên tổng phần tử và kích thước trang.
     private final int totalPages;
+    // Tổng số phần tử thỏa điều kiện truy vấn.
     private final long totalItems;
 
+    // Khởi tạo đối tượng phân trang với dữ liệu bất biến.
     public PagedResult(List<T> items, int page, int size, int totalPages, long totalItems) {
         this.items = List.copyOf(Objects.requireNonNull(items, "items"));
         this.page = page;
@@ -30,22 +36,27 @@ public class PagedResult<T> {
         this.totalItems = totalItems;
     }
 
+    // Lấy danh sách phần tử ở trang hiện tại.
     public List<T> getItems() {
         return items;
     }
 
+    // Lấy số trang hiện tại.
     public int getPage() {
         return page;
     }
 
+    // Lấy kích thước trang.
     public int getSize() {
         return size;
     }
 
+    // Lấy tổng số trang.
     public int getTotalPages() {
         return totalPages;
     }
 
+    // Lấy tổng số phần tử.
     public long getTotalItems() {
         return totalItems;
     }

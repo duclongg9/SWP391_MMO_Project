@@ -27,9 +27,12 @@ import service.UserService;
 @WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
 public class ResetPasswordController extends BaseController {
 
+    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
+    // Logger dùng để ghi nhận lỗi bất thường trong quá trình đặt lại mật khẩu.
     private static final Logger LOGGER = Logger.getLogger(ResetPasswordController.class.getName());
 
+    // Dịch vụ người dùng cung cấp nghiệp vụ xác thực token và đổi mật khẩu.
     private final UserService userService = new UserService(new UserDAO());
 
     /**
@@ -43,6 +46,7 @@ public class ResetPasswordController extends BaseController {
             throws ServletException, IOException {
         String token = request.getParameter("token");
         if (token == null || token.isBlank()) {
+            // Thiếu token hoặc token rỗng thì thông báo không hợp lệ.
             request.setAttribute("error", "Link đặt lại mật khẩu không hợp lệ");
         } else {
             request.setAttribute("token", token);
@@ -64,14 +68,18 @@ public class ResetPasswordController extends BaseController {
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
         try {
+            // Thực thi quy trình đổi mật khẩu dựa trên token hợp lệ.
             userService.resetPassword(token, password, confirmPassword);
             HttpSession session = request.getSession();
+            // Lưu flash message để hiển thị sau khi trở lại trang đăng nhập.
             session.setAttribute("resetSuccess", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại");
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {
+            // Thông báo lỗi nghiệp vụ như token hết hạn, mật khẩu không khớp.
             request.setAttribute("error", e.getMessage());
         } catch (RuntimeException e) {
+            // Ghi log lỗi hệ thống, trả về mã lỗi để người dùng báo cáo.
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error when resetting password, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
