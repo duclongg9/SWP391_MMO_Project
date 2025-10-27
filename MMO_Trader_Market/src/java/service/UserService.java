@@ -16,12 +16,18 @@ import java.util.regex.Pattern;
 
 public class UserService {
 
+    // Regex kiểm tra định dạng email hợp lệ.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
+    // Regex yêu cầu mật khẩu tối thiểu 8 ký tự và có cả chữ lẫn số.
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
+    // Role mặc định khi tạo tài khoản mới (Guest).
     private static final int DEFAULT_ROLE_ID = 3;
+    // Thời hạn hiệu lực của token đặt lại mật khẩu (phút).
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 30;
 
+    // DAO người dùng thao tác với bảng users.
     private final UserDAO userDAO;
+    // DAO token đặt lại mật khẩu.
     private final PasswordResetTokenDAO passwordResetTokenDAO;
 
     public UserService(UserDAO userDAO) {

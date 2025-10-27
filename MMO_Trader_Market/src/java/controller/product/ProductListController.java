@@ -30,12 +30,19 @@ import java.util.Set;
 @WebServlet(name = "ProductListController", urlPatterns = {"/products"})
 public class ProductListController extends BaseController {
 
+    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
+    // Trang mặc định khi không có tham số page.
     private static final int DEFAULT_PAGE = 1;
+    // Kích thước trang mặc định khi người dùng không chọn.
     private static final int DEFAULT_SIZE = 5;
+    // Các tùy chọn số bản ghi mỗi trang được phép hiển thị.
+    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(5, 10, 20, 40);
 
+    // Dịch vụ sản phẩm để truy vấn danh sách theo bộ lọc và phân trang.
     private final ProductService productService = new ProductService();
 
+    // Xử lý yêu cầu GET hiển thị danh sách sản phẩm với các bộ lọc.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -47,6 +54,7 @@ public class ProductListController extends BaseController {
                     .map(ProductTypeOption::getCode)
                     .findFirst();
             if (fallbackType.isPresent()) {
+                // Nếu không truyền type hợp lệ thì chuyển sang loại đầu tiên.
                 response.sendRedirect(request.getContextPath() + "/products?type=" + fallbackType.get());
                 return;
             }
@@ -55,7 +63,8 @@ public class ProductListController extends BaseController {
         }
 
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
-        int size = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
+        int sizeCandidate = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
+        int size = PAGE_SIZE_OPTIONS.contains(sizeCandidate) ? sizeCandidate : DEFAULT_SIZE;
 
         String rawKeyword = request.getParameter("keyword");
         String normalizedKeyword = rawKeyword == null ? null : rawKeyword.trim();
@@ -82,6 +91,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("page", result.getPage());
         request.setAttribute("currentPage", result.getPage());
         request.setAttribute("pageSize", result.getSize());
+        request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("selectedType", normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
@@ -93,6 +103,7 @@ public class ProductListController extends BaseController {
         forward(request, response, "product/list");
     }
 
+    // Phân tích số nguyên dương, trả về mặc định nếu đầu vào không hợp lệ.
     private int parsePositiveIntOrDefault(String value, int defaultValue) {
         if (value == null) {
             return defaultValue;
@@ -105,6 +116,7 @@ public class ProductListController extends BaseController {
         }
     }
 
+    // Ưu tiên tham số pageSize nếu có, nếu không thì lấy size (tương thích cũ).
     private String resolveSizeParam(HttpServletRequest request) {
         String pageSizeParam = request.getParameter("pageSize");
         if (pageSizeParam != null && !pageSizeParam.isBlank()) {

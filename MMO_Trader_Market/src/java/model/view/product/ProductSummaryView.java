@@ -18,18 +18,31 @@ import java.util.Objects;
  */
 public class ProductSummaryView {
 
+    // ID sản phẩm.
     private final int id;
+    // Tên sản phẩm.
     private final String name;
+    // Mô tả ngắn.
     private final String shortDescription;
+    // Ảnh đại diện hiển thị trong danh sách.
     private final String primaryImageUrl;
+    // Mã loại sản phẩm.
     private final String productType;
+    // Nhãn loại sản phẩm.
     private final String productTypeLabel;
+    // Mã phân loại con.
     private final String productSubtype;
+    // Nhãn phân loại con.
     private final String productSubtypeLabel;
+    // Tên shop đăng bán.
     private final String shopName;
+    // Giá thấp nhất.
     private final BigDecimal minPrice;
+    // Giá cao nhất.
     private final BigDecimal maxPrice;
+    // Tồn kho.
     private final Integer inventoryCount;
+    // Đã bán.
     private final Integer soldCount;
 
     public ProductSummaryView(int id, String name, String shortDescription, String primaryImageUrl,
@@ -54,54 +67,67 @@ public class ProductSummaryView {
         return id;
     }
 
+    // Lấy tên sản phẩm.
     public String getName() {
         return name;
     }
 
+    // Lấy mô tả ngắn.
     public String getShortDescription() {
         return shortDescription;
     }
 
+    // Lấy ảnh đại diện.
     public String getPrimaryImageUrl() {
         return primaryImageUrl;
     }
 
+    // Lấy mã loại sản phẩm.
     public String getProductType() {
         return productType;
     }
 
+    // Lấy nhãn loại sản phẩm.
     public String getProductTypeLabel() {
         return productTypeLabel;
     }
 
+    // Lấy mã phân loại con.
     public String getProductSubtype() {
         return productSubtype;
     }
 
+    // Lấy nhãn phân loại con.
     public String getProductSubtypeLabel() {
         return productSubtypeLabel;
     }
 
+    // Lấy tên shop.
     public String getShopName() {
         return shopName;
     }
 
+    // Lấy giá thấp nhất.
     public BigDecimal getMinPrice() {
         return minPrice;
     }
 
+    // Lấy giá cao nhất.
     public BigDecimal getMaxPrice() {
         return maxPrice;
     }
 
+    // Lấy tồn kho.
     public Integer getInventoryCount() {
         return inventoryCount;
     }
 
+    // Lấy số lượng đã bán.
     public Integer getSoldCount() {
         return soldCount;
     }
 
+    // Sinh token mã hóa ID để tạo đường dẫn thân thiện.
     public String getEncodedId() {
         return IdObfuscator.encode(id);
     }

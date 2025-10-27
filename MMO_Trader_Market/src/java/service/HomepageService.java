@@ -35,14 +35,22 @@ import java.util.Objects;
  */
 public class HomepageService {
 
+    // Số lượng shop tối đa hiển thị ở trang chủ.
     private static final int SHOP_LIMIT = 4;
+    // Số lượng tin nhắn chứng thực hiển thị.
     private static final int MESSAGE_LIMIT = 3;
 
+    // Dịch vụ sản phẩm để lấy dữ liệu hiển thị.
     private final ProductService productService = new ProductService();
+    // DAO thao tác bảng shop.
     private final ShopDAO shopDAO = new ShopDAO();
+    // DAO đơn hàng để lấy thống kê.
     private final OrderDAO orderDAO = new OrderDAO();
+    // DAO người mua.
     private final BuyerDAO buyerDAO = new BuyerDAO();
+    // DAO tin nhắn dùng cho phần testimonial.
     private final ConversationMessageDAO conversationMessageDAO = new ConversationMessageDAO();
+    // DAO cấu hình hệ thống.
     private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
     /**
