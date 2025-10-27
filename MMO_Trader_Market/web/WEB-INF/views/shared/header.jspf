@@ -21,6 +21,10 @@
 
 <c:url value="/login" var="loginUrl" />
 <c:url value="/auth?action=logout" var="logoutUrl" />
+<c:url value="/profile" var="profileUrl" />
+<c:url value="/profile" var="kycUrl">
+  <c:param name="section" value="kyc" />
+</c:url>
 
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
 <c:set var="isAuthPage"
@@ -30,6 +34,8 @@
                 or fn:contains(currentUri, '/forgot')
                 or fn:contains(currentUri, '/reset-password')}" />
 <c:set var="isLoggedIn" value="${not empty sessionScope.authUser}" />
+<c:set var="userRole" value="${sessionScope.userRole}" />
+<c:set var="showKycLink" value="${isLoggedIn and userRole eq 3}" />
 
 <c:if test="${empty headerModifier}">
   <c:set var="headerModifier" value="" />
@@ -82,7 +88,7 @@
               <div class="${dropdownClass}">
                 <button class="menu__dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
                   <span class="menu__text"><c:out value="${empty item['text'] ? item['label'] : item['text']}" /></span>
-                 
+
                 </button>
                 <div class="menu__dropdown-panel">
                   <c:forEach var="child" items="${item['children']}">
@@ -116,6 +122,28 @@
           </c:choose>
         </c:forEach>
       </nav>
+    </c:if>
+
+    <c:if test="${isLoggedIn}">
+      <div class="site-header__actions">
+        <div class="site-header__user" aria-label="Tài khoản người dùng">
+          <button class="site-header__user-toggle" type="button" aria-haspopup="true">
+            <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
+            <div class="site-header__user-info">
+              <span class="site-header__user-label">Xin chào</span>
+              <span class="site-header__user-name"><c:out value="${displayName}" /></span>
+            </div>
+            <span class="site-header__user-caret" aria-hidden="true"></span>
+          </button>
+          <div class="site-header__user-menu" role="menu">
+            <a class="site-header__user-link" role="menuitem" href="${profileUrl}">Quản lý tài khoản</a>
+            <c:if test="${showKycLink}">
+              <a class="site-header__user-link" role="menuitem" href="${kycUrl}">Trở thành người bán</a>
+            </c:if>
+            <a class="site-header__user-link site-header__user-link--logout" role="menuitem" href="${logoutUrl}">Đăng xuất</a>
+          </div>
+        </div>
+      </div>
     </c:if>
   </div>
 </header>
