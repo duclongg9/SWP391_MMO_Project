@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Represents a purchase order created by a buyer after completing the checkout flow.
- * @version 1.0 21/05/2024
- * @author gpt-5-codex
+ * Đại diện cho đơn hàng sau khi người mua hoàn tất thao tác đặt mua.
+ *
+ * @author longpdhe171902
  */
 public class Order implements Serializable {
 
@@ -21,11 +21,17 @@ public class Order implements Serializable {
     private String activationCode;
     private String deliveryLink;
 
+    /**
+     * Tạo thực thể đơn hàng tối giản chỉ với thông tin bắt buộc.
+     */
     public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt) {
         this(id, product, buyerEmail, paymentMethod, status, createdAt, null, null);
     }
 
+    /**
+     * Tạo thực thể đơn hàng đầy đủ bao gồm dữ liệu bàn giao.
+     */
     public Order(int id, Products product, String buyerEmail, String paymentMethod,
             OrderStatus status, LocalDateTime createdAt, String activationCode, String deliveryLink) {
         this.id = id;
@@ -83,7 +89,7 @@ public class Order implements Serializable {
     }
 
     /**
-     * Marks the order as currently being processed.
+     * Đánh dấu đơn hàng đang được xử lý.
      */
     public void markProcessing() {
         this.status = OrderStatus.PROCESSING;
@@ -92,9 +98,10 @@ public class Order implements Serializable {
     }
 
     /**
-     * Marks the order as completed and stores the delivery artefacts.
-     * @param activationCode unique key or password delivered to the buyer
-     * @param deliveryLink optional URL for downloading the product
+     * Đánh dấu đơn đã hoàn thành và lưu thông tin bàn giao.
+     *
+     * @param activationCode mã kích hoạt chuyển cho người mua
+     * @param deliveryLink   đường dẫn tải sản phẩm (có thể null)
      */
     public void markCompleted(String activationCode, String deliveryLink) {
         this.status = OrderStatus.COMPLETED;
@@ -103,8 +110,9 @@ public class Order implements Serializable {
     }
 
     /**
-     * Marks the order as disputed but keeps the current activation code for reference.
-     * @param activationCode activation code to show during dispute resolution
+     * Đánh dấu đơn đang tranh chấp, giữ lại mã kích hoạt phục vụ đối soát.
+     *
+     * @param activationCode mã kích hoạt hiển thị trong quá trình xử lý tranh chấp
      */
     public void markDisputed(String activationCode) {
         this.status = OrderStatus.DISPUTED;
@@ -112,8 +120,9 @@ public class Order implements Serializable {
     }
 
     /**
-     * Indicates whether the digital delivery information is ready to display to the buyer.
-     * @return {@code true} if at least the activation code exists
+     * Kiểm tra thông tin bàn giao đã sẵn sàng để hiển thị hay chưa.
+     *
+     * @return {@code true} nếu đã có mã kích hoạt hợp lệ
      */
     public boolean hasDeliveryInformation() {
         return activationCode != null && !activationCode.isBlank();

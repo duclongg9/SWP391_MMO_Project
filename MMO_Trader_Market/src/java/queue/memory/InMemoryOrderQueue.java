@@ -18,6 +18,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Hàng đợi đơn hàng chạy trong bộ nhớ dùng cho môi trường demo/dev.
+ * <p>Service gọi {@link #publish(int, String, int, int, String)} để đẩy thông điệp khi người mua đặt hàng,
+ * sau đó thread dispatcher sẽ chuyển tiếp cho {@link AsyncOrderWorker} xử lý luồng tiền và tồn kho.</p>
+ */
 public final class InMemoryOrderQueue implements OrderQueueProducer {
 
     private static final Logger LOGGER = Logger.getLogger(InMemoryOrderQueue.class.getName());
@@ -40,6 +45,10 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
         return INSTANCE;
     }
 
+    /**
+     * Khởi tạo worker bất đồng bộ duy nhất cho hàng đợi. Được gọi từ {@link service.OrderService} khi
+     * service được khởi tạo để gắn đầy đủ DAO xử lý (trừ tiền, trừ tồn kho, gán credential).
+     */
     public static synchronized void ensureWorkerInitialized(OrderDAO orderDAO, ProductDAO productDAO,
             CredentialDAO credentialDAO, WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO) {
         // Khởi tạo worker duy nhất cho hàng đợi, đảm bảo có đủ DAO phục vụ xử lý ví và đơn hàng.
@@ -55,6 +64,7 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
 
     @Override
     public void publish(int orderId, String idemKey, int productId, int qty, String variantCode) {
+        // Mỗi thông điệp chứa thông tin tối thiểu để worker truy vấn thêm dữ liệu cần thiết.
         queue.offer(new OrderMessage(orderId, idemKey, productId, qty, variantCode));
     }
 
@@ -72,6 +82,7 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
                     continue;
                 }
                 try {
+                    // Đẩy thông điệp sang worker xử lý; mọi lỗi runtime đều được log để tránh mất đơn hàng.
                     current.handle(message);
                 } catch (RuntimeException ex) {
                     LOGGER.log(Level.SEVERE, "Lỗi xử lý thông điệp đơn hàng", ex);
