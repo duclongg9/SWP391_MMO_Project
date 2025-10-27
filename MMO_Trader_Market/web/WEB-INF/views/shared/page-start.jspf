@@ -1,3 +1,4 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -13,6 +14,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/main.css">
+    <c:if test="${not empty extraStylesheet}">
+        <link rel="stylesheet" href="${extraStylesheet}" />
+    </c:if>
+    <c:if test="${not empty extraStylesheets}">
+        <c:forEach var="href" items="${extraStylesheets}">
+            <c:if test="${not empty href}">
+                <link rel="stylesheet" href="${href}" />
+            </c:if>
+        </c:forEach>
+    </c:if>
 </head>
 <%
     String bodyClass = (String) request.getAttribute("bodyClass");

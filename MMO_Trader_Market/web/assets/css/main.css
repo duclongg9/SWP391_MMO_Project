@@ -395,10 +395,25 @@ display: grid;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-justify-content: space-between;
+    justify-content: space-between;
     gap: 1rem;
     border-bottom: 1px solid rgba(15, 23, 42, 0.06);
     background: linear-gradient(135deg, rgba(0, 91, 150, 0.08), rgba(255, 183, 3, 0.08));
+}
+
+.panel__header--stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+}
+
+.panel__header--stack .panel__title {
+    margin-bottom: 0;
+}
+
+.panel__header--stack .filterbar,
+.panel__header--stack .panel__filters {
+    width: 100%;
 }
 
 .panel__title {

@@ -2,8 +2,12 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/components/filterbar.css">
+<%
+    java.util.List<String> extraStylesheets = new java.util.ArrayList<>();
+    extraStylesheets.add("https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css");
+    extraStylesheets.add(request.getContextPath() + "/assets/css/components/filterbar.css");
+    request.setAttribute("extraStylesheets", extraStylesheets);
+%>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -144,9 +148,8 @@
 
   <!-- Khi lọc, về trang 1 -->
   <input type="hidden" name="page" value="1">
+</form>
 
-
-    
     <table class="table table--interactive" role="presentation">
         <thead>
             <tr>
@@ -219,15 +222,9 @@
           </ul>
           
           <!--Pagination end-->
-</form>
 
-
-
-
-
-        
     </section>
-   
+
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

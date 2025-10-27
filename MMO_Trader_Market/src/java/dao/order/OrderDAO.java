@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -213,24 +214,52 @@ public class OrderDAO extends BaseDAO {
      * @param offset  vị trí bắt đầu
      * @return danh sách đơn hàng rút gọn
      */
-    public List<OrderRow> findByBuyerPaged(int buyerId, String status, int limit, int offset) {
-        final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
+    public List<OrderRow> findByBuyerPaged(int buyerId, String status, Integer orderId, String productName,
+            LocalDate fromDate, LocalDate toDate, int limit, int offset) {
+        StringBuilder sql = new StringBuilder("SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
                 + "FROM orders o JOIN products p ON p.id = o.product_id "
-                + "WHERE o.buyer_id = ? "
-                + "AND (? IS NULL OR o.status = ?) "
-                + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
+                + "WHERE o.buyer_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(buyerId);
+        if (status != null) {
+            sql.append(" AND o.status = ?");
+            params.add(status);
+        }
+        if (orderId != null) {
+            sql.append(" AND o.id = ?");
+            params.add(orderId);
+        }
+        if (productName != null) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add('%' + productName.toLowerCase() + '%');
+        }
+        if (fromDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(Timestamp.valueOf(fromDate.atStartOfDay()));
+        }
+        if (toDate != null) {
+            sql.append(" AND o.created_at < ?");
+            params.add(Timestamp.valueOf(toDate.plusDays(1).atStartOfDay()));
+        }
+        sql.append(" ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
         List<OrderRow> rows = new ArrayList<>();
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, buyerId);
-            if (status == null) {
-                statement.setNull(2, java.sql.Types.VARCHAR);
-                statement.setNull(3, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(2, status);
-                statement.setString(3, status);
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                int index = i + 1;
+                if (param instanceof Integer value) {
+                    statement.setInt(index, value);
+                } else if (param instanceof String value) {
+                    statement.setString(index, value);
+                } else if (param instanceof Timestamp value) {
+                    statement.setTimestamp(index, value);
+                } else {
+                    statement.setObject(index, param);
+                }
             }
-            statement.setInt(4, limit);
-            statement.setInt(5, offset);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     Timestamp created = rs.getTimestamp("created_at");
@@ -256,16 +285,46 @@ public class OrderDAO extends BaseDAO {
      * @param status  trạng thái cần lọc (có thể null)
      * @return tổng số đơn
      */
-    public long countByBuyer(int buyerId, String status) {
-        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND (? IS NULL OR status = ?)";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, buyerId);
-            if (status == null) {
-                statement.setNull(2, java.sql.Types.VARCHAR);
-                statement.setNull(3, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(2, status);
-                statement.setString(3, status);
+    public long countByBuyer(int buyerId, String status, Integer orderId, String productName,
+            LocalDate fromDate, LocalDate toDate) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE o.buyer_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(buyerId);
+        if (status != null) {
+            sql.append(" AND o.status = ?");
+            params.add(status);
+        }
+        if (orderId != null) {
+            sql.append(" AND o.id = ?");
+            params.add(orderId);
+        }
+        if (productName != null) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add('%' + productName.toLowerCase() + '%');
+        }
+        if (fromDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(Timestamp.valueOf(fromDate.atStartOfDay()));
+        }
+        if (toDate != null) {
+            sql.append(" AND o.created_at < ?");
+            params.add(Timestamp.valueOf(toDate.plusDays(1).atStartOfDay()));
+        }
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                int index = i + 1;
+                if (param instanceof Integer value) {
+                    statement.setInt(index, value);
+                } else if (param instanceof String value) {
+                    statement.setString(index, value);
+                } else if (param instanceof Timestamp value) {
+                    statement.setTimestamp(index, value);
+                } else {
+                    statement.setObject(index, param);
+                }
             }
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -285,7 +344,7 @@ public class OrderDAO extends BaseDAO {
      * @return tổng số đơn
      */
     public long countByBuyer(int buyerId) {
-        return countByBuyer(buyerId, (String) null);
+        return countByBuyer(buyerId, null, null, null, null, null);
     }
 
     /**
@@ -296,7 +355,7 @@ public class OrderDAO extends BaseDAO {
      * @return tổng số đơn
      */
     public long countByBuyerAndStatus(int buyerId, OrderStatus status) {
-        return countByBuyer(buyerId, status == null ? null : status.toDatabaseValue());
+        return countByBuyer(buyerId, status == null ? null : status.toDatabaseValue(), null, null, null, null);
     }
 
     /**
