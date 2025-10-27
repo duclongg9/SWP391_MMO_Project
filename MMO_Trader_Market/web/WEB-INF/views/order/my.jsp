@@ -17,6 +17,16 @@
             <h2 class="panel__title">Lịch sử mua hàng</h2>
             <form class="panel__filters" method="get" action="${pageContext.request.contextPath}/orders/my">
                 <label class="form-field">
+                    <span class="form-field__label">Mã đơn</span>
+                    <input class="form-field__input" type="text" name="code" placeholder="VD: 5003"
+                           value="<c:out value='${orderCode}'/>" />
+                </label>
+                <label class="form-field">
+                    <span class="form-field__label">Sản phẩm</span>
+                    <input class="form-field__input" type="text" name="product" placeholder="Tên sản phẩm"
+                           value="<c:out value='${productName}'/>" />
+                </label>
+                <label class="form-field">
                     <span class="form-field__label">Trạng thái</span>
                     <select class="form-field__input" name="status">
                         <option value="">Tất cả</option>
@@ -27,6 +37,16 @@
                             </option>
                         </c:forEach>
                     </select>
+                </label>
+                <label class="form-field">
+                    <span class="form-field__label">Từ ngày</span>
+                    <input class="form-field__input" type="date" name="fromDate"
+                           max="<c:out value='${todayIso}'/>" value="<c:out value='${fromDate}'/>" />
+                </label>
+                <label class="form-field">
+                    <span class="form-field__label">Đến ngày</span>
+                    <input class="form-field__input" type="date" name="toDate"
+                           max="<c:out value='${todayIso}'/>" value="<c:out value='${toDate}'/>" />
                 </label>
                 <label class="form-field">
                     <span class="form-field__label">Mỗi trang</span>
