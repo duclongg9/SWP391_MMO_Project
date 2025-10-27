@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -222,7 +223,88 @@ public class CredentialDAO extends BaseDAO {
         return results;
     }
 
+    /**
+     * Kiểm tra người mua đã từng mở khóa thông tin bàn giao hay chưa.
+     * <p>Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa vào đây để quyết định
+     * có tải plaintext cho người dùng hay yêu cầu xác nhận lại.</p>
+     */
+    public boolean hasViewLog(int orderId, int buyerId) {
+        final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            statement.setInt(2, buyerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể kiểm tra log xem credential", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Ghi nhận hành động mở khóa credential của người mua.
+     * <p>Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm bảo vệ dữ liệu:
+     * nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để controller có thể báo lỗi và không hiển thị
+     * thông tin nhạy cảm.</p>
+     */
+    public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
+        final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
+                + "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE viewer_ip = VALUES(viewer_ip), viewed_at = viewed_at";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            statement.setInt(2, productId);
+            statement.setInt(3, buyerId);
+            String normalized = normalizeVariantCode(variantCode);
+            if (normalized == null) {
+                statement.setNull(4, Types.VARCHAR);
+            } else {
+                statement.setString(4, normalized);
+            }
+            if (viewerIp == null || viewerIp.isBlank()) {
+                statement.setNull(5, Types.VARCHAR);
+            } else {
+                statement.setString(5, viewerIp.trim());
+            }
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể ghi log mở khóa thông tin bàn giao", ex);
+        }
+    }
+
+    /**
+     * Truy vấn toàn bộ lịch sử mở khóa credential của một đơn hàng để phục vụ giao diện quản trị.
+     * <p>Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời điểm, IP) để admin
+     * có thể rà soát khi phát sinh tranh chấp về việc đã xem dữ liệu hay chưa.</p>
+     */
+    public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
+        final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
+                + "FROM credential_view_logs WHERE order_id = ? ORDER BY viewed_at ASC";
+        List<CredentialViewLogEntry> results = new ArrayList<>();
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    results.add(new CredentialViewLogEntry(
+                            rs.getInt("order_id"),
+                            rs.getInt("product_id"),
+                            rs.getInt("buyer_id"),
+                            rs.getString("variant_code"),
+                            rs.getString("viewer_ip"),
+                            rs.getTimestamp("viewed_at")));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải log mở khóa credential", ex);
+        }
+        return results;
+    }
+
     public record CredentialAvailability(int total, int available) {
+    }
+
+    public record CredentialViewLogEntry(int orderId, int productId, int buyerId, String variantCode,
+                                         String viewerIp, Timestamp viewedAt) {
     }
 
     /**

@@ -102,6 +102,19 @@ CREATE TABLE `product_credentials` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `credential_view_logs`;
+CREATE TABLE `credential_view_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `buyer_id` int NOT NULL,
+  `variant_code` varchar(100) DEFAULT NULL,
+  `viewer_ip` varchar(64) DEFAULT NULL,
+  `viewed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_credential_view_logs_order_buyer` (`order_id`,`buyer_id`)
+) ENGINE=InnoDB;
+
 -- =================================================================
 -- Section 2: KYC
 -- =================================================================
@@ -299,6 +312,9 @@ ALTER TABLE `shops` ADD CONSTRAINT `fk_shops_owner_id` FOREIGN KEY (`owner_id`) 
 ALTER TABLE `products` ADD CONSTRAINT `fk_products_shop_id` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`);
 ALTER TABLE `product_credentials` ADD CONSTRAINT `fk_credentials_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 ALTER TABLE `product_credentials` ADD CONSTRAINT `fk_credentials_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_buyer_id` FOREIGN KEY (`buyer_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `kyc_requests` ADD CONSTRAINT `fk_kyc_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 ALTER TABLE `kyc_requests` ADD CONSTRAINT `fk_kyc_status_id` FOREIGN KEY (`status_id`) REFERENCES `kyc_request_statuses` (`id`);

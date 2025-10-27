@@ -269,14 +269,59 @@ public class OrderService {
      * @return {@link Optional} chứa thông tin chi tiết nếu tìm thấy
      */
     public Optional<OrderDetailView> getDetail(int orderId, int userId) {
+        return getDetail(orderId, userId, false);
+    }
+
+    /**
+     * Lấy chi tiết đơn hàng và tùy chọn tải plaintext credential nếu người mua đã xác nhận mở khóa.
+     *
+     * @param orderId            mã đơn hàng
+     * @param userId             người sở hữu đơn
+     * @param includeCredentials {@code true} nếu đã có log mở khóa và cần trả plaintext về cho JSP
+     * @return {@link Optional} chứa thông tin chi tiết nếu tìm thấy
+     */
+    public Optional<OrderDetailView> getDetail(int orderId, int userId, boolean includeCredentials) {
         return orderDAO.findByIdForUser(orderId, userId)
                 .map(detail -> {
                     List<String> credentials = List.of();
-                    if ("Completed".equalsIgnoreCase(detail.order().getStatus())) {
+                    if (includeCredentials && "Completed".equalsIgnoreCase(detail.order().getStatus())) {
                         credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
                     }
                     return new OrderDetailView(detail.order(), detail.product(), credentials);
                 });
+    }
+
+    /**
+     * Kiểm tra người dùng đã từng mở khóa thông tin bàn giao của đơn hay chưa.
+     */
+    public boolean hasUnlockedCredentials(int orderId, int userId) {
+        return credentialDAO.hasViewLog(orderId, userId);
+    }
+
+    /**
+     * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext khi đơn đã hoàn thành.
+     * <p>Luồng xử lý:</p>
+     * <ol>
+     *     <li>Kiểm tra quyền sở hữu đơn hàng thông qua {@link OrderDAO#findByIdForUser(int, int)}.</li>
+     *     <li>Đảm bảo trạng thái đơn là Completed và đã có credential được worker gán.</li>
+     *     <li>Insert log vào bảng {@code credential_view_logs} trước khi trả về kết quả.</li>
+     * </ol>
+     * Nếu bất kỳ bước nào thất bại (ví dụ log không ghi được) phương thức sẽ ném {@link IllegalStateException}
+     * để controller thông báo lỗi thay vì hiển thị thông tin nhạy cảm.
+     */
+    public CredentialUnlockResult unlockCredentials(int orderId, int userId, String viewerIp) {
+        OrderDetailView detail = orderDAO.findByIdForUser(orderId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng hoặc không thuộc sở hữu của bạn."));
+        if (!"Completed".equalsIgnoreCase(detail.order().getStatus())) {
+            throw new IllegalStateException("Đơn hàng chưa hoàn thành, chưa thể mở khóa thông tin bàn giao.");
+        }
+        List<String> credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
+        if (credentials.isEmpty()) {
+            throw new IllegalStateException("Đơn hàng chưa có dữ liệu bàn giao để hiển thị.");
+        }
+        boolean alreadyLogged = credentialDAO.hasViewLog(orderId, userId);
+        credentialDAO.logCredentialView(orderId, detail.order().getProductId(), userId, detail.order().getVariantCode(), viewerIp);
+        return new CredentialUnlockResult(!alreadyLogged);
     }
 
     /**
@@ -336,5 +381,11 @@ public class OrderService {
         labels.put(OrderStatus.REFUNDED, "Đã hoàn tiền");
         labels.put(OrderStatus.DISPUTED, "Khiếu nại");
         return labels;
+    }
+
+    /**
+     * Kết quả thao tác mở khóa credential, trả về cờ {@link #firstView()} để hiển thị thông điệp phù hợp.
+     */
+    public record CredentialUnlockResult(boolean firstView) {
     }
 }
