@@ -141,6 +141,47 @@ public class CredentialDAO extends BaseDAO {
         return new CredentialAvailability(0, 0);
     }
 
+    /**
+     * Đảm bảo kho credential của sản phẩm (hoặc biến thể) có đủ số lượng khả dụng để tạo đơn hàng mới.
+     * <p>Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và trả về số liệu mới nhất.</p>
+     */
+    public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
+        String normalized = normalizeVariantCode(variantCode);
+        if (requiredQuantity <= 0) {
+            return normalized == null ? fetchAvailability(productId) : fetchAvailability(productId, variantCode);
+        }
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                CredentialAvailability availability = normalized == null
+                        ? fetchAvailability(connection, productId)
+                        : fetchAvailabilityForVariant(connection, productId, normalized);
+                int missing = requiredQuantity - availability.available();
+                if (missing > 0) {
+                    generateFakeCredentials(connection, productId, normalized, missing);
+                    availability = normalized == null
+                            ? fetchAvailability(connection, productId)
+                            : fetchAvailabilityForVariant(connection, productId, normalized);
+                }
+                connection.commit();
+                return availability;
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể đảm bảo credential sẵn sàng", ex);
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đảm bảo credential sẵn sàng", ex);
+        }
+        return new CredentialAvailability(0, 0);
+    }
+
     public void markCredentialsSold(int orderId, List<Integer> ids) {
         try (Connection connection = getConnection()) {
             markCredentialsSold(connection, orderId, ids);
@@ -222,6 +263,16 @@ public class CredentialDAO extends BaseDAO {
             return null;
         }
         return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private void restoreAutoCommit(Connection connection, boolean previousAutoCommit) {
+        try {
+            if (connection.getAutoCommit() != previousAutoCommit) {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể khôi phục chế độ auto-commit", ex);
+        }
     }
 
     private String buildFakeCredentialPayload(int productId, String normalizedVariantCode) {
