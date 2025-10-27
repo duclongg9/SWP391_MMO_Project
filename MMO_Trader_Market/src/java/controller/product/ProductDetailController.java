@@ -62,6 +62,16 @@ public class ProductDetailController extends BaseController {
             HttpSession session = request.getSession(false);
             boolean isAuthenticated = session != null && session.getAttribute("userId") != null;
 
+            if (session != null) {
+                String purchaseError = (String) session.getAttribute("purchaseError");
+                if (purchaseError != null && !purchaseError.isBlank()) {
+                    request.setAttribute("purchaseError", purchaseError);
+                }
+                if (purchaseError != null) {
+                    session.removeAttribute("purchaseError");
+                }
+            }
+
             boolean canBuy = isAuthenticated && product.isAvailable()
                     && productService.hasDeliverableCredentials(product.getId(), product.getVariants());
 
