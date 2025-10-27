@@ -32,7 +32,7 @@ public class ProductListController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_SIZE = 8;
+    private static final int DEFAULT_SIZE = 5;
 
     private final ProductService productService = new ProductService();
 
