@@ -217,15 +217,29 @@ display: grid;
     justify-self: end;
 }
 
+.site-header__actions .menu {
+    align-items: center;
+}
+
 .site-header__login,
 .site-header__logout {
     white-space: nowrap;
 }
 
 .site-header__user {
+    position: relative;
     display: flex;
+}
+
+.site-header__user-toggle {
     align-items: center;
     gap: 0.75rem;
+    padding: 0.45rem 0.85rem;
+}
+
+.site-header__user-toggle:hover,
+.site-header__user-toggle:focus-visible {
+    color: var(--primary-color-dark);
 }
 
 .site-header__avatar {
@@ -242,15 +256,82 @@ display: grid;
     letter-spacing: 0.02em;
 }
 
-.site-header__user-info {
+.site-header__user-text {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    align-items: flex-start;
+    gap: 0.1rem;
+    line-height: 1.2;
+}
+
+.site-header__user-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
 .site-header__user-name {
     font-weight: 600;
     font-size: 0.95rem;
+    color: var(--primary-color);
+}
+
+.site-header__user-caret {
+    display: inline-flex;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    transition: var(--transition);
+}
+
+.site-header__user:hover .site-header__user-caret,
+.site-header__user:focus-within .site-header__user-caret {
+    transform: rotate(180deg);
+}
+
+.site-header__user .menu__dropdown-panel {
+    right: 0;
+    left: auto;
+    top: calc(100% + 0.65rem);
+    min-width: 220px;
+    padding: 0.75rem;
+    gap: 0.25rem;
+}
+
+.site-header__user-link {
+    font-size: 0.9rem;
+}
+
+.site-header__user-link--logout {
+    color: var(--danger-color);
+}
+
+.site-header__user-link--logout:hover,
+.site-header__user-link--logout:focus {
+    background: rgba(192, 57, 43, 0.12);
+    color: var(--danger-color);
+}
+
+.site-header__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 91, 150, 0.25);
+    background: rgba(0, 91, 150, 0.08);
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.site-header__cta:hover,
+.site-header__cta:focus {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
 }
 
 .layout__header--auth .site-header__inner {
