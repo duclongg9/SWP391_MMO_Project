@@ -26,13 +26,13 @@ public class GoogleOAuthService {
         String clientId = requireConfig("google.clientId");
         String redirectUri = requireConfig("google.redirectUri");
         String scope = urlEncode("openid email profile");
-        return AUTH_ENDPOINT +
-                "?response_type=code" +
-                "&client_id=" + urlEncode(clientId) +
-                "&redirect_uri=" + urlEncode(redirectUri) +
-                "&scope=" + scope +
-                "&state=" + urlEncode(state) +
-                "&prompt=select_account";
+        return AUTH_ENDPOINT
+                + "?response_type=code"
+                + "&client_id=" + urlEncode(clientId)
+                + "&redirect_uri=" + urlEncode(redirectUri)
+                + "&scope=" + scope
+                + "&state=" + urlEncode(state)
+                + "&prompt=select_account";
     }
 
     public GoogleProfile fetchUserProfile(String code) {
@@ -115,6 +115,7 @@ public class GoogleOAuthService {
     }
 
     public static final class GoogleProfile {
+
         private final String googleId;
         private final String email;
         private final String name;

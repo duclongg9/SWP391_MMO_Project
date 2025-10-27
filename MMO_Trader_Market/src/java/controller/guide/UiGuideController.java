@@ -8,7 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Cung cấp trang styleguide để các thành viên mới có thể xem nhanh các template UI.
+ * Cung cấp trang styleguide để các thành viên mới có thể xem nhanh các template
+ * UI.
  */
 @WebServlet(name = "UiGuideController", urlPatterns = {"/styleguide"})
 public class UiGuideController extends BaseController {

@@ -13,7 +13,8 @@ import java.sql.Timestamp;
 import java.sql.Statement;
 
 /**
- * DAO quản lý bảng {@code remember_me_tokens} phục vụ tính năng đăng nhập ghi nhớ.
+ * DAO quản lý bảng {@code remember_me_tokens} phục vụ tính năng đăng nhập ghi
+ * nhớ.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -33,10 +34,10 @@ public class RememberMeTokenDAO extends BaseDAO {
     /**
      * Tạo mã ghi nhớ đăng nhập mới cho người dùng.
      *
-     * @param userId         mã người dùng sở hữu token
-     * @param selector       mã định danh công khai lưu trên cookie
+     * @param userId mã người dùng sở hữu token
+     * @param selector mã định danh công khai lưu trên cookie
      * @param hashedValidator giá trị validator đã được băm
-     * @param expiresAt      thời điểm hết hạn
+     * @param expiresAt thời điểm hết hạn
      * @return token vừa tạo hoặc {@code null} nếu thất bại
      * @throws SQLException khi thao tác chèn lỗi
      */
@@ -99,9 +100,9 @@ public class RememberMeTokenDAO extends BaseDAO {
     /**
      * Cập nhật validator và hạn dùng của token hiện tại.
      *
-     * @param id             mã token
+     * @param id mã token
      * @param hashedValidator validator mới đã băm
-     * @param expiresAt      thời điểm hết hạn mới
+     * @param expiresAt thời điểm hết hạn mới
      * @throws SQLException khi truy vấn lỗi
      */
     public void updateValidator(int id, String hashedValidator, Timestamp expiresAt) throws SQLException {
@@ -183,7 +184,7 @@ public class RememberMeTokenDAO extends BaseDAO {
      * Ghi log chi tiết khi xảy ra lỗi truy vấn để dễ dàng truy vết.
      *
      * @param operation tên thao tác đang thực hiện
-     * @param e         ngoại lệ SQL bắt được
+     * @param e ngoại lệ SQL bắt được
      */
     private void logSqlError(String operation, SQLException e) {
         LOGGER.log(java.util.logging.Level.SEVERE,

@@ -40,8 +40,7 @@ public class ConversationMessageDAO extends BaseDAO {
                 + "LEFT JOIN products p1 ON p1.id = o.product_id "
                 + "LEFT JOIN products p2 ON p2.id = c.related_product_id "
                 + "ORDER BY m.created_at DESC LIMIT ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
             List<ConversationMessageView> messages = new ArrayList<>();
             try (ResultSet rs = statement.executeQuery()) {
@@ -68,4 +67,3 @@ public class ConversationMessageDAO extends BaseDAO {
         return new ConversationMessageView(senderName, content, productName, createdAt);
     }
 }
-

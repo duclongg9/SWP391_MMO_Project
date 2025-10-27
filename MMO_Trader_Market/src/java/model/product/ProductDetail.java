@@ -4,7 +4,16 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * View model for product detail page.
+ * <p>
+ * View model chứa toàn bộ trường cần thiết để dựng trang chi tiết sản phẩm công
+ * khai.</p>
+ * <p>
+ * Các giá trị trong lớp này xuất phát từ truy vấn
+ * {@code ProductDAO.findDetailById} và được {@link service.ProductService}
+ * chuẩn hóa để tránh null ở tầng JSP. Đây là cầu nối giữa dữ liệu trong DB và
+ * HTML hiển thị.</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductDetail {
 
@@ -26,6 +35,18 @@ public class ProductDetail {
     private final String shopName;
     private final Integer shopOwnerId;
 
+    /**
+     * Khởi tạo record chi tiết sản phẩm, đồng thời áp dụng thuật toán chuẩn hóa
+     * giá trị null:
+     * <ol>
+     * <li>Dùng {@link java.util.Objects#requireNonNullElse(Object, Object)} để
+     * thay thế null bằng giá trị mặc định, giúp front-end không phải kiểm tra
+     * null nhiều lần.</li>
+     * <li>Giữ nguyên các trường dạng {@link java.math.BigDecimal} hoặc
+     * {@link Integer} để service có thể xác định được tình trạng tồn kho/thông
+     * tin giá động.</li>
+     * </ol>
+     */
     public ProductDetail(int id, String productType, String productSubtype, String name,
             String shortDescription, String description, BigDecimal price,
             Integer inventoryCount, Integer soldCount, String status,

@@ -14,11 +14,12 @@ import java.util.logging.Logger;
 import service.UserService;
 
 /**
- * Điều phối luồng "Đặt lại mật khẩu" khi người dùng truy cập từ email quên mật khẩu.
+ * Điều phối luồng "Đặt lại mật khẩu" khi người dùng truy cập từ email quên mật
+ * khẩu.
  * <p>
- * - Hiển thị form đặt lại kèm kiểm tra token hợp lệ.
- * - Xác thực mật khẩu mới, cập nhật dữ liệu và thông báo thành công.
- * - Ghi nhận lỗi tiếng Việt khi token sai, mật khẩu không hợp lệ hoặc xảy ra sự cố.
+ * - Hiển thị form đặt lại kèm kiểm tra token hợp lệ. - Xác thực mật khẩu mới,
+ * cập nhật dữ liệu và thông báo thành công. - Ghi nhận lỗi tiếng Việt khi token
+ * sai, mật khẩu không hợp lệ hoặc xảy ra sự cố.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -34,7 +35,7 @@ public class ResetPasswordController extends BaseController {
     /**
      * Hiển thị form đặt lại mật khẩu và báo lỗi nếu token không được cung cấp.
      *
-     * @param request  yêu cầu HTTP chứa token trong query string
+     * @param request yêu cầu HTTP chứa token trong query string
      * @param response phản hồi HTTP để forward tới trang đặt lại mật khẩu
      */
     @Override
@@ -52,8 +53,9 @@ public class ResetPasswordController extends BaseController {
     /**
      * Nhận dữ liệu đặt lại mật khẩu, xác thực token và cập nhật mật khẩu mới.
      *
-     * @param request  yêu cầu HTTP chứa token, mật khẩu và xác nhận mật khẩu
-     * @param response phản hồi HTTP dùng để chuyển hướng về trang đăng nhập khi thành công
+     * @param request yêu cầu HTTP chứa token, mật khẩu và xác nhận mật khẩu
+     * @param response phản hồi HTTP dùng để chuyển hướng về trang đăng nhập khi
+     * thành công
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

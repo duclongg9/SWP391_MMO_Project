@@ -21,9 +21,9 @@ import java.util.logging.Logger;
 /**
  * Điều phối luồng "Đăng nhập" cho người dùng đã có tài khoản.
  * <p>
- * - Hỗ trợ đăng nhập nội bộ bằng email/mật khẩu và ghi nhớ phiên.
- * - Chuyển hướng khách (Role Guest) sang trang đăng nhập của hệ thống khác (Google) khi cần.
- * - Cung cấp chức năng đăng xuất và dọn dẹp phiên, cookie nhớ tài khoản.
+ * - Hỗ trợ đăng nhập nội bộ bằng email/mật khẩu và ghi nhớ phiên. - Chuyển
+ * hướng khách (Role Guest) sang trang đăng nhập của hệ thống khác (Google) khi
+ * cần. - Cung cấp chức năng đăng xuất và dọn dẹp phiên, cookie nhớ tài khoản.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -42,8 +42,6 @@ public class AuthController extends BaseController {
     private final UserDAO userDAO = new UserDAO();
     private final UserService userService = new UserService(userDAO);
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
-
-    
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

@@ -1,7 +1,15 @@
 package model.view.product;
 
 /**
- * Summary information about a product type category for homepage navigation.
+ * <p>
+ * Tóm tắt số lượng sản phẩm theo từng loại để hiển thị ở điều hướng trang
+ * chủ.</p>
+ * <p>
+ * Được {@link service.ProductService#getHomepageCategories()} tính toán dựa
+ * trên dữ liệu DB và truyền thẳng xuống JSP giúp người dùng chọn danh mục
+ * nhanh.</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductCategorySummary {
 

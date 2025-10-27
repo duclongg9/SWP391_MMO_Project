@@ -1,7 +1,13 @@
 package model.view.product;
 
 /**
- * Represents a selectable product subtype for filtering.
+ * <p>
+ * Một lựa chọn loại con (subtype) trong bộ lọc sản phẩm.</p>
+ * <p>
+ * Kết hợp cùng {@link ProductTypeOption} để hiển thị cấu trúc danh mục hai tầng
+ * ở trang browse.</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductSubtypeOption {
 

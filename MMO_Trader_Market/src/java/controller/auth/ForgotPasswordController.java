@@ -15,9 +15,9 @@ import service.UserService;
 /**
  * Điều phối luồng "Quên mật khẩu" để hỗ trợ người dùng khôi phục truy cập.
  * <p>
- * - Tiếp nhận email khi người dùng quên mật khẩu và sinh đường dẫn đặt lại.
- * - Gửi thông báo xác nhận đã gửi email hướng dẫn đặt lại mật khẩu.
- * - Hiển thị thông báo lỗi tiếng Việt khi thông tin không hợp lệ hoặc hệ thống gặp sự cố.
+ * - Tiếp nhận email khi người dùng quên mật khẩu và sinh đường dẫn đặt lại. -
+ * Gửi thông báo xác nhận đã gửi email hướng dẫn đặt lại mật khẩu. - Hiển thị
+ * thông báo lỗi tiếng Việt khi thông tin không hợp lệ hoặc hệ thống gặp sự cố.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -33,7 +33,7 @@ public class ForgotPasswordController extends BaseController {
     /**
      * Hiển thị form nhập email để khởi động quy trình quên mật khẩu.
      *
-     * @param request  yêu cầu HTTP của người dùng
+     * @param request yêu cầu HTTP của người dùng
      * @param response phản hồi HTTP để forward tới giao diện tương ứng
      */
     @Override
@@ -43,9 +43,10 @@ public class ForgotPasswordController extends BaseController {
     }
 
     /**
-     * Tiếp nhận email, gửi yêu cầu đặt lại mật khẩu và hiển thị kết quả cho người dùng.
+     * Tiếp nhận email, gửi yêu cầu đặt lại mật khẩu và hiển thị kết quả cho
+     * người dùng.
      *
-     * @param request  yêu cầu HTTP chứa địa chỉ email của người dùng
+     * @param request yêu cầu HTTP chứa địa chỉ email của người dùng
      * @param response phản hồi HTTP để forward lại trang kèm thông báo
      */
     @Override
@@ -68,7 +69,8 @@ public class ForgotPasswordController extends BaseController {
     }
 
     /**
-     * Dựng URL tuyệt đối tới trang đặt lại mật khẩu dựa trên thông tin của request.
+     * Dựng URL tuyệt đối tới trang đặt lại mật khẩu dựa trên thông tin của
+     * request.
      *
      * @param request yêu cầu HTTP để lấy domain, port và context path
      * @return chuỗi URL dùng chèn vào email đặt lại mật khẩu
