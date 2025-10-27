@@ -57,6 +57,10 @@ public class AsyncOrderWorker implements OrderWorker {
             try {
                 processMessage(msg);
                 return;
+            } catch (OrderProcessingException ex) {
+                LOGGER.log(ex.level(), "Đơn hàng {0} thất bại: {1}", new Object[]{msg.orderId(), ex.getMessage()});
+                LOGGER.log(Level.FINE, "Chi tiết ngoại lệ khi xử lý đơn hàng " + msg.orderId(), ex);
+                return;
             } catch (SQLException ex) {
                 LOGGER.log(Level.WARNING, "Lỗi xử lý đơn hàng {0} ở lần thử {1}", new Object[]{msg.orderId(), attempt + 1});
                 if (attempt >= RETRY_DELAYS.length - 1) {
@@ -85,90 +89,19 @@ public class AsyncOrderWorker implements OrderWorker {
         try (Connection connection = orderDAO.openConnection()) {
             connection.setAutoCommit(false);
             try {
+                OrderProcessingContext context = new OrderProcessingContext(msg, order);
                 // B1: Đánh dấu đơn hàng đang xử lý để đảm bảo các worker khác không xử lý trùng.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.PROCESSING);
-                // B2: Khóa ví của người mua ở mức hàng (SELECT ... FOR UPDATE) để cố định số dư.
-                Wallets wallet = walletsDAO.lockWalletForUpdate(connection, order.getBuyerId());
-                if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
-                    LOGGER.log(Level.WARNING, "Ví của người dùng {0} không khả dụng", order.getBuyerId());
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
-                BigDecimal totalAmount = order.getTotalAmount();
-                if (totalAmount == null) {
-                    LOGGER.log(Level.SEVERE, "Đơn hàng {0} thiếu thông tin tổng tiền", order.getId());
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
-                BigDecimal balanceBefore = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
-                if (balanceBefore.compareTo(totalAmount) < 0) {
-                    LOGGER.log(Level.INFO, "Ví người dùng {0} không đủ số dư cho đơn {1}",
-                            new Object[]{order.getBuyerId(), order.getId()});
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
-                // B3: Khóa tồn kho sản phẩm và credential để đảm bảo đủ hàng bàn giao.
-                String variantCode = msg.variantCode();
-                if (variantCode == null || variantCode.isBlank()) {
-                    variantCode = order.getVariantCode();
-                }
-                ProductDAO.ProductInventoryLock lockedProduct = productDAO.lockProductForUpdate(connection, msg.productId());
-                int inventory = lockedProduct.inventoryCount() == null ? 0 : lockedProduct.inventoryCount();
-                if (inventory < msg.qty()) {
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
-                List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
-                        lockedProduct.variantSchema(), lockedProduct.variantsJson());
-                ProductVariantOption variant = null;
-                if (variantCode != null && !variantCode.isBlank()) {
-                    String normalized = ProductVariantUtils.normalizeCode(variantCode);
-                    Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalized);
-                    if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
-                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                        connection.commit();
-                        return;
-                    }
-                    variant = variantOpt.get();
-                    Integer variantInventory = variant.getInventoryCount();
-                    if (variantInventory == null || variantInventory < msg.qty()) {
-                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                        connection.commit();
-                        return;
-                    }
-                }
-                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), variantCode);
-                if (credentialIds.size() < msg.qty()) {
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
-                boolean decremented = productDAO.decrementInventory(connection, msg.productId(), msg.qty());
-                if (!decremented) {
-                    throw new SQLException("Không thể trừ tồn kho");
-                }
-                if (variant != null) {
-                    ProductVariantUtils.decreaseInventory(variant, msg.qty());
-                    String updatedJson = ProductVariantUtils.toJson(variants);
-                    productDAO.updateVariantsJson(connection, msg.productId(), updatedJson);
-                }
-                // B4: Trừ tiền trong ví và ghi nhận giao dịch thanh toán để log lại luồng tiền.
-                BigDecimal balanceAfter = balanceBefore.subtract(totalAmount);
-                boolean balanceUpdated = walletsDAO.updateBalance(connection, wallet.getId(), balanceAfter);
-                if (!balanceUpdated) {
-                    throw new SQLException("Không thể cập nhật số dư ví");
-                }
-                String note = "Thanh toán đơn hàng #" + order.getId();
-                int walletTxId = walletTransactionDAO.insertTransaction(connection, wallet.getId(), order.getId(),
-                        TransactionType.PURCHASE, totalAmount.negate(), balanceBefore, balanceAfter, note);
-                orderDAO.assignPaymentTransaction(connection, order.getId(), walletTxId);
-                // B5: Giao credential cho người mua và ghi nhận log tồn kho phục vụ kiểm toán.
-                credentialDAO.markCredentialsSold(connection, msg.orderId(), credentialIds);
-                orderDAO.insertInventoryLog(connection, msg.productId(), msg.orderId(), -msg.qty(), "Sale");
+                // B2: Chuẩn hóa dữ liệu đầu vào và khóa ví người mua.
+                prepareVariantCode(context);
+                lockWalletAndValidateBalance(connection, context);
+                // B3: Khóa tồn kho & credential để đảm bảo đủ hàng bàn giao.
+                lockProductAndVerifyInventory(connection, context);
+                reserveCredentials(connection, context);
+                // B4: Trừ tiền và ghi giao dịch thanh toán.
+                chargeWallet(connection, context);
+                // B5: Giao credential, cập nhật tồn kho chi tiết & log kiểm toán.
+                finalizeFulfillment(connection, context);
                 // B6: Hoàn tất đơn hàng và commit transaction.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
                 connection.commit();
@@ -179,6 +112,107 @@ public class AsyncOrderWorker implements OrderWorker {
                 connection.setAutoCommit(true);
             }
         }
+    }
+
+    /**
+     * Chuẩn hóa và lưu biến thể tương ứng của đơn hàng (nếu có) vào context.
+     */
+    private void prepareVariantCode(OrderProcessingContext context) {
+        String resolved = context.message().variantCode();
+        if (resolved == null || resolved.isBlank()) {
+            resolved = context.order().getVariantCode();
+        }
+        context.setNormalizedVariantCode(ProductVariantUtils.normalizeCode(resolved));
+    }
+
+    /**
+     * Khóa ví, kiểm tra trạng thái ví và số dư so với tổng tiền đơn hàng.
+     */
+    private void lockWalletAndValidateBalance(Connection connection, OrderProcessingContext context) throws SQLException {
+        Wallets wallet = walletsDAO.lockWalletForUpdate(connection, context.order().getBuyerId());
+        if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
+            failWithReason(connection, context.order(), "Ví của người dùng không khả dụng", Level.WARNING);
+        }
+        BigDecimal totalAmount = context.order().getTotalAmount();
+        if (totalAmount == null) {
+            failWithReason(connection, context.order(), "Đơn hàng thiếu thông tin tổng tiền", Level.SEVERE);
+        }
+        BigDecimal balanceBefore = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
+        if (balanceBefore.compareTo(totalAmount) < 0) {
+            failWithReason(connection, context.order(), "Ví người dùng không đủ số dư", Level.INFO);
+        }
+        context.setWallet(wallet);
+        context.setTotalAmount(totalAmount);
+        context.setBalanceBefore(balanceBefore);
+    }
+
+    /**
+     * Khóa tồn kho sản phẩm, kiểm tra tổng tồn kho và tồn kho biến thể.
+     */
+    private void lockProductAndVerifyInventory(Connection connection, OrderProcessingContext context) throws SQLException {
+        ProductDAO.ProductInventoryLock productLock = productDAO.lockProductForUpdate(connection, context.message().productId());
+        List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(productLock.variantSchema(), productLock.variantsJson());
+        int inventory = calculateAvailableInventory(productLock, variants);
+        if (inventory < context.message().qty()) {
+            failWithReason(connection, context.order(), "Tổng tồn kho sản phẩm không đủ", Level.WARNING);
+        }
+        if (context.normalizedVariantCode() != null) {
+            Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, context.normalizedVariantCode());
+            if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
+                failWithReason(connection, context.order(), "Biến thể sản phẩm không khả dụng", Level.WARNING);
+            }
+            ProductVariantOption variant = variantOpt.get();
+            Integer variantInventory = variant.getInventoryCount();
+            if (variantInventory == null || variantInventory < context.message().qty()) {
+                failWithReason(connection, context.order(), "Biến thể sản phẩm không đủ tồn kho", Level.WARNING);
+            }
+            context.setVariant(variant);
+        }
+        context.setVariants(variants);
+    }
+
+    /**
+     * Khóa credential phù hợp với sản phẩm/biến thể.
+     */
+    private void reserveCredentials(Connection connection, OrderProcessingContext context) throws SQLException {
+        List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection,
+                context.message().productId(), context.message().qty(), context.normalizedVariantCode());
+        if (credentialIds.size() < context.message().qty()) {
+            failWithReason(connection, context.order(), "Không đủ credential sẵn sàng để giao", Level.WARNING);
+        }
+        context.setCredentialIds(credentialIds);
+    }
+
+    /**
+     * Trừ tiền khỏi ví người mua và ghi nhận giao dịch thanh toán.
+     */
+    private void chargeWallet(Connection connection, OrderProcessingContext context) throws SQLException {
+        BigDecimal balanceAfter = context.balanceBefore().subtract(context.totalAmount());
+        boolean balanceUpdated = walletsDAO.updateBalance(connection, context.wallet().getId(), balanceAfter);
+        if (!balanceUpdated) {
+            throw new SQLException("Không thể cập nhật số dư ví");
+        }
+        String note = "Thanh toán đơn hàng #" + context.order().getId();
+        int walletTxId = walletTransactionDAO.insertTransaction(connection, context.wallet().getId(), context.order().getId(),
+                TransactionType.PURCHASE, context.totalAmount().negate(), context.balanceBefore(), balanceAfter, note);
+        orderDAO.assignPaymentTransaction(connection, context.order().getId(), walletTxId);
+    }
+
+    /**
+     * Cập nhật tồn kho tổng, tồn kho biến thể (nếu có) và bàn giao credential cho khách hàng.
+     */
+    private void finalizeFulfillment(Connection connection, OrderProcessingContext context) throws SQLException {
+        boolean decremented = productDAO.decrementInventory(connection, context.message().productId(), context.message().qty());
+        if (!decremented) {
+            throw new SQLException("Không thể trừ tồn kho");
+        }
+        if (context.variant() != null) {
+            ProductVariantUtils.decreaseInventory(context.variant(), context.message().qty());
+            String updatedJson = ProductVariantUtils.toJson(context.variants());
+            productDAO.updateVariantsJson(connection, context.message().productId(), updatedJson);
+        }
+        credentialDAO.markCredentialsSold(connection, context.message().orderId(), context.credentialIds());
+        orderDAO.insertInventoryLog(connection, context.message().productId(), context.message().orderId(), -context.message().qty(), "Sale");
     }
 
     private void markFailed(int orderId) {
@@ -202,5 +236,135 @@ public class AsyncOrderWorker implements OrderWorker {
         }
         OrderStatus current = OrderStatus.fromDatabaseValue(status);
         return current == OrderStatus.COMPLETED || current == OrderStatus.FAILED;
+    }
+
+    private int calculateAvailableInventory(ProductDAO.ProductInventoryLock lockedProduct,
+            List<ProductVariantOption> variants) {
+        Integer rawInventory = lockedProduct.inventoryCount();
+        if (rawInventory != null) {
+            return rawInventory;
+        }
+        if (!ProductVariantUtils.hasVariants(lockedProduct.variantSchema())) {
+            return 0;
+        }
+        return variants.stream()
+                .filter(option -> option != null && option.isAvailable() && option.getInventoryCount() != null)
+                .mapToInt(ProductVariantOption::getInventoryCount)
+                .sum();
+    }
+
+    /**
+     * Đánh dấu đơn hàng thất bại, commit giao dịch rồi ném ngoại lệ để {@link #handle(OrderMessage)} log chi tiết.
+     */
+    private void failWithReason(Connection connection, Orders order, String reason, Level level) throws SQLException {
+        orderDAO.updateStatus(connection, order.getId(), OrderStatus.FAILED);
+        connection.commit();
+        throw new OrderProcessingException(reason, level);
+    }
+
+    /**
+     * Ngoại lệ runtime dành riêng cho các tình huống nghiệp vụ khiến đơn hàng thất bại.
+     */
+    private static final class OrderProcessingException extends RuntimeException {
+
+        private final Level level;
+
+        OrderProcessingException(String message, Level level) {
+            this(message, level, null);
+        }
+
+        OrderProcessingException(String message, Level level, Throwable cause) {
+            super(message, cause);
+            this.level = level == null ? Level.WARNING : level;
+        }
+
+        Level level() {
+            return level;
+        }
+    }
+
+    /**
+     * Context gom thông tin trong suốt vòng đời xử lý đơn hàng để tái sử dụng.
+     */
+    private static final class OrderProcessingContext {
+
+        private final OrderMessage message;
+        private final Orders order;
+        private Wallets wallet;
+        private BigDecimal balanceBefore;
+        private BigDecimal totalAmount;
+        private String normalizedVariantCode;
+        private List<ProductVariantOption> variants;
+        private ProductVariantOption variant;
+        private List<Integer> credentialIds;
+
+        OrderProcessingContext(OrderMessage message, Orders order) {
+            this.message = message;
+            this.order = order;
+        }
+
+        OrderMessage message() {
+            return message;
+        }
+
+        Orders order() {
+            return order;
+        }
+
+        Wallets wallet() {
+            return wallet;
+        }
+
+        void setWallet(Wallets wallet) {
+            this.wallet = wallet;
+        }
+
+        BigDecimal balanceBefore() {
+            return balanceBefore;
+        }
+
+        void setBalanceBefore(BigDecimal balanceBefore) {
+            this.balanceBefore = balanceBefore;
+        }
+
+        BigDecimal totalAmount() {
+            return totalAmount;
+        }
+
+        void setTotalAmount(BigDecimal totalAmount) {
+            this.totalAmount = totalAmount;
+        }
+
+        String normalizedVariantCode() {
+            return normalizedVariantCode;
+        }
+
+        void setNormalizedVariantCode(String normalizedVariantCode) {
+            this.normalizedVariantCode = normalizedVariantCode;
+        }
+
+        List<ProductVariantOption> variants() {
+            return variants;
+        }
+
+        void setVariants(List<ProductVariantOption> variants) {
+            this.variants = variants;
+        }
+
+        ProductVariantOption variant() {
+            return variant;
+        }
+
+        void setVariant(ProductVariantOption variant) {
+            this.variant = variant;
+        }
+
+        List<Integer> credentialIds() {
+            return credentialIds;
+        }
+
+        void setCredentialIds(List<Integer> credentialIds) {
+            this.credentialIds = credentialIds;
+        }
     }
 }
