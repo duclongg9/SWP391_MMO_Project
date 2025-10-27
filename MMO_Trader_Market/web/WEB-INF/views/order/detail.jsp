@@ -4,6 +4,14 @@
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+<%--
+    Trang chi tiết đơn hàng.
+    Attribute do OrderController#showOrderDetail cung cấp:
+    - order: model.Orders lấy từ DB -> hiển thị tổng tiền, trạng thái, số lượng.
+    - product: model.Products để cho biết thông tin mô tả sản phẩm.
+    - credentials: List<String> chỉ được populate khi đơn Completed (worker đã trừ tiền + gán mã).
+    - statusLabel: chuỗi tiếng Việt do OrderService map từ enum.
+--%>
 <main class="layout__content">
     <section class="panel">
         <div class="panel__header">
@@ -48,6 +56,7 @@
                     <h3 class="panel__title">Thông tin bàn giao</h3>
                 </div>
                 <div class="panel__body">
+                    <%-- Nếu đơn đã hoàn thành, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
                     <c:choose>
                         <c:when test="${order.status eq 'Completed'}">
                             <c:if test="${not empty credentials}">
