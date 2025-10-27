@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class CashTxn {
+
     private String type; // Deposit | Withdrawal
     private Integer id;
     private Integer userId;
@@ -33,7 +34,6 @@ public class CashTxn {
 
     public CashTxn() {
     }
-
 
     public String getType() {
         return type;

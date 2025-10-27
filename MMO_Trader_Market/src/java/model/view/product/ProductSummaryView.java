@@ -1,10 +1,20 @@
 package model.view.product;
 
+import units.IdObfuscator;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Lightweight view model used across homepage, listing and recommendation sections.
+ * <p>
+ * View model gọn nhẹ dùng chung cho trang chủ, trang duyệt và khối gợi ý sản
+ * phẩm.</p>
+ * <p>
+ * {@link service.ProductService} chuyển đổi từ
+ * {@link model.product.ProductListRow} sang lớp này để cung cấp đủ thông tin
+ * hiển thị (ảnh đại diện, giá min/max, nhãn loại, shop) cho nhiều JSP.</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductSummaryView {
 
@@ -92,6 +102,14 @@ public class ProductSummaryView {
         return soldCount;
     }
 
+    public String getEncodedId() {
+        return IdObfuscator.encode(id);
+    }
+
+    /**
+     * Kiểm tra xem giá hiển thị có dạng khoảng (min khác max) để JSP quyết định
+     * hiển thị "từ...".
+     */
     public boolean hasPriceRange() {
         if (minPrice == null || maxPrice == null) {
             return false;
@@ -99,6 +117,9 @@ public class ProductSummaryView {
         return minPrice.compareTo(maxPrice) != 0;
     }
 
+    /**
+     * Đảm bảo cả giá min và max đã được tính toán trước khi render.
+     */
     public boolean hasValidPrice() {
         return minPrice != null && maxPrice != null;
     }

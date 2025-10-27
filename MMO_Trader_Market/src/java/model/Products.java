@@ -23,13 +23,14 @@ public class Products {
     private Date createdAt;
     private Date updatedAt;
 
-    public Products() {}  // no-args constructor cần cho JDBC/MBG
+    public Products() {
+    }  // no-args constructor cần cho JDBC/MBG
 
     public Products(Integer id, Integer shopId, String productType, String productSubtype,
-                    String name, String shortDescription, String description, BigDecimal price,
-                    String primaryImageUrl, String galleryJson, Integer inventoryCount, Integer soldCount,
-                    String status, String variantSchema, String variantsJson,
-                    Date createdAt, Date updatedAt) {
+            String name, String shortDescription, String description, BigDecimal price,
+            String primaryImageUrl, String galleryJson, Integer inventoryCount, Integer soldCount,
+            String status, String variantSchema, String variantsJson,
+            Date createdAt, Date updatedAt) {
         this.id = id;
         this.shopId = shopId;
         this.productType = productType;
@@ -50,74 +51,159 @@ public class Products {
     }
 
     // Getters & Setters
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Integer getId() {
+        return id;
+    }
 
-    public Integer getShopId() { return shopId; }
-    public void setShopId(Integer shopId) { this.shopId = shopId; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-    public String getProductType() { return productType; }
-    public void setProductType(String productType) { this.productType = productType; }
+    public Integer getShopId() {
+        return shopId;
+    }
 
-    public String getProductSubtype() { return productSubtype; }
-    public void setProductSubtype(String productSubtype) { this.productSubtype = productSubtype; }
+    public void setShopId(Integer shopId) {
+        this.shopId = shopId;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getProductType() {
+        return productType;
+    }
 
-    public String getShortDescription() { return shortDescription; }
-    public void setShortDescription(String shortDescription) { this.shortDescription = shortDescription; }
+    public void setProductType(String productType) {
+        this.productType = productType;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getProductSubtype() {
+        return productSubtype;
+    }
 
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public void setProductSubtype(String productSubtype) {
+        this.productSubtype = productSubtype;
+    }
 
-    public String getPrimaryImageUrl() { return primaryImageUrl; }
-    public void setPrimaryImageUrl(String primaryImageUrl) { this.primaryImageUrl = primaryImageUrl; }
+    public String getName() {
+        return name;
+    }
 
-    public String getGalleryJson() { return galleryJson; }
-    public void setGalleryJson(String galleryJson) { this.galleryJson = galleryJson; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public Integer getInventoryCount() { return inventoryCount; }
-    public void setInventoryCount(Integer inventoryCount) { this.inventoryCount = inventoryCount; }
+    public String getShortDescription() {
+        return shortDescription;
+    }
 
-    public Integer getSoldCount() { return soldCount; }
-    public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
+    public void setShortDescription(String shortDescription) {
+        this.shortDescription = shortDescription;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getVariantSchema() { return variantSchema; }
-    public void setVariantSchema(String variantSchema) { this.variantSchema = variantSchema; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getVariantsJson() { return variantsJson; }
-    public void setVariantsJson(String variantsJson) { this.variantsJson = variantsJson; }
+    public BigDecimal getPrice() {
+        return price;
+    }
 
-    public Date getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
 
-    public Date getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
+    public String getPrimaryImageUrl() {
+        return primaryImageUrl;
+    }
+
+    public void setPrimaryImageUrl(String primaryImageUrl) {
+        this.primaryImageUrl = primaryImageUrl;
+    }
+
+    public String getGalleryJson() {
+        return galleryJson;
+    }
+
+    public void setGalleryJson(String galleryJson) {
+        this.galleryJson = galleryJson;
+    }
+
+    public Integer getInventoryCount() {
+        return inventoryCount;
+    }
+
+    public void setInventoryCount(Integer inventoryCount) {
+        this.inventoryCount = inventoryCount;
+    }
+
+    public Integer getSoldCount() {
+        return soldCount;
+    }
+
+    public void setSoldCount(Integer soldCount) {
+        this.soldCount = soldCount;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getVariantSchema() {
+        return variantSchema;
+    }
+
+    public void setVariantSchema(String variantSchema) {
+        this.variantSchema = variantSchema;
+    }
+
+    public String getVariantsJson() {
+        return variantsJson;
+    }
+
+    public void setVariantsJson(String variantsJson) {
+        this.variantsJson = variantsJson;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     @Override
     public String toString() {
-        return "Products{" +
-                "id=" + id +
-                ", shopId=" + shopId +
-                ", productType='" + productType + '\'' +
-                ", productSubtype='" + productSubtype + '\'' +
-                ", name='" + name + '\'' +
-                ", shortDescription='" + shortDescription + '\'' +
-                ", price=" + price +
-                ", primaryImageUrl='" + primaryImageUrl + '\'' +
-                ", inventoryCount=" + inventoryCount +
-                ", soldCount=" + soldCount +
-                ", status='" + status + '\'' +
-                ", variantSchema='" + variantSchema + '\'' +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
+        return "Products{"
+                + "id=" + id
+                + ", shopId=" + shopId
+                + ", productType='" + productType + '\''
+                + ", productSubtype='" + productSubtype + '\''
+                + ", name='" + name + '\''
+                + ", shortDescription='" + shortDescription + '\''
+                + ", price=" + price
+                + ", primaryImageUrl='" + primaryImageUrl + '\''
+                + ", inventoryCount=" + inventoryCount
+                + ", soldCount=" + soldCount
+                + ", status='" + status + '\''
+                + ", variantSchema='" + variantSchema + '\''
+                + ", createdAt=" + createdAt
+                + ", updatedAt=" + updatedAt
+                + '}';
     }
 }

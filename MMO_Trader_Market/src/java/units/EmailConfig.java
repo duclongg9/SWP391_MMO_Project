@@ -3,13 +3,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package units;
+
 import java.io.InputStream;
 import java.util.Properties;
+
 /**
  *
  * @author D E L L
  */
 public class EmailConfig {
+
     private static final Properties props = new Properties();
 
     static {

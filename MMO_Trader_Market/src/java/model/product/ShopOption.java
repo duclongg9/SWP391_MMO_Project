@@ -3,7 +3,13 @@ package model.product;
 import java.util.Objects;
 
 /**
- * Simple option entry for shop filters.
+ * <p>
+ * Đại diện cho một lựa chọn cửa hàng trong bộ lọc sản phẩm.</p>
+ * <p>
+ * Danh sách này được tạo ở tầng service để đổ vào combobox tìm kiếm, đảm bảo
+ * tên shop không null.</p>
+ *
+ * @author longpdhe171902
  */
 public class ShopOption {
 

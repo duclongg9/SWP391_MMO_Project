@@ -68,7 +68,7 @@ public class WalletController extends HttpServlet {
         Integer user = (Integer) request.getSession().getAttribute("userId");
         if (user == null) {
 //            response.sendRedirect(request.getContextPath() + "/login.jsp");
-           response.sendRedirect(request.getContextPath() + "/auth");
+            response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
 

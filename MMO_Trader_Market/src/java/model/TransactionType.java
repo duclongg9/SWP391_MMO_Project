@@ -13,29 +13,36 @@ import java.util.stream.Stream;
  * @author D E L L
  */
 public enum TransactionType {
-    DEPOSIT   ("Deposit"),
-    PURCHASE  ("Purchase"),
+    DEPOSIT("Deposit"),
+    PURCHASE("Purchase"),
     WITHDRAWAL("Withdrawal"),
-    REFUND    ("Refund"),
-    FEE       ("Fee"),
-    PAYOUT    ("Payout");
+    REFUND("Refund"),
+    FEE("Fee"),
+    PAYOUT("Payout");
 
     private final String dbValue;
 
-    TransactionType(String dbValue) { this.dbValue = dbValue; }
+    TransactionType(String dbValue) {
+        this.dbValue = dbValue;
+    }
 
-    public String getDbValue() { return dbValue; }
+    public String getDbValue() {
+        return dbValue;
+    }
 
-    private static final Map<String, TransactionType> BY_DB =
-        Stream.of(values()).collect(Collectors.toMap(
-            TransactionType::getDbValue, e -> e
-        ));
+    private static final Map<String, TransactionType> BY_DB
+            = Stream.of(values()).collect(Collectors.toMap(
+                    TransactionType::getDbValue, e -> e
+            ));
 
-    /** Map từ chuỗi trong DB -> enum  */
+    /**
+     * Map từ chuỗi trong DB -> enum
+     */
     public static TransactionType fromDbValue(String dbValue) {
         TransactionType t = BY_DB.get(dbValue);
-        if (t == null)
+        if (t == null) {
             throw new IllegalArgumentException("Unknown transaction_type: " + dbValue);
+        }
         return t;
     }
 }

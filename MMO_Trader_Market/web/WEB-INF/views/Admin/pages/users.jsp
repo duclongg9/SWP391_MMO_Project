@@ -70,10 +70,10 @@
                         <i class="bi bi-funnel"></i> Tìm kiếm
                     </button>
                     <button
-                            class="btn btn-primary flex-fill"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#userCreateModal">
+                        class="btn btn-primary flex-fill"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#userCreateModal">
                         <i class="bi bi-plus-circle"></i> Thêm người dùng
                     </button>
 
@@ -121,60 +121,60 @@
     <div class="table-responsive shadow-sm rounded-3">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-dark">
-            <tr>
-                <th class="text-center" style="width:72px">#</th>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Ngày tạo</th>
-                <th>Ngày cập nhập</th>
-                <th style="width:140px">Vai trò</th>
-                <th style="width:140px">Trạng thái</th>
-                <th class="text-center" style="width:170px">Hành động</th>
-            </tr>
+                <tr>
+                    <th class="text-center" style="width:72px">#</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Ngày tạo</th>
+                    <th>Ngày cập nhập</th>
+                    <th style="width:140px">Vai trò</th>
+                    <th style="width:140px">Trạng thái</th>
+                    <th class="text-center" style="width:170px">Hành động</th>
+                </tr>
             </thead>
             <tbody>
-            <c:forEach var="u" items="${userList}" varStatus="st">
-                <c:if test="${u.roleName ne 'ADMIN'}">
-                    <tr>
-                        <td class="text-center">${(pageNow-1)*pageSize + st.index + 1}</td>
-                        <td>${u.name}</td>
-                        <td>${u.email}</td>
-                        <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
-                        <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
-                        <td>${u.roleName}</td>
-                        <td>
-                            <c:choose>
-                                <c:when test="${u.status == true}">
-                                    <span class="badge bg-success">Hoạt động</span>
-                                </c:when>
-                                <c:otherwise>
-                                    <span class="badge bg-secondary">Không hoạt động</span>
-                                </c:otherwise>
-                            </c:choose>
-                        </td>
-                        <td class="text-center">
-                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
-                                <input type="hidden" name="id" value="${u.id}">
-                                <input type="hidden" name="action" value="ban">
-                                <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != true}">disabled</c:if>>
-                                    <i class="bi bi-flag"></i> Ban
-                                </button>
-                            </form>
-                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
-                                <input type="hidden" name="id" value="${u.id}">
-                                <input type="hidden" name="action" value="unban">
-                                <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == true}">disabled</c:if>>
-                                    <i class="bi bi-flag"></i> Unban
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                </c:if>
-            </c:forEach>
+                <c:forEach var="u" items="${userList}" varStatus="st">
+                    <c:if test="${u.roleName ne 'ADMIN'}">
+                        <tr>
+                            <td class="text-center">${(pageNow-1)*pageSize + st.index + 1}</td>
+                            <td>${u.name}</td>
+                            <td>${u.email}</td>
+                            <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
+                            <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
+                            <td>${u.roleName}</td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${u.status == true}">
+                                        <span class="badge bg-success">Hoạt động</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="badge bg-secondary">Không hoạt động</span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td class="text-center">
+                                <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="${u.id}">
+                                    <input type="hidden" name="action" value="ban">
+                                    <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != true}">disabled</c:if>>
+                                            <i class="bi bi-flag"></i> Ban
+                                        </button>
+                                    </form>
+                                    <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="${u.id}">
+                                    <input type="hidden" name="action" value="unban">
+                                    <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == true}">disabled</c:if>>
+                                            <i class="bi bi-flag"></i> Unban
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                    </c:if>
+                </c:forEach>
 
-            <c:if test="${empty userList}">
-                <tr><td colspan="8" class="text-center text-muted py-4">Không có người dùng</td></tr>
-            </c:if>
+                <c:if test="${empty userList}">
+                    <tr><td colspan="8" class="text-center text-muted py-4">Không có người dùng</td></tr>
+                </c:if>
             </tbody>
         </table>
     </div>
@@ -213,7 +213,7 @@
                     </c:url>
                     <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                </c:if>
+                    </c:if>
 
                 <c:forEach var="i" begin="${start}" end="${end}">
                     <c:url var="ui" value="${usersPath}">
@@ -231,16 +231,16 @@
 
                 <c:if test="${end < pages}">
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                    <c:url var="uLast" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="${pages}" />
-                    </c:url>
+                        <c:url var="uLast" value="${usersPath}">
+                            <c:param name="q"    value="${param.q}" />
+                            <c:param name="role" value="${param.role}" />
+                            <c:param name="from" value="${param.from}" />
+                            <c:param name="to"   value="${param.to}" />
+                            <c:param name="size" value="${pageSize}" />
+                            <c:param name="page" value="${pages}" />
+                        </c:url>
                     <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                </c:if>
+                    </c:if>
 
                 <!-- Next -->
                 <li class="page-item ${pageNow>=pages?'disabled':''}">
@@ -267,30 +267,47 @@
 
         ['role'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
+            if (el)
+                el.addEventListener('change', () => {
+                    pageInput.value = 1;
+                    form.submit();
+                });
         });
 
         const q = document.getElementById('keyword');
-        if (q) q.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { pageInput.value = 1; /* form.submit(); */ }
-        });
+        if (q)
+            q.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    pageInput.value = 1; /* form.submit(); */
+                }
+            });
 
         const from = document.getElementById('fromDate');
-        const to   = document.getElementById('toDate');
+        const to = document.getElementById('toDate');
         [from, to].forEach(el => {
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
+            if (el)
+                el.addEventListener('change', () => {
+                    pageInput.value = 1;
+                    form.submit();
+                });
         });
     })();
 
     // ====== BAN / UNBAN (giữ nguyên nếu bạn đang dùng) ======
     const base = '<c:out value="${pageContext.request.contextPath}"/>';
     async function delUser(id) {
-        if (!Number.isInteger(id)) { alert('ID không hợp lệ'); return; }
-        if (!confirm('Xóa người dùng này?')) return;
+        if (!Number.isInteger(id)) {
+            alert('ID không hợp lệ');
+            return;
+        }
+        if (!confirm('Xóa người dùng này?'))
+            return;
         const url = base + '/admin/users/' + id;
-        const res  = await fetch(url, { method: 'DELETE' });
+        const res = await fetch(url, {method: 'DELETE'});
         const text = await res.text();
-        if (res.ok) location.reload();
-        else alert(`Xóa thất bại (HTTP ${res.status}): ${text}`);
+        if (res.ok)
+            location.reload();
+        else
+            alert(`Xóa thất bại (HTTP ${res.status}): ${text}`);
     }
 </script>

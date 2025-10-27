@@ -116,7 +116,7 @@
                                             <li>Đã bán: <strong><c:out value="${p.soldCount}" /></strong></li>
                                         </ul>
                                         <div class="product-card__actions product-card__actions--justify">
-                                            <a class="button button--primary product-card__cta" href="${cPath}/product/detail?id=${p.id}">Xem chi tiết</a>
+                                            <a class="button button--primary product-card__cta" href="${cPath}/product/detail/${p.encodedId}">Xem chi tiết</a>
                                         </div>
                                     </div>
                                 </article>
