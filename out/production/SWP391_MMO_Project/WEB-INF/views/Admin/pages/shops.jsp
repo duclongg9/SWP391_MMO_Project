@@ -61,8 +61,7 @@
                     <select id="status" name="status" class="form-select">
                         <option value="all"      ${status == 'all'      ? 'selected' : ''}>Tất cả</option>
                         <option value="Active"   ${status == 'Active'   ? 'selected' : ''}>Active</option>
-                        <option value="Banned"   ${status == 'Banned'   ? 'selected' : ''}>Banned</option>
-                        <option value="Inactive" ${status == 'Inactive' ? 'selected' : ''}>Inactive</option>
+                        <option value="Pending"   ${status == 'Pending'   ? 'selected' : ''}>Pending</option>
                         <option value="Rejected" ${status == 'Rejected' ? 'selected' : ''}>Rejected</option>
                     </select>
                 </div>
