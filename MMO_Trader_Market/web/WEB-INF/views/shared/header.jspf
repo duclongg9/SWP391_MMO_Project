@@ -126,6 +126,7 @@
 
     <c:if test="${isLoggedIn}">
       <div class="site-header__actions">
+<<<<<<< Updated upstream
         <div class="site-header__user" aria-label="Tài khoản người dùng">
           <button class="site-header__user-toggle" type="button" aria-haspopup="true">
             <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
@@ -141,6 +142,16 @@
               <a class="site-header__user-link" role="menuitem" href="${kycUrl}">Trở thành người bán</a>
             </c:if>
             <a class="site-header__user-link site-header__user-link--logout" role="menuitem" href="${logoutUrl}">Đăng xuất</a>
+=======
+        <c:if test="${showKycLink}">
+          <a class="site-header__cta" href="${kycUrl}">Tr? th�nh ng??i b�n</a>
+        </c:if>
+        <div class="site-header__user" aria-label="Th�ng tin ng??i b�n">
+          <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
+          <div class="site-header__user-info">
+            <span class="site-header__user-name"><c:out value="${displayName}" /></span>
+            <a class="site-header__user-link" href="${profileUrl}">Quay l?i t�i kho?n</a>
+>>>>>>> Stashed changes
           </div>
         </div>
       </div>
