@@ -65,8 +65,6 @@ public class ProductDetailController extends BaseController {
             boolean canBuy = isAuthenticated && product.isAvailable()
                     && productService.hasDeliverableCredentials(product.getId(), product.getVariants());
 
-            request.setAttribute("pageTitle", product.getName());
-            request.setAttribute("headerTitle", product.getName());
             request.setAttribute("headerSubtitle", "Thông tin chi tiết sản phẩm");
             request.setAttribute("product", product);
             request.setAttribute("variantOptions", product.getVariants());

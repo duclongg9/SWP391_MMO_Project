@@ -99,18 +99,7 @@
                                 <input type="radio" id="${variantId}" name="variantCode" value="${variant.variantCode}"
                                        data-price="${variant.price}" data-inventory="${variant.inventoryCount}" />
                                 <span class="variant-option__content">
-                                    <strong><c:out value="${variant.variantCode}" /></strong>
-                                    <c:if test="${not empty variant.attributes}">
-                                        <ul class="variant-option__attributes">
-                                            <c:forEach var="entry" items="${variant.attributes}">
-                                                <li><c:out value="${entry.key}" />: <c:out value="${entry.value}" /></li>
-                                            </c:forEach>
-                                        </ul>
-                                    </c:if>
-                                    <span class="variant-option__price">
-                                        <fmt:formatNumber value="${variant.price}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                    </span>
-                                    <span class="variant-option__inventory">Tồn kho: <strong><c:out value="${variant.inventoryCount}" /></strong></span>
+                                    <strong class="variant-option__name"><c:out value="${variant.variantCode}" /></strong>
                                 </span>
                             </label>
                         </c:forEach>
