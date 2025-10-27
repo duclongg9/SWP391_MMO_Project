@@ -18,6 +18,7 @@ import queue.memory.InMemoryOrderQueue;
 import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -227,30 +228,38 @@ public class OrderService {
     }
 
     /**
-     * Lấy danh sách đơn hàng của người mua kèm phân trang và lọc trạng thái.
+     * Lấy danh sách đơn hàng của người mua kèm phân trang và các bộ lọc nâng cao.
      * Phương thức này là cầu nối từ Controller -> DAO:
      * <ol>
      *     <li>Chuẩn hóa tham số trạng thái theo enum {@link OrderStatus}.</li>
-     *     <li>Tính tổng bản ghi bằng {@link OrderDAO#countByBuyer(int, String)}.</li>
-     *     <li>Tính toán trang hiện tại, offset -> gọi {@link OrderDAO#findByBuyerPaged} để lấy danh sách gọn.</li>
+     *     <li>Tính tổng bản ghi bằng {@link OrderDAO#countByBuyer(int, String, Integer, String, LocalDate, LocalDate)}.</li>
+     *     <li>Tính toán trang hiện tại, offset -> gọi {@link OrderDAO#findByBuyerPaged}
+     *     với đầy đủ filter để lấy danh sách rút gọn.</li>
      *     <li>Trả về {@link PaginatedResult} chứa dữ liệu và meta để JSP dựng bảng.</li>
      * </ol>
      *
-     * @param userId mã người mua
-     * @param status trạng thái cần lọc (chuỗi database)
-     * @param page   trang hiện tại (>=1)
-     * @param size   số bản ghi mỗi trang (>0)
+     * @param userId      mã người mua
+     * @param status      trạng thái cần lọc (chuỗi database)
+     * @param orderId     mã đơn cần tìm (có thể {@code null})
+     * @param productName tên sản phẩm cần tìm (có thể {@code null})
+     * @param fromDate    ngày tạo bắt đầu (có thể {@code null})
+     * @param toDate      ngày tạo kết thúc (có thể {@code null})
+     * @param page        trang hiện tại (>=1)
+     * @param size        số bản ghi mỗi trang (>0)
      * @return đối tượng phân trang chứa danh sách đơn rút gọn
      */
-    public PaginatedResult<OrderRow> getMyOrders(int userId, String status, int page, int size) {
+    public PaginatedResult<OrderRow> getMyOrders(int userId, String status, Integer orderId, String productName,
+            LocalDate fromDate, LocalDate toDate, int page, int size) {
         String normalizedStatus = normalizeStatus(status);
+        String normalizedProduct = productName == null ? null : productName.trim();
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
-        long totalItemsLong = orderDAO.countByBuyer(userId, normalizedStatus);
+        long totalItemsLong = orderDAO.countByBuyer(userId, normalizedStatus, orderId, normalizedProduct, fromDate, toDate);
         int totalPages = totalItemsLong == 0 ? 1 : (int) Math.ceil((double) totalItemsLong / safeSize);
         int currentPage = Math.min(safePage, totalPages);
         int offset = (currentPage - 1) * safeSize;
-        List<OrderRow> rows = orderDAO.findByBuyerPaged(userId, normalizedStatus, safeSize, offset);
+        List<OrderRow> rows = orderDAO.findByBuyerPaged(userId, normalizedStatus, orderId, normalizedProduct, fromDate,
+                toDate, safeSize, offset);
         int totalItems = Math.toIntExact(Math.min(totalItemsLong, Integer.MAX_VALUE));
         return new PaginatedResult<>(rows, currentPage, totalPages, safeSize, totalItems);
     }
