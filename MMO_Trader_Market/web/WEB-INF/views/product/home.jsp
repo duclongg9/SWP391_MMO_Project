@@ -161,21 +161,19 @@
             <h3 class="panel__title">Câu hỏi thường gặp</h3>
         </div>
         <div class="panel__body faq-list">
-            <c:choose>
-                <c:when test="${empty faqs}">
-                    <p>Đang cập nhật câu hỏi.</p>
-                </c:when>
-                <c:otherwise>
-                    <c:forEach var="faq" items="${faqs}">
-                        <details class="faq-item">
-                            <summary class="faq-item__question">
-                                <span><c:out value="${faq.title}" /></span>
-                            </summary>
-                            <p class="faq-item__answer"><c:out value="${faq.description}" /></p>
-                        </details>
-                    </c:forEach>
-                </c:otherwise>
-            </c:choose>
+            <c:if test="${empty faqs}">
+                <p>Đang cập nhật câu hỏi.</p>
+            </c:if>
+            <c:if test="${not empty faqs}">
+                <c:forEach var="faq" items="${faqs}">
+                    <details class="faq-item">
+                        <summary class="faq-item__question">
+                            <span><c:out value="${faq.title}" /></span>
+                        </summary>
+                        <p class="faq-item__answer"><c:out value="${faq.description}" /></p>
+                    </details>
+                </c:forEach>
+            </c:if>
         </div>
     </section>
 
@@ -183,21 +181,18 @@
         <div class="panel__header">
             <h3 class="panel__title">Cấu hình hệ thống</h3>
         </div>
-        <c:choose>
-            <c:when test="${empty systemNotes}">
-                <p>Chưa có dữ liệu.</p>
-            </c:when>
-            <c:otherwise>
-                <ol class="tips-list">
-                    <c:forEach var="config" items="${systemNotes}">
-                        <li>
-                            <strong><c:out value="${config.description}" /></strong>
-                            <%--<c:out value="${config.configValue}" />--%>
-                        </li>
-                    </c:forEach>
-                </ol>
-            </c:otherwise>
-        </c:choose>
+        <c:if test="${empty systemNotes}">
+            <p>Chưa có dữ liệu.</p>
+        </c:if>
+        <c:if test="${not empty systemNotes}">
+            <ol class="tips-list">
+                <c:forEach var="config" items="${systemNotes}">
+                    <li>
+                        <strong><c:out value="${config.description}" /></strong>
+                    </li>
+                </c:forEach>
+            </ol>
+        </c:if>
     </section>
 
 </main>
