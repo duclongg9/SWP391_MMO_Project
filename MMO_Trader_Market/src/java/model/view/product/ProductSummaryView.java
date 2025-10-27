@@ -1,5 +1,7 @@
 package model.view.product;
 
+import units.IdObfuscator;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -94,6 +96,10 @@ public class ProductSummaryView {
 
     public Integer getSoldCount() {
         return soldCount;
+    }
+
+    public String getEncodedId() {
+        return IdObfuscator.encode(id);
     }
 
     /**

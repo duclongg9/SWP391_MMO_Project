@@ -14,9 +14,7 @@
 --%>
 <main class="layout__content">
     <c:if test="${showProcessingModal}">
-        <c:url var="orderDetailUrl" value="/orders/detail">
-            <c:param name="id" value="${order.id}" />
-        </c:url>
+        <c:url var="orderDetailUrl" value="/orders/detail/${orderToken}" />
         <style>
             /* Modal thông báo xử lý đơn hàng */
             .order-modal {
@@ -242,7 +240,7 @@
                                     </p>
                                     <c:url var="unlockActionUrl" value="/orders/unlock" />
                                     <form id="credentialUnlockForm" method="post" action="${unlockActionUrl}" style="display:none;">
-                                        <input type="hidden" name="orderId" value="${order.id}" />
+                                        <input type="hidden" name="orderToken" value="${orderToken}" />
                                     </form>
                                     <button type="button" class="button button--primary" id="credentialUnlockTrigger">
                                         Xác nhận mở khóa thông tin bàn giao

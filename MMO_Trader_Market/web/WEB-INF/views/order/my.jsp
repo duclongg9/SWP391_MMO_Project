@@ -63,9 +63,7 @@
                                     <fmt:formatDate value="${item.createdAt}" pattern="dd/MM/yyyy HH:mm" />
                                 </td>
                                 <td class="table__actions">
-                                    <c:url var="detailUrl" value="/orders/detail">
-                                        <c:param name="id" value="${item.id}" />
-                                    </c:url>
+                                    <c:url var="detailUrl" value="/orders/detail/${item.encodedId}" />
                                     <a class="button button--ghost" href="${detailUrl}">Xem</a>
                                 </td>
                             </tr>

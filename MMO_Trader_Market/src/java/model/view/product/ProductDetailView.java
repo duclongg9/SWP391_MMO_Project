@@ -1,6 +1,7 @@
 package model.view.product;
 
 import model.product.ProductVariantOption;
+import units.IdObfuscator;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -157,6 +158,10 @@ public class ProductDetailView {
 
     public String getVariantsJson() {
         return variantsJson;
+    }
+
+    public String getEncodedId() {
+        return IdObfuscator.encode(id);
     }
 
     /**
