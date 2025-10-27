@@ -42,7 +42,7 @@ import java.util.Set;
  */
 public class ProductService {
 
-    private static final int DEFAULT_HOMEPAGE_LIMIT = 8;
+    private static final int DEFAULT_HOMEPAGE_LIMIT = 6;
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
     private static final String PRODUCT_IMAGE_BASE_PATH = "/assets/images/products/";
 
