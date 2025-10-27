@@ -156,6 +156,7 @@ public class AsyncOrderWorker implements OrderWorker {
         if (inventory < context.message().qty()) {
             failWithReason(connection, context.order(), "Tổng tồn kho sản phẩm không đủ", Level.WARNING);
         }
+        context.setAvailableInventory(inventory);
         if (context.normalizedVariantCode() != null) {
             Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, context.normalizedVariantCode());
             if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
@@ -167,6 +168,7 @@ public class AsyncOrderWorker implements OrderWorker {
                 failWithReason(connection, context.order(), "Biến thể sản phẩm không đủ tồn kho", Level.WARNING);
             }
             context.setVariant(variant);
+            context.setVariantInventory(variantInventory);
         }
         context.setVariants(variants);
     }
@@ -175,12 +177,33 @@ public class AsyncOrderWorker implements OrderWorker {
      * Khóa credential phù hợp với sản phẩm/biến thể.
      */
     private void reserveCredentials(Connection connection, OrderProcessingContext context) throws SQLException {
+        ensureCredentialPool(connection, context);
         List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection,
                 context.message().productId(), context.message().qty(), context.normalizedVariantCode());
         if (credentialIds.size() < context.message().qty()) {
             failWithReason(connection, context.order(), "Không đủ credential sẵn sàng để giao", Level.WARNING);
         }
         context.setCredentialIds(credentialIds);
+    }
+
+    /**
+     * Đảm bảo kho credential luôn >= tồn kho sản phẩm bằng cách tự động sinh credential ảo khi thiếu.
+     */
+    private void ensureCredentialPool(Connection connection, OrderProcessingContext context) throws SQLException {
+        int targetInventory = context.variantInventory() != null
+                ? Math.max(context.variantInventory(), context.message().qty())
+                : Math.max(context.availableInventory(), context.message().qty());
+        if (targetInventory <= 0) {
+            return;
+        }
+        CredentialDAO.CredentialAvailability availability = credentialDAO.fetchAvailabilityForVariant(connection,
+                context.message().productId(), context.normalizedVariantCode());
+        int missing = targetInventory - availability.available();
+        if (missing <= 0) {
+            return;
+        }
+        credentialDAO.generateFakeCredentials(connection, context.message().productId(),
+                context.normalizedVariantCode(), missing);
     }
 
     /**
@@ -297,6 +320,8 @@ public class AsyncOrderWorker implements OrderWorker {
         private List<ProductVariantOption> variants;
         private ProductVariantOption variant;
         private List<Integer> credentialIds;
+        private int availableInventory;
+        private Integer variantInventory;
 
         OrderProcessingContext(OrderMessage message, Orders order) {
             this.message = message;
@@ -365,6 +390,22 @@ public class AsyncOrderWorker implements OrderWorker {
 
         void setCredentialIds(List<Integer> credentialIds) {
             this.credentialIds = credentialIds;
+        }
+
+        int availableInventory() {
+            return availableInventory;
+        }
+
+        void setAvailableInventory(int availableInventory) {
+            this.availableInventory = availableInventory;
+        }
+
+        Integer variantInventory() {
+            return variantInventory;
+        }
+
+        void setVariantInventory(Integer variantInventory) {
+            this.variantInventory = variantInventory;
         }
     }
 }
