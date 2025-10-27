@@ -21,18 +21,24 @@ import java.util.Objects;
  */
 public class ProductVariantOption {
 
+    // Mã biến thể duy nhất, lấy từ JSON.
     @SerializedName("variant_code")
     private String variantCode;
 
+    // Tập thuộc tính mô tả biến thể (ví dụ Rank=Challenger, Region=NA).
     private Map<String, String> attributes;
 
+    // Giá dành riêng cho biến thể này.
     private BigDecimal price;
 
+    // Số lượng tồn kho của biến thể.
     @SerializedName("inventory_count")
     private Integer inventoryCount;
 
+    // Trạng thái khả dụng của biến thể.
     private String status;
 
+    // Lấy mã biến thể.
     public String getVariantCode() {
         return variantCode;
     }
@@ -50,22 +56,27 @@ public class ProductVariantOption {
         return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
     }
 
+    // Lấy giá biến thể.
     public BigDecimal getPrice() {
         return price;
     }
 
+    // Lấy số lượng tồn.
     public Integer getInventoryCount() {
         return inventoryCount;
     }
 
+    // Cập nhật số lượng tồn (dùng khi đồng bộ kho).
     public void setInventoryCount(Integer inventoryCount) {
         this.inventoryCount = inventoryCount;
     }
 
+    // Lấy trạng thái biến thể.
     public String getStatus() {
         return status;
     }
 
+    // Thiết lập trạng thái biến thể.
     public void setStatus(String status) {
         this.status = status;
     }
