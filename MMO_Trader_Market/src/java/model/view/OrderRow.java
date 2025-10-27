@@ -14,6 +14,8 @@ import java.util.Objects;
  * View model dạng rút gọn cho từng dòng hiển thị tại bảng lịch sử đơn hàng.
  * <p>Được dựng từ truy vấn {@link dao.order.OrderDAO#findByBuyerPaged} để truyền thẳng tới
  * JSP {@code order/my.jsp} mà không cần convert thêm.</p>
+ *
+ * @author longpdhe171902
  */
 public final class OrderRow {
 
