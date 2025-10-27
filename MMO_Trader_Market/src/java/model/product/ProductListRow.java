@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Lightweight row used for product listing page.
+ * <p>Model hàng rút gọn cho danh sách sản phẩm trong trang browse/checkout.</p>
+ * <p>DAO trả về lớp này để {@link service.ProductService} có đủ thông tin render danh sách, đồng thời
+ * giúp JSP truy cập trực tiếp các trường cần hiển thị (tên, giá, tồn kho, trạng thái).</p>
+ *
+ * @author longpdhe171902
  */
 public class ProductListRow {
 
@@ -23,6 +27,10 @@ public class ProductListRow {
     private final int shopId;
     private final String shopName;
 
+    /**
+     * Chuẩn hóa các giá trị văn bản để tránh {@code null} khi render và giữ nguyên số liệu định lượng
+     * (giá, tồn kho) phục vụ tính toán trong service.
+     */
     public ProductListRow(int id, String productType, String productSubtype, String name,
             String shortDescription, BigDecimal price, Integer inventoryCount,
             Integer soldCount, String status, String primaryImageUrl,
