@@ -126,14 +126,21 @@
 
     <c:if test="${isLoggedIn}">
       <div class="site-header__actions">
-        <c:if test="${showKycLink}">
-          <a class="site-header__cta" href="${kycUrl}">Trở thành người bán</a>
-        </c:if>
-        <div class="site-header__user" aria-label="Thông tin người dùng">
-          <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
-          <div class="site-header__user-info">
-            <span class="site-header__user-name"><c:out value="${displayName}" /></span>
-            <a class="site-header__user-link" href="${profileUrl}">Quản lý tài khoản</a>
+        <div class="site-header__user" aria-label="Tài khoản người dùng">
+          <button class="site-header__user-toggle" type="button" aria-haspopup="true">
+            <span class="site-header__avatar" aria-hidden="true"><c:out value="${avatarInitial}" /></span>
+            <div class="site-header__user-info">
+              <span class="site-header__user-label">Xin chào</span>
+              <span class="site-header__user-name"><c:out value="${displayName}" /></span>
+            </div>
+            <span class="site-header__user-caret" aria-hidden="true"></span>
+          </button>
+          <div class="site-header__user-menu" role="menu">
+            <a class="site-header__user-link" role="menuitem" href="${profileUrl}">Quản lý tài khoản</a>
+            <c:if test="${showKycLink}">
+              <a class="site-header__user-link" role="menuitem" href="${kycUrl}">Trở thành người bán</a>
+            </c:if>
+            <a class="site-header__user-link site-header__user-link--logout" role="menuitem" href="${logoutUrl}">Đăng xuất</a>
           </div>
         </div>
       </div>
