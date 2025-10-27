@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 
 import java.util.Date;
 
+import units.IdObfuscator;
+
 import java.util.Objects;
 
 
@@ -84,6 +86,12 @@ public final class OrderRow {
     public Date getCreatedAt() {
 
         return createdAt;
+
+    }
+
+    public String getEncodedId() {
+
+        return IdObfuscator.encode(id);
 
     }
 
