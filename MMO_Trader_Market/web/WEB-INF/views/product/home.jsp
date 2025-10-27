@@ -142,9 +142,7 @@
                                     <li>Đã bán: <strong><c:out value="${product.soldCount}" /></strong></li>
                                 </ul>
                                 <footer class="product-card__footer">
-                                    <c:url var="detailUrl" value="/product/detail">
-                                        <c:param name="id" value="${product.id}" />
-                                    </c:url>
+                                    <c:url var="detailUrl" value="/product/detail/${product.encodedId}" />
                                     <div class="product-card__actions product-card__actions--justify">
                                         <a class="button button--primary product-card__cta" href="${detailUrl}">Xem chi tiết</a>
                                     </div>

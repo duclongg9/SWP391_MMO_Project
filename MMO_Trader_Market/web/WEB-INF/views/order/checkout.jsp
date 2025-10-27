@@ -41,7 +41,7 @@
                         <li>Hoàn tất thanh toán để nhận key/đường dẫn ngay lập tức.</li>
                     </ol>
                     <form class="form" method="post" action="${pageContext.request.contextPath}/orders/buy">
-                        <input type="hidden" name="productId" value="${product.id}">
+                        <input type="hidden" name="productId" value="${product.encodedId}">
                         <div class="form__group" style="margin-bottom: 1rem;">
                             <label class="form__label" for="buyerEmail">Email nhận sản phẩm</label>
                             <input class="form__input" type="email" id="buyerEmail" name="buyerEmail"

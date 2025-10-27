@@ -9,8 +9,12 @@ import jakarta.servlet.http.HttpSession;
 import model.view.product.ProductDetailView;
 import model.view.product.ProductSummaryView;
 import service.ProductService;
+import units.IdObfuscator;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,7 +27,7 @@ import java.util.List;
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
  */
-@WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail"})
+@WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail/*"})
 public class ProductDetailController extends BaseController {
 
     private static final long serialVersionUID = 1L;
@@ -33,8 +37,21 @@ public class ProductDetailController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        int productId = parsePositiveInt(request.getParameter("id"));
-        if (productId <= 0) {
+        String token = extractTokenFromPath(request);
+        if (token == null) {
+            int legacyId = parsePositiveInt(request.getParameter("id"));
+            if (legacyId > 0) {
+                String redirect = buildProductRedirect(request, legacyId);
+                response.sendRedirect(redirect);
+                return;
+            }
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        int productId;
+        try {
+            productId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -61,6 +78,7 @@ public class ProductDetailController extends BaseController {
             request.setAttribute("similarProducts", similarProducts);
             request.setAttribute("canBuy", canBuy);
             request.setAttribute("isAuthenticated", isAuthenticated);
+            request.setAttribute("productToken", IdObfuscator.encode(product.getId()));
             forward(request, response, "product/detail");
         } catch (IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -77,5 +95,42 @@ public class ProductDetailController extends BaseController {
         } catch (NumberFormatException ex) {
             return -1;
         }
+    }
+
+    private String extractTokenFromPath(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || pathInfo.isBlank() || "/".equals(pathInfo)) {
+            return null;
+        }
+        String token = pathInfo.charAt(0) == '/' ? pathInfo.substring(1) : pathInfo;
+        int slashIndex = token.indexOf('/');
+        if (slashIndex >= 0) {
+            token = token.substring(0, slashIndex);
+        }
+        return token.isBlank() ? null : token;
+    }
+
+    private String buildProductRedirect(HttpServletRequest request, int productId) {
+        StringBuilder url = new StringBuilder(request.getContextPath())
+                .append("/product/detail/")
+                .append(IdObfuscator.encode(productId));
+        List<String> queryParts = new ArrayList<>();
+        request.getParameterMap().forEach((key, values) -> {
+            if ("id".equals(key) || values == null) {
+                return;
+            }
+            for (String value : values) {
+                if (value == null) {
+                    continue;
+                }
+                String encodedKey = URLEncoder.encode(key, StandardCharsets.UTF_8);
+                String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+                queryParts.add(encodedKey + "=" + encodedValue);
+            }
+        });
+        if (!queryParts.isEmpty()) {
+            url.append('?').append(String.join("&", queryParts));
+        }
+        return url.toString();
     }
 }
