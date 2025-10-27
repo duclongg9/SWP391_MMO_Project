@@ -17,9 +17,6 @@ import java.util.Map;
 public final class NavigationBuilder {
 
     private static final String ACTIVE_CLASS = "menu__item--active";
-    private static final String ICON_CLASS = "menu__item--icon";
-    private static final String BUTTON_CLASS = "menu__item--button";
-
     private static final ProductService PRODUCT_SERVICE = new ProductService();
 
     private NavigationBuilder() {
@@ -41,14 +38,6 @@ public final class NavigationBuilder {
         }
 
         addBaseItems(items, request, contextPath, currentPath);
-
-        if (roleId == null) {
-            if (shouldDisplayAuthCta(currentPath)) {
-                items.add(createIconItem(contextPath + "/auth", "👤", "Đăng nhập", true,
-                        isActive(currentPath, "/auth")));
-            }
-            return items;
-        }
 
         return items;
     }
@@ -78,15 +67,6 @@ public final class NavigationBuilder {
         } else if (extraClasses != null && !extraClasses.isBlank()) {
             item.put("modifier", extraClasses.trim());
         }
-        return item;
-    }
-
-    private static Map<String, Object> createIconItem(String href, String icon, String text,
-            boolean highlight, boolean active) {
-        String extraClasses = ICON_CLASS + (highlight ? " " + BUTTON_CLASS : "");
-        Map<String, Object> item = createNavItem(href, text, active, extraClasses);
-        item.put("icon", icon);
-        item.put("srText", text);
         return item;
     }
 
@@ -135,21 +115,6 @@ public final class NavigationBuilder {
         return currentPath.equals(path) || currentPath.startsWith(path + "/");
     }
 
-    private static boolean shouldDisplayAuthCta(String currentPath) {
-        if (currentPath == null) {
-            return true;
-        }
-
-        return !currentPath.equals("/auth")
-                && !currentPath.startsWith("/auth/")
-                && !currentPath.equals("/register")
-                && !currentPath.startsWith("/register/")
-                && !currentPath.equals("/forgot-password")
-                && !currentPath.startsWith("/forgot-password/")
-                && !currentPath.equals("/reset-password")
-                && !currentPath.startsWith("/reset-password/");
-    }
-
     private static String resolveCurrentPath(HttpServletRequest request) {
         String uri = request.getRequestURI();
         String contextPath = request.getContextPath();
@@ -158,7 +123,6 @@ public final class NavigationBuilder {
         }
         return uri;
     }
-
 
     private static boolean isAdminRole(Integer roleId) {
         return roleId != null && roleId == 1;

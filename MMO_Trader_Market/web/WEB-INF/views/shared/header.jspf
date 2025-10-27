@@ -179,7 +179,8 @@
                     </div>
                 </c:when>
                 <c:otherwise>
-                    <c:if test="${not isAuthPage}">
+                    <c:if test="${not isAuthPage}" >
+                        <c:url var="loginUrl" value="/auth" />
                         <a class="button button--primary site-header__login" href="${loginUrl}" aria-label="Đăng nhập">
                             Đăng nhập
                         </a>
