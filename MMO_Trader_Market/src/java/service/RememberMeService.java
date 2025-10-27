@@ -21,7 +21,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Service that encapsulates creation, validation and cleanup of remember-me tokens.
+ * Service that encapsulates creation, validation and cleanup of remember-me
+ * tokens.
  */
 public class RememberMeService {
 
@@ -93,7 +94,7 @@ public class RememberMeService {
         String storedHashed = token.getHashedValidator();
         if (storedHashed == null || storedHashed.isBlank()
                 || !MessageDigest.isEqual(hashedValidator.getBytes(StandardCharsets.UTF_8),
-                storedHashed.getBytes(StandardCharsets.UTF_8))) {
+                        storedHashed.getBytes(StandardCharsets.UTF_8))) {
             handleCompromisedToken(token, request, response);
             return null;
         }

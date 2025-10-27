@@ -96,9 +96,23 @@ CREATE TABLE `product_credentials` (
   `product_id` int NOT NULL,
   `order_id` int DEFAULT NULL,
   `encrypted_value` text NOT NULL,
+  `variant_code` varchar(100) DEFAULT NULL,
   `is_sold` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `credential_view_logs`;
+CREATE TABLE `credential_view_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `buyer_id` int NOT NULL,
+  `variant_code` varchar(100) DEFAULT NULL,
+  `viewer_ip` varchar(64) DEFAULT NULL,
+  `viewed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_credential_view_logs_order_buyer` (`order_id`,`buyer_id`)
 ) ENGINE=InnoDB;
 
 -- =================================================================
@@ -155,14 +169,22 @@ CREATE TABLE `wallet_transactions` (
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `orders`;
+-- Bảng lưu đơn hàng của người mua, phục vụ toàn bộ luồng mua - thanh toán - bàn giao.
+-- Cột `payment_transaction_id` liên kết sang bảng wallet_transactions giúp truy vết dòng tiền.
+-- `idempotency_key` lưu khóa duy nhất mà OrderService cấp phát để chống việc double-submit khi mua.
+-- `variant_code` cho phép worker xác định SKU cụ thể để trừ tồn kho và credential tương ứng.
+-- `hold_until` dùng cho cơ chế giữ hàng tạm thời (nếu có), worker sẽ tham chiếu để quyết định giải phóng.
 CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `buyer_id` int NOT NULL,
   `product_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `unit_price` decimal(18,4) NOT NULL,
   `payment_transaction_id` int DEFAULT NULL,
   `total_amount` decimal(18,4) NOT NULL,
   `status` enum('Pending','Processing','Completed','Failed','Refunded','Disputed') NOT NULL,
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
+  `variant_code` varchar(100) DEFAULT NULL,
   `hold_until` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -290,6 +312,9 @@ ALTER TABLE `shops` ADD CONSTRAINT `fk_shops_owner_id` FOREIGN KEY (`owner_id`) 
 ALTER TABLE `products` ADD CONSTRAINT `fk_products_shop_id` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`);
 ALTER TABLE `product_credentials` ADD CONSTRAINT `fk_credentials_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 ALTER TABLE `product_credentials` ADD CONSTRAINT `fk_credentials_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
+ALTER TABLE `credential_view_logs` ADD CONSTRAINT `fk_credential_view_logs_buyer_id` FOREIGN KEY (`buyer_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `kyc_requests` ADD CONSTRAINT `fk_kyc_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 ALTER TABLE `kyc_requests` ADD CONSTRAINT `fk_kyc_status_id` FOREIGN KEY (`status_id`) REFERENCES `kyc_request_statuses` (`id`);
@@ -568,10 +593,10 @@ VALUES
 
 
 -- Credentials (ví dụ ràng buộc với đơn)
-INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`is_sold`,`created_at`) VALUES
- (1,1001,5001,'ENCRYPTED-CODE-001',1,'2024-01-20 12:05:00'),
- (2,1001,NULL,'ENCRYPTED-CODE-002',0,'2024-01-21 10:20:00'),
- (3,1002,NULL,'ENCRYPTED-CODE-201',0,'2024-01-26 08:30:00');
+INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+ (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
+ (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
+ (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00');
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
@@ -589,10 +614,10 @@ INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transac
  (3,2,5001,'Payout',250000.0000,200000.0000,450000.0000,'Doanh thu đơn #5001','2024-01-20 12:01:00'),
  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
 
--- Orders (ví dụ Completed + Disputed)
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`payment_transaction_id`,`total_amount`,`status`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
- (5001,3,1001,2,250000.0000,'Completed','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
- (5002,3,1002,NULL,185000.0000,'Disputed','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
+-- Đơn hàng mẫu minh họa trạng thái Completed và Disputed
+INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
+ (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+ (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
 
 -- Withdrawals
 INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES

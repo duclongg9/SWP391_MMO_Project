@@ -31,9 +31,7 @@ public class SystemConfigDAO extends BaseDAO {
     public List<SystemConfigs> findAll() {
         final String sql = "SELECT id, config_key, config_value, description, created_at, updated_at "
                 + "FROM system_configs ORDER BY id ASC";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             List<SystemConfigs> configs = new ArrayList<>();
             while (rs.next()) {
                 configs.add(mapRow(rs));
@@ -65,4 +63,3 @@ public class SystemConfigDAO extends BaseDAO {
         return config;
     }
 }
-

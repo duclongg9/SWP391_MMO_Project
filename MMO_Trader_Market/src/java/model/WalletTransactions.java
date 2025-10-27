@@ -1,4 +1,5 @@
 package model;
+
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -125,16 +126,16 @@ public class WalletTransactions {
 
     @Override
     public String toString() {
-        return "WalletTransactions{" +
-                "id=" + id +
-                ", walletId=" + walletId +
-                ", relatedEntityId=" + relatedEntityId +
-                ", transactionType='" + transactionType + '\'' +
-                ", amount=" + amount +
-                ", balanceBefore=" + balanceBefore +
-                ", balanceAfter=" + balanceAfter +
-                ", note='" + note + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
+        return "WalletTransactions{"
+                + "id=" + id
+                + ", walletId=" + walletId
+                + ", relatedEntityId=" + relatedEntityId
+                + ", transactionType='" + transactionType + '\''
+                + ", amount=" + amount
+                + ", balanceBefore=" + balanceBefore
+                + ", balanceAfter=" + balanceAfter
+                + ", note='" + note + '\''
+                + ", createdAt=" + createdAt
+                + '}';
     }
 }

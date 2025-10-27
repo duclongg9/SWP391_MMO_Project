@@ -3,15 +3,18 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package units;
+
 import java.util.Properties;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import java.io.UnsupportedEncodingException;
+
 /**
  *
  * @author D E L L
  */
 public class SendMail {
+
     public static void sendMail(String toEmail, String subject, String messageText) throws MessagingException, UnsupportedEncodingException {
         final String fromEmail = EmailConfig.getEmail(); // email của bạn
         final String password = EmailConfig.getPassword(); // password app hoặc real password nếu dùng smtp thường
@@ -40,6 +43,5 @@ public class SendMail {
         // gửi
         Transport.send(msg);
     }
-    
-   
+
 }

@@ -29,8 +29,7 @@ public class WalletsDAO {
                 WHERE id = ?
                 LIMIT 1
                 """;
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
 
@@ -51,8 +50,7 @@ public class WalletsDAO {
                 WHERE user_id = ?
                 LIMIT 1
                 """;
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, userId);
 
@@ -77,8 +75,7 @@ public class WalletsDAO {
                 INSERT INTO wallets (user_id)
                 VALUES (?)
                 """;
-        try (Connection con = DBConnect.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, userId);
             ps.executeUpdate();

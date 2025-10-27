@@ -91,52 +91,52 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Chủ sở hữu</th>
-                        <th>Tên cửa hàng</th>
-                        <th>Nội dung</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
-                        <th class="text-center">Hành động</th>
-                    </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Chủ sở hữu</th>
+                            <th>Tên cửa hàng</th>
+                            <th>Nội dung</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <c:choose>
-                        <c:when test="${not empty shopList}">
-                            <c:forEach var="s" items="${shopList}" varStatus="st">
-                                <tr>
-                                    <td>${(pageNow-1)*pageSize + st.index + 1}</td>
-                                    <td>${fn:escapeXml(s.ownerName)}</td>
-                                    <td class="fw-semibold">${fn:escapeXml(s.name)}</td>
-                                    <td class="text-muted">
-                                        <c:choose>
-                                            <c:when test="${empty s.description}"><span class="fst-italic">—</span></c:when>
-                                            <c:otherwise>${fn:escapeXml(s.description)}</c:otherwise>
-                                        </c:choose>
-                                    </td>
-                                    <td>
-                                        <span class="badge
-                                          <c:choose>
-                                            <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                                            <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                                            <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                                            <c:otherwise>bg-secondary</c:otherwise>
-                                          </c:choose>">
+                        <c:choose>
+                            <c:when test="${not empty shopList}">
+                                <c:forEach var="s" items="${shopList}" varStatus="st">
+                                    <tr>
+                                        <td>${(pageNow-1)*pageSize + st.index + 1}</td>
+                                        <td>${fn:escapeXml(s.ownerName)}</td>
+                                        <td class="fw-semibold">${fn:escapeXml(s.name)}</td>
+                                        <td class="text-muted">
+                                            <c:choose>
+                                                <c:when test="${empty s.description}"><span class="fst-italic">—</span></c:when>
+                                                <c:otherwise>${fn:escapeXml(s.description)}</c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <span class="badge
+                                                  <c:choose>
+                                                      <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                                                      <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
+                                                      <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
+                                                      <c:otherwise>bg-secondary</c:otherwise>
+                                                  </c:choose>">
                                                 ${fn:escapeXml(s.status)}
-                                        </span>
-                                    </td>
-                                    <td><fmt:formatDate value="${s.createdAt}" pattern="dd-MM-yyyy"/></td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-primary"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#shopModal_${s.id}">
-                                            <i class="bi bi-eye"></i> Xem chi tiết
-                                        </button>
-                                    </td>
-                                </tr>
+                                            </span>
+                                        </td>
+                                        <td><fmt:formatDate value="${s.createdAt}" pattern="dd-MM-yyyy"/></td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#shopModal_${s.id}">
+                                                <i class="bi bi-eye"></i> Xem chi tiết
+                                            </button>
+                                        </td>
+                                    </tr>
 
-                                <!-- Modal chi tiết -->
+                                    <!-- Modal chi tiết -->
                                 <div class="modal fade" id="shopModal_${s.id}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -173,13 +173,13 @@
                                                     <div class="col-12">
                                                         <div class="small text-muted mb-1">Trạng thái hiện tại</div>
                                                         <span class="badge
-                                                          <c:choose>
-                                                            <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                                                            <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                                                            <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                                                            <c:otherwise>bg-secondary</c:otherwise>
-                                                          </c:choose> ">
-                                                                ${fn:escapeXml(s.status)}
+                                                              <c:choose>
+                                                                  <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                                                                  <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
+                                                                  <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
+                                                                  <c:otherwise>bg-secondary</c:otherwise>
+                                                              </c:choose> ">
+                                                            ${fn:escapeXml(s.status)}
                                                         </span>
                                                     </div>
 
@@ -260,7 +260,7 @@
                     </c:url>
                     <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                </c:if>
+                    </c:if>
 
                 <c:forEach var="i" begin="${start}" end="${end}">
                     <c:url var="ui" value="${shopsPath}">
@@ -278,16 +278,16 @@
 
                 <c:if test="${end < pages}">
                     <li class="page-item disabled"><span class="page-link">…</span></li>
-                    <c:url var="uLast" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="page"   value="${pages}" />
-                    </c:url>
+                        <c:url var="uLast" value="${shopsPath}">
+                            <c:param name="q"      value="${q}" />
+                            <c:param name="from"   value="${from}" />
+                            <c:param name="to"     value="${to}" />
+                            <c:param name="status" value="${status}" />
+                            <c:param name="size"   value="${pageSize}" />
+                            <c:param name="page"   value="${pages}" />
+                        </c:url>
                     <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                </c:if>
+                    </c:if>
 
                 <!-- Next -->
                 <li class="page-item ${pageNow>=pages?'disabled':''}">
@@ -307,46 +307,72 @@
 </div>
 
 <style>
-    .card{border-radius:12px}
-    .table td,.table th{vertical-align:middle}
-    .table thead th{white-space:nowrap}
+    .card{
+        border-radius:12px
+    }
+    .table td,.table th{
+        vertical-align:middle
+    }
+    .table thead th{
+        white-space:nowrap
+    }
 </style>
 
 <script>
     window.addEventListener('DOMContentLoaded', () => {
         // Tự ẩn flash
         document.querySelectorAll('.alert').forEach(a => {
-            setTimeout(() => { a.classList.add('fade'); a.style.opacity = 0; }, 1800);
+            setTimeout(() => {
+                a.classList.add('fade');
+                a.style.opacity = 0;
+            }, 1800);
             setTimeout(() => a.remove(), 2600);
         });
 
-        const form     = document.getElementById('shopFilter');
-        const ipQ      = document.getElementById('q');
-        const ipFrom   = document.getElementById('from');
-        const ipTo     = document.getElementById('to');
+        const form = document.getElementById('shopFilter');
+        const ipQ = document.getElementById('q');
+        const ipFrom = document.getElementById('from');
+        const ipTo = document.getElementById('to');
         const ipStatus = document.getElementById('status');
         const pageInput = document.getElementById('pageInput');
 
-        if (!form) return;
+        if (!form)
+            return;
 
         // Không submit khi nhấn Enter trong các ô filter (chỉ submit khi bấm Lọc)
         [ipQ, ipFrom, ipTo].forEach(el => {
-            if (!el) return;
-            el.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+            if (!el)
+                return;
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter')
+                    e.preventDefault();
+            });
         });
 
         // Submit nút Lọc: reset page=1
-        form.addEventListener('submit', () => { if (pageInput) pageInput.value = 1; });
+        form.addEventListener('submit', () => {
+            if (pageInput)
+                pageInput.value = 1;
+        });
 
         // Đổi trạng thái -> reset page=1 rồi submit
         if (ipStatus) {
-            ipStatus.addEventListener('change', () => { if (pageInput) pageInput.value = 1; form.submit(); });
+            ipStatus.addEventListener('change', () => {
+                if (pageInput)
+                    pageInput.value = 1;
+                form.submit();
+            });
         }
 
         // (tuỳ thích) đổi ngày -> reset page=1 & submit tự động
         [ipFrom, ipTo].forEach(el => {
-            if (!el) return;
-            el.addEventListener('change', () => { if (pageInput) pageInput.value = 1; form.submit(); });
+            if (!el)
+                return;
+            el.addEventListener('change', () => {
+                if (pageInput)
+                    pageInput.value = 1;
+                form.submit();
+            });
         });
     });
 </script>
