@@ -167,7 +167,7 @@
                                     Quản lý tài khoản
                                 </a>
                                 <c:if test="${showKycLink}">
-                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${kycUrl}">
+                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${pageContext.request.contextPath}/kycRequest">
                                         Trở thành người bán
                                     </a>
                                 </c:if>
