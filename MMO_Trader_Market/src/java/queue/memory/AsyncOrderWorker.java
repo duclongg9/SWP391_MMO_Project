@@ -57,6 +57,9 @@ public class AsyncOrderWorker implements OrderWorker {
             try {
                 processMessage(msg);
                 return;
+            } catch (OrderProcessingException ex) {
+                LOGGER.log(ex.level(), "Đơn hàng " + msg.orderId() + " thất bại: " + ex.getMessage(), ex);
+                return;
             } catch (SQLException ex) {
                 LOGGER.log(Level.WARNING, "Lỗi xử lý đơn hàng {0} ở lần thử {1}", new Object[]{msg.orderId(), attempt + 1});
                 if (attempt >= RETRY_DELAYS.length - 1) {
@@ -90,62 +93,44 @@ public class AsyncOrderWorker implements OrderWorker {
                 // B2: Khóa ví của người mua ở mức hàng (SELECT ... FOR UPDATE) để cố định số dư.
                 Wallets wallet = walletsDAO.lockWalletForUpdate(connection, order.getBuyerId());
                 if (wallet == null || Boolean.FALSE.equals(wallet.getStatus())) {
-                    LOGGER.log(Level.WARNING, "Ví của người dùng {0} không khả dụng", order.getBuyerId());
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
+                    failWithReason(connection, order, "Ví của người dùng không khả dụng", Level.WARNING);
                 }
                 BigDecimal totalAmount = order.getTotalAmount();
                 if (totalAmount == null) {
-                    LOGGER.log(Level.SEVERE, "Đơn hàng {0} thiếu thông tin tổng tiền", order.getId());
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
+                    failWithReason(connection, order, "Đơn hàng thiếu thông tin tổng tiền", Level.SEVERE);
                 }
                 BigDecimal balanceBefore = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
                 if (balanceBefore.compareTo(totalAmount) < 0) {
-                    LOGGER.log(Level.INFO, "Ví người dùng {0} không đủ số dư cho đơn {1}",
-                            new Object[]{order.getBuyerId(), order.getId()});
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
+                    failWithReason(connection, order, "Ví người dùng không đủ số dư", Level.INFO);
                 }
                 // B3: Khóa tồn kho sản phẩm và credential để đảm bảo đủ hàng bàn giao.
-                String variantCode = msg.variantCode();
-                if (variantCode == null || variantCode.isBlank()) {
-                    variantCode = order.getVariantCode();
+                String resolvedVariantCode = msg.variantCode();
+                if (resolvedVariantCode == null || resolvedVariantCode.isBlank()) {
+                    resolvedVariantCode = order.getVariantCode();
                 }
+                String normalizedVariantCode = ProductVariantUtils.normalizeCode(resolvedVariantCode);
                 ProductDAO.ProductInventoryLock lockedProduct = productDAO.lockProductForUpdate(connection, msg.productId());
-                int inventory = lockedProduct.inventoryCount() == null ? 0 : lockedProduct.inventoryCount();
-                if (inventory < msg.qty()) {
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
-                }
                 List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                         lockedProduct.variantSchema(), lockedProduct.variantsJson());
+                int inventory = calculateAvailableInventory(lockedProduct, variants);
+                if (inventory < msg.qty()) {
+                    failWithReason(connection, order, "Tổng tồn kho sản phẩm không đủ", Level.WARNING);
+                }
                 ProductVariantOption variant = null;
-                if (variantCode != null && !variantCode.isBlank()) {
-                    String normalized = ProductVariantUtils.normalizeCode(variantCode);
-                    Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalized);
+                if (normalizedVariantCode != null) {
+                    Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedVariantCode);
                     if (variantOpt.isEmpty() || !variantOpt.get().isAvailable()) {
-                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                        connection.commit();
-                        return;
+                        failWithReason(connection, order, "Biến thể sản phẩm không khả dụng", Level.WARNING);
                     }
                     variant = variantOpt.get();
                     Integer variantInventory = variant.getInventoryCount();
                     if (variantInventory == null || variantInventory < msg.qty()) {
-                        orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                        connection.commit();
-                        return;
+                        failWithReason(connection, order, "Biến thể sản phẩm không đủ tồn kho", Level.WARNING);
                     }
                 }
-                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), variantCode);
+                List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection, msg.productId(), msg.qty(), normalizedVariantCode);
                 if (credentialIds.size() < msg.qty()) {
-                    orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.FAILED);
-                    connection.commit();
-                    return;
+                    failWithReason(connection, order, "Không đủ credential sẵn sàng để giao", Level.WARNING);
                 }
                 boolean decremented = productDAO.decrementInventory(connection, msg.productId(), msg.qty());
                 if (!decremented) {
@@ -202,5 +187,46 @@ public class AsyncOrderWorker implements OrderWorker {
         }
         OrderStatus current = OrderStatus.fromDatabaseValue(status);
         return current == OrderStatus.COMPLETED || current == OrderStatus.FAILED;
+    }
+
+    private int calculateAvailableInventory(ProductDAO.ProductInventoryLock lockedProduct,
+            List<ProductVariantOption> variants) {
+        Integer rawInventory = lockedProduct.inventoryCount();
+        if (rawInventory != null) {
+            return rawInventory;
+        }
+        if (!ProductVariantUtils.hasVariants(lockedProduct.variantSchema())) {
+            return 0;
+        }
+        return variants.stream()
+                .filter(option -> option != null && option.isAvailable() && option.getInventoryCount() != null)
+                .mapToInt(ProductVariantOption::getInventoryCount)
+                .sum();
+    }
+
+    /**
+     * Đánh dấu đơn hàng thất bại, commit giao dịch rồi ném ngoại lệ để {@link #handle(OrderMessage)} log chi tiết.
+     */
+    private void failWithReason(Connection connection, Orders order, String reason, Level level) throws SQLException {
+        orderDAO.updateStatus(connection, order.getId(), OrderStatus.FAILED);
+        connection.commit();
+        throw new OrderProcessingException(reason, level);
+    }
+
+    /**
+     * Ngoại lệ runtime dành riêng cho các tình huống nghiệp vụ khiến đơn hàng thất bại.
+     */
+    private static final class OrderProcessingException extends RuntimeException {
+
+        private final Level level;
+
+        OrderProcessingException(String message, Level level) {
+            super(message);
+            this.level = level == null ? Level.WARNING : level;
+        }
+
+        Level level() {
+            return level;
+        }
     }
 }
