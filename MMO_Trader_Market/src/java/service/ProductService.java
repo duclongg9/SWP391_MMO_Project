@@ -49,12 +49,18 @@ import java.util.Set;
  */
 public class ProductService {
 
+    // Số lượng sản phẩm nổi bật hiển thị trên trang chủ.
     private static final int DEFAULT_HOMEPAGE_LIMIT = 6;
+    // Số lượng sản phẩm tương tự hiển thị ở trang chi tiết.
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
+    // Đường dẫn gốc tới thư mục ảnh sản phẩm.
     private static final String PRODUCT_IMAGE_BASE_PATH = "/assets/images/products/";
 
+    // Bảng ánh xạ mã loại -> nhãn tiếng Việt.
     private static final Map<String, String> TYPE_LABELS;
+    // Bảng ánh xạ mã subtype -> nhãn tiếng Việt.
     private static final Map<String, String> SUBTYPE_LABELS;
+    // Danh sách cấu hình loại + subtype phục vụ dropdown.
     private static final List<ProductTypeOption> TYPE_OPTIONS;
 
     static {
@@ -93,11 +99,16 @@ public class ProductService {
         TYPE_OPTIONS = List.copyOf(options);
     }
 
+    // DAO sản phẩm phục vụ mọi truy vấn.
     private final ProductDAO productDAO = new ProductDAO();
+    // DAO credential để kiểm tra khả năng bàn giao.
     private final CredentialDAO credentialDAO = new CredentialDAO();
+    // Bộ chuyển đổi JSON -> object sử dụng thư viện Gson.
     private final Gson gson = new Gson();
+    // Kiểu danh sách chuỗi dùng khi parse gallery JSON.
     private final Type stringListType = new TypeToken<List<String>>() {
     }.getType();
+    // Kiểu danh sách biến thể dùng khi parse variants JSON.
     private final Type variantListType = new TypeToken<List<ProductVariantOption>>() {
     }.getType();
 

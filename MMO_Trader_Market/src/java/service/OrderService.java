@@ -41,16 +41,24 @@ import java.util.UUID;
  */
 public class OrderService {
 
+    // Danh sách trạng thái hợp lệ cho bộ lọc đơn hàng.
     private static final Set<String> ALLOWED_STATUSES = Set.of(
             "Pending", "Processing", "Completed", "Failed", "Refunded", "Disputed"
     );
+    // Bảng ánh xạ trạng thái sang nhãn tiếng Việt.
     private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
 
+    // DAO quản lý đơn hàng.
     private final OrderDAO orderDAO;
+    // DAO sản phẩm phục vụ kiểm tra tồn kho.
     private final ProductDAO productDAO;
+    // DAO mã bàn giao.
     private final CredentialDAO credentialDAO;
+    // DAO ví người dùng.
     private final WalletsDAO walletsDAO;
+    // DAO giao dịch ví để ghi nhận biến động số dư.
     private final WalletTransactionDAO walletTransactionDAO;
+    // Bộ phát sự kiện hàng đợi xử lý đơn hàng.
     private final OrderQueueProducer queueProducer;
 
     /**

@@ -13,8 +13,11 @@ import java.util.List;
  */
 public class ProductTypeOption {
 
+    // Mã loại sản phẩm cấp cao.
     private final String code;
+    // Nhãn hiển thị của loại sản phẩm.
     private final String label;
+    // Các loại con thuộc loại sản phẩm này.
     private final List<ProductSubtypeOption> subtypes;
 
     /**
@@ -27,14 +30,17 @@ public class ProductTypeOption {
         this.subtypes = List.copyOf(subtypes);
     }
 
+    // Lấy mã loại sản phẩm.
     public String getCode() {
         return code;
     }
 
+    // Lấy nhãn loại sản phẩm.
     public String getLabel() {
         return label;
     }
 
+    // Lấy danh sách loại con.
     public List<ProductSubtypeOption> getSubtypes() {
         return subtypes;
     }
