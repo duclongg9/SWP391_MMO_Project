@@ -15,6 +15,8 @@ import units.IdObfuscator;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -171,11 +173,20 @@ public class OrderController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
+        String rawCodeParam = request.getParameter("code");
         String statusParam = normalize(request.getParameter("status"));
+        String productParam = normalize(request.getParameter("product"));
+        LocalDate today = LocalDate.now();
+        LocalDate fromDate = normalizeDate(request.getParameter("fromDate"), today);
+        LocalDate toDate = normalizeDate(request.getParameter("toDate"), today);
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            fromDate = toDate;
+        }
+        Integer orderIdFilter = extractOrderId(rawCodeParam);
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
         int size = parsePositiveIntOrDefault(request.getParameter("size"), DEFAULT_PAGE_SIZE);
 
-        var result = orderService.getMyOrders(userId, statusParam, page, size);
+        var result = orderService.getMyOrders(userId, statusParam, orderIdFilter, productParam, fromDate, toDate, page, size);
         Map<String, String> statusLabels = orderService.getStatusLabels();
 
         request.setAttribute("items", result.getItems());
@@ -184,6 +195,11 @@ public class OrderController extends BaseController {
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("size", result.getPageSize());
         request.setAttribute("status", statusParam == null ? "" : statusParam);
+        request.setAttribute("orderCode", rawCodeParam == null ? "" : rawCodeParam.trim());
+        request.setAttribute("productName", productParam == null ? "" : productParam);
+        request.setAttribute("fromDate", fromDate == null ? "" : fromDate.toString());
+        request.setAttribute("toDate", toDate == null ? "" : toDate.toString());
+        request.setAttribute("todayIso", today.toString());
         request.setAttribute("statusLabels", statusLabels);
         request.setAttribute("statusOptions", statusLabels);
 
@@ -351,6 +367,39 @@ public class OrderController extends BaseController {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Integer extractOrderId(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        String digits = normalized.startsWith("#") ? normalized.substring(1) : normalized;
+        int parsed = parsePositiveInt(digits);
+        return parsed > 0 ? parsed : null;
+    }
+
+    private LocalDate normalizeDate(String value, LocalDate today) {
+        LocalDate parsed = parseDate(value);
+        if (parsed == null) {
+            return null;
+        }
+        return parsed.isAfter(today) ? today : parsed;
+    }
+
+    private LocalDate parseDate(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(trimmed);
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 
     private String extractTokenFromPath(HttpServletRequest request) {
