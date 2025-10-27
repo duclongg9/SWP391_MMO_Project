@@ -66,6 +66,11 @@
                 </p>
                 <p class="product-detail__shop">Gian hàng: <strong><c:out value="${product.shopName}" /></strong></p>
             </header>
+            <c:if test="${not empty purchaseError}">
+                <div class="alert alert--error" role="alert" aria-live="assertive">
+                    <c:out value="${purchaseError}" />
+                </div>
+            </c:if>
             <div class="product-detail__pricing" data-min-price="${priceMin}" data-max-price="${priceMax}">
                 <span>Giá hiện tại:</span>
                 <strong id="priceDisplay">
