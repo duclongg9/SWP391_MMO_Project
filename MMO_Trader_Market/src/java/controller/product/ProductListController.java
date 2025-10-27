@@ -33,6 +33,7 @@ public class ProductListController extends BaseController {
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_SIZE = 5;
+    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(5, 10, 20, 40);
 
     private final ProductService productService = new ProductService();
 
@@ -55,7 +56,8 @@ public class ProductListController extends BaseController {
         }
 
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
-        int size = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
+        int sizeCandidate = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
+        int size = PAGE_SIZE_OPTIONS.contains(sizeCandidate) ? sizeCandidate : DEFAULT_SIZE;
 
         String rawKeyword = request.getParameter("keyword");
         String normalizedKeyword = rawKeyword == null ? null : rawKeyword.trim();
@@ -82,6 +84,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("page", result.getPage());
         request.setAttribute("currentPage", result.getPage());
         request.setAttribute("pageSize", result.getSize());
+        request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("selectedType", normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
