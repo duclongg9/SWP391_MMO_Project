@@ -110,7 +110,7 @@
                                     <span class="variant-option__price">
                                         <fmt:formatNumber value="${variant.price}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
                                     </span>
-                                    <span class="variant-option__inventory">Tồn kho biến thể: <strong><c:out value="${variant.inventoryCount}" /></strong></span>
+                                    <span class="variant-option__inventory">Tồn kho: <strong><c:out value="${variant.inventoryCount}" /></strong></span>
                                 </span>
                             </label>
                         </c:forEach>
