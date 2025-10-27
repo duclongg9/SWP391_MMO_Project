@@ -112,7 +112,7 @@ public class HomepageController extends BaseController {
         entry.put("description", description);
         return entry;
     }
-    
+
     private boolean redirectAdminHomeIfPossible(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         try {

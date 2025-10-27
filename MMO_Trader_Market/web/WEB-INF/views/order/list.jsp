@@ -20,54 +20,54 @@
                 <c:when test="${not empty orders}">
                     <table class="table table--interactive">
                         <thead>
-                        <tr>
-                            <th>Mã</th>
-                            <th>Sản phẩm</th>
-                            <th>Giá</th>
-                            <th>Trạng thái</th>
-                            <th>Bàn giao</th>
-                            <th class="table__actions">Thao tác</th>
-                        </tr>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Sản phẩm</th>
+                                <th>Giá</th>
+                                <th>Trạng thái</th>
+                                <th>Bàn giao</th>
+                                <th class="table__actions">Thao tác</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <c:forEach var="order" items="${orders}">
-                            <c:set var="orderId" value="${order.id}" />
-                            <tr>
-                                <td>#<c:out value="${order.id}" /></td>
-                                <td>
-                                    <strong><c:out value="${order.product.name}" /></strong><br>
-                                    <small>Email nhận: <c:out value="${order.buyerEmail}" /></small>
-                                </td>
-                                <td>
-                                    <fmt:formatNumber value="${order.product.price}" type="number" minFractionDigits="0"
-                                                     maxFractionDigits="0" /> đ
-                                </td>
-                                <td>
-                                    <span class="${statusClasses[orderId]}">
-                                        <c:out value="${statusLabels[orderId]}" />
-                                    </span>
-                                </td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${not empty order.activationCode}">
-                                            <code><c:out value="${order.activationCode}" /></code><br>
-                                            <c:if test="${not empty order.deliveryLink}">
-                                                <a href="${fn:escapeXml(order.deliveryLink)}">Xem link</a>
-                                            </c:if>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <span class="badge badge--ghost">Đang xử lý</span>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </td>
-                                <td class="table__actions">
-                                    <c:url var="buyAgainUrl" value="/orders/buy">
-                                        <c:param name="productId" value="${order.product.id}" />
-                                    </c:url>
-                                    <a class="button button--ghost" href="${buyAgainUrl}">Mua lại</a>
-                                </td>
-                            </tr>
-                        </c:forEach>
+                            <c:forEach var="order" items="${orders}">
+                                <c:set var="orderId" value="${order.id}" />
+                                <tr>
+                                    <td>#<c:out value="${order.id}" /></td>
+                                    <td>
+                                        <strong><c:out value="${order.product.name}" /></strong><br>
+                                        <small>Email nhận: <c:out value="${order.buyerEmail}" /></small>
+                                    </td>
+                                    <td>
+                                        <fmt:formatNumber value="${order.product.price}" type="number" minFractionDigits="0"
+                                                          maxFractionDigits="0" /> đ
+                                    </td>
+                                    <td>
+                                        <span class="${statusClasses[orderId]}">
+                                            <c:out value="${statusLabels[orderId]}" />
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty order.activationCode}">
+                                                <code><c:out value="${order.activationCode}" /></code><br>
+                                                <c:if test="${not empty order.deliveryLink}">
+                                                    <a href="${fn:escapeXml(order.deliveryLink)}">Xem link</a>
+                                                </c:if>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge badge--ghost">Đang xử lý</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="table__actions">
+                                        <c:url var="buyAgainUrl" value="/orders/buy">
+                                            <c:param name="productId" value="${order.product.id}" />
+                                        </c:url>
+                                        <a class="button button--ghost" href="${buyAgainUrl}">Mua lại</a>
+                                    </td>
+                                </tr>
+                            </c:forEach>
                         </tbody>
                     </table>
                 </c:when>

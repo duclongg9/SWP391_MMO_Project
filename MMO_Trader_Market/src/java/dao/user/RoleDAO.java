@@ -48,10 +48,11 @@ public class RoleDAO {
         }
         return null;
     }
-      /**
+
+    /**
      * Tìm kiếm mã định danh (ID) của một vai trò dựa trên tên duy nhất của nó.
      */
-        public Integer getRoleIdByName(String roleName) {
+    public Integer getRoleIdByName(String roleName) {
         String sql = """
                      SELECT id FROM roles
                      WHERE name = ?

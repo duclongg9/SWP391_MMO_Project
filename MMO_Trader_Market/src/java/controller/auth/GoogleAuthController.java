@@ -20,9 +20,10 @@ import units.RoleHomeResolver;
 /**
  * Điều phối luồng "Đăng nhập bằng Google" cho người dùng khách và hiện hữu.
  * <p>
- * - Khởi tạo yêu cầu OAuth tới Google và lưu lại state để chống giả mạo.
- * - Nhận kết quả callback, ánh xạ hồ sơ Google sang tài khoản nội bộ và tạo phiên mới.
- * - Thông báo lỗi tiếng Việt cho các tình huống token không hợp lệ hoặc sự cố hệ thống.
+ * - Khởi tạo yêu cầu OAuth tới Google và lưu lại state để chống giả mạo. - Nhận
+ * kết quả callback, ánh xạ hồ sơ Google sang tài khoản nội bộ và tạo phiên mới.
+ * - Thông báo lỗi tiếng Việt cho các tình huống token không hợp lệ hoặc sự cố
+ * hệ thống.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -40,7 +41,8 @@ public class GoogleAuthController extends BaseController {
     /**
      * Xử lý cả hai bước của Google OAuth gồm khởi tạo yêu cầu và đón callback.
      *
-     * @param request  yêu cầu HTTP chứa tham số {@code code} và {@code state} (nếu có)
+     * @param request yêu cầu HTTP chứa tham số {@code code} và {@code state}
+     * (nếu có)
      * @param response phản hồi HTTP để điều hướng trình duyệt
      */
     @Override
@@ -56,9 +58,10 @@ public class GoogleAuthController extends BaseController {
     }
 
     /**
-     * Tạo state ngẫu nhiên, lưu vào phiên và chuyển hướng người dùng tới trang cho phép của Google.
+     * Tạo state ngẫu nhiên, lưu vào phiên và chuyển hướng người dùng tới trang
+     * cho phép của Google.
      *
-     * @param request  yêu cầu HTTP hiện tại để lấy phiên
+     * @param request yêu cầu HTTP hiện tại để lấy phiên
      * @param response phản hồi để điều hướng sang URL uỷ quyền của Google
      */
     private void startAuthentication(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -69,10 +72,12 @@ public class GoogleAuthController extends BaseController {
     }
 
     /**
-     * Kiểm tra state, đổi mã Google lấy thông tin người dùng và tạo phiên đăng nhập nội bộ.
+     * Kiểm tra state, đổi mã Google lấy thông tin người dùng và tạo phiên đăng
+     * nhập nội bộ.
      *
      * @param request yêu cầu HTTP chứa phiên hiện tại
-     * @param response phản hồi để điều hướng người dùng tới trang phù hợp theo vai trò
+     * @param response phản hồi để điều hướng người dùng tới trang phù hợp theo
+     * vai trò
      * @param code mã Google trả về sau khi người dùng cấp quyền
      * @param state giá trị state để kiểm chứng nguồn gốc callback
      */
@@ -117,7 +122,8 @@ public class GoogleAuthController extends BaseController {
     }
 
     /**
-     * Ghi nhận thông báo lỗi vào flash session và chuyển hướng về trang đăng nhập.
+     * Ghi nhận thông báo lỗi vào flash session và chuyển hướng về trang đăng
+     * nhập.
      *
      * @param request yêu cầu HTTP để đặt thông báo lỗi
      * @param response phản hồi HTTP dùng để chuyển hướng

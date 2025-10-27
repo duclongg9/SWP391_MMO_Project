@@ -1,13 +1,16 @@
 package model;
 
 public class WithdrawalRejectionReasons {
+
     private Integer id;
     private String reasonCode;
     private String description;
     private Boolean isActive;
+
     public Integer getId() {
         return id;
     }
+
     public void setId(Integer id) {
         this.id = id;
     }
@@ -22,18 +25,23 @@ public class WithdrawalRejectionReasons {
     public String getReasonCode() {
         return reasonCode;
     }
+
     public void setReasonCode(String reasonCode) {
         this.reasonCode = reasonCode;
     }
+
     public String getDescription() {
         return description;
     }
+
     public void setDescription(String description) {
         this.description = description;
     }
+
     public Boolean getIsActive() {
         return isActive;
     }
+
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
     }

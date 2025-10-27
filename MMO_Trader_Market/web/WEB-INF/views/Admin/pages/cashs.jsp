@@ -71,76 +71,76 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Loại</th>
-                        <th>User</th>
-                        <th>Số tiền</th>
-                        <th>Trạng thái</th>
-                        <th>Tạo lúc</th>
-                        <th>Xử lý lúc</th>
-                        <th class="text-center">Hành động</th>
-                    </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Loại</th>
+                            <th>User</th>
+                            <th>Số tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Tạo lúc</th>
+                            <th>Xử lý lúc</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
                     </thead>
 
                     <tbody>
-                    <c:forEach var="t" items="${txList}" varStatus="st">
-                        <tr>
-                            <td>${(pageNow-1)*pageSize + st.index + 1}</td>
-                            <td>
-                                <c:choose>
-                                    <c:when test="${t.type eq 'Deposit'}"><span class="badge bg-primary">Nạp tiền</span></c:when>
-                                    <c:otherwise><span class="badge bg-warning text-dark">Rút tiền</span></c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td class="fw-semibold">${fn:escapeXml(t.userName)}</td>
-                            <td><fmt:formatNumber value="${t.amount}" type="number"/></td>
-                            <td>
-                                <c:choose>
-                                    <c:when test="${t.status eq 'Completed'}"><span class="badge bg-success">Completed</span></c:when>
-                                    <c:when test="${t.status eq 'Pending'}"><span class="badge bg-secondary">Pending</span></c:when>
-                                    <c:otherwise><span class="badge bg-danger">${fn:escapeXml(t.status)}</span></c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td><fmt:formatDate value="${t.createdAt}" pattern="dd-MM-yyyy HH:mm"/></td>
-                            <td>
-                                <c:choose>
-                                    <c:when test="${t.processedAt != null}">
-                                        <fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/>
-                                    </c:when>
-                                    <c:otherwise>—</c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-primary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#txModal_${t.type}_${t.id}">
-                                    <i class="bi bi-eye"></i> Xem chi tiết
-                                </button>
-                            </td>
-                        </tr>
+                        <c:forEach var="t" items="${txList}" varStatus="st">
+                            <tr>
+                                <td>${(pageNow-1)*pageSize + st.index + 1}</td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${t.type eq 'Deposit'}"><span class="badge bg-primary">Nạp tiền</span></c:when>
+                                        <c:otherwise><span class="badge bg-warning text-dark">Rút tiền</span></c:otherwise>
+                                    </c:choose>
+                                </td>
+                                <td class="fw-semibold">${fn:escapeXml(t.userName)}</td>
+                                <td><fmt:formatNumber value="${t.amount}" type="number"/></td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${t.status eq 'Completed'}"><span class="badge bg-success">Completed</span></c:when>
+                                        <c:when test="${t.status eq 'Pending'}"><span class="badge bg-secondary">Pending</span></c:when>
+                                        <c:otherwise><span class="badge bg-danger">${fn:escapeXml(t.status)}</span></c:otherwise>
+                                    </c:choose>
+                                </td>
+                                <td><fmt:formatDate value="${t.createdAt}" pattern="dd-MM-yyyy HH:mm"/></td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${t.processedAt != null}">
+                                            <fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/>
+                                        </c:when>
+                                        <c:otherwise>—</c:otherwise>
+                                    </c:choose>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#txModal_${t.type}_${t.id}">
+                                        <i class="bi bi-eye"></i> Xem chi tiết
+                                    </button>
+                                </td>
+                            </tr>
 
-                        <!-- ===== Modal cho từng giao dịch ===== -->
+                            <!-- ===== Modal cho từng giao dịch ===== -->
                         <div class="modal fade" id="txModal_${t.type}_${t.id}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
                                 <div class="modal-content">
                                     <div class="modal-header bg-dark text-white">
                                         <h5 class="modal-title">
                                             Chi tiết <c:choose><c:when test="${t.type eq 'Deposit'}">nạp tiền</c:when><c:otherwise>rút tiền</c:otherwise></c:choose> #${t.id}
-                                        </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-
-                                    <div class="modal-body">
-                                        <!-- info chung -->
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-md-4">
-                                                <div class="text-muted small">Loại</div>
-                                                <div class="fw-semibold"><c:choose><c:when test="${t.type eq 'Deposit'}">Nạp tiền</c:when><c:otherwise>Rút tiền</c:otherwise></c:choose></div>
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                             </div>
-                                            <div class="col-md-4">
-                                                <div class="text-muted small">User</div>
-                                                <div class="fw-semibold">${fn:escapeXml(t.userName)} <span class="text-muted">(#${t.userId})</span></div>
+
+                                            <div class="modal-body">
+                                                <!-- info chung -->
+                                                <div class="row g-3 mb-3">
+                                                    <div class="col-md-4">
+                                                        <div class="text-muted small">Loại</div>
+                                                            <div class="fw-semibold"><c:choose><c:when test="${t.type eq 'Deposit'}">Nạp tiền</c:when><c:otherwise>Rút tiền</c:otherwise></c:choose></div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="text-muted small">User</div>
+                                                            <div class="fw-semibold">${fn:escapeXml(t.userName)} <span class="text-muted">(#${t.userId})</span></div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Số tiền</div>
@@ -150,11 +150,11 @@
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Trạng thái</div>
                                                 <span class="badge
-                          <c:choose>
-                            <c:when test="${t.status eq 'Completed'}">bg-success</c:when>
-                            <c:when test="${t.status eq 'Pending'}">bg-warning text-dark</c:when>
-                            <c:otherwise>bg-danger</c:otherwise>
-                          </c:choose>">${t.status}</span>
+                                                      <c:choose>
+                                                          <c:when test="${t.status eq 'Completed'}">bg-success</c:when>
+                                                          <c:when test="${t.status eq 'Pending'}">bg-warning text-dark</c:when>
+                                                          <c:otherwise>bg-danger</c:otherwise>
+                                                      </c:choose>">${t.status}</span>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Tạo lúc</div>
@@ -285,7 +285,7 @@
                             </c:url>
                             <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
                             <li class="page-item disabled"><span class="page-link">…</span></li>
-                        </c:if>
+                            </c:if>
 
                         <c:forEach var="i" begin="${start}" end="${end}">
                             <c:url var="ui" value="${cashsPath}">
@@ -303,16 +303,16 @@
 
                         <c:if test="${end < pages}">
                             <li class="page-item disabled"><span class="page-link">…</span></li>
-                            <c:url var="uLast" value="${cashsPath}">
-                                <c:param name="type"   value="${f_type}" />
-                                <c:param name="q"      value="${f_q}" />
-                                <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
-                                <c:param name="size"   value="${pageSize}" />
-                                <c:param name="page"   value="${pages}" />
-                            </c:url>
+                                <c:url var="uLast" value="${cashsPath}">
+                                    <c:param name="type"   value="${f_type}" />
+                                    <c:param name="q"      value="${f_q}" />
+                                    <c:param name="status" value="${f_status}" />
+                                    <c:param name="order"  value="${f_order}" />
+                                    <c:param name="size"   value="${pageSize}" />
+                                    <c:param name="page"   value="${pages}" />
+                                </c:url>
                             <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                        </c:if>
+                            </c:if>
 
                         <!-- Next -->
                         <li class="page-item ${pageNow>=pages?'disabled':''}">
@@ -340,13 +340,14 @@
     (function () {
         function htmlUnescape(s) {
             return s.replace(/&quot;|&#34;/g, '"')
-                .replace(/&apos;|&#39;/g, "'")
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&amp;/g, '&');
+                    .replace(/&apos;|&#39;/g, "'")
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&amp;/g, '&');
         }
         function renderBankInfo(el) {
-            if (!el) return;
+            if (!el)
+                return;
             var rawAttr = el.getAttribute('data-json') || '';
             var raw = htmlUnescape(rawAttr).trim();
             if (!raw) {
@@ -359,13 +360,13 @@
                     var key = String(k).replace(/_/g, ' ');
                     var val = (obj[k] == null ? '' : obj[k]);
                     html += '<dt class="col-sm-4 text-capitalize">' + key + '</dt>' +
-                        '<dd class="col-sm-8 fw-semibold">' + val + '</dd>';
+                            '<dd class="col-sm-8 fw-semibold">' + val + '</dd>';
                 });
                 el.innerHTML = html;
             } catch (e) {
                 el.innerHTML =
-                    '<dt class="col-sm-4">Raw</dt>' +
-                    '<dd class="col-sm-8"><code class="text-break">' + rawAttr + '</code></dd>';
+                        '<dt class="col-sm-4">Raw</dt>' +
+                        '<dd class="col-sm-8"><code class="text-break">' + rawAttr + '</code></dd>';
             }
         }
         document.addEventListener('DOMContentLoaded', function () {
@@ -382,9 +383,19 @@
         const pageInput = document.getElementById('pageInput');
         ['typeSelect', 'statusSelect', 'orderSelect'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
+            if (el)
+                el.addEventListener('change', () => {
+                    pageInput.value = 1;
+                    form.submit();
+                });
         });
         const q = form.querySelector('input[name="q"]');
-        if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') { pageInput.value = 1; form.submit(); }});
+        if (q)
+            q.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    pageInput.value = 1;
+                    form.submit();
+                }
+            });
     })();
 </script>

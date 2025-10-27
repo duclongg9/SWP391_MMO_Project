@@ -40,8 +40,7 @@ public class BuyerDAO extends BaseDAO {
     public Optional<Users> findActiveBuyerByEmail(String email) {
         final String sql = "SELECT id, role_id, email, name, avatar_url, hashed_password, google_id, status, created_at, updated_at "
                 + "FROM users WHERE email = ? AND status = 1 LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, email);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -68,8 +67,7 @@ public class BuyerDAO extends BaseDAO {
                 + "WHERE u.status = 1 AND r.name = ? "
                 + "GROUP BY u.id, u.role_id, u.email, u.name, u.avatar_url, u.hashed_password, u.google_id, u.status, u.created_at, u.updated_at "
                 + "ORDER BY COUNT(o.id) DESC, u.created_at ASC LIMIT 1";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, OrderStatus.COMPLETED.toDatabaseValue());
             statement.setString(2, BUYER_ROLE);
             try (ResultSet rs = statement.executeQuery()) {
@@ -130,8 +128,7 @@ public class BuyerDAO extends BaseDAO {
     public long countActiveBuyers() {
         final String sql = "SELECT COUNT(*) FROM users u "
                 + "JOIN roles r ON r.id = u.role_id WHERE u.status = 1 AND r.name = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, BUYER_ROLE);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -213,4 +210,3 @@ public class BuyerDAO extends BaseDAO {
         }
     }
 }
-
