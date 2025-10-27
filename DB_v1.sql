@@ -156,6 +156,11 @@ CREATE TABLE `wallet_transactions` (
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `orders`;
+-- Bảng lưu đơn hàng của người mua, phục vụ toàn bộ luồng mua - thanh toán - bàn giao.
+-- Cột `payment_transaction_id` liên kết sang bảng wallet_transactions giúp truy vết dòng tiền.
+-- `idempotency_key` lưu khóa duy nhất mà OrderService cấp phát để chống việc double-submit khi mua.
+-- `variant_code` cho phép worker xác định SKU cụ thể để trừ tồn kho và credential tương ứng.
+-- `hold_until` dùng cho cơ chế giữ hàng tạm thời (nếu có), worker sẽ tham chiếu để quyết định giải phóng.
 CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `buyer_id` int NOT NULL,
@@ -593,7 +598,7 @@ INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transac
  (3,2,5001,'Payout',250000.0000,200000.0000,450000.0000,'Doanh thu đơn #5001','2024-01-20 12:01:00'),
  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
 
--- Orders (ví dụ Completed + Disputed)
+-- Đơn hàng mẫu minh họa trạng thái Completed và Disputed
 INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
  (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
  (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');

@@ -6,7 +6,9 @@ import model.Products;
 import java.util.List;
 
 /**
- * Aggregated detail of an order with its product and credential list.
+ * Gói dữ liệu chi tiết của một đơn hàng bao gồm bản ghi {@link model.Orders}, thông tin sản phẩm và
+ * danh sách credential plaintext. Controller truyền record này xuống JSP {@code order/detail.jsp}
+ * để trình bày rõ luồng bàn giao cho người mua.
  */
 public record OrderDetailView(Orders order, Products product, List<String> credentials) {
 }

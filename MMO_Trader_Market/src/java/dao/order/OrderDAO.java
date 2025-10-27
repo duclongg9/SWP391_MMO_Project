@@ -21,10 +21,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * DAO thao tác với bảng {@code orders}, bao gồm tạo đơn, thống kê và hỗ trợ giao dịch.
+ * DAO thao tác với bảng {@code orders}, bao gồm tạo đơn, thống kê và hỗ trợ các giao dịch liên quan
+ * tới luồng tiền (gán transaction, ghi nhận inventory log). Tất cả truy vấn đều có chú thích tiếng Việt
+ * để người đọc biết dữ liệu nào được kéo lên phục vụ JSP hay worker xử lý hàng đợi.
  *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
+ * @author longpdhe171902
  */
 public class OrderDAO extends BaseDAO {
 
@@ -32,14 +33,20 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tạo đơn hàng ở trạng thái Pending với khóa idempotency.
+     * <p>Đây là điểm cắm đầu tiên để ghi nhận giao dịch vào DB trước khi worker trừ tiền:</p>
+     * <ol>
+     *     <li>Insert bản ghi đơn với trạng thái Pending, giữ lại variant để worker xử lý tồn kho chuẩn xác.</li>
+     *     <li>Lưu khóa idempotent để các lần submit lại (do reload) không tạo thêm đơn mới.</li>
+     *     <li>Trả về {@code order_id} cho controller redirect sang trang chi tiết.</li>
+     * </ol>
      *
-     * @param buyerId  mã người mua
-     * @param productId mã sản phẩm
-     * @param qty         số lượng đặt mua
-     * @param unitPrice   đơn giá tại thời điểm đặt
-     * @param total       tổng tiền
+     * @param buyerId    mã người mua
+     * @param productId  mã sản phẩm
+     * @param qty        số lượng đặt mua
+     * @param unitPrice  đơn giá tại thời điểm đặt
+     * @param total      tổng tiền
      * @param variantCode mã biến thể (có thể null)
-     * @param idemKey     khóa idempotent để tránh tạo trùng
+     * @param idemKey    khóa idempotent để tránh tạo trùng
      * @return mã đơn hàng vừa tạo
      */
     public int createPending(int buyerId, int productId, int qty, BigDecimal unitPrice, BigDecimal total,
@@ -72,6 +79,8 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Lấy chi tiết đơn hàng dành cho người mua sở hữu.
+     * <p>Câu truy vấn join trực tiếp bảng {@code products} để có đủ dữ liệu hiển thị trên JSP chi tiết
+     * (tên, mô tả, ảnh...). Controller nhận {@link OrderDetailView} và truyền thẳng xuống view.</p>
      *
      * @param orderId mã đơn hàng
      * @param userId  mã người dùng đăng nhập
@@ -105,6 +114,7 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Cập nhật trạng thái đơn hàng không ràng buộc giá trị.
+     * <p>Được sử dụng ở các luồng ngoại lệ (worker đánh dấu thất bại) nên không đặt thêm ràng buộc enum.</p>
      *
      * @param orderId mã đơn hàng
      * @param status  trạng thái mới ở dạng chuỗi
@@ -124,6 +134,8 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Cập nhật đơn hàng sang trạng thái Completed và gán giao dịch thanh toán.
+     * <p>Luồng worker sau khi trừ tiền sẽ gọi hàm này trong transaction để gắn reference tới bảng
+     * {@code wallet_transactions}. Nhờ vậy trang chi tiết có thể truy vết nguồn gốc dòng tiền.</p>
      *
      * @param orderId     mã đơn hàng
      * @param paymentTxId mã giao dịch thanh toán (có thể null)
@@ -147,6 +159,7 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tìm đơn hàng theo mã.
+     * <p>Được worker gọi trước khi xử lý để đọc trạng thái hiện tại, số tiền và thông tin variant.</p>
      *
      * @param orderId mã đơn hàng
      * @return {@link Optional} chứa đơn hàng nếu tồn tại
@@ -169,6 +182,7 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tìm đơn hàng thông qua khóa idempotency.
+     * <p>Dịch vụ gọi phương thức này để phát hiện các lần submit lặp lại từ client.</p>
      *
      * @param idemKey khóa idempotent
      * @return {@link Optional} chứa đơn hàng nếu có
@@ -191,6 +205,7 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Lấy danh sách đơn hàng của người mua có phân trang.
+     * <p>Câu truy vấn join sang bảng sản phẩm để lấy tên hiển thị trong bảng lịch sử.</p>
      *
      * @param buyerId mã người mua
      * @param status  trạng thái cần lọc (có thể null)
@@ -235,7 +250,7 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
-     * Đếm số đơn hàng của người mua theo trạng thái.
+     * Đếm số đơn hàng của người mua theo trạng thái để tính phân trang ở tầng dịch vụ.
      *
      * @param buyerId mã người mua
      * @param status  trạng thái cần lọc (có thể null)

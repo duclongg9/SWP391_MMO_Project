@@ -5,6 +5,11 @@
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+<%--
+    Trang xác nhận thanh toán: giả định controller đã đặt attribute "order" (DTO tổng hợp sản phẩm, email,
+    phương thức thanh toán). orderStatusLabel/orderStatusClass được tính từ OrderService.getStatusLabel và dùng
+    để hiển thị trạng thái rõ ràng cho người mua.
+--%>
 <main class="layout__content">
     <section class="panel">
         <div class="panel__header">
