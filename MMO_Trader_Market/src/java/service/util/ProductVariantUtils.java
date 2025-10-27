@@ -21,7 +21,8 @@ import java.util.Optional;
 public final class ProductVariantUtils {
 
     private static final Gson GSON = new Gson();
-    private static final Type VARIANT_LIST_TYPE = new TypeToken<List<ProductVariantOption>>() { }.getType();
+    private static final Type VARIANT_LIST_TYPE = new TypeToken<List<ProductVariantOption>>() {
+    }.getType();
 
     private ProductVariantUtils() {
     }
@@ -115,4 +116,3 @@ public final class ProductVariantUtils {
         return GSON.toJson(variants, VARIANT_LIST_TYPE);
     }
 }
-

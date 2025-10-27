@@ -20,9 +20,9 @@ import java.util.Set;
 /**
  * Điều phối luồng "Danh sách sản phẩm" trên marketplace công khai.
  * <p>
- * - Liệt kê sản phẩm theo từng loại chính với phân trang phía server.
- * - Hỗ trợ lọc theo nhiều phân loại con của cùng một loại sản phẩm.
- * - Chuẩn hóa tham số đầu vào để đảm bảo trải nghiệm duyệt sản phẩm mượt mà.
+ * - Liệt kê sản phẩm theo từng loại chính với phân trang phía server. - Hỗ trợ
+ * lọc theo nhiều phân loại con của cùng một loại sản phẩm. - Chuẩn hóa tham số
+ * đầu vào để đảm bảo trải nghiệm duyệt sản phẩm mượt mà.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867

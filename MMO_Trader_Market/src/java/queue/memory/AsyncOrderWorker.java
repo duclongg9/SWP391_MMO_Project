@@ -24,8 +24,10 @@ import java.util.logging.Logger;
 
 /**
  * Worker xử lý thông điệp đơn hàng theo cơ chế hàng đợi nội bộ.
- * <p>Thuật toán chính nằm trong {@link #processMessage(queue.OrderMessage)} và bao gồm 6 bước:
- * trích đơn -> khóa trạng thái -> khóa ví -> khóa tồn kho/credential -> trừ tiền + ghi giao dịch -> đánh dấu hoàn thành.</p>
+ * <p>
+ * Thuật toán chính nằm trong {@link #processMessage(queue.OrderMessage)} và bao
+ * gồm 6 bước: trích đơn -> khóa trạng thái -> khóa ví -> khóa tồn
+ * kho/credential -> trừ tiền + ghi giao dịch -> đánh dấu hoàn thành.</p>
  */
 public class AsyncOrderWorker implements OrderWorker {
 
@@ -48,8 +50,9 @@ public class AsyncOrderWorker implements OrderWorker {
     }
 
     /**
-     * Nhận thông điệp từ hàng đợi và xử lý với cơ chế retry tuyến tính (5s, 15s, 30s).
-     * Nếu hết số lần retry mà vẫn lỗi SQL sẽ đánh dấu đơn Failed để controller/JSP thông báo cho người mua.
+     * Nhận thông điệp từ hàng đợi và xử lý với cơ chế retry tuyến tính (5s,
+     * 15s, 30s). Nếu hết số lần retry mà vẫn lỗi SQL sẽ đánh dấu đơn Failed để
+     * controller/JSP thông báo cho người mua.
      */
     @Override
     public void handle(OrderMessage msg) {
@@ -187,7 +190,8 @@ public class AsyncOrderWorker implements OrderWorker {
     }
 
     /**
-     * Đảm bảo kho credential luôn >= tồn kho sản phẩm bằng cách tự động sinh credential ảo khi thiếu.
+     * Đảm bảo kho credential luôn >= tồn kho sản phẩm bằng cách tự động sinh
+     * credential ảo khi thiếu.
      */
     private void ensureCredentialPool(Connection connection, OrderProcessingContext context) throws SQLException {
         int targetInventory = context.variantInventory() != null
@@ -222,7 +226,8 @@ public class AsyncOrderWorker implements OrderWorker {
     }
 
     /**
-     * Cập nhật tồn kho tổng, tồn kho biến thể (nếu có) và bàn giao credential cho khách hàng.
+     * Cập nhật tồn kho tổng, tồn kho biến thể (nếu có) và bàn giao credential
+     * cho khách hàng.
      */
     private void finalizeFulfillment(Connection connection, OrderProcessingContext context) throws SQLException {
         boolean decremented = productDAO.decrementInventory(connection, context.message().productId(), context.message().qty());
@@ -277,7 +282,8 @@ public class AsyncOrderWorker implements OrderWorker {
     }
 
     /**
-     * Đánh dấu đơn hàng thất bại, commit giao dịch rồi ném ngoại lệ để {@link #handle(OrderMessage)} log chi tiết.
+     * Đánh dấu đơn hàng thất bại, commit giao dịch rồi ném ngoại lệ để
+     * {@link #handle(OrderMessage)} log chi tiết.
      */
     private void failWithReason(Connection connection, Orders order, String reason, Level level) throws SQLException {
         orderDAO.updateStatus(connection, order.getId(), OrderStatus.FAILED);
@@ -286,7 +292,8 @@ public class AsyncOrderWorker implements OrderWorker {
     }
 
     /**
-     * Ngoại lệ runtime dành riêng cho các tình huống nghiệp vụ khiến đơn hàng thất bại.
+     * Ngoại lệ runtime dành riêng cho các tình huống nghiệp vụ khiến đơn hàng
+     * thất bại.
      */
     private static final class OrderProcessingException extends RuntimeException {
 

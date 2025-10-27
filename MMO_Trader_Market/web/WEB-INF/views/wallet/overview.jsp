@@ -70,22 +70,22 @@
                 <c:otherwise>
                     <table class="table table--interactive">
                         <thead>
-                        <tr>
-                            <th>Nội dung</th>
-                            <th>Số tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Thời gian</th>
-                        </tr>
+                            <tr>
+                                <th>Nội dung</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Thời gian</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <c:forEach var="transaction" items="${transactions}">
-                            <tr>
-                                <td><c:out value="${transaction.title}" /></td>
-                                <td><strong><c:out value="${transaction.amount}" /></strong></td>
-                                <td><span class="badge"><c:out value="${transaction.status}" /></span></td>
-                                <td><c:out value="${transaction.time}" /></td>
-                            </tr>
-                        </c:forEach>
+                            <c:forEach var="transaction" items="${transactions}">
+                                <tr>
+                                    <td><c:out value="${transaction.title}" /></td>
+                                    <td><strong><c:out value="${transaction.amount}" /></strong></td>
+                                    <td><span class="badge"><c:out value="${transaction.status}" /></span></td>
+                                    <td><c:out value="${transaction.time}" /></td>
+                                </tr>
+                            </c:forEach>
                         </tbody>
                     </table>
                 </c:otherwise>

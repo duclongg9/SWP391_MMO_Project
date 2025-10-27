@@ -17,10 +17,10 @@
                     <c:set var="mainImage" value="${galleryImages[0]}" />
                     <c:choose>
                         <c:when test="${fn:startsWith(mainImage, 'http://')
-                            or fn:startsWith(mainImage, 'https://')
-                            or fn:startsWith(mainImage, '//')
-                            or fn:startsWith(mainImage, 'data:')
-                            or fn:startsWith(mainImage, cPath)}">
+                                        or fn:startsWith(mainImage, 'https://')
+                                        or fn:startsWith(mainImage, '//')
+                                        or fn:startsWith(mainImage, 'data:')
+                                        or fn:startsWith(mainImage, cPath)}">
                             <c:set var="mainImageUrl" value="${mainImage}" />
                         </c:when>
                         <c:otherwise>
@@ -36,10 +36,10 @@
                                 <c:set var="thumbnailSource" value="${image}" />
                                 <c:choose>
                                     <c:when test="${fn:startsWith(thumbnailSource, 'http://')
-                                        or fn:startsWith(thumbnailSource, 'https://')
-                                        or fn:startsWith(thumbnailSource, '//')
-                                        or fn:startsWith(thumbnailSource, 'data:')
-                                        or fn:startsWith(thumbnailSource, cPath)}">
+                                                    or fn:startsWith(thumbnailSource, 'https://')
+                                                    or fn:startsWith(thumbnailSource, '//')
+                                                    or fn:startsWith(thumbnailSource, 'data:')
+                                                    or fn:startsWith(thumbnailSource, cPath)}">
                                         <c:set var="thumbnailUrl" value="${thumbnailSource}" />
                                     </c:when>
                                     <c:otherwise>
@@ -109,14 +109,14 @@
                     <label class="product-detail__label" for="qty">Số lượng</label>
                     <input class="product-detail__input" type="number" id="qty" name="qty" min="1" max="${product.inventoryCount != null ? product.inventoryCount : 1}" value="1"
                            <c:if test="${not canBuy}">disabled</c:if> />
-                </div>
+                    </div>
                 <c:choose>
                     <c:when test="${canBuy}">
                         <button class="button button--primary" id="buyButton" type="submit">Mua ngay</button>
                     </c:when>
                     <c:when test="${not isAuthenticated}">
                         <!--<a class="button button--primary" href="${cPath}/login.jsp">Đăng nhập để mua hàng</a>-->
-                                                <c:url var="loginUrl" value="/auth" />
+                        <c:url var="loginUrl" value="/auth" />
                         <a class="button button--primary" href="${loginUrl}">Đăng nhập để mua hàng</a>
                     </c:when>
                     <c:otherwise>
@@ -140,88 +140,88 @@
             </c:otherwise>
         </c:choose>
     </section>
-<c:if test="${not empty similarProducts}">
-  <section class="product-detail__related">
-    <h3>Sản phẩm tương tự</h3>
+    <c:if test="${not empty similarProducts}">
+        <section class="product-detail__related">
+            <h3>Sản phẩm tương tự</h3>
 
-    <div class="product-grid product-grid--compact">
-      <c:forEach var="item" items="${similarProducts}">
-        <article class="product-card">
-          <!-- MEDIA -->
-          <div class="product-card__media">
-            <c:choose>
-              <c:when test="${not empty item.primaryImageUrl}">
-                <c:set var="relatedImageSource" value="${item.primaryImageUrl}" />
-                <c:choose>
-                  <c:when test="${fn:startsWith(relatedImageSource, 'http://')
-                                 or fn:startsWith(relatedImageSource, 'https://')
-                                 or fn:startsWith(relatedImageSource, '//')
-                                 or fn:startsWith(relatedImageSource, 'data:')
-                                 or fn:startsWith(relatedImageSource, cPath)}">
-                    <c:set var="relatedImageUrl" value="${relatedImageSource}" />
-                  </c:when>
-                  <c:otherwise>
-                    <c:url var="relatedImageUrl" value="${relatedImageSource}" />
-                  </c:otherwise>
-                </c:choose>
-                <img class="product-card__img"
-                     src="${relatedImageUrl}"
-                     alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}"
-                     loading="lazy" />
-              </c:when>
-              <c:otherwise>
-                <div class="product-card__placeholder">Không có ảnh</div>
-              </c:otherwise>
-            </c:choose>
-          </div>
+            <div class="product-grid product-grid--compact">
+                <c:forEach var="item" items="${similarProducts}">
+                    <article class="product-card">
+                        <!-- MEDIA -->
+                        <div class="product-card__media">
+                            <c:choose>
+                                <c:when test="${not empty item.primaryImageUrl}">
+                                    <c:set var="relatedImageSource" value="${item.primaryImageUrl}" />
+                                    <c:choose>
+                                        <c:when test="${fn:startsWith(relatedImageSource, 'http://')
+                                                        or fn:startsWith(relatedImageSource, 'https://')
+                                                        or fn:startsWith(relatedImageSource, '//')
+                                                        or fn:startsWith(relatedImageSource, 'data:')
+                                                        or fn:startsWith(relatedImageSource, cPath)}">
+                                            <c:set var="relatedImageUrl" value="${relatedImageSource}" />
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:url var="relatedImageUrl" value="${relatedImageSource}" />
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <img class="product-card__img"
+                                         src="${relatedImageUrl}"
+                                         alt="Ảnh sản phẩm ${fn:escapeXml(item.name)}"
+                                         loading="lazy" />
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="product-card__placeholder">Không có ảnh</div>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
 
-          <!-- BODY -->
-          <div class="product-card__body">
-            <h4 class="product-card__title"><c:out value="${item.name}" /></h4>
-            <p class="product-card__meta">
-              <c:out value="${item.productSubtypeLabel}" /> • <c:out value="${item.shopName}" />
-            </p>
-            <p class="product-card__price">
-              <c:choose>
-                <c:when test="${item.minPrice eq item.maxPrice}">
-                  <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ"
-                                    minFractionDigits="0" maxFractionDigits="0" />
-                </c:when>
-                <c:otherwise>
-                  <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ"
-                                    minFractionDigits="0" maxFractionDigits="0" /> –
-                  <fmt:formatNumber value="${item.maxPrice}" type="currency" currencySymbol="đ"
-                                    minFractionDigits="0" maxFractionDigits="0" />
-                </c:otherwise>
-              </c:choose>
-            </p>
+                        <!-- BODY -->
+                        <div class="product-card__body">
+                            <h4 class="product-card__title"><c:out value="${item.name}" /></h4>
+                            <p class="product-card__meta">
+                                <c:out value="${item.productSubtypeLabel}" /> • <c:out value="${item.shopName}" />
+                            </p>
+                            <p class="product-card__price">
+                                <c:choose>
+                                    <c:when test="${item.minPrice eq item.maxPrice}">
+                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ"
+                                                          minFractionDigits="0" maxFractionDigits="0" />
+                                    </c:when>
+                                    <c:otherwise>
+                                        <fmt:formatNumber value="${item.minPrice}" type="currency" currencySymbol="đ"
+                                                          minFractionDigits="0" maxFractionDigits="0" /> –
+                                        <fmt:formatNumber value="${item.maxPrice}" type="currency" currencySymbol="đ"
+                                                          minFractionDigits="0" maxFractionDigits="0" />
+                                    </c:otherwise>
+                                </c:choose>
+                            </p>
 
-            <c:url var="relatedUrl" value="/product/detail/${item.encodedId}" />
-            <a class="button button--ghost product-card__cta" href="${relatedUrl}">Xem chi tiết</a>
-          </div>
-        </article>
-      </c:forEach>
-    </div>
-  </section>
-</c:if>
+                            <c:url var="relatedUrl" value="/product/detail/${item.encodedId}" />
+                            <a class="button button--ghost product-card__cta" href="${relatedUrl}">Xem chi tiết</a>
+                        </div>
+                    </article>
+                </c:forEach>
+            </div>
+        </section>
+    </c:if>
 
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
 <script>
-    (function() {
+    (function () {
         const priceDisplay = document.getElementById('priceDisplay');
         const inventoryDisplay = document.getElementById('inventoryDisplay');
         const qtyInput = document.getElementById('qty');
         const buyButton = document.getElementById('buyButton');
         const priceContainer = document.querySelector('.product-detail__pricing');
         const minPrice = priceContainer && priceContainer.dataset.minPrice
-            ? parseFloat(priceContainer.dataset.minPrice)
-            : 0;
+                ? parseFloat(priceContainer.dataset.minPrice)
+                : 0;
         const maxPrice = priceContainer && priceContainer.dataset.maxPrice
-            ? parseFloat(priceContainer.dataset.maxPrice)
-            : 0;
-        const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0, minimumFractionDigits: 0 });
+                ? parseFloat(priceContainer.dataset.maxPrice)
+                : 0;
+        const formatter = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND', maximumFractionDigits: 0, minimumFractionDigits: 0});
         const variantInputs = document.querySelectorAll('input[name="variantCode"]');
         const thumbnails = document.querySelectorAll('.product-detail__thumbnail');
         const mainImage = document.getElementById('mainImage');

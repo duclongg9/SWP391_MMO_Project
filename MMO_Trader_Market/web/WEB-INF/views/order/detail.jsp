@@ -121,13 +121,13 @@
                     <ul class="definition-list">
                         <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
                         <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
-                        <c:if test="${not empty order.variantCode}">
+                            <c:if test="${not empty order.variantCode}">
                             <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
-                        </c:if>
-                        <c:if test="${order.quantity ne null}">
+                            </c:if>
+                            <c:if test="${order.quantity ne null}">
                             <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
-                        </c:if>
-                        <c:if test="${order.unitPrice ne null}">
+                            </c:if>
+                            <c:if test="${order.unitPrice ne null}">
                             <li><span>Đơn giá:</span>
                                 <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
                             </li>
@@ -227,7 +227,7 @@
                                     <ul class="list">
                                         <c:forEach var="cred" items="${credentials}">
                                             <li><c:out value="${cred}" /></li>
-                                        </c:forEach>
+                                            </c:forEach>
                                     </ul>
                                 </c:when>
                                 <c:when test="${credentialsUnlocked and empty credentials}">

@@ -23,9 +23,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * <p>Dịch vụ tổng hợp dữ liệu cho trang chủ: sản phẩm nổi bật, shop hoạt động, thống kê marketplace.</p>
- * <p>Lớp này điều phối nhiều DAO (sản phẩm, shop, đơn hàng, tin nhắn) và {@link ProductService} để
- * chuẩn bị view model trước khi controller đẩy sang JSP.</p>
+ * <p>
+ * Dịch vụ tổng hợp dữ liệu cho trang chủ: sản phẩm nổi bật, shop hoạt động,
+ * thống kê marketplace.</p>
+ * <p>
+ * Lớp này điều phối nhiều DAO (sản phẩm, shop, đơn hàng, tin nhắn) và
+ * {@link ProductService} để chuẩn bị view model trước khi controller đẩy sang
+ * JSP.</p>
  *
  * @author longpdhe171902
  */
@@ -42,7 +46,8 @@ public class HomepageService {
     private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
     /**
-     * Lấy danh sách sản phẩm nổi bật từ {@link ProductService#getHomepageHighlights()}.
+     * Lấy danh sách sản phẩm nổi bật từ
+     * {@link ProductService#getHomepageHighlights()}.
      */
     public List<ProductSummaryView> loadFeaturedProducts() {
         return productService.getHomepageHighlights();
@@ -63,7 +68,8 @@ public class HomepageService {
     }
 
     /**
-     * Tổng hợp thống kê chung về marketplace: đơn hoàn tất, shop và buyer hoạt động.
+     * Tổng hợp thống kê chung về marketplace: đơn hoàn tất, shop và buyer hoạt
+     * động.
      */
     public MarketplaceSummary loadMarketplaceSummary() {
         long completedOrders = orderDAO.countByStatus(OrderStatus.COMPLETED);
@@ -103,7 +109,8 @@ public class HomepageService {
     }
 
     /**
-     * Dựng view model khách hàng tiêu biểu từ bản ghi {@link Users} kết hợp thống kê đơn hàng.
+     * Dựng view model khách hàng tiêu biểu từ bản ghi {@link Users} kết hợp
+     * thống kê đơn hàng.
      */
     private CustomerProfileView buildProfile(Users buyer) {
         long totalOrders = orderDAO.countByBuyer(buyer.getId());
@@ -122,7 +129,8 @@ public class HomepageService {
     }
 
     /**
-     * Chuyển đổi {@link Date} sang {@link LocalDate} để đồng nhất với các view khác.
+     * Chuyển đổi {@link Date} sang {@link LocalDate} để đồng nhất với các view
+     * khác.
      */
     private LocalDate toLocalDate(Date date) {
         if (date == null) {
@@ -138,4 +146,3 @@ public class HomepageService {
         return Math.round(value * 10.0) / 10.0;
     }
 }
-

@@ -97,10 +97,10 @@
                                         <c:set var="featuredImageSource" value="${product.primaryImageUrl}" />
                                         <c:choose>
                                             <c:when test="${fn:startsWith(featuredImageSource, 'http://')
-                                                or fn:startsWith(featuredImageSource, 'https://')
-                                                or fn:startsWith(featuredImageSource, '//')
-                                                or fn:startsWith(featuredImageSource, 'data:')
-                                                or fn:startsWith(featuredImageSource, cPath)}">
+                                                            or fn:startsWith(featuredImageSource, 'https://')
+                                                            or fn:startsWith(featuredImageSource, '//')
+                                                            or fn:startsWith(featuredImageSource, 'data:')
+                                                            or fn:startsWith(featuredImageSource, cPath)}">
                                                 <c:set var="featuredImageUrl" value="${featuredImageSource}" />
                                             </c:when>
                                             <c:otherwise>

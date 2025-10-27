@@ -28,11 +28,14 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * <p>Dịch vụ nghiệp vụ cho luồng mua hàng của người mua: kiểm tra tồn kho, xác minh số dư ví,
- * phát hành khóa idempotent, khởi tạo đơn chờ xử lý, phát thông điệp vào hàng đợi và cung cấp
- * dữ liệu cho các trang JSP lịch sử/chi tiết.</p>
- * <p>Mỗi phương thức trong lớp này đều mô tả rõ ràng luồng dữ liệu đi/đến các lớp DAO tương ứng
- * (OrderDAO, WalletsDAO, CredentialDAO) giúp người đọc nắm được cách dữ liệu di chuyển từ DB tới view.</p>
+ * <p>
+ * Dịch vụ nghiệp vụ cho luồng mua hàng của người mua: kiểm tra tồn kho, xác
+ * minh số dư ví, phát hành khóa idempotent, khởi tạo đơn chờ xử lý, phát thông
+ * điệp vào hàng đợi và cung cấp dữ liệu cho các trang JSP lịch sử/chi tiết.</p>
+ * <p>
+ * Mỗi phương thức trong lớp này đều mô tả rõ ràng luồng dữ liệu đi/đến các lớp
+ * DAO tương ứng (OrderDAO, WalletsDAO, CredentialDAO) giúp người đọc nắm được
+ * cách dữ liệu di chuyển từ DB tới view.</p>
  *
  * @author longpdhe171902
  */
@@ -49,6 +52,7 @@ public class OrderService {
     private final WalletsDAO walletsDAO;
     private final WalletTransactionDAO walletTransactionDAO;
     private final OrderQueueProducer queueProducer;
+
     /**
      * Khởi tạo dịch vụ với toàn bộ DAO mặc định, dùng cho môi trường sản xuất.
      */
@@ -58,12 +62,13 @@ public class OrderService {
     }
 
     /**
-     * Khởi tạo dịch vụ khi cần truyền sản phẩm và hàng đợi tùy chỉnh (phục vụ test).
+     * Khởi tạo dịch vụ khi cần truyền sản phẩm và hàng đợi tùy chỉnh (phục vụ
+     * test).
      *
-     * @param orderDAO        DAO quản lý bảng {@code orders}
-     * @param productDAO      DAO truy vấn sản phẩm
-     * @param credentialDAO   DAO kiểm tra mã bàn giao
-     * @param queueProducer   bộ phát sự kiện sang hàng đợi xử lý bất đồng bộ
+     * @param orderDAO DAO quản lý bảng {@code orders}
+     * @param productDAO DAO truy vấn sản phẩm
+     * @param credentialDAO DAO kiểm tra mã bàn giao
+     * @param queueProducer bộ phát sự kiện sang hàng đợi xử lý bất đồng bộ
      */
     public OrderService(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
             OrderQueueProducer queueProducer) {
@@ -73,12 +78,12 @@ public class OrderService {
     /**
      * Khởi tạo dịch vụ với toàn bộ thành phần cần thiết.
      *
-     * @param orderDAO              DAO quản lý đơn hàng
-     * @param productDAO            DAO quản lý sản phẩm
-     * @param credentialDAO         DAO kiểm tra mã bàn giao
-     * @param walletsDAO            DAO ví người dùng
-     * @param walletTransactionDAO  DAO giao dịch ví
-     * @param queueProducer         bộ phát sự kiện hàng đợi nội bộ
+     * @param orderDAO DAO quản lý đơn hàng
+     * @param productDAO DAO quản lý sản phẩm
+     * @param credentialDAO DAO kiểm tra mã bàn giao
+     * @param walletsDAO DAO ví người dùng
+     * @param walletTransactionDAO DAO giao dịch ví
+     * @param queueProducer bộ phát sự kiện hàng đợi nội bộ
      */
     public OrderService(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
             WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO, OrderQueueProducer queueProducer) {
@@ -95,9 +100,9 @@ public class OrderService {
     /**
      * Đặt đơn chờ xử lý với khóa idempotency ngẫu nhiên.
      *
-     * @param userId    mã người mua
+     * @param userId mã người mua
      * @param productId mã sản phẩm
-     * @param quantity  số lượng cần mua
+     * @param quantity số lượng cần mua
      * @return mã đơn hàng được tạo
      */
     public int placeOrderPending(int userId, int productId, int quantity) {
@@ -107,9 +112,9 @@ public class OrderService {
     /**
      * Đặt đơn chờ xử lý với khóa idempotency do phía client truyền lên.
      *
-     * @param userId         mã người mua
-     * @param productId      mã sản phẩm
-     * @param quantity       số lượng cần mua
+     * @param userId mã người mua
+     * @param productId mã sản phẩm
+     * @param quantity số lượng cần mua
      * @param idempotencyKey khóa chống tạo trùng
      * @return mã đơn hàng được tạo hoặc đơn có sẵn
      */
@@ -118,23 +123,33 @@ public class OrderService {
     }
 
     /**
-     * Đặt đơn chờ xử lý, kiểm tra tồn kho và số dư ví trước khi đẩy vào hàng đợi. Thuật toán tổng quát:
+     * Đặt đơn chờ xử lý, kiểm tra tồn kho và số dư ví trước khi đẩy vào hàng
+     * đợi. Thuật toán tổng quát:
      * <ol>
-     *     <li>Chuẩn hóa khóa idempotent và biến thể sản phẩm để tránh dữ liệu bẩn.</li>
-     *     <li>Kiểm tra xem khóa đã tồn tại chưa: nếu là đơn đang hoạt động -> trả về id để người dùng tiếp tục.
-     *     Nếu khóa thuộc tài khoản khác hoặc đơn cũ đã hoàn tất -> phát sinh khóa mới.</li>
-     *     <li>Tải sản phẩm và biến thể phù hợp từ DB (thông qua {@link ProductDAO}) để xác định tồn kho và giá.</li>
-     *     <li>Đối chiếu số lượng credential khả dụng bằng {@link CredentialDAO} nhằm đảm bảo có đủ dữ liệu bàn giao.</li>
-     *     <li>Đảm bảo ví người dùng đã tồn tại, hoạt động và đủ số dư bằng {@link WalletsDAO}.</li>
-     *     <li>Tạo bản ghi đơn hàng Pending, sau đó publish thông điệp vào hàng đợi nội bộ để worker tiếp tục xử lý.</li>
+     * <li>Chuẩn hóa khóa idempotent và biến thể sản phẩm để tránh dữ liệu
+     * bẩn.</li>
+     * <li>Kiểm tra xem khóa đã tồn tại chưa: nếu là đơn đang hoạt động -> trả
+     * về id để người dùng tiếp tục. Nếu khóa thuộc tài khoản khác hoặc đơn cũ
+     * đã hoàn tất -> phát sinh khóa mới.</li>
+     * <li>Tải sản phẩm và biến thể phù hợp từ DB (thông qua {@link ProductDAO})
+     * để xác định tồn kho và giá.</li>
+     * <li>Đối chiếu số lượng credential khả dụng bằng {@link CredentialDAO}
+     * nhằm đảm bảo có đủ dữ liệu bàn giao.</li>
+     * <li>Đảm bảo ví người dùng đã tồn tại, hoạt động và đủ số dư bằng
+     * {@link WalletsDAO}.</li>
+     * <li>Tạo bản ghi đơn hàng Pending, sau đó publish thông điệp vào hàng đợi
+     * nội bộ để worker tiếp tục xử lý.</li>
      * </ol>
-     * Hàng đợi tiếp tục luồng tiền bằng {@link queue.memory.AsyncOrderWorker} (trừ tiền, trừ tồn kho, giao credential).
+     * Hàng đợi tiếp tục luồng tiền bằng {@link queue.memory.AsyncOrderWorker}
+     * (trừ tiền, trừ tồn kho, giao credential).
      *
-     * @param userId         mã người mua
-     * @param productId      mã sản phẩm
-     * @param quantity       số lượng đặt mua
-     * @param variantCode    mã biến thể (có thể null, dùng để xác định SKU con nếu sản phẩm có nhiều lựa chọn)
-     * @param idempotencyKey khóa chống tạo trùng gửi từ client (ví dụ theo session/local storage)
+     * @param userId mã người mua
+     * @param productId mã sản phẩm
+     * @param quantity số lượng đặt mua
+     * @param variantCode mã biến thể (có thể null, dùng để xác định SKU con nếu
+     * sản phẩm có nhiều lựa chọn)
+     * @param idempotencyKey khóa chống tạo trùng gửi từ client (ví dụ theo
+     * session/local storage)
      * @return mã đơn hàng vừa tạo hoặc đơn đang xử lý tương ứng khóa
      */
     public int placeOrderPending(int userId, int productId, int quantity, String variantCode, String idempotencyKey) {
@@ -228,24 +243,27 @@ public class OrderService {
     }
 
     /**
-     * Lấy danh sách đơn hàng của người mua kèm phân trang và các bộ lọc nâng cao.
-     * Phương thức này là cầu nối từ Controller -> DAO:
+     * Lấy danh sách đơn hàng của người mua kèm phân trang và các bộ lọc nâng
+     * cao. Phương thức này là cầu nối từ Controller -> DAO:
      * <ol>
-     *     <li>Chuẩn hóa tham số trạng thái theo enum {@link OrderStatus}.</li>
-     *     <li>Tính tổng bản ghi bằng {@link OrderDAO#countByBuyer(int, String, Integer, String, LocalDate, LocalDate)}.</li>
-     *     <li>Tính toán trang hiện tại, offset -> gọi {@link OrderDAO#findByBuyerPaged}
-     *     với đầy đủ filter để lấy danh sách rút gọn.</li>
-     *     <li>Trả về {@link PaginatedResult} chứa dữ liệu và meta để JSP dựng bảng.</li>
+     * <li>Chuẩn hóa tham số trạng thái theo enum {@link OrderStatus}.</li>
+     * <li>Tính tổng bản ghi bằng
+     * {@link OrderDAO#countByBuyer(int, String, Integer, String, LocalDate, LocalDate)}.</li>
+     * <li>Tính toán trang hiện tại, offset -> gọi
+     * {@link OrderDAO#findByBuyerPaged} với đầy đủ filter để lấy danh sách rút
+     * gọn.</li>
+     * <li>Trả về {@link PaginatedResult} chứa dữ liệu và meta để JSP dựng
+     * bảng.</li>
      * </ol>
      *
-     * @param userId      mã người mua
-     * @param status      trạng thái cần lọc (chuỗi database)
-     * @param orderId     mã đơn cần tìm (có thể {@code null})
+     * @param userId mã người mua
+     * @param status trạng thái cần lọc (chuỗi database)
+     * @param orderId mã đơn cần tìm (có thể {@code null})
      * @param productName tên sản phẩm cần tìm (có thể {@code null})
-     * @param fromDate    ngày tạo bắt đầu (có thể {@code null})
-     * @param toDate      ngày tạo kết thúc (có thể {@code null})
-     * @param page        trang hiện tại (>=1)
-     * @param size        số bản ghi mỗi trang (>0)
+     * @param fromDate ngày tạo bắt đầu (có thể {@code null})
+     * @param toDate ngày tạo kết thúc (có thể {@code null})
+     * @param page trang hiện tại (>=1)
+     * @param size số bản ghi mỗi trang (>0)
      * @return đối tượng phân trang chứa danh sách đơn rút gọn
      */
     public PaginatedResult<OrderRow> getMyOrders(int userId, String status, Integer orderId, String productName,
@@ -266,15 +284,18 @@ public class OrderService {
 
     /**
      * Lấy chi tiết đơn hàng kèm thông tin bàn giao khi người mua truy cập.
-     * <p>Luồng dữ liệu:</p>
+     * <p>
+     * Luồng dữ liệu:</p>
      * <ol>
-     *     <li>{@link OrderDAO#findByIdForUser} join bảng {@code orders} + {@code products} để dựng {@link OrderDetailView}.</li>
-     *     <li>Nếu trạng thái đã Completed thì truy vấn credential plaintext để show cho khách.</li>
-     *     <li>Trả về Optional để controller render hoặc trả lỗi 404.</li>
+     * <li>{@link OrderDAO#findByIdForUser} join bảng {@code orders} +
+     * {@code products} để dựng {@link OrderDetailView}.</li>
+     * <li>Nếu trạng thái đã Completed thì truy vấn credential plaintext để show
+     * cho khách.</li>
+     * <li>Trả về Optional để controller render hoặc trả lỗi 404.</li>
      * </ol>
      *
      * @param orderId mã đơn hàng
-     * @param userId  mã người mua sở hữu
+     * @param userId mã người mua sở hữu
      * @return {@link Optional} chứa thông tin chi tiết nếu tìm thấy
      */
     public Optional<OrderDetailView> getDetail(int orderId, int userId) {
@@ -282,11 +303,13 @@ public class OrderService {
     }
 
     /**
-     * Lấy chi tiết đơn hàng và tùy chọn tải plaintext credential nếu người mua đã xác nhận mở khóa.
+     * Lấy chi tiết đơn hàng và tùy chọn tải plaintext credential nếu người mua
+     * đã xác nhận mở khóa.
      *
-     * @param orderId            mã đơn hàng
-     * @param userId             người sở hữu đơn
-     * @param includeCredentials {@code true} nếu đã có log mở khóa và cần trả plaintext về cho JSP
+     * @param orderId mã đơn hàng
+     * @param userId người sở hữu đơn
+     * @param includeCredentials {@code true} nếu đã có log mở khóa và cần trả
+     * plaintext về cho JSP
      * @return {@link Optional} chứa thông tin chi tiết nếu tìm thấy
      */
     public Optional<OrderDetailView> getDetail(int orderId, int userId, boolean includeCredentials) {
@@ -308,15 +331,21 @@ public class OrderService {
     }
 
     /**
-     * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext khi đơn đã hoàn thành.
-     * <p>Luồng xử lý:</p>
+     * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext
+     * khi đơn đã hoàn thành.
+     * <p>
+     * Luồng xử lý:</p>
      * <ol>
-     *     <li>Kiểm tra quyền sở hữu đơn hàng thông qua {@link OrderDAO#findByIdForUser(int, int)}.</li>
-     *     <li>Đảm bảo trạng thái đơn là Completed và đã có credential được worker gán.</li>
-     *     <li>Insert log vào bảng {@code credential_view_logs} trước khi trả về kết quả.</li>
+     * <li>Kiểm tra quyền sở hữu đơn hàng thông qua
+     * {@link OrderDAO#findByIdForUser(int, int)}.</li>
+     * <li>Đảm bảo trạng thái đơn là Completed và đã có credential được worker
+     * gán.</li>
+     * <li>Insert log vào bảng {@code credential_view_logs} trước khi trả về kết
+     * quả.</li>
      * </ol>
-     * Nếu bất kỳ bước nào thất bại (ví dụ log không ghi được) phương thức sẽ ném {@link IllegalStateException}
-     * để controller thông báo lỗi thay vì hiển thị thông tin nhạy cảm.
+     * Nếu bất kỳ bước nào thất bại (ví dụ log không ghi được) phương thức sẽ
+     * ném {@link IllegalStateException} để controller thông báo lỗi thay vì
+     * hiển thị thông tin nhạy cảm.
      */
     public CredentialUnlockResult unlockCredentials(int orderId, int userId, String viewerIp) {
         OrderDetailView detail = orderDAO.findByIdForUser(orderId, userId)
@@ -334,8 +363,8 @@ public class OrderService {
     }
 
     /**
-     * Trả về map trạng thái -> nhãn tiếng Việt phục vụ hiển thị.
-     * Controller và JSP dùng map này để tránh hard-code chuỗi trên view.
+     * Trả về map trạng thái -> nhãn tiếng Việt phục vụ hiển thị. Controller và
+     * JSP dùng map này để tránh hard-code chuỗi trên view.
      *
      * @return map không chỉnh sửa được, khóa là mã trạng thái database
      */
@@ -360,7 +389,8 @@ public class OrderService {
     }
 
     /**
-     * Chuẩn hóa trạng thái đầu vào (đầu chữ hoa, phần còn lại chữ thường) và kiểm tra hợp lệ.
+     * Chuẩn hóa trạng thái đầu vào (đầu chữ hoa, phần còn lại chữ thường) và
+     * kiểm tra hợp lệ.
      */
     private String normalizeStatus(String status) {
         if (status == null || status.isBlank()) {
@@ -393,8 +423,10 @@ public class OrderService {
     }
 
     /**
-     * Kết quả thao tác mở khóa credential, trả về cờ {@link #firstView()} để hiển thị thông điệp phù hợp.
+     * Kết quả thao tác mở khóa credential, trả về cờ {@link #firstView()} để
+     * hiển thị thông điệp phù hợp.
      */
     public record CredentialUnlockResult(boolean firstView) {
+
     }
 }

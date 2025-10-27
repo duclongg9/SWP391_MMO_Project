@@ -12,11 +12,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Ensures JDBC resources that are registered by the application are
- * released when the web application is stopped to prevent memory leaks.
+ * Ensures JDBC resources that are registered by the application are released
+ * when the web application is stopped to prevent memory leaks.
  */
 @WebListener
 public class ApplicationShutdownListener implements ServletContextListener {
+
     private static final Logger LOGGER = Logger.getLogger(ApplicationShutdownListener.class.getName());
 
     @Override

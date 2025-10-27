@@ -3,12 +3,13 @@ package units;
 import java.util.Locale;
 
 /**
- * Utility class that obfuscates numeric identifiers before exposing them to clients.
+ * Utility class that obfuscates numeric identifiers before exposing them to
+ * clients.
  * <p>
- * The implementation performs a reversible transformation consisting of bit shifting
- * and XOR with a private mask, then converts the result to a base36 string. The
- * transformation is deterministic so the same identifier always yields the same token
- * while keeping the raw value hidden from the URL.</p>
+ * The implementation performs a reversible transformation consisting of bit
+ * shifting and XOR with a private mask, then converts the result to a base36
+ * string. The transformation is deterministic so the same identifier always
+ * yields the same token while keeping the raw value hidden from the URL.</p>
  */
 public final class IdObfuscator {
 
@@ -40,7 +41,8 @@ public final class IdObfuscator {
      *
      * @param token encoded representation returned by {@link #encode(int)}
      * @return the original positive identifier
-     * @throws IllegalArgumentException if the token is null, malformed or cannot be decoded
+     * @throws IllegalArgumentException if the token is null, malformed or
+     * cannot be decoded
      */
     public static int decode(String token) {
         if (token == null) {
@@ -67,4 +69,3 @@ public final class IdObfuscator {
         return (int) id;
     }
 }
-

@@ -10,9 +10,11 @@ public class InventoryLogs {
     private Integer changeAmount;
     private String reason;
     private Date createdAt;
+
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -29,30 +31,39 @@ public class InventoryLogs {
     public Integer getProductId() {
         return productId;
     }
+
     public void setProductId(Integer productId) {
         this.productId = productId;
     }
+
     public Integer getRelatedOrderId() {
         return relatedOrderId;
     }
+
     public void setRelatedOrderId(Integer relatedOrderId) {
         this.relatedOrderId = relatedOrderId;
     }
+
     public Integer getChangeAmount() {
         return changeAmount;
     }
+
     public void setChangeAmount(Integer changeAmount) {
         this.changeAmount = changeAmount;
     }
+
     public String getReason() {
         return reason;
     }
+
     public void setReason(String reason) {
         this.reason = reason;
     }
+
     public Date getCreatedAt() {
         return createdAt;
     }
+
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }

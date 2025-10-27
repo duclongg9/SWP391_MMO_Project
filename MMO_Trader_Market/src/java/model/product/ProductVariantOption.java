@@ -9,9 +9,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * <p>Đại diện cho từng lựa chọn biến thể (SKU con) được parse từ cột {@code variants_json}.</p>
- * <p>Được {@link service.ProductService} dựng từ JSON của sản phẩm và truyền xuống JSP để hiển thị
- * dropdown lựa chọn. Thông tin tồn kho/giá tùy biến theo từng biến thể.</p>
+ * <p>
+ * Đại diện cho từng lựa chọn biến thể (SKU con) được parse từ cột
+ * {@code variants_json}.</p>
+ * <p>
+ * Được {@link service.ProductService} dựng từ JSON của sản phẩm và truyền xuống
+ * JSP để hiển thị dropdown lựa chọn. Thông tin tồn kho/giá tùy biến theo từng
+ * biến thể.</p>
  *
  * @author longpdhe171902
  */
@@ -34,9 +38,10 @@ public class ProductVariantOption {
     }
 
     /**
-     * Trả về map thuộc tính theo thứ tự ban đầu. Nếu JSON rỗng thì trả về {@link Collections#emptyMap()} để
-     * front-end không phải kiểm tra null. Khi có dữ liệu, tạo bản sao {@link LinkedHashMap} nhằm khóa thứ tự
-     * hiển thị trên giao diện.
+     * Trả về map thuộc tính theo thứ tự ban đầu. Nếu JSON rỗng thì trả về
+     * {@link Collections#emptyMap()} để front-end không phải kiểm tra null. Khi
+     * có dữ liệu, tạo bản sao {@link LinkedHashMap} nhằm khóa thứ tự hiển thị
+     * trên giao diện.
      */
     public Map<String, String> getAttributes() {
         if (attributes == null || attributes.isEmpty()) {
@@ -74,13 +79,13 @@ public class ProductVariantOption {
 
     @Override
     public String toString() {
-        return "ProductVariantOption{" +
-                "variantCode='" + variantCode + '\'' +
-                ", attributes=" + attributes +
-                ", price=" + price +
-                ", inventoryCount=" + inventoryCount +
-                ", status='" + status + '\'' +
-                '}';
+        return "ProductVariantOption{"
+                + "variantCode='" + variantCode + '\''
+                + ", attributes=" + attributes
+                + ", price=" + price
+                + ", inventoryCount=" + inventoryCount
+                + ", status='" + status + '\''
+                + '}';
     }
 
     @Override

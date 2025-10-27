@@ -101,7 +101,7 @@ public class Order implements Serializable {
      * Đánh dấu đơn đã hoàn thành và lưu thông tin bàn giao.
      *
      * @param activationCode mã kích hoạt chuyển cho người mua
-     * @param deliveryLink   đường dẫn tải sản phẩm (có thể null)
+     * @param deliveryLink đường dẫn tải sản phẩm (có thể null)
      */
     public void markCompleted(String activationCode, String deliveryLink) {
         this.status = OrderStatus.COMPLETED;
@@ -112,7 +112,8 @@ public class Order implements Serializable {
     /**
      * Đánh dấu đơn đang tranh chấp, giữ lại mã kích hoạt phục vụ đối soát.
      *
-     * @param activationCode mã kích hoạt hiển thị trong quá trình xử lý tranh chấp
+     * @param activationCode mã kích hoạt hiển thị trong quá trình xử lý tranh
+     * chấp
      */
     public void markDisputed(String activationCode) {
         this.status = OrderStatus.DISPUTED;

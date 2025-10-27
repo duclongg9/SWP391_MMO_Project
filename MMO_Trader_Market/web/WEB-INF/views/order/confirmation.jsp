@@ -31,7 +31,7 @@
                                 <dt>Giá</dt>
                                 <dd>
                                     <fmt:formatNumber value="${order.product.price}" type="number" minFractionDigits="0"
-                                                     maxFractionDigits="0" /> đ
+                                                      maxFractionDigits="0" /> đ
                                 </dd>
                             </div>
                             <div>
