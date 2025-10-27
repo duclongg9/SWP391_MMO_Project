@@ -4,6 +4,13 @@
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+<%--
+    Trang lịch sử đơn hàng.
+    Controller OrderController#showMyOrders truyền xuống các attribute:
+    - items: List<OrderRow> đã được OrderDAO map từ DB.
+    - statusLabels/statusOptions: Map trạng thái -> nhãn tiếng Việt cho cả bảng và select filter.
+    - total, page, totalPages, size: thông tin phân trang để render pagination.
+--%>
 <main class="layout__content">
     <section class="panel">
         <div class="panel__header">
@@ -31,6 +38,7 @@
         <div class="panel__body">
             <c:choose>
                 <c:when test="${not empty items}">
+                    <%-- Bảng dữ liệu sử dụng trực tiếp OrderRow để giảm bước chuyển đổi ở JSP. --%>
                     <table class="table table--interactive">
                         <thead>
                         <tr>
@@ -69,6 +77,7 @@
                     <p class="empty">Bạn chưa có đơn hàng nào.</p>
                 </c:otherwise>
             </c:choose>
+            <%-- Phân trang dựa trên meta được OrderService tính toán (currentPage, totalPages, size). --%>
             <c:if test="${totalPages > 1}">
                 <nav class="pagination" aria-label="Phân trang đơn hàng">
                     <c:forEach var="pageNumber" begin="1" end="${totalPages}">
