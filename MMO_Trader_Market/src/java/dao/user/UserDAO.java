@@ -177,6 +177,26 @@ public class UserDAO extends BaseDAO {
         return null;
     }
 
+    public Users getUserByEmailAnyStatus(String email) {
+        final String sql = """
+                SELECT * FROM users
+                WHERE email = ?
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(UserDAO.class.getName())
+                    .log(Level.SEVERE, "Lỗi lấy user theo email bất kể trạng thái", e);
+        }
+        return null;
+    }
+
     /**
      * Tìm người dùng đã liên kết với Google theo mã định danh.
      *
@@ -234,16 +254,18 @@ public class UserDAO extends BaseDAO {
      * @return người dùng vừa tạo hoặc {@code null} nếu thất bại
      * @throws SQLException khi thao tác chèn lỗi
      */
-    public Users createUser(String email, String name, String hashedPassword, int roleId) throws SQLException {
+    public Users createUser(String email, String name, String hashedPassword, int roleId,
+            boolean active) throws SQLException {
         final String sql = """
                 INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
-                VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """;
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, roleId);
             ps.setString(2, email);
             ps.setString(3, name);
             ps.setString(4, hashedPassword);
+            ps.setBoolean(5, active);
             int affected = ps.executeUpdate();
             if (affected == 0) {
                 return null;
@@ -257,7 +279,7 @@ public class UserDAO extends BaseDAO {
                     created.setEmail(email);
                     created.setName(name);
                     created.setHashedPassword(hashedPassword);
-                    created.setStatus(true);
+                    created.setStatus(active);
                     return created;
                 }
             }
@@ -306,6 +328,18 @@ public class UserDAO extends BaseDAO {
                 }
             }
             return null;
+        }
+    }
+
+    public int activateUser(int userId) throws SQLException {
+        final String sql = """
+                UPDATE users
+                SET status = 1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """;
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate();
         }
     }
 
