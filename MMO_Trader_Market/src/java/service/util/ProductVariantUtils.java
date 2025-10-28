@@ -16,17 +16,20 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Utility helpers for working with product variants stored as JSON definitions.
+ * Tập hàm tiện ích xử lý dữ liệu biến thể sản phẩm được lưu dưới dạng JSON.
  */
 public final class ProductVariantUtils {
 
+    // Gson dùng chung để parse/ghi JSON biến thể.
     private static final Gson GSON = new Gson();
+    // Kiểu danh sách biến thể phục vụ quá trình parse JSON.
     private static final Type VARIANT_LIST_TYPE = new TypeToken<List<ProductVariantOption>>() {
     }.getType();
 
     private ProductVariantUtils() {
     }
 
+    // Chuẩn hóa mã biến thể về chữ thường, loại bỏ khoảng trắng thừa.
     public static String normalizeCode(String variantCode) {
         if (variantCode == null) {
             return null;
@@ -38,10 +41,12 @@ public final class ProductVariantUtils {
         return trimmed.toLowerCase(Locale.ROOT);
     }
 
+    // Kiểm tra xem sản phẩm có cấu hình biến thể hay không.
     public static boolean hasVariants(String variantSchema) {
         return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema);
     }
 
+    // Parse JSON biến thể thành danh sách đối tượng, đồng thời loại bỏ phần tử null.
     public static List<ProductVariantOption> parseVariants(String variantSchema, String variantsJson) {
         if (!hasVariants(variantSchema) || variantsJson == null || variantsJson.isBlank()) {
             return Collections.emptyList();
@@ -63,6 +68,7 @@ public final class ProductVariantUtils {
         }
     }
 
+    // Tìm biến thể theo mã đã chuẩn hóa.
     public static Optional<ProductVariantOption> findVariant(List<ProductVariantOption> variants, String normalizedCode) {
         if (normalizedCode == null || variants == null || variants.isEmpty()) {
             return Optional.empty();
@@ -79,6 +85,7 @@ public final class ProductVariantUtils {
                 .findFirst();
     }
 
+    // Xác định đơn giá áp dụng: ưu tiên giá của biến thể nếu có.
     public static BigDecimal resolveUnitPrice(Products product, Optional<ProductVariantOption> variantOpt) {
         if (variantOpt.isPresent()) {
             BigDecimal price = variantOpt.get().getPrice();
@@ -94,6 +101,7 @@ public final class ProductVariantUtils {
         return basePrice;
     }
 
+    // Trừ tồn kho biến thể sau khi đặt hàng, kèm kiểm tra an toàn.
     public static void decreaseInventory(ProductVariantOption variant, int quantity) {
         if (variant == null || quantity <= 0) {
             return;
@@ -109,6 +117,7 @@ public final class ProductVariantUtils {
         variant.setInventoryCount(Math.max(remaining, 0));
     }
 
+    // Chuyển danh sách biến thể thành JSON để lưu trữ.
     public static String toJson(List<ProductVariantOption> variants) {
         if (variants == null || variants.isEmpty()) {
             return "[]";

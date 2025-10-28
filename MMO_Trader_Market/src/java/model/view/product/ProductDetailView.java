@@ -20,26 +20,47 @@ import java.util.Objects;
  */
 public class ProductDetailView {
 
+    // ID sản phẩm nội bộ.
     private final int id;
+    // Tên sản phẩm.
     private final String name;
+    // Mô tả ngắn.
     private final String shortDescription;
+    // Mô tả chi tiết.
     private final String description;
+    // Ảnh đại diện chính.
     private final String primaryImageUrl;
+    // Danh sách ảnh thư viện.
     private final List<String> galleryImages;
+    // Mã loại sản phẩm.
     private final String productType;
+    // Nhãn hiển thị của loại sản phẩm.
     private final String productTypeLabel;
+    // Mã phân loại con.
     private final String productSubtype;
+    // Nhãn hiển thị của phân loại con.
     private final String productSubtypeLabel;
+    // Sơ đồ biến thể (NONE, JSON...)
     private final String variantSchema;
+    // Danh sách biến thể cụ thể.
     private final List<ProductVariantOption> variants;
+    // Giá thấp nhất trong các biến thể.
     private final BigDecimal minPrice;
+    // Giá cao nhất trong các biến thể.
     private final BigDecimal maxPrice;
+    // Tổng tồn kho.
     private final Integer inventoryCount;
+    // Tổng số lượng đã bán.
     private final Integer soldCount;
+    // Trạng thái hiển thị của sản phẩm.
     private final String status;
+    // ID shop sở hữu.
     private final int shopId;
+    // Tên shop.
     private final String shopName;
+    // Chủ shop.
     private final Integer shopOwnerId;
+    // Chuỗi JSON biến thể phục vụ client-side.
     private final String variantsJson;
 
     /**
@@ -84,86 +105,107 @@ public class ProductDetailView {
         return id;
     }
 
+    // Lấy tên sản phẩm.
     public String getName() {
         return name;
     }
 
+    // Lấy mô tả ngắn.
     public String getShortDescription() {
         return shortDescription;
     }
 
+    // Lấy mô tả chi tiết.
     public String getDescription() {
         return description;
     }
 
+    // Lấy ảnh đại diện.
     public String getPrimaryImageUrl() {
         return primaryImageUrl;
     }
 
+    // Lấy danh sách ảnh thư viện ở dạng bất biến.
     public List<String> getGalleryImages() {
         return Collections.unmodifiableList(galleryImages);
     }
 
+    // Lấy mã loại sản phẩm.
     public String getProductType() {
         return productType;
     }
 
+    // Lấy nhãn loại sản phẩm.
     public String getProductTypeLabel() {
         return productTypeLabel;
     }
 
+    // Lấy mã phân loại con.
     public String getProductSubtype() {
         return productSubtype;
     }
 
+    // Lấy nhãn phân loại con.
     public String getProductSubtypeLabel() {
         return productSubtypeLabel;
     }
 
+    // Lấy schema biến thể.
     public String getVariantSchema() {
         return variantSchema;
     }
 
+    // Lấy danh sách biến thể.
     public List<ProductVariantOption> getVariants() {
         return variants;
     }
 
+    // Lấy giá thấp nhất.
     public BigDecimal getMinPrice() {
         return minPrice;
     }
 
+    // Lấy giá cao nhất.
     public BigDecimal getMaxPrice() {
         return maxPrice;
     }
 
+    // Lấy tồn kho tổng.
     public Integer getInventoryCount() {
         return inventoryCount;
     }
 
+    // Lấy số lượng đã bán.
     public Integer getSoldCount() {
         return soldCount;
     }
 
+    // Lấy trạng thái sản phẩm.
     public String getStatus() {
         return status;
     }
 
+    // Lấy ID shop sở hữu.
     public int getShopId() {
         return shopId;
     }
 
+    // Lấy tên shop.
     public String getShopName() {
         return shopName;
     }
 
+    // Lấy ID chủ shop.
     public Integer getShopOwnerId() {
         return shopOwnerId;
     }
 
+    // Lấy dữ liệu JSON biến thể.
     public String getVariantsJson() {
         return variantsJson;
     }
 
+    // Sinh token mã hóa ID phục vụ router thân thiện.
     public String getEncodedId() {
         return IdObfuscator.encode(id);
     }
@@ -176,6 +218,7 @@ public class ProductDetailView {
         return variantSchema != null && !"NONE".equalsIgnoreCase(variantSchema) && !variants.isEmpty();
     }
 
+    // Alias hỗ trợ JSP kiểm tra nhanh.
     public boolean hasVariants() {
         return isHasVariants();
     }
@@ -183,6 +226,7 @@ public class ProductDetailView {
     /**
      * Kiểm tra xem sản phẩm có khoảng giá (biến thể ảnh hưởng giá) hay không.
      */
+    // Cho biết sản phẩm có khoảng giá khác nhau hay không.
     public boolean hasPriceRange() {
         if (minPrice == null || maxPrice == null) {
             return false;

@@ -13,18 +13,23 @@ import java.util.Objects;
  */
 public class ShopOption {
 
+    // ID của shop dùng trong bộ lọc.
     private final int id;
+    // Tên hiển thị của shop.
     private final String name;
 
+    // Khởi tạo lựa chọn shop, đảm bảo tên không null.
     public ShopOption(int id, String name) {
         this.id = id;
         this.name = Objects.requireNonNullElse(name, "");
     }
 
+    // Lấy ID shop.
     public int getId() {
         return id;
     }
 
+    // Lấy tên shop.
     public String getName() {
         return name;
     }

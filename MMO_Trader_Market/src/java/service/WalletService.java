@@ -11,11 +11,17 @@ import model.TransactionType;
 import model.WalletTransactions;
 import model.Wallets;
 
+/**
+ * Dịch vụ xử lý luồng xem ví và tra cứu lịch sử giao dịch của người dùng.
+ */
 public class WalletService {
 
+    // DAO ví dùng để lấy thông tin số dư và quyền sở hữu.
     private final WalletsDAO wdao;
+    // DAO giao dịch ví để truy vấn lịch sử và thống kê.
     private final WalletTransactionDAO wtdao;
 
+    // Khởi tạo với các DAO cụ thể (tiện cho việc mock trong test).
     public WalletService(WalletsDAO wdao, WalletTransactionDAO wtdao) {
         this.wdao = wdao;
         this.wtdao = wtdao;
