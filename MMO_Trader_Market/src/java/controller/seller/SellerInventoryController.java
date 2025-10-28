@@ -22,8 +22,6 @@ public class SellerInventoryController extends SellerBaseController {
         }
         request.setAttribute("pageTitle", "Cập nhật kho - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
-        request.setAttribute("headerTitle", "Cập nhật kho");
-        request.setAttribute("headerSubtitle", "Điều chỉnh tồn kho và trạng thái sản phẩm");
         request.setAttribute("headerModifier", "layout__header--split");
         forward(request, response, "seller/inventory");
     }

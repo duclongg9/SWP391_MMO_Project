@@ -2,8 +2,6 @@
 <%
     request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
     request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Thu nhập & doanh thu");
-    request.setAttribute("headerSubtitle", "Nắm bắt sức khỏe tài chính của cửa hàng trong nháy mắt");
     request.setAttribute("headerModifier", "layout__header--split");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>

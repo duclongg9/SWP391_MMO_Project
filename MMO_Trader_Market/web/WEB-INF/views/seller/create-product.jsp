@@ -1,9 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
-    request.setAttribute("pageTitle", "Tạo sản phẩm mới - Quản lý cửa hàng");
     request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Tạo sản phẩm mới");
-    request.setAttribute("headerSubtitle", "Điền thông tin cơ bản để đưa sản phẩm lên sàn");
     request.setAttribute("headerModifier", "layout__header--split");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
