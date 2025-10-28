@@ -37,6 +37,13 @@ public final class NavigationBuilder {
                     isActive(currentPath, "/orders")));
         }
 
+        if (isSellerRole(roleId)) {
+            Map<String, Object> sellerDropdown = buildSellerDropdown(contextPath, currentPath);
+            if (sellerDropdown != null) {
+                items.add(sellerDropdown);
+            }
+        }
+
         addBaseItems(items, request, contextPath, currentPath);
 
         return items;
@@ -108,6 +115,48 @@ public final class NavigationBuilder {
         return dropdown;
     }
 
+    private static Map<String, Object> buildSellerDropdown(String contextPath, String currentPath) {
+        List<Map<String, Object>> children = new ArrayList<>();
+
+        Map<String, Object> dashboardItem = new HashMap<>();
+        dashboardItem.put("href", contextPath + "/dashboard");
+        dashboardItem.put("text", "Dashboard");
+        dashboardItem.put("label", "Dashboard");
+        boolean dashboardActive = isActive(currentPath, "/dashboard");
+        dashboardItem.put("active", dashboardActive);
+        children.add(dashboardItem);
+
+        Map<String, Object> createProductItem = new HashMap<>();
+        createProductItem.put("href", contextPath + "/seller/products/create");
+        createProductItem.put("text", "Tạo sản phẩm");
+        createProductItem.put("label", "Tạo sản phẩm");
+        boolean createActive = isActive(currentPath, "/seller/products/create");
+        createProductItem.put("active", createActive);
+        children.add(createProductItem);
+
+        Map<String, Object> inventoryItem = new HashMap<>();
+        inventoryItem.put("href", contextPath + "/seller/inventory");
+        inventoryItem.put("text", "Cập nhật kho");
+        inventoryItem.put("label", "Cập nhật kho");
+        boolean inventoryActive = isActive(currentPath, "/seller/inventory");
+        inventoryItem.put("active", inventoryActive);
+        children.add(inventoryItem);
+
+        Map<String, Object> incomeItem = new HashMap<>();
+        incomeItem.put("href", contextPath + "/seller/income");
+        incomeItem.put("text", "Thu nhập");
+        incomeItem.put("label", "Thu nhập");
+        boolean incomeActive = isActive(currentPath, "/seller/income");
+        incomeItem.put("active", incomeActive);
+        children.add(incomeItem);
+
+        boolean active = dashboardActive || createActive || inventoryActive || incomeActive;
+        Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
+        dropdown.put("dropdown", true);
+        dropdown.put("children", children);
+        return dropdown;
+    }
+
     private static boolean isActive(String currentPath, String path) {
         if (path == null || path.isEmpty()) {
             return currentPath == null || currentPath.isEmpty() || "/".equals(currentPath);
@@ -126,5 +175,9 @@ public final class NavigationBuilder {
 
     private static boolean isAdminRole(Integer roleId) {
         return roleId != null && roleId == 1;
+    }
+
+    private static boolean isSellerRole(Integer roleId) {
+        return roleId != null && roleId == 2;
     }
 }
