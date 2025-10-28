@@ -71,8 +71,13 @@ public class RegisterController extends BaseController {
 
             HttpSession session = request.getSession();
             // Lưu thông báo và email để hiển thị sau khi chuyển hướng sang trang đăng nhập.
-            session.setAttribute("registerSuccess", "Tạo tài khoản thành công! Vui lòng đăng nhập.");
+            session.setAttribute("registerSuccess",
+                    "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.");
             session.setAttribute("newUserEmail", createdUser.getEmail());
+            session.setAttribute("pendingVerificationEmail", createdUser.getEmail());
+            session.setAttribute("showVerificationModal", Boolean.TRUE);
+            session.setAttribute("verificationNotice",
+                    "Chúng tôi đã gửi mã xác thực đến " + createdUser.getEmail() + ". Vui lòng kiểm tra hộp thư.");
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {

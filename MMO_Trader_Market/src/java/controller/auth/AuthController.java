@@ -4,6 +4,7 @@ import controller.BaseController;
 import dao.user.RememberMeTokenDAO;
 import dao.user.UserDAO;
 import model.Users;
+import service.InactiveAccountException;
 import service.RememberMeService;
 import service.UserService;
 import units.RoleHomeResolver;
@@ -36,20 +37,22 @@ public class AuthController extends BaseController {
 
     // Bộ ghi log phục vụ theo dõi các lỗi bất ngờ trong quá trình đăng nhập.
     private static final Logger LOGGER = Logger.getLogger(AuthController.class.getName());
-    // Khóa flash message thông báo đăng ký thành công sau khi chuyển hướng.
+    //thông báo đăng ký thành công sau khi chuyển hướng.
     private static final String FLASH_SUCCESS = "registerSuccess";
-    // Khóa flash message thông báo đổi mật khẩu thành công.
     private static final String FLASH_RESET_SUCCESS = "resetSuccess";
+    // Khóa flash message thông báo xác thực email thành công.
+    private static final String FLASH_VERIFICATION_SUCCESS = "verificationSuccess";
     // Khóa flash message dùng để điền sẵn email mới đăng ký.
     private static final String FLASH_EMAIL = "newUserEmail";
-    // Khóa flash message thông báo lỗi đến từ đăng nhập OAuth.
+    // thông báo lỗi đến từ đăng nhập OAuth.
     private static final String FLASH_ERROR = "oauthError";
+    // Khóa flash chứa email cần hiện modal xác thực.
+    private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
+    private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
+    private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
 
-    // DAO thao tác bảng Users để phục vụ quá trình xác thực.
     private final UserDAO userDAO = new UserDAO();
-    // Lớp dịch vụ xử lý nghiệp vụ đăng nhập, khóa tài khoản...
     private final UserService userService = new UserService(userDAO);
-    // Dịch vụ "Ghi nhớ đăng nhập" để sinh token và cookie tương ứng.
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
 
@@ -77,8 +80,12 @@ public class AuthController extends BaseController {
             // Chuyển thông báo tạm thời từ session xuống request để hiển thị.
             moveFlash(session, request, FLASH_SUCCESS, "success");
             moveFlash(session, request, FLASH_RESET_SUCCESS, "success");
+            moveFlash(session, request, FLASH_VERIFICATION_SUCCESS, "success");
             moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_EMAIL, "verificationEmail");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_MODAL, "showVerificationModal");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_NOTICE, "verificationNotice");
         }
 
         Cookie[] cookies = request.getCookies();
@@ -134,6 +141,25 @@ public class AuthController extends BaseController {
             }
             // Chuyển hướng đến trang chủ tương ứng với vai trò.
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
+        } catch (InactiveAccountException e) {
+            request.setAttribute("error", e.getMessage());
+            request.setAttribute("prefillEmail", normalizedEmail);
+            request.setAttribute("rememberMeChecked", rememberMe);
+            request.setAttribute("showVerificationModal", true);
+            request.setAttribute("verificationEmail", normalizedEmail);
+            request.setAttribute("verificationNotice",
+                    "Vui lòng nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
+            try {
+                userService.resendVerificationCode(normalizedEmail);
+                request.setAttribute("verificationNotice", "Chúng tôi đã gửi lại mã xác thực đến " + normalizedEmail + ".");
+            } catch (IllegalArgumentException | IllegalStateException resendEx) {
+                request.setAttribute("verificationError", resendEx.getMessage());
+            } catch (RuntimeException resendEx) {
+                LOGGER.log(Level.SEVERE, "Unable to resend verification code", resendEx);
+                request.setAttribute("verificationError",
+                        "Hệ thống không thể gửi lại mã xác thực lúc này. Vui lòng thử lại sau.");
+            }
+            forward(request, response, "auth/login");
         } catch (IllegalArgumentException | IllegalStateException e) {
             // Thông báo lỗi nghiệp vụ như sai mật khẩu, tài khoản bị khóa.
             request.setAttribute("error", e.getMessage());
