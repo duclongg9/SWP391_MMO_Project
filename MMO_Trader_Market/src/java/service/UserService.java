@@ -72,6 +72,7 @@ public class UserService {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
             String verificationCode = createAndStoreVerificationCode(created.getId());
+            // hàm xử lý khởi tạo mail tới tài khoản email thông qua hàm getMail và getName để lấy nội dung người dùng.
             sendVerificationEmail(created.getEmail(), created.getName(), verificationCode);
             return created;
         } catch (SQLException e) {
