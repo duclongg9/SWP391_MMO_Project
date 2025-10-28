@@ -54,6 +54,7 @@
                             <option value="SOCIAL" ${product.productType == 'SOCIAL' ? 'selected' : ''}>Mạng xã hội</option>
                             <option value="GAME" ${product.productType == 'GAME' ? 'selected' : ''}>Game</option>
                             <option value="SOFTWARE" ${product.productType == 'SOFTWARE' ? 'selected' : ''}>Phần mềm</option>
+                            <option value="OTHER" ${product.productType == 'OTHER' ? 'selected' : ''}>Khác</option>
                         </select>
                     </div>
                     
