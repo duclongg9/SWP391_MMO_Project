@@ -268,12 +268,12 @@ public class OrderDAO extends BaseDAO {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 int index = i + 1;
-                if (param instanceof Integer value) {
-                    statement.setInt(index, value);
-                } else if (param instanceof String value) {
-                    statement.setString(index, value);
-                } else if (param instanceof Timestamp value) {
-                    statement.setTimestamp(index, value);
+                if (param instanceof Integer) {
+                    statement.setInt(index, (Integer) param);
+                } else if (param instanceof String) {
+                    statement.setString(index, (String) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(index, (Timestamp) param);
                 } else {
                     statement.setObject(index, param);
                 }
@@ -335,12 +335,12 @@ public class OrderDAO extends BaseDAO {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 int index = i + 1;
-                if (param instanceof Integer value) {
-                    statement.setInt(index, value);
-                } else if (param instanceof String value) {
-                    statement.setString(index, value);
-                } else if (param instanceof Timestamp value) {
-                    statement.setTimestamp(index, value);
+                if (param instanceof Integer) {
+                    statement.setInt(index, (Integer) param);
+                } else if (param instanceof String) {
+                    statement.setString(index, (String) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(index, (Timestamp) param);
                 } else {
                     statement.setObject(index, param);
                 }
