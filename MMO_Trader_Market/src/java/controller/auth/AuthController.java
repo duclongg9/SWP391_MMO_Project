@@ -37,26 +37,22 @@ public class AuthController extends BaseController {
 
     // Bộ ghi log phục vụ theo dõi các lỗi bất ngờ trong quá trình đăng nhập.
     private static final Logger LOGGER = Logger.getLogger(AuthController.class.getName());
-    // Khóa flash message thông báo đăng ký thành công sau khi chuyển hướng.
+    //thông báo đăng ký thành công sau khi chuyển hướng.
     private static final String FLASH_SUCCESS = "registerSuccess";
-    // Khóa flash message thông báo đổi mật khẩu thành công.
     private static final String FLASH_RESET_SUCCESS = "resetSuccess";
     // Khóa flash message thông báo xác thực email thành công.
     private static final String FLASH_VERIFICATION_SUCCESS = "verificationSuccess";
     // Khóa flash message dùng để điền sẵn email mới đăng ký.
     private static final String FLASH_EMAIL = "newUserEmail";
-    // Khóa flash message thông báo lỗi đến từ đăng nhập OAuth.
+    // thông báo lỗi đến từ đăng nhập OAuth.
     private static final String FLASH_ERROR = "oauthError";
     // Khóa flash chứa email cần hiện modal xác thực.
     private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
     private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
     private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
 
-    // DAO thao tác bảng Users để phục vụ quá trình xác thực.
     private final UserDAO userDAO = new UserDAO();
-    // Lớp dịch vụ xử lý nghiệp vụ đăng nhập, khóa tài khoản...
     private final UserService userService = new UserService(userDAO);
-    // Dịch vụ "Ghi nhớ đăng nhập" để sinh token và cookie tương ứng.
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
 
