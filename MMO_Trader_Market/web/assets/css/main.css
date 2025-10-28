@@ -221,6 +221,10 @@ code {
     justify-self: end;
 }
 
+.site-header__dashboard {
+    white-space: nowrap;
+}
+
 .site-header__actions .menu {
     align-items: center;
 }
@@ -447,6 +451,70 @@ code {
     padding: 1.75rem 2rem;
     display: grid;
     gap: 1.25rem;
+}
+
+.panel__footer {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(15, 23, 42, 0.02);
+}
+
+.form-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.form-field {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.form-input {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface-color);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.form-input:focus-visible {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 91, 150, 0.15);
+}
+
+.form-input:disabled {
+    background: #f0f2f5;
+    color: var(--text-light);
+    cursor: not-allowed;
+}
+
+.form-note {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.guide-list {
+    margin: 0;
+    padding: 0 0 0 1.25rem;
+    display: grid;
+    gap: 0.5rem;
+    color: var(--text-light);
 }
 
 .stat-card {
