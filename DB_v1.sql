@@ -35,6 +35,17 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `email_verification_tokens`;
+CREATE TABLE `email_verification_tokens` (
+  `user_id` int NOT NULL,
+  `code` varchar(16) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uk_email_verification_tokens_code` (`code`),
+  CONSTRAINT `fk_email_verification_tokens_user`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `password_reset_tokens`;
 CREATE TABLE `password_reset_tokens` (
   `id` int NOT NULL AUTO_INCREMENT,
