@@ -52,7 +52,7 @@ public class AuthController extends BaseController {
     // Dịch vụ "Ghi nhớ đăng nhập" để sinh token và cookie tương ứng.
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
-    @Override
+
     // Xử lý các yêu cầu GET đến trang /auth: hiển thị form đăng nhập hoặc đăng xuất.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
