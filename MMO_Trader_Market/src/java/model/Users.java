@@ -35,7 +35,8 @@ public class Users {
                 + '}';
     }
 
-    public Users(Integer id, Integer roleId, String email, String name, String avatarUrl, String hashedPassword, String googleId, Boolean status, Date createdAt, Date updatedAt) {
+    public Users(Integer id, Integer roleId, String email, String name, String avatarUrl, String hashedPassword, String googleId,
+            Boolean status, Date createdAt, Date updatedAt) {
         this.id = id;
         this.roleId = roleId;
         this.email = email;
