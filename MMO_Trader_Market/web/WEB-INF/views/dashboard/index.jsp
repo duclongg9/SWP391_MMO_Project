@@ -4,8 +4,6 @@
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Bảng điều khiển");
-    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
     request.setAttribute("headerModifier", "layout__header--split");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
