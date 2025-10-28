@@ -35,10 +35,13 @@ import java.util.Map;
 @WebServlet(name = "HomepageController", urlPatterns = {"/home"})
 public class HomepageController extends BaseController {
 
+    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
 
+    // Dịch vụ tổng hợp dữ liệu cho trang chủ (sản phẩm, shop, thông báo...).
     private final HomepageService homepageService = new HomepageService();
 
+    // Đón yêu cầu GET tới trang chủ và chuẩn bị dữ liệu hiển thị.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -57,6 +60,7 @@ public class HomepageController extends BaseController {
         forward(request, response, "product/home");
     }
 
+    // Tải toàn bộ dữ liệu cần thiết cho trang chủ và gán vào request.
     private void populateHomepageData(HttpServletRequest request) {
         MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
         request.setAttribute("summary", summary);
@@ -83,6 +87,7 @@ public class HomepageController extends BaseController {
         request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
     }
 
+    // Xây dựng bộ ánh xạ trạng thái shop sang biểu tượng hiển thị nhanh.
     private Map<String, String> buildShopIconMap() {
         Map<String, String> icons = new HashMap<>();
         icons.put("Active", "🛍️");
@@ -91,6 +96,7 @@ public class HomepageController extends BaseController {
         return icons;
     }
 
+    // Chuẩn bị danh sách câu hỏi thường gặp hiển thị trên trang chủ.
     private List<Map<String, String>> buildFaqEntries() {
         List<Map<String, String>> faqs = new ArrayList<>();
 
@@ -106,6 +112,7 @@ public class HomepageController extends BaseController {
         return faqs;
     }
 
+    // Tạo một phần tử FAQ bao gồm tiêu đề và mô tả.
     private Map<String, String> createEntry(String title, String description) {
         Map<String, String> entry = new HashMap<>();
         entry.put("title", title);
@@ -113,6 +120,7 @@ public class HomepageController extends BaseController {
         return entry;
     }
 
+    // Cố gắng chuyển hướng admin về trang quản trị nếu họ truy cập nhầm trang chủ khách.
     private boolean redirectAdminHomeIfPossible(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         try {
@@ -124,6 +132,7 @@ public class HomepageController extends BaseController {
             }
             Object role = session.getAttribute("userRole");
             if (role instanceof Integer && (Integer) role == 1) {
+                // Vai trò admin => đưa về trang tổng quan dành riêng.
                 response.sendRedirect(request.getContextPath() + RoleHomeResolver.ADMIN_HOME);
                 return true;
             }
