@@ -1,5 +1,6 @@
 package service;
 
+import dao.user.EmailVerificationTokenDAO;
 import dao.user.PasswordResetTokenDAO;
 import dao.user.UserDAO;
 import model.PasswordResetToken;
@@ -8,6 +9,7 @@ import units.HashPassword;
 import units.SendMail;
 
 import java.security.SecureRandom;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -24,19 +26,29 @@ public class UserService {
     private static final int DEFAULT_ROLE_ID = 3;
     // Thời hạn hiệu lực của token đặt lại mật khẩu (phút).
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 30;
+    // Bộ sinh số ngẫu nhiên dùng cho token và mã xác thực email.
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     // DAO người dùng thao tác với bảng users.
     private final UserDAO userDAO;
     // DAO token đặt lại mật khẩu.
     private final PasswordResetTokenDAO passwordResetTokenDAO;
+    // DAO lưu trữ mã xác thực email.
+    private final EmailVerificationTokenDAO emailVerificationTokenDAO;
 
     public UserService(UserDAO userDAO) {
-        this(userDAO, new PasswordResetTokenDAO());
+        this(userDAO, new PasswordResetTokenDAO(), new EmailVerificationTokenDAO());
     }
 
     public UserService(UserDAO userDAO, PasswordResetTokenDAO passwordResetTokenDAO) {
+        this(userDAO, passwordResetTokenDAO, new EmailVerificationTokenDAO());
+    }
+
+    public UserService(UserDAO userDAO, PasswordResetTokenDAO passwordResetTokenDAO,
+            EmailVerificationTokenDAO emailVerificationTokenDAO) {
         this.userDAO = userDAO;
         this.passwordResetTokenDAO = passwordResetTokenDAO;
+        this.emailVerificationTokenDAO = emailVerificationTokenDAO;
     }
 
     /**
@@ -54,13 +66,18 @@ public class UserService {
         try {
             ensureEmailAvailable(normalizedEmail);
             String hashedPassword = HashPassword.toSHA1(rawPassword);
-            Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID);
+            Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID,
+                    false);
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
+            String verificationCode = createAndStoreVerificationCode(created.getId());
+            sendVerificationEmail(created.getEmail(), created.getName(), verificationCode);
             return created;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể gửi email xác thực tài khoản. Vui lòng thử lại sau.", e);
         }
     }
 
@@ -69,12 +86,9 @@ public class UserService {
         validateEmail(normalizedEmail);
         String rawPassword = requireText(password, "Vui lòng nhập mật khẩu");
 
-        Users user = userDAO.getUserByEmail(normalizedEmail);
+        Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
         if (user == null) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
-        }
-        if (Boolean.FALSE.equals(user.getStatus())) {
-            throw new IllegalStateException("Tài khoản của bạn đang bị khóa");
         }
         String hashed = user.getHashedPassword();
         if (hashed == null || hashed.isBlank()) {
@@ -82,6 +96,12 @@ public class UserService {
         }
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
+        }
+        if (Boolean.FALSE.equals(user.getStatus())) {
+            if (isEmailVerificationPending(user)) {
+                throw new InactiveAccountException("Tài khoản của bạn chưa được xác thực email", user);
+            }
+            throw new IllegalStateException("Tài khoản của bạn đang bị khóa");
         }
         return user;
     }
@@ -129,6 +149,57 @@ public class UserService {
             sendResetMail(user.getEmail(), user.getName(), resetLink);
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
+        }
+    }
+
+    public void resendVerificationCode(String email) {
+        String normalizedEmail = normalizeEmail(email);
+        validateEmail(normalizedEmail);
+        try {
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
+            if (user == null) {
+                throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
+            }
+            if (Boolean.TRUE.equals(user.getStatus())) {
+                return;
+            }
+            String code = emailVerificationTokenDAO.findCodeByUserId(user.getId());
+            if (code == null || code.isBlank()) {
+                throw new IllegalStateException("Không tìm thấy mã xác thực cho tài khoản này");
+            }
+            sendVerificationEmail(user.getEmail(), user.getName(), code);
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi gửi lại mã xác thực", e);
+        }
+    }
+
+    public boolean verifyEmailCode(String email, String code) {
+        String normalizedEmail = normalizeEmail(email);
+        validateEmail(normalizedEmail);
+        String normalizedCode = requireText(code, "Vui lòng nhập mã xác thực");
+        try {
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
+            if (user == null) {
+                throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
+            }
+            if (Boolean.TRUE.equals(user.getStatus())) {
+                return false;
+            }
+            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId());
+            if (storedCode == null || storedCode.isBlank()) {
+                throw new IllegalStateException("Tài khoản này không có mã xác thực hợp lệ");
+            }
+            if (!storedCode.equals(normalizedCode)) {
+                throw new IllegalArgumentException("Mã xác thực không chính xác");
+            }
+            int updated = userDAO.activateUser(user.getId());
+            if (updated < 1) {
+                throw new IllegalStateException("Không thể kích hoạt tài khoản lúc này. Vui lòng thử lại sau");
+            }
+            emailVerificationTokenDAO.deleteByUserId(user.getId());
+            return true;
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi xác thực email", e);
         }
     }
 
@@ -286,13 +357,13 @@ public class UserService {
 
     private String generateRandomSecret() {
         byte[] random = new byte[32];
-        new SecureRandom().nextBytes(random);
+        RANDOM.nextBytes(random);
         return UUID.nameUUIDFromBytes(random).toString();
     }
 
     private void sendResetMail(String email, String name, String resetLink) {
         String subject = "Đặt lại mật khẩu MMO Trader Market";
-        String displayName = name == null || name.isBlank() ? email : name;
+        String displayName = resolveDisplayName(email, name);
         String body = "Xin chào " + displayName + ",\n\n"
                 + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản MMO Trader Market. "
                 + "Vui lòng nhấn vào liên kết bên dưới trong vòng " + RESET_TOKEN_EXPIRY_MINUTES
@@ -304,6 +375,67 @@ public class UserService {
         } catch (Exception e) {
             throw new IllegalStateException("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
+    }
+
+    private void sendVerificationEmail(String email, String name, String code) {
+        String subject = "Xác thực tài khoản MMO Trader Market";
+        String displayName = resolveDisplayName(email, name);
+        String body = "Xin chào " + displayName + ",\n\n"
+                + "Cảm ơn bạn đã đăng ký tài khoản tại MMO Trader Market. "
+                + "Mã xác thực email của bạn là: " + code + "\n\n"
+                + "Vui lòng nhập mã này trên trang đăng nhập để kích hoạt tài khoản. "
+                + "Mã sẽ không thay đổi cho tới khi bạn kích hoạt thành công.\n\n"
+                + "Nếu bạn không yêu cầu tạo tài khoản, hãy bỏ qua email này.\n\n"
+                + "Trân trọng,\nĐội ngũ MMO Trader Market";
+        try {
+            SendMail.sendMail(email, subject, body);
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể gửi email xác thực", e);
+        }
+    }
+
+    private String resolveDisplayName(String email, String name) {
+        return name == null || name.isBlank() ? email : name;
+    }
+
+    private boolean isEmailVerificationPending(Users user) {
+        if (user == null || user.getId() == null || !Boolean.FALSE.equals(user.getStatus())) {
+            return false;
+        }
+        try {
+            return emailVerificationTokenDAO.hasToken(user.getId());
+        } catch (SQLException e) {
+            throw new RuntimeException("DB gặp sự cố khi kiểm tra mã xác thực email", e);
+        }
+    }
+
+    private String createAndStoreVerificationCode(int userId) throws SQLException {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            String code = generateVerificationCode();
+            try {
+                emailVerificationTokenDAO.createToken(userId, code);
+                return code;
+            } catch (SQLException e) {
+                if (isDuplicateCode(e) && attempt < 4) {
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw new SQLException("Không thể tạo mã xác thực email duy nhất");
+    }
+
+    private boolean isDuplicateCode(SQLException e) {
+        if (e instanceof SQLIntegrityConstraintViolationException) {
+            return true;
+        }
+        String sqlState = e.getSQLState();
+        return sqlState != null && sqlState.startsWith("23");
+    }
+
+    private String generateVerificationCode() {
+        int code = RANDOM.nextInt(900000) + 100000;
+        return String.valueOf(code);
     }
 
     private Users linkGoogleAccount(String email, String googleId) throws SQLException {
