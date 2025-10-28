@@ -30,6 +30,8 @@
 </c:url>
 <c:url value="/wallet" var="walletUrl" />
 <c:url value="/orders" var="ordersUrl" />
+<c:url value="/admin" var="adminDashboardUrl" />
+<c:url value="/dashboard" var="sellerDashboardUrl" />
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
 <c:set var="isAuthPage"
        value="${fn:contains(currentUri, '/auth')
@@ -142,6 +144,16 @@
 
         <!-- Account Actions -->
         <div class="site-header__actions">
+            <c:if test="${isLoggedIn and userRole eq 1}">
+                <a class="button button--ghost site-header__dashboard" href="${adminDashboardUrl}">
+                    Trang admin
+                </a>
+            </c:if>
+            <c:if test="${isLoggedIn and userRole eq 2}">
+                <a class="button button--ghost site-header__dashboard" href="${sellerDashboardUrl}">
+                    Xem dashboard
+                </a>
+            </c:if>
             <c:choose>
                 <c:when test="${isLoggedIn}">
                     <div class="menu menu--account" aria-label="Tài khoản người dùng">
@@ -155,6 +167,16 @@
                                 <span class="menu__dropdown-icon site-header__user-caret" aria-hidden="true">▾</span>
                             </button>
                             <div class="menu__dropdown-panel site-header__user-menu" role="menu">
+                                <c:if test="${userRole eq 1}">
+                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${adminDashboardUrl}">
+                                        Trang quản trị
+                                    </a>
+                                </c:if>
+                                <c:if test="${userRole eq 2}">
+                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${sellerDashboardUrl}">
+                                        Dashboard cửa hàng
+                                    </a>
+                                </c:if>
                                 <c:if test="${userRole eq 3}">
                                     <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${walletUrl}">
                                         Ví của tôi
