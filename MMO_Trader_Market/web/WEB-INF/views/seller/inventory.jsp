@@ -2,8 +2,6 @@
 <%
     request.setAttribute("pageTitle", "Cập nhật kho - Quản lý cửa hàng");
     request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Cập nhật kho hàng");
-    request.setAttribute("headerSubtitle", "Theo dõi nhanh trạng thái tồn kho của sản phẩm");
     request.setAttribute("headerModifier", "layout__header--split");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>

@@ -22,8 +22,6 @@ public class SellerCreateProductController extends SellerBaseController {
         }
         request.setAttribute("pageTitle", "Tạo sản phẩm mới - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
-        request.setAttribute("headerTitle", "Tạo sản phẩm");
-        request.setAttribute("headerSubtitle", "Đăng bán sản phẩm MMO nhanh chóng");
         request.setAttribute("headerModifier", "layout__header--split");
         forward(request, response, "seller/create-product");
     }

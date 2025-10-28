@@ -22,8 +22,6 @@ public class SellerIncomeController extends SellerBaseController {
         }
         request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
-        request.setAttribute("headerTitle", "Thu nhập");
-        request.setAttribute("headerSubtitle", "Theo dõi doanh thu và dòng tiền");
         request.setAttribute("headerModifier", "layout__header--split");
         forward(request, response, "seller/income");
     }

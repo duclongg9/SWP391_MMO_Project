@@ -149,11 +149,6 @@
                     Trang admin
                 </a>
             </c:if>
-            <c:if test="${isLoggedIn and userRole eq 2}">
-                <a class="button button--ghost site-header__dashboard" href="${sellerDashboardUrl}">
-                    Xem dashboard
-                </a>
-            </c:if>
             <c:choose>
                 <c:when test="${isLoggedIn}">
                     <div class="menu menu--account" aria-label="Tài khoản người dùng">
@@ -172,19 +167,12 @@
                                         Trang quản trị
                                     </a>
                                 </c:if>
-                                <c:if test="${userRole eq 2}">
-                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${sellerDashboardUrl}">
-                                        Dashboard cửa hàng
-                                    </a>
-                                </c:if>
-                                <c:if test="${userRole eq 3}">
-                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${walletUrl}">
-                                        Ví của tôi
-                                    </a>
-                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${ordersUrl}">
-                                        Đơn hàng
-                                    </a>
-                                </c:if>
+                                <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${walletUrl}">
+                                    Ví của tôi
+                                </a>
+                                <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${ordersUrl}">
+                                    Đơn hàng
+                                </a>
                                 <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${profileUrl}">
                                     Quản lý tài khoản
                                 </a>
