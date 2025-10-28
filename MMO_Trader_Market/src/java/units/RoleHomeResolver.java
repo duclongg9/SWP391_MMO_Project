@@ -5,7 +5,7 @@ import model.Users;
 public final class RoleHomeResolver {
 
     public static final String ADMIN_HOME = "/admin";
-    private static final String SELLER_HOME = "/products";
+    private static final String SELLER_HOME = "/dashboard";
     private static final String BUYER_HOME = "/home";
 
     private RoleHomeResolver() {
