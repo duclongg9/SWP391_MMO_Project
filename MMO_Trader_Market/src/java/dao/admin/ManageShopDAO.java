@@ -7,10 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ManageShopDAO {
-    private final Connection con;
-    public ManageShopDAO(Connection con) { this.con = con; }
 
-    /** Lấy danh sách tất cả cửa hàng kèm tên chủ sở hữu */
+    private final Connection con;
+
+    public ManageShopDAO(Connection con) {
+        this.con = con;
+    }
+
+    /**
+     * Lấy danh sách tất cả cửa hàng kèm tên chủ sở hữu
+     */
     public List<Shops> getAllShops() throws SQLException {
         List<Shops> list = new ArrayList<>();
 
@@ -23,8 +29,7 @@ public class ManageShopDAO {
             ORDER BY s.created_at DESC
         """;
 
-        try (PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Shops s = new Shops();
@@ -42,7 +47,9 @@ public class ManageShopDAO {
         return list;
     }
 
-    /** Cập nhật trạng thái Ban / Unban */
+    /**
+     * Cập nhật trạng thái Ban / Unban
+     */
     public boolean updateStatus(int id, String newStatus) throws SQLException {
         String sql = "UPDATE shops SET status=? WHERE id=?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {

@@ -30,36 +30,29 @@ public class KycRequests {
         return id;
     }
 
-
     public void setId(Integer id) {
         this.id = id;
     }
-
 
     public Integer getUserId() {
         return userId;
     }
 
-
     public void setUserId(Integer userId) {
         this.userId = userId;
     }
-
 
     public Integer getStatusId() {
         return statusId;
     }
 
-
     public void setStatusId(Integer statusId) {
         this.statusId = statusId;
     }
 
-
     public String getFrontImageUrl() {
         return frontImageUrl;
     }
-
 
     public void setFrontImageUrl(String frontImageUrl) {
         this.frontImageUrl = frontImageUrl;
@@ -73,16 +66,13 @@ public class KycRequests {
         this.backImageUrl = backImageUrl;
     }
 
-
     public String getSelfieImageUrl() {
         return selfieImageUrl;
     }
 
-
     public void setSelfieImageUrl(String selfieImageUrl) {
         this.selfieImageUrl = selfieImageUrl;
     }
-
 
     public String getIdNumber() {
         return idNumber;
@@ -101,45 +91,55 @@ public class KycRequests {
         this.adminFeedback = adminFeedback;
     }
 
-    public String getUserName() { return userName; }
-    public void setUserName(String userName) { this.userName = userName; }
+    public String getUserName() {
+        return userName;
+    }
 
-    public String getStatusName() { return statusName; }
-    public void setStatusName(String statusName) { this.statusName = statusName; }
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getStatusName() {
+        return statusName;
+    }
+
+    public void setStatusName(String statusName) {
+        this.statusName = statusName;
+    }
 
     public void setIdNumber(String idNumber) {
         this.idNumber = idNumber;
     }
 
-
     public Date getCreatedAt() {
         return createdAt;
     }
-
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
-
     public Date getReviewedAt() {
         return reviewedAt;
     }
-
 
     public void setReviewedAt(Date reviewedAt) {
         this.reviewedAt = reviewedAt;
     }
 
-
     public String getAdminFeedback() {
         return adminFeedback;
     }
 
-
     public void setAdminFeedback(String adminFeedback) {
         this.adminFeedback = adminFeedback;
     }
-    public String getUserEmail() { return userEmail; }
-    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
 }

@@ -151,7 +151,6 @@ public class WalletTransactionDAO {
                 ps.setDouble(6, minAmount);
             }
 
-
             if (maxAmount == null) {
                 ps.setNull(7, Types.DECIMAL);
                 ps.setNull(8, Types.DECIMAL);

@@ -10,7 +10,6 @@ public class Messages {
 
     private Integer senderId;
 
-
     private Date createdAt;
 
     private String content;
@@ -54,6 +53,7 @@ public class Messages {
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
+
     public String getContent() {
         return content;
     }
