@@ -109,7 +109,7 @@ public class BuyerDAO extends BaseDAO {
                         user.setRoleId(roleId);
                         user.setEmail(email);
                         user.setName(deriveDisplayName(email));
-                        user.setStatus(true);
+                        user.setStatus(1);
                         user.setCreatedAt(now);
                         user.setUpdatedAt(now);
                         return user;
@@ -153,7 +153,7 @@ public class BuyerDAO extends BaseDAO {
         user.setAvatarUrl(rs.getString("avatar_url"));
         user.setHashedPassword(rs.getString("hashed_password"));
         user.setGoogleId(rs.getString("google_id"));
-        user.setStatus(rs.getObject("status") == null ? null : rs.getBoolean("status"));
+        user.setStatus(rs.getObject("status") == null ? null : rs.getInt("status"));
         user.setCreatedAt(rs.getTimestamp("created_at"));
         user.setUpdatedAt(rs.getTimestamp("updated_at"));
         return user;
