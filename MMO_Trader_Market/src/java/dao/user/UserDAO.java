@@ -46,7 +46,7 @@ public class UserDAO extends BaseDAO {
         u.setHashedPassword(rs.getString(COL_HASHED_PWD));
         u.setGoogleId(rs.getString(COL_GOOGLE_ID));
         // TINYINT(1) -> boolean
-        u.setStatus(rs.getObject(COL_STATUS) == null ? null : rs.getBoolean(COL_STATUS));
+        u.setStatus(rs.getObject(COL_STATUS) == null ? null : rs.getInt(COL_STATUS));
         // Timestamp là subclass của java.util.Date, gán trực tiếp ok
         u.setCreatedAt(rs.getTimestamp(COL_CREATED_AT));
         u.setUpdatedAt(rs.getTimestamp(COL_UPDATED_AT));
@@ -152,10 +152,7 @@ public class UserDAO extends BaseDAO {
     }
 
     /**
-     * Tìm người dùng hoạt động theo email đăng ký.
-     *
-     * @param email email cần tìm
-     * @return người dùng tương ứng hoặc {@code null}
+     lấy người dùng theo email
      */
     public Users getUserByEmail(String email) {
         final String sql = """
@@ -176,18 +173,18 @@ public class UserDAO extends BaseDAO {
         }
         return null;
     }
-
+// tìm user theo email bất kể stt là gì
     public Users getUserByEmailAnyStatus(String email) {
         final String sql = """
                 SELECT * FROM users
                 WHERE email = ?
-                LIMIT 1
-                """;
+                LIMIT 1 
+                """;//chỉ lấy 1 dòng đầu tiên
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, email);
+            ps.setString(1, email); //ind tham số thứ nhất bằng biến email
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapRow(rs);
+                    return mapRow(rs); // có bản ghi trả về user
                 }
             }
         } catch (SQLException e) {
@@ -251,11 +248,12 @@ public class UserDAO extends BaseDAO {
      * @param name tên hiển thị
      * @param hashedPassword mật khẩu đã băm
      * @param roleId mã vai trò
+     * @param status goi ve trang thai nguoi dung.
      * @return người dùng vừa tạo hoặc {@code null} nếu thất bại
      * @throws SQLException khi thao tác chèn lỗi
      */
     public Users createUser(String email, String name, String hashedPassword, int roleId,
-            boolean active) throws SQLException {
+            int status) throws SQLException {
         final String sql = """
                 INSERT INTO users (role_id, email, name, hashed_password, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -265,7 +263,7 @@ public class UserDAO extends BaseDAO {
             ps.setString(2, email);
             ps.setString(3, name);
             ps.setString(4, hashedPassword);
-            ps.setBoolean(5, active);
+            ps.setInt(5, status);
             int affected = ps.executeUpdate();
             if (affected == 0) {
                 return null;
@@ -279,7 +277,7 @@ public class UserDAO extends BaseDAO {
                     created.setEmail(email);
                     created.setName(name);
                     created.setHashedPassword(hashedPassword);
-                    created.setStatus(active);
+                    created.setStatus(2);
                     return created;
                 }
             }
@@ -323,7 +321,7 @@ public class UserDAO extends BaseDAO {
                     created.setName(name);
                     created.setGoogleId(googleId);
                     created.setHashedPassword(hashedPassword);
-                    created.setStatus(true);
+                    created.setStatus(1);
                     return created;
                 }
             }
