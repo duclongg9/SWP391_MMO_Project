@@ -27,7 +27,22 @@ public class KycRequestController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+         // FLASH: chuyển từ session sang request rồi xóa (dùng 1 lần)
+        HttpSession ss = request.getSession(false);
+        if (ss != null) {
+            Object ok = ss.getAttribute("msg");
+            Object err = ss.getAttribute("emg");
+            if (ok != null) {
+                request.setAttribute("msg", ok.toString());
+                ss.removeAttribute("msg");
+            }
+            if (err != null) {
+                request.setAttribute("emg", err.toString());
+                ss.removeAttribute("emg");
+            }
+        }
 
+        
         Integer user = (Integer) request.getSession().getAttribute("userId");
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login.jsp");

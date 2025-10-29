@@ -127,19 +127,19 @@
                                             <img src="${k.frontImageUrl}" alt="front"
                                                  class="img-thumbnail kyc-thumb"
                                                  style="width:80px;height:56px;object-fit:cover;"
-                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.frontImageUrl}'">
+                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.frontImageUrl}'">
                                         </td>
                                         <td class="text-center">
                                             <img src="${k.backImageUrl}" alt="back"
                                                  class="img-thumbnail kyc-thumb"
                                                  style="width:80px;height:56px;object-fit:cover;"
-                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.backImageUrl}'">
+                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.backImageUrl}'">
                                         </td>
                                         <td class="text-center">
                                             <img src="${k.selfieImageUrl}" alt="selfie"
                                                  class="img-thumbnail kyc-thumb"
                                                  style="width:80px;height:56px;object-fit:cover;"
-                                                 onerror="this.onerror=null;this.src='${base}/assets/img/${k.selfieImageUrl}'">
+                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.selfieImageUrl}'">
                                         </td>
 
                                         <td>${k.idNumber}</td>
@@ -201,17 +201,17 @@
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Mặt trước</div>
                                                         <img src="${k.frontImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="front"
-                                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.frontImageUrl}'">
+                                                             onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.frontImageUrl}'">
                                                     </div>
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Mặt sau</div>
                                                         <img src="${k.backImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
-                                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.backImageUrl}'">
+                                                             onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.backImageUrl}'">
                                                     </div>
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Selfie</div>
                                                         <img src="${k.selfieImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="selfie"
-                                                             onerror="this.onerror=null;this.src='${base}/assets/img/${k.selfieImageUrl}'">
+                                                             onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.selfieImageUrl}'">
                                                     </div>
 
                                                     <div class="col-12 mt-3">
