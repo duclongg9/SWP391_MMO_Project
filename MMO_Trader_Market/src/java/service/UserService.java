@@ -56,18 +56,20 @@ public class UserService {
      */
     public Users registerNewUser(String email, String name, String password, String confirmPassword) {
         String normalizedEmail = normalizeEmail(email);
+
         validateEmail(normalizedEmail);
 
         String normalizedName = requireText(name, "Vui lòng nhập tên hiển thị");
         String rawPassword = requireText(password, "Vui lòng nhập mật khẩu");
         validatePassword(rawPassword);
         ensurePasswordMatch(rawPassword, confirmPassword);
+        
 
         try {
             ensureEmailAvailable(normalizedEmail);
             String hashedPassword = HashPassword.toSHA1(rawPassword);
             Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID,
-                    false);
+                    2);
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
@@ -77,9 +79,7 @@ public class UserService {
             return created;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể gửi email xác thực tài khoản. Vui lòng thử lại sau.", e);
-        }
+        } 
     }
 
     public Users authenticate(String email, String password) {
@@ -98,10 +98,13 @@ public class UserService {
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
-        if (Boolean.FALSE.equals(user.getStatus())) {
+        if ((user.getStatus()) == 2) {
             if (isEmailVerificationPending(user)) {
                 throw new InactiveAccountException("Tài khoản của bạn chưa được xác thực email", user);
             }
+        }
+        
+        if((user.getStatus()) == 0){
             throw new IllegalStateException("Tài khoản của bạn đang bị khóa");
         }
         return user;
@@ -131,7 +134,7 @@ public class UserService {
     }
 
     public void requestPasswordReset(String email, String resetBaseUrl) {
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedEmail = normalizeEmail(email); // chuẩn hóa
         validateEmail(normalizedEmail);
         if (resetBaseUrl == null || resetBaseUrl.isBlank()) {
             throw new IllegalArgumentException("Thiếu đường dẫn reset mật khẩu");
@@ -142,12 +145,11 @@ public class UserService {
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-
-            String token = UUID.randomUUID().toString().replace("-", "");
-            Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L));
+            String token = UUID.randomUUID().toString().replace("-", ""); // tạo UUID ngẫu nhiên, bỏ -,''
+            Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L)); //hời điểm hết hạn
             passwordResetTokenDAO.createToken(user.getId(), token, expiresAt);
-            String resetLink = resetBaseUrl + "?token=" + token;
-            sendResetMail(user.getEmail(), user.getName(), resetLink);
+            String resetLink = resetBaseUrl + "?token=" + token; //Tạo URL đầy đủ, bấm trong email.
+            sendResetMail(user.getEmail(), user.getName(), resetLink); // gửi mail cho ng dùng
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
@@ -179,25 +181,25 @@ public class UserService {
         validateEmail(normalizedEmail);
         String normalizedCode = requireText(code, "Vui lòng nhập mã xác thực");
         try {
-            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail); //Lấy user theo email
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            if (Boolean.TRUE.equals(user.getStatus())) {
+            if (Boolean.TRUE.equals(user.getStatus())) { // ng dùng đã active =1
                 return false;
             }
-            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId());
+            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId()); //lấy mã xác thực đang lưu trong DB 
             if (storedCode == null || storedCode.isBlank()) {
                 throw new IllegalStateException("Tài khoản này không có mã xác thực hợp lệ");
             }
-            if (!storedCode.equals(normalizedCode)) {
+            if (!storedCode.equals(normalizedCode)) { //So sánh mã
                 throw new IllegalArgumentException("Mã xác thực không chính xác");
             }
-            int updated = userDAO.activateUser(user.getId());
-            if (updated < 1) {
+            int updated = userDAO.activateUser(user.getId()); //kích hoạt tài khoản
+            if (updated == 2) {
                 throw new IllegalStateException("Không thể kích hoạt tài khoản lúc này. Vui lòng thử lại sau");
             }
-            emailVerificationTokenDAO.deleteByUserId(user.getId());
+            emailVerificationTokenDAO.deleteByUserId(user.getId()); // xóa userid, code
             return true;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi xác thực email", e);
@@ -400,7 +402,7 @@ public class UserService {
     }
 
     private boolean isEmailVerificationPending(Users user) {
-        if (user == null || user.getId() == null || !Boolean.FALSE.equals(user.getStatus())) {
+        if (user == null || user.getId() == null ||user.getStatus()==1){
             return false;
         }
         try {
