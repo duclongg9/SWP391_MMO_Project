@@ -88,15 +88,16 @@ public class UserDAO extends BaseDAO {
      * @return số hàng bị ảnh hưởng
      * @throws SQLException khi câu lệnh SQL lỗi
      */
-    public int updateUserProfileBasic(int id, String name) throws SQLException {
+    public int updateUserProfileBasic(int id, String name , String avata) throws SQLException {
         final String sql = """
                 UPDATE users
-                SET name = ?, updated_at = CURRENT_TIMESTAMP
+                SET name = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND status = 1
                 """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, name);
-            ps.setInt(2, id);
+            ps.setString(2, avata);
+            ps.setInt(3, id);
             return ps.executeUpdate();
         }
     }

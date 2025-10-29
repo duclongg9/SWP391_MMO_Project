@@ -4,11 +4,13 @@
  */
 package service;
 
+import conf.AppConfig;
 import dao.user.KYCRequestDAO;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.UUID;
+import utils.ImageUtils;
 
 /**
  *
@@ -16,18 +18,21 @@ import java.util.UUID;
  */
 public class KycRequestService {
 
-    private static final String RELATIVE_UPLOAD_DIR = "/assets/images/kyc";
+    private static final String RELATIVE_UPLOAD_DIR = AppConfig.get("upload.kyc.relative");
+    private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.kyc.absolute");
     private static final KYCRequestDAO kdao = new KYCRequestDAO();
-    private static final String ABSOLUTE_UPLOAD_DIR
-            = "D:\\Chuyen_nganh\\ky5\\SWP391-2\\SWP391_server\\SWP391_MMO_Project\\MMO_Trader_Market\\web\\assets\\images\\kyc";
+    
+//    private static final String RELATIVE_UPLOAD_DIR = "/assets/images/kyc";
+//    private static final String ABSOLUTE_UPLOAD_DIR = "D:/Chuyen_nganh/ky5/SWP391-2/SWP391_server/SWP391_MMO_Project/MMO_Trader_Market/web/assets/images/kyc";
+            
 
     public boolean handleKycRequest(int userId, String idNumber,
             Part front, Part back, Part selfie) throws IOException {
 
         // Validate MIME
-        if (!isAllowedImage(front.getContentType())
-                || !isAllowedImage(back.getContentType())
-                || !isAllowedImage(selfie.getContentType())) {
+        if (!ImageUtils.isAllowedImage(front.getContentType())
+                || !ImageUtils.isAllowedImage(back.getContentType())
+                || !ImageUtils.isAllowedImage(selfie.getContentType())) {
             throw new IOException("Chỉ chấp nhận ảnh JPG, PNG, hoặc WebP.");
         }
 
@@ -40,9 +45,9 @@ public class KycRequestService {
         Files.createDirectories(uploadDir);
 
         // Tạo tên file duy nhất
-        String frontFileName = "kyc_front_" + UUID.randomUUID() + extFromMime(front.getContentType());
-        String backFileName = "kyc_back_" + UUID.randomUUID() + extFromMime(back.getContentType());
-        String selfieFileName = "kyc_selfie_" + UUID.randomUUID() + extFromMime(selfie.getContentType());
+        String frontFileName = "kyc_front_" + UUID.randomUUID() + ImageUtils.extFromMime(front.getContentType());
+        String backFileName = "kyc_back_" + UUID.randomUUID() + ImageUtils.extFromMime(back.getContentType());
+        String selfieFileName = "kyc_selfie_" + UUID.randomUUID() + ImageUtils.extFromMime(selfie.getContentType());
 
         Path frontPath = uploadDir.resolve(frontFileName);
         Path backPath = uploadDir.resolve(backFileName);
@@ -72,20 +77,8 @@ public class KycRequestService {
 
         return true;
     }
-
-    private boolean isAllowedImage(String mime) {
-        return mime != null && (mime.equalsIgnoreCase("image/jpeg")
-                || mime.equalsIgnoreCase("image/png")
-                || mime.equalsIgnoreCase("image/webp"));
+    public static void main(String[] args) {
+        System.out.println(AppConfig.get("upload.kyc.relative"));
     }
-
-    private String extFromMime(String mime) {
-        if ("image/png".equalsIgnoreCase(mime)) {
-            return ".png";
-        }
-        if ("image/webp".equalsIgnoreCase(mime)) {
-            return ".webp";
-        }
-        return ".jpg";
-    }
+   
 }
