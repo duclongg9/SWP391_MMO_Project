@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * <p>
- * View model đầy đủ cho trang chi tiết sản phẩm công khai.</p>
- * <p>
+ * 
+ * View model đầy đủ cho trang chi tiết sản phẩm công khai.
+ * 
  * Dữ liệu được {@link service.ProductService#getPublicDetail(int)} chuyển đổi
  * từ {@link model.product.ProductDetail} sang định dạng phù hợp với JSP: tách
- * gallery, map biến thể, nhãn loại sản phẩm và thông tin shop.</p>
+ * gallery, map biến thể, nhãn loại sản phẩm và thông tin shop.
  *
  * @author longpdhe171902
  */
@@ -65,12 +65,12 @@ public class ProductDetailView {
 
     /**
      * Khởi tạo đối tượng bất biến phục vụ hiển thị:
-     * <ol>
-     * <li>Sao chép danh sách hình ảnh/biến thể để tránh bị sửa đổi ngoài ý
-     * muốn.</li>
-     * <li>Lưu cả nhãn hiển thị và mã định danh của loại/nhóm sản phẩm.</li>
-     * <li>Giữ {@code variantsJson} nhằm phục vụ các action AJAX (nếu cần).</li>
-     * </ol>
+     *
+     * Sao chép danh sách hình ảnh/biến thể để tránh bị sửa đổi ngoài ý
+     * muốn.
+     * Lưu cả nhãn hiển thị và mã định danh của loại/nhóm sản phẩm.
+     * Giữ {@code variantsJson} nhằm phục vụ các action AJAX (nếu cần).
+     * 
      */
     public ProductDetailView(int id, String name, String shortDescription, String description,
             String primaryImageUrl, List<String> galleryImages, String productType, String productTypeLabel,
