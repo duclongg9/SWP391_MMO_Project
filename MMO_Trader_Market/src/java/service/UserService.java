@@ -1,7 +1,13 @@
 package service;
 
+import conf.AppConfig;
 import dao.user.PasswordResetTokenDAO;
 import dao.user.UserDAO;
+import jakarta.servlet.http.Part;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import model.PasswordResetToken;
 import model.Users;
 import units.HashPassword;
@@ -13,8 +19,12 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import utils.ImageUtils;
 
 public class UserService {
+
+    private static final String RELATIVE_UPLOAD_DIR = AppConfig.get("upload.avatar.relative");
+    private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.avatar.absolute");
 
     // Regex kiểm tra định dạng email hợp lệ.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
@@ -175,16 +185,63 @@ public class UserService {
     /**
      * Cập nhật tên hiển thị
      */
-    public int updateMyProfile(int id, String name) {
-        try {
-            int updated = userDAO.updateUserProfileBasic(id, name);
-            if (updated < 1) {
-                throw new IllegalArgumentException("Tài khoản của bạn không tồn tại hoặc đã bị khóa");
+    public int updateMyProfile(int id, String name, Part avatar) throws IOException, SQLException {
+        Users current = userDAO.getUserByUserId(id);
+        boolean changed = false;
+
+        //người dùng có update tên
+        String finalName = current.getName();
+        if (name != null && !name.trim().isEmpty()) {
+
+            name = name.trim().replaceAll("\\s{2,}", " "); // xoá khoảng trắng thừa
+
+            if (!name.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
+                throw new IOException("Tên chỉ được chứa chữ ,khoảng trắng, không chứa ký tự đặc biệt.");
             }
-            return updated;
-        } catch (SQLException e) {
-            throw new RuntimeException("DB gặp sự cố khi cập nhật dữ liệu người dùng", e);
+            finalName = name;
+            changed = true;
         }
+        
+        //Người dùng nhập ảnh
+        String avatarRel = current.getAvatarUrl(); // giữ ảnh cũ mặc định
+        Path avatarPath = null;
+        if (avatar != null && avatar.getSize() > 0) {
+            // Validate MIME
+            if (!ImageUtils.isAllowedImage(avatar.getContentType())) {
+                throw new IOException("Chỉ chấp nhận ảnh JPG, PNG, hoặc WebP.");
+            }
+
+            Path uploadDir = Paths.get(ABSOLUTE_UPLOAD_DIR);
+            Files.createDirectories(uploadDir);
+
+            // Tạo tên file duy nhất
+            String avatarFileName = "avata_" + UUID.randomUUID() + ImageUtils.extFromMime(avatar.getContentType());
+
+            avatarPath = uploadDir.resolve(avatarFileName);
+
+            // Ghi file
+            try {
+                avatar.write(avatarPath.toString());
+            } catch (Exception e) {
+                throw new IOException("Không thể lưu file ảnh lên máy chủ.", e);
+            }
+
+            // Lưu DB
+             avatarRel = RELATIVE_UPLOAD_DIR + "/" + avatarFileName;
+             changed = true;
+        }
+        //Gắn cờ, nếu không có gì thay đổi thì không update DB
+        if(!changed){
+            return 0;
+        }
+        
+        int rows = userDAO.updateUserProfileBasic(id, finalName, avatarRel);
+        if (rows <= 0) {
+            Files.deleteIfExists(avatarPath);
+            throw new IOException("Cập nhật thông tin người dùng thất ");
+        }
+
+        return rows;
     }
 
     public int updatePassword(int id, String oldPassword, String newPassword) {
