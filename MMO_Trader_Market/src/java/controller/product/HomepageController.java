@@ -5,7 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import model.Shops;
 import model.SystemConfigs;
 import model.view.ConversationMessageView;
@@ -13,7 +12,6 @@ import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
 import model.view.product.ProductSummaryView;
 import service.HomepageService;
-import units.RoleHomeResolver;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,9 +43,6 @@ public class HomepageController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (redirectAdminHomeIfPossible(request, response)) {
-            return;
-        }
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
 
@@ -118,25 +113,5 @@ public class HomepageController extends BaseController {
         entry.put("title", title);
         entry.put("description", description);
         return entry;
-    }
-
-    // Cố gắng chuyển hướng admin về trang quản trị nếu họ truy cập nhầm trang chủ khách.
-    private boolean redirectAdminHomeIfPossible(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        try {
-            return super.redirectAdminHome(request, response);
-        } catch (NoSuchMethodError ex) {
-            HttpSession session = request.getSession(false);
-            if (session == null) {
-                return false;
-            }
-            Object role = session.getAttribute("userRole");
-            if (role instanceof Integer && (Integer) role == 1) {
-                // Vai trò admin => đưa về trang tổng quan dành riêng.
-                response.sendRedirect(request.getContextPath() + RoleHomeResolver.ADMIN_HOME);
-                return true;
-            }
-            return false;
-        }
     }
 }
