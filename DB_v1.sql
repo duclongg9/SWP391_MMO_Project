@@ -29,7 +29,7 @@ CREATE TABLE `users` (
   `avatar_url` varchar(255) DEFAULT NULL,
   `hashed_password` varchar(255) NOT NULL,
   `google_id` varchar(255) DEFAULT NULL UNIQUE,
-  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1: Active, 0: Inactive',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1: Active, 0: Inactive , 2: UnAuth',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
