@@ -29,7 +29,7 @@ public class DashboardController extends BaseController {
         request.setAttribute("products", productService.homepageHighlights());
         forward(request, response, "dashboard/index");
     }
-    
+
     private boolean redirectAdminHomeIfPossible(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         try {

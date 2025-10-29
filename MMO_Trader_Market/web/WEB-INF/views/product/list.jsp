@@ -59,8 +59,24 @@
             </aside>
             <div class="product-browse__results">
                 <div class="product-list__meta product-browse__meta">
-                    <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
-                    <span>Trang ${page} / ${totalPages}</span>
+                    <div class="product-list__stats">
+                        <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
+                        <span>Trang ${page} / ${totalPages}</span>
+                    </div>
+                    <form class="product-list__page-size" method="get" action="${cPath}/products">
+                        <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
+                        <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
+                        <input type="hidden" name="page" value="1" />
+                        <c:forEach var="code" items="${selectedSubtypes}">
+                            <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
+                        </c:forEach>
+                        <label class="product-list__page-size-label" for="product-page-size">Hiển thị</label>
+                        <select class="select" name="pageSize" id="product-page-size" onchange="this.form.submit()">
+                            <c:forEach var="option" items="${pageSizeOptions}">
+                                <option value="${option}" <c:if test="${option == pageSize}">selected</c:if>>${option} / trang</option>
+                            </c:forEach>
+                        </select>
+                    </form>
                 </div>
                 <c:choose>
                     <c:when test="${not empty items}">
@@ -116,7 +132,7 @@
                                             <li>Đã bán: <strong><c:out value="${p.soldCount}" /></strong></li>
                                         </ul>
                                         <div class="product-card__actions product-card__actions--justify">
-                                            <a class="button button--primary product-card__cta" href="${cPath}/product/detail?id=${p.id}">Xem chi tiết</a>
+                                            <a class="button button--primary product-card__cta" href="${cPath}/product/detail/${p.encodedId}">Xem chi tiết</a>
                                         </div>
                                     </div>
                                 </article>
@@ -130,23 +146,66 @@
                     </c:otherwise>
                 </c:choose>
                 <c:if test="${totalPages > 1}">
-                    <c:set var="ctx" value="${pageContext.request.contextPath}" />
-                    <c:set var="subtypeQuery" value="" />
-                    <c:if test="${not empty selectedSubtypes}">
-                        <c:forEach var="s" items="${selectedSubtypes}">
-                            <c:set var="subtypeQuery"
-                                   value="${subtypeQuery}${'&subtype='}${fn:escapeXml(s)}" />
+                    <nav class="pagination" aria-label="Phân trang sản phẩm">
+                        <c:choose>
+                            <c:when test="${page == 1}">
+                                <span class="pagination__item pagination__item--disabled" aria-disabled="true">«</span>
+                            </c:when>
+                            <c:otherwise>
+                                <c:url var="prevUrl" value="/products">
+                                    <c:param name="type" value="${type}" />
+                                    <c:if test="${not empty keyword}">
+                                        <c:param name="keyword" value="${keyword}" />
+                                    </c:if>
+                                    <c:forEach var="s" items="${selectedSubtypes}">
+                                        <c:param name="subtype" value="${s}" />
+                                    </c:forEach>
+                                    <c:param name="pageSize" value="${pageSize}" />
+                                    <c:param name="page" value="${page - 1}" />
+                                </c:url>
+                                <a class="pagination__item" href="${prevUrl}">«</a>
+                            </c:otherwise>
+                        </c:choose>
+                        <c:forEach var="pageNumber" begin="1" end="${totalPages}">
+                            <c:url var="pageUrl" value="/products">
+                                <c:param name="type" value="${type}" />
+                                <c:if test="${not empty keyword}">
+                                    <c:param name="keyword" value="${keyword}" />
+                                </c:if>
+                                <c:forEach var="s" items="${selectedSubtypes}">
+                                    <c:param name="subtype" value="${s}" />
+                                </c:forEach>
+                                <c:param name="pageSize" value="${pageSize}" />
+                                <c:param name="page" value="${pageNumber}" />
+                            </c:url>
+                            <c:choose>
+                                <c:when test="${pageNumber == page}">
+                                    <a class="pagination__item pagination__item--active" href="${pageUrl}" aria-current="page">${pageNumber}</a>
+                                </c:when>
+                                <c:otherwise>
+                                    <a class="pagination__item" href="${pageUrl}">${pageNumber}</a>
+                                </c:otherwise>
+                            </c:choose>
                         </c:forEach>
-                    </c:if>
-                    <nav class="pagination">
-                        <a class="page-btn ${page==1?'disabled':''}"
-                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${page==1 ? page : page-1}">&laquo;</a>
-                        <c:forEach var="p" begin="1" end="${totalPages}">
-                            <a class="page-num ${p==page?'active':''}"
-                               href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${p}">${p}</a>
-                        </c:forEach>
-                        <a class="page-btn ${page==totalPages?'disabled':''}"
-                           href="${ctx}/products?type=${fn:escapeXml(type)}&keyword=${fn:escapeXml(keyword)}${subtypeQuery}&pageSize=${pageSize}&page=${page==totalPages ? page : page+1}">&raquo;</a>
+                        <c:choose>
+                            <c:when test="${page >= totalPages}">
+                                <span class="pagination__item pagination__item--disabled" aria-disabled="true">»</span>
+                            </c:when>
+                            <c:otherwise>
+                                <c:url var="nextUrl" value="/products">
+                                    <c:param name="type" value="${type}" />
+                                    <c:if test="${not empty keyword}">
+                                        <c:param name="keyword" value="${keyword}" />
+                                    </c:if>
+                                    <c:forEach var="s" items="${selectedSubtypes}">
+                                        <c:param name="subtype" value="${s}" />
+                                    </c:forEach>
+                                    <c:param name="pageSize" value="${pageSize}" />
+                                    <c:param name="page" value="${page + 1}" />
+                                </c:url>
+                                <a class="pagination__item" href="${nextUrl}">»</a>
+                            </c:otherwise>
+                        </c:choose>
                     </nav>
                 </c:if>
             </div>

@@ -36,15 +36,15 @@
             <div class="form-card__option">
                 <input class="form-card__checkbox" id="acceptTerms" name="acceptTerms" type="checkbox"
                        <c:if test="${acceptTermsChecked}">checked</c:if> required>
-                <label class="form-card__option-text" for="acceptTerms">
-                    Tôi đã đọc và đồng ý với
-                    <a href="#" target="_blank" rel="noopener">Điều khoản sử dụng Tap Hóa MMO</a>
-                </label>
-            </div>
-            <button class="button button--primary" type="submit">Đăng ký</button>
-            <div class="form-card__actions-row">
-                <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
-                <!--<a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>-->
+                       <label class="form-card__option-text" for="acceptTerms">
+                           Tôi đã đọc và đồng ý với
+                           <a href="#" target="_blank" rel="noopener">Điều khoản sử dụng Tap Hóa MMO</a>
+                       </label>
+                </div>
+                <button class="button button--primary" type="submit">Đăng ký</button>
+                <div class="form-card__actions-row">
+                    <a class="button button--ghost" href="<c:url value='/auth' />">Quay lại trang đăng nhập</a>
+                    <!--<a class="button button--secondary" href="<c:url value='/auth/google' />">Đăng ký bằng Google</a>-->
             </div>
         </form>
     </div>

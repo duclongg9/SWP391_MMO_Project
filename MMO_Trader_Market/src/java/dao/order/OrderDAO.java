@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +22,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * DAO thao tác với bảng {@code orders}, bao gồm tạo đơn, thống kê và hỗ trợ giao dịch.
+ * DAO thao tác với bảng {@code orders}, bao gồm tạo đơn, thống kê và hỗ trợ các
+ * giao dịch liên quan tới luồng tiền (gán transaction, ghi nhận inventory log).
+ * Tất cả truy vấn đều có chú thích tiếng Việt để người đọc biết dữ liệu nào
+ * được kéo lên phục vụ JSP hay worker xử lý hàng đợi.
  *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
+ * @author longpdhe171902
  */
 public class OrderDAO extends BaseDAO {
 
@@ -32,22 +35,43 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tạo đơn hàng ở trạng thái Pending với khóa idempotency.
+     * <p>
+     * Đây là điểm cắm đầu tiên để ghi nhận giao dịch vào DB trước khi worker
+     * trừ tiền:</p>
+     * <ol>
+     * <li>Insert bản ghi đơn với trạng thái Pending, giữ lại variant để worker
+     * xử lý tồn kho chuẩn xác.</li>
+     * <li>Lưu khóa idempotent để các lần submit lại (do reload) không tạo thêm
+     * đơn mới.</li>
+     * <li>Trả về {@code order_id} cho controller redirect sang trang chi
+     * tiết.</li>
+     * </ol>
      *
-     * @param buyerId  mã người mua
+     * @param buyerId mã người mua
      * @param productId mã sản phẩm
-     * @param qty       số lượng đặt mua
-     * @param total     tổng tiền
-     * @param idemKey   khóa idempotent để tránh tạo trùng
+     * @param qty số lượng đặt mua
+     * @param unitPrice đơn giá tại thời điểm đặt
+     * @param total tổng tiền
+     * @param variantCode mã biến thể (có thể null)
+     * @param idemKey khóa idempotent để tránh tạo trùng
      * @return mã đơn hàng vừa tạo
      */
-    public int createPending(int buyerId, int productId, int qty, BigDecimal total, String idemKey) {
-        final String sql = "INSERT INTO orders (buyer_id, product_id, total_amount, status, idempotency_key, created_at, updated_at) "
-                + "VALUES (?, ?, ?, 'Pending', ?, NOW(), NOW())";
+    public int createPending(int buyerId, int productId, int qty, BigDecimal unitPrice, BigDecimal total,
+            String variantCode, String idemKey) {
+        final String sql = "INSERT INTO orders (buyer_id, product_id, quantity, unit_price, total_amount, status, variant_code, idempotency_key, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, NOW(), NOW())";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, buyerId);
             statement.setInt(2, productId);
-            statement.setBigDecimal(3, total);
-            statement.setString(4, idemKey);
+            statement.setInt(3, qty);
+            statement.setBigDecimal(4, unitPrice);
+            statement.setBigDecimal(5, total);
+            if (variantCode == null || variantCode.isBlank()) {
+                statement.setNull(6, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(6, variantCode);
+            }
+            statement.setString(7, idemKey);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -62,14 +86,18 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Lấy chi tiết đơn hàng dành cho người mua sở hữu.
+     * <p>
+     * Câu truy vấn join trực tiếp bảng {@code products} để có đủ dữ liệu hiển
+     * thị trên JSP chi tiết (tên, mô tả, ảnh...). Controller nhận
+     * {@link OrderDetailView} và truyền thẳng xuống view.</p>
      *
      * @param orderId mã đơn hàng
-     * @param userId  mã người dùng đăng nhập
+     * @param userId mã người dùng đăng nhập
      * @return thông tin đơn kèm sản phẩm nếu tìm thấy
      */
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
-        final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.total_amount, o.status, o.created_at, o.updated_at, "
-                + "o.payment_transaction_id, o.idempotency_key, o.hold_until, "
+        final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.quantity, o.unit_price, o.total_amount, o.status, "
+                + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_code, "
                 + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
                 + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
                 + "p.gallery_json AS p_gallery_json, p.inventory_count, p.sold_count AS p_sold_count, p.status AS p_status, "
@@ -95,9 +123,12 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Cập nhật trạng thái đơn hàng không ràng buộc giá trị.
+     * <p>
+     * Được sử dụng ở các luồng ngoại lệ (worker đánh dấu thất bại) nên không
+     * đặt thêm ràng buộc enum.</p>
      *
      * @param orderId mã đơn hàng
-     * @param status  trạng thái mới ở dạng chuỗi
+     * @param status trạng thái mới ở dạng chuỗi
      * @return {@code true} nếu cập nhật thành công
      */
     public boolean setStatus(int orderId, String status) {
@@ -114,8 +145,12 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Cập nhật đơn hàng sang trạng thái Completed và gán giao dịch thanh toán.
+     * <p>
+     * Luồng worker sau khi trừ tiền sẽ gọi hàm này trong transaction để gắn
+     * reference tới bảng {@code wallet_transactions}. Nhờ vậy trang chi tiết có
+     * thể truy vết nguồn gốc dòng tiền.</p>
      *
-     * @param orderId     mã đơn hàng
+     * @param orderId mã đơn hàng
      * @param paymentTxId mã giao dịch thanh toán (có thể null)
      * @return {@code true} nếu cập nhật thành công
      */
@@ -137,13 +172,16 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tìm đơn hàng theo mã.
+     * <p>
+     * Được worker gọi trước khi xử lý để đọc trạng thái hiện tại, số tiền và
+     * thông tin variant.</p>
      *
      * @param orderId mã đơn hàng
      * @return {@link Optional} chứa đơn hàng nếu tồn tại
      */
     public Optional<Orders> findById(int orderId) {
-        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
-                + "hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -159,13 +197,16 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Tìm đơn hàng thông qua khóa idempotency.
+     * <p>
+     * Dịch vụ gọi phương thức này để phát hiện các lần submit lặp lại từ
+     * client.</p>
      *
      * @param idemKey khóa idempotent
      * @return {@link Optional} chứa đơn hàng nếu có
      */
     public Optional<Orders> findByIdemKey(String idemKey) {
-        final String sql = "SELECT id, buyer_id, product_id, payment_transaction_id, total_amount, status, idempotency_key, "
-                + "hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, idemKey);
             try (ResultSet rs = statement.executeQuery()) {
@@ -181,31 +222,62 @@ public class OrderDAO extends BaseDAO {
 
     /**
      * Lấy danh sách đơn hàng của người mua có phân trang.
+     * <p>
+     * Câu truy vấn join sang bảng sản phẩm để lấy tên hiển thị trong bảng lịch
+     * sử.</p>
      *
      * @param buyerId mã người mua
-     * @param status  trạng thái cần lọc (có thể null)
-     * @param limit   số bản ghi mỗi trang
-     * @param offset  vị trí bắt đầu
+     * @param status trạng thái cần lọc (có thể null)
+     * @param limit số bản ghi mỗi trang
+     * @param offset vị trí bắt đầu
      * @return danh sách đơn hàng rút gọn
      */
-    public List<OrderRow> findByBuyerPaged(int buyerId, String status, int limit, int offset) {
-        final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
+    public List<OrderRow> findByBuyerPaged(int buyerId, String status, Integer orderId, String productName,
+            LocalDate fromDate, LocalDate toDate, int limit, int offset) {
+        StringBuilder sql = new StringBuilder("SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
                 + "FROM orders o JOIN products p ON p.id = o.product_id "
-                + "WHERE o.buyer_id = ? "
-                + "AND (? IS NULL OR o.status = ?) "
-                + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
+                + "WHERE o.buyer_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(buyerId);
+        if (status != null) {
+            sql.append(" AND o.status = ?");
+            params.add(status);
+        }
+        if (orderId != null) {
+            sql.append(" AND o.id = ?");
+            params.add(orderId);
+        }
+        if (productName != null) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add('%' + productName.toLowerCase() + '%');
+        }
+        if (fromDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(Timestamp.valueOf(fromDate.atStartOfDay()));
+        }
+        if (toDate != null) {
+            sql.append(" AND o.created_at < ?");
+            params.add(Timestamp.valueOf(toDate.plusDays(1).atStartOfDay()));
+        }
+        sql.append(" ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
         List<OrderRow> rows = new ArrayList<>();
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, buyerId);
-            if (status == null) {
-                statement.setNull(2, java.sql.Types.VARCHAR);
-                statement.setNull(3, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(2, status);
-                statement.setString(3, status);
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                int index = i + 1;
+                if (param instanceof Integer value) {
+                    statement.setInt(index, value);
+                } else if (param instanceof String value) {
+                    statement.setString(index, value);
+                } else if (param instanceof Timestamp value) {
+                    statement.setTimestamp(index, value);
+                } else {
+                    statement.setObject(index, param);
+                }
             }
-            statement.setInt(4, limit);
-            statement.setInt(5, offset);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     Timestamp created = rs.getTimestamp("created_at");
@@ -225,22 +297,53 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
-     * Đếm số đơn hàng của người mua theo trạng thái.
+     * Đếm số đơn hàng của người mua theo trạng thái để tính phân trang ở tầng
+     * dịch vụ.
      *
      * @param buyerId mã người mua
-     * @param status  trạng thái cần lọc (có thể null)
+     * @param status trạng thái cần lọc (có thể null)
      * @return tổng số đơn
      */
-    public long countByBuyer(int buyerId, String status) {
-        final String sql = "SELECT COUNT(*) FROM orders WHERE buyer_id = ? AND (? IS NULL OR status = ?)";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, buyerId);
-            if (status == null) {
-                statement.setNull(2, java.sql.Types.VARCHAR);
-                statement.setNull(3, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(2, status);
-                statement.setString(3, status);
+    public long countByBuyer(int buyerId, String status, Integer orderId, String productName,
+            LocalDate fromDate, LocalDate toDate) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE o.buyer_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(buyerId);
+        if (status != null) {
+            sql.append(" AND o.status = ?");
+            params.add(status);
+        }
+        if (orderId != null) {
+            sql.append(" AND o.id = ?");
+            params.add(orderId);
+        }
+        if (productName != null) {
+            sql.append(" AND LOWER(p.name) LIKE ?");
+            params.add('%' + productName.toLowerCase() + '%');
+        }
+        if (fromDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(Timestamp.valueOf(fromDate.atStartOfDay()));
+        }
+        if (toDate != null) {
+            sql.append(" AND o.created_at < ?");
+            params.add(Timestamp.valueOf(toDate.plusDays(1).atStartOfDay()));
+        }
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                int index = i + 1;
+                if (param instanceof Integer value) {
+                    statement.setInt(index, value);
+                } else if (param instanceof String value) {
+                    statement.setString(index, value);
+                } else if (param instanceof Timestamp value) {
+                    statement.setTimestamp(index, value);
+                } else {
+                    statement.setObject(index, param);
+                }
             }
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
@@ -260,18 +363,18 @@ public class OrderDAO extends BaseDAO {
      * @return tổng số đơn
      */
     public long countByBuyer(int buyerId) {
-        return countByBuyer(buyerId, (String) null);
+        return countByBuyer(buyerId, null, null, null, null, null);
     }
 
     /**
      * Đếm số đơn của người mua theo trạng thái enum.
      *
      * @param buyerId mã người mua
-     * @param status  trạng thái enum cần lọc
+     * @param status trạng thái enum cần lọc
      * @return tổng số đơn
      */
     public long countByBuyerAndStatus(int buyerId, OrderStatus status) {
-        return countByBuyer(buyerId, status == null ? null : status.toDatabaseValue());
+        return countByBuyer(buyerId, status == null ? null : status.toDatabaseValue(), null, null, null, null);
     }
 
     /**
@@ -306,8 +409,8 @@ public class OrderDAO extends BaseDAO {
      * Cập nhật trạng thái đơn hàng trong giao dịch hiện tại.
      *
      * @param connection kết nối đang dùng
-     * @param orderId    mã đơn hàng
-     * @param status     trạng thái mới
+     * @param orderId mã đơn hàng
+     * @param status trạng thái mới
      * @throws SQLException khi câu lệnh SQL lỗi
      */
     public void updateStatus(Connection connection, int orderId, OrderStatus status) throws SQLException {
@@ -322,8 +425,8 @@ public class OrderDAO extends BaseDAO {
     /**
      * Gán mã giao dịch thanh toán cho đơn hàng trong giao dịch hiện tại.
      *
-     * @param connection           kết nối sử dụng
-     * @param orderId              mã đơn hàng
+     * @param connection kết nối sử dụng
+     * @param orderId mã đơn hàng
      * @param paymentTransactionId mã giao dịch (có thể null)
      * @throws SQLException khi truy vấn lỗi
      */
@@ -343,11 +446,11 @@ public class OrderDAO extends BaseDAO {
     /**
      * Ghi nhận lịch sử thay đổi tồn kho liên quan tới đơn hàng.
      *
-     * @param connection  kết nối giao dịch
-     * @param productId   mã sản phẩm
-     * @param orderId     mã đơn hàng
+     * @param connection kết nối giao dịch
+     * @param productId mã sản phẩm
+     * @param orderId mã đơn hàng
      * @param changeAmount số lượng thay đổi
-     * @param reason      lý do
+     * @param reason lý do
      * @throws SQLException khi chèn bản ghi lỗi
      */
     public void insertInventoryLog(Connection connection, int productId, int orderId, int changeAmount, String reason)
@@ -381,10 +484,14 @@ public class OrderDAO extends BaseDAO {
         order.setId(rs.getInt("id"));
         order.setBuyerId(rs.getInt("buyer_id"));
         order.setProductId(rs.getInt("product_id"));
+        int qty = rs.getInt("quantity");
+        order.setQuantity(rs.wasNull() ? null : qty);
+        order.setUnitPrice(rs.getBigDecimal("unit_price"));
         order.setPaymentTransactionId(rs.getObject("payment_transaction_id") == null
                 ? null : rs.getInt("payment_transaction_id"));
         order.setTotalAmount(rs.getBigDecimal("total_amount"));
         order.setStatus(rs.getString("status"));
+        order.setVariantCode(rs.getString("variant_code"));
         order.setIdempotencyKey(rs.getString("idempotency_key"));
         order.setHoldUntil(rs.getTimestamp("hold_until"));
         order.setCreatedAt(rs.getTimestamp("created_at"));

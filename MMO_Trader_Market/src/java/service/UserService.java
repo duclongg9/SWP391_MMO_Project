@@ -13,14 +13,21 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.regex.Pattern;
+
 public class UserService {
 
+    // Regex kiểm tra định dạng email hợp lệ.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
+    // Regex yêu cầu mật khẩu tối thiểu 8 ký tự và có cả chữ lẫn số.
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
+    // Role mặc định khi tạo tài khoản mới (Guest).
     private static final int DEFAULT_ROLE_ID = 3;
+    // Thời hạn hiệu lực của token đặt lại mật khẩu (phút).
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 30;
 
+    // DAO người dùng thao tác với bảng users.
     private final UserDAO userDAO;
+    // DAO token đặt lại mật khẩu.
     private final PasswordResetTokenDAO passwordResetTokenDAO;
 
     public UserService(UserDAO userDAO) {
@@ -32,7 +39,9 @@ public class UserService {
         this.passwordResetTokenDAO = passwordResetTokenDAO;
     }
 
-    /** Đăng ký tài khoản mới */
+    /**
+     * Đăng ký tài khoản mới
+     */
     public Users registerNewUser(String email, String name, String password, String confirmPassword) {
         String normalizedEmail = normalizeEmail(email);
         validateEmail(normalizedEmail);
@@ -69,7 +78,7 @@ public class UserService {
         }
         String hashed = user.getHashedPassword();
         if (hashed == null || hashed.isBlank()) {
-throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui lòng đăng nhập bằng Google");
+            throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui lòng đăng nhập bằng Google");
         }
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
@@ -130,7 +139,7 @@ throw new IllegalStateException("Tài khoản được tạo bằng Google. Vui 
         ensurePasswordMatch(normalizedPassword, confirmPassword);
 
         try {
-PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalizedToken);
+            PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalizedToken);
             if (resetToken == null || resetToken.getExpiresAt() == null
                     || resetToken.getExpiresAt().toInstant().isBefore(Instant.now())) {
                 throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
@@ -146,8 +155,10 @@ PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalized
             throw new IllegalStateException("Không thể đặt lại mật khẩu lúc này. Vui lòng thử lại sau.", e);
         }
     }
-    
-    /** Xem thông tin cá nhân */
+
+    /**
+     * Xem thông tin cá nhân
+     */
     public Users viewMyProfile(int id) {
         try {
             Users user = userDAO.getUserByUserId(id);   // <-- sửa: không phải (int id)
@@ -161,7 +172,9 @@ PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalized
         }
     }
 
-    /** Cập nhật tên hiển thị */
+    /**
+     * Cập nhật tên hiển thị
+     */
     public int updateMyProfile(int id, String name) {
         try {
             int updated = userDAO.updateUserProfileBasic(id, name);
@@ -192,7 +205,7 @@ PasswordResetToken resetToken = passwordResetTokenDAO.findActiveToken(normalized
             if (user == null) {
                 throw new IllegalArgumentException("Tài khoản không tồn tại hoặc đã bị khóa");
             }
-String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter theo model
+            String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter theo model
             if (currentHash == null || currentHash.isBlank()) {
                 throw new IllegalStateException("Tài khoản chưa thiết lập mật khẩu");
             }
@@ -212,7 +225,7 @@ String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter 
             //Gửi email
             if (updated > 0) {
                 String subject = "[Thông báo quan trọng]-Thông tin tài khoản của bạn";
-                String messageText = "Chào ["+user.getName()+"] ,\n\n"
+                String messageText = "Chào [" + user.getName() + "] ,\n\n"
                         + "Bạn đã thay đổi mật khẩu thành công trên hệ thống sàn thương mại điện tử MMO Trader System \n\n"
                         + "Vui lòng kiểm tra lại tài khoản nếu bạn không thực hiện hành động này\n\n"
                         + "Trân trọng,\nAdmin MMO Trader System"; // đang test fig cứng tên
@@ -259,7 +272,7 @@ String currentHash = user.getHashedPassword(); // <-- sửa: đúng tên getter 
     }
 
     private void ensurePasswordMatch(String password, String confirmPassword) {
-String confirm = confirmPassword == null ? "" : confirmPassword.trim();
+        String confirm = confirmPassword == null ? "" : confirmPassword.trim();
         if (!password.equals(confirm)) {
             throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
         }
@@ -280,12 +293,12 @@ String confirm = confirmPassword == null ? "" : confirmPassword.trim();
     private void sendResetMail(String email, String name, String resetLink) {
         String subject = "Đặt lại mật khẩu MMO Trader Market";
         String displayName = name == null || name.isBlank() ? email : name;
-        String body = "Xin chào " + displayName + ",\n\n" +
-                "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản MMO Trader Market. " +
-                "Vui lòng nhấn vào liên kết bên dưới trong vòng " + RESET_TOKEN_EXPIRY_MINUTES +
-                " phút:\n" + resetLink + "\n\n" +
-                "Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.\n\n" +
-                "Trân trọng,\nĐội ngũ MMO Trader Market";
+        String body = "Xin chào " + displayName + ",\n\n"
+                + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản MMO Trader Market. "
+                + "Vui lòng nhấn vào liên kết bên dưới trong vòng " + RESET_TOKEN_EXPIRY_MINUTES
+                + " phút:\n" + resetLink + "\n\n"
+                + "Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.\n\n"
+                + "Trân trọng,\nĐội ngũ MMO Trader Market";
         try {
             SendMail.sendMail(email, subject, body);
         } catch (Exception e) {
