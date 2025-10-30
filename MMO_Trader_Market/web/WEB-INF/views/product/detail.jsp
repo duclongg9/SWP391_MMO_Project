@@ -9,12 +9,36 @@
 <main class="layout__content">
     <section class="product-detail">
         <div class="product-detail__gallery">
+            <c:set var="primaryVariantImage" value="" />
+            <c:set var="variantThumbnailCount" value="0" />
+            <c:if test="${product.hasVariants}">
+                <c:forEach var="variant" items="${variantOptions}">
+                    <c:if test="${not empty variant.imageUrl}">
+                        <c:if test="${empty primaryVariantImage}">
+                            <c:set var="primaryVariantImage" value="${variant.imageUrl}" />
+                        </c:if>
+                        <c:set var="variantThumbnailCount" value="${variantThumbnailCount + 1}" />
+                    </c:if>
+                </c:forEach>
+            </c:if>
+
             <c:choose>
-                <c:when test="${empty galleryImages}">
+                <c:when test="${not empty primaryVariantImage}">
+                    <c:set var="mainImage" value="${primaryVariantImage}" />
+                </c:when>
+                <c:when test="${not empty galleryImages}">
+                    <c:set var="mainImage" value="${galleryImages[0]}" />
+                </c:when>
+                <c:otherwise>
+                    <c:set var="mainImage" value="" />
+                </c:otherwise>
+            </c:choose>
+
+            <c:choose>
+                <c:when test="${empty mainImage}">
                     <div class="product-detail__placeholder">Chưa có ảnh minh họa</div>
                 </c:when>
                 <c:otherwise>
-                    <c:set var="mainImage" value="${galleryImages[0]}" />
                     <c:choose>
                         <c:when test="${fn:startsWith(mainImage, 'http://')
                                         or fn:startsWith(mainImage, 'https://')
@@ -30,8 +54,45 @@
                     <div class="product-detail__main-image">
                         <img id="mainImage" src="${mainImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" />
                     </div>
-                    <c:if test="${fn:length(galleryImages) gt 1}">
+
+                    <c:set var="shouldRenderThumbnails"
+                           value="${variantThumbnailCount gt 0 or fn:length(galleryImages) gt 1}" />
+                    <c:if test="${shouldRenderThumbnails}">
                         <ul class="product-detail__thumbnails">
+                            <c:if test="${variantThumbnailCount gt 0}">
+                                <c:forEach var="variant" items="${variantOptions}" varStatus="status">
+                                    <c:set var="variantImageUrl" value="" />
+                                    <c:if test="${not empty variant.imageUrl}">
+                                        <c:set var="variantImageSource" value="${variant.imageUrl}" />
+                                        <c:choose>
+                                            <c:when test="${fn:startsWith(variantImageSource, 'http://')
+                                                            or fn:startsWith(variantImageSource, 'https://')
+                                                            or fn:startsWith(variantImageSource, '//')
+                                                            or fn:startsWith(variantImageSource, 'data:')
+                                                            or fn:startsWith(variantImageSource, cPath)}">
+                                                <c:set var="variantImageUrl" value="${variantImageSource}" />
+                                            </c:when>
+                                            <c:otherwise>
+                                                <c:url var="variantImageUrl" value="${variantImageSource}" />
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </c:if>
+                                    <c:if test="${not empty variantImageUrl}">
+                                        <c:set var="variantId" value="variant-${status.index}" />
+                                        <li>
+                                            <button class="product-detail__thumbnail" type="button"
+                                                    data-image="${variantImageUrl}"
+                                                    data-variant="${variantId}"
+                                                    aria-label="Biến thể ${fn:escapeXml(variant.variantCode)}"
+                                                    <c:if test="${variantImageUrl eq mainImageUrl}">aria-current="true"</c:if>>
+                                                <img src="${variantImageUrl}" alt="Ảnh biến thể ${fn:escapeXml(variant.variantCode)}"
+                                                     loading="lazy" />
+                                            </button>
+                                        </li>
+                                    </c:if>
+                                </c:forEach>
+                            </c:if>
+
                             <c:forEach var="image" items="${galleryImages}">
                                 <c:set var="thumbnailSource" value="${image}" />
                                 <c:choose>
@@ -47,7 +108,8 @@
                                     </c:otherwise>
                                 </c:choose>
                                 <li>
-                                    <button class="product-detail__thumbnail" type="button" data-image="${thumbnailUrl}">
+                                    <button class="product-detail__thumbnail" type="button" data-image="${thumbnailUrl}"
+                                            <c:if test="${thumbnailUrl eq mainImageUrl}">aria-current="true"</c:if>>
                                         <img src="${thumbnailUrl}" alt="Thumbnail sản phẩm" loading="lazy" />
                                     </button>
                                 </li>
@@ -101,8 +163,25 @@
                         <c:forEach var="variant" items="${variantOptions}" varStatus="status">
                             <c:set var="variantId" value="variant-${status.index}" />
                             <label class="variant-option" for="${variantId}">
+                                <c:set var="variantImageUrl" value="" />
+                                <c:if test="${not empty variant.imageUrl}">
+                                    <c:set var="variantImageSource" value="${variant.imageUrl}" />
+                                    <c:choose>
+                                        <c:when test="${fn:startsWith(variantImageSource, 'http://')
+                                                        or fn:startsWith(variantImageSource, 'https://')
+                                                        or fn:startsWith(variantImageSource, '//')
+                                                        or fn:startsWith(variantImageSource, 'data:')
+                                                        or fn:startsWith(variantImageSource, cPath)}">
+                                            <c:set var="variantImageUrl" value="${variantImageSource}" />
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:url var="variantImageUrl" value="${variantImageSource}" />
+                                        </c:otherwise>
+                                    </c:choose>
+                                </c:if>
                                 <input type="radio" id="${variantId}" name="variantCode" value="${variant.variantCode}"
-                                       data-price="${variant.price}" data-inventory="${variant.inventoryCount}" />
+                                       data-price="${variant.price}" data-inventory="${variant.inventoryCount}"
+                                       data-image="${variantImageUrl}" />
                                 <span class="variant-option__content">
                                     <strong class="variant-option__name"><c:out value="${variant.variantCode}" /></strong>
                                 </span>
@@ -231,6 +310,54 @@
         const thumbnails = document.querySelectorAll('.product-detail__thumbnail');
         const mainImage = document.getElementById('mainImage');
 
+        function normalizeUrl(url) {
+            if (!url) {
+                return '';
+            }
+            try {
+                return new URL(url, window.location.origin).href;
+            } catch (error) {
+                return url;
+            }
+        }
+
+        function updateMainImage(newUrl) {
+            if (!mainImage || !newUrl) {
+                return;
+            }
+            mainImage.src = newUrl;
+        }
+
+        function setActiveThumbnail(targetUrl) {
+            if (!thumbnails.length) {
+                return;
+            }
+            const normalizedTarget = normalizeUrl(targetUrl);
+            let matched = false;
+            thumbnails.forEach(button => {
+                const buttonUrl = normalizeUrl(button.dataset.image);
+                if (normalizedTarget && buttonUrl === normalizedTarget) {
+                    button.setAttribute('aria-current', 'true');
+                    matched = true;
+                } else {
+                    button.removeAttribute('aria-current');
+                }
+            });
+            if (!matched && mainImage) {
+                const currentUrl = normalizeUrl(mainImage.src);
+                thumbnails.forEach(button => {
+                    const buttonUrl = normalizeUrl(button.dataset.image);
+                    if (buttonUrl && buttonUrl === currentUrl) {
+                        button.setAttribute('aria-current', 'true');
+                        matched = true;
+                    }
+                });
+            }
+            if (!matched) {
+                thumbnails.forEach(button => button.removeAttribute('aria-current'));
+            }
+        }
+
         function updatePriceRange(rangeMin, rangeMax) {
             if (!priceDisplay) {
                 return;
@@ -249,6 +376,7 @@
         function updateForVariant(radio) {
             if (!radio) {
                 updatePriceRange(minPrice, maxPrice);
+                setActiveThumbnail(mainImage ? mainImage.src : '');
                 return;
             }
             const variantPrice = parseFloat(radio.dataset.price || '0');
@@ -282,11 +410,17 @@
                     buyButton.textContent = 'Mua ngay';
                 }
             }
+            const variantImage = radio.dataset.image;
+            if (variantImage) {
+                updateMainImage(variantImage);
+            }
+            setActiveThumbnail(variantImage || (mainImage ? mainImage.src : ''));
         }
 
         function initializeVariants() {
             if (!variantInputs.length) {
                 updatePriceRange(minPrice, maxPrice);
+                setActiveThumbnail(mainImage ? mainImage.src : '');
                 return;
             }
             let selected = Array.from(variantInputs).find(input => input.checked);
@@ -310,10 +444,22 @@
                 thumbnail.addEventListener('click', () => {
                     const newImage = thumbnail.dataset.image;
                     if (newImage) {
-                        mainImage.src = newImage;
+                        updateMainImage(newImage);
+                    }
+                    setActiveThumbnail(newImage || (mainImage ? mainImage.src : ''));
+                    const targetVariantId = thumbnail.dataset.variant;
+                    if (targetVariantId) {
+                        const variantInput = document.getElementById(targetVariantId);
+                        if (variantInput) {
+                            if (!variantInput.checked) {
+                                variantInput.checked = true;
+                            }
+                            variantInput.dispatchEvent(new Event('change', {bubbles: true}));
+                        }
                     }
                 });
             });
+            setActiveThumbnail(mainImage ? mainImage.src : '');
         }
 
         initializeVariants();

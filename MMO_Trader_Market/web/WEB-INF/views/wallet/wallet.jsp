@@ -21,12 +21,15 @@
     List<Map<String, String>> navItems = new ArrayList<>();
     String contextPath = request.getContextPath();
 
-    Map<String, String> guideLink = new HashMap<>();
-    guideLink.put("href", contextPath + "/styleguide");
-    navItems.add(guideLink);
+    Map<String, String> homeLink = new HashMap<>();
+    homeLink.put("href", contextPath + "/home");
+    homeLink.put("label", "Trở về trang chủ");
+    navItems.add(homeLink);
+
 
     request.setAttribute("navItems", navItems);
 %>
+
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content grid-2">

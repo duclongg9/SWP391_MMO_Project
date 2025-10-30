@@ -152,10 +152,9 @@ public class ProductService {
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
         String normalizedType = normalizeFilter(productType);
-        if (normalizedType == null) {
-            throw new IllegalArgumentException("Loại sản phẩm không hợp lệ");
-        }
-        List<String> normalizedSubtypes = normalizeSubtypeList(normalizedType, productSubtypes);
+        List<String> normalizedSubtypes = normalizedType == null
+                ? List.of()
+                : normalizeSubtypeList(normalizedType, productSubtypes);
         String normalizedKeyword = normalize(keyword);
 
         long totalItems = productDAO.countAvailableByType(normalizedType, normalizedSubtypes, normalizedKeyword);
@@ -442,6 +441,8 @@ public class ProductService {
                 if (option == null) {
                     continue;
                 }
+                String resolvedImage = resolveImagePath(option.getImageUrl());
+                option.setImageUrl(resolvedImage);
                 normalized.add(option);
             }
             return List.copyOf(normalized);
