@@ -47,7 +47,7 @@ public class HomepageController extends BaseController {
 
         populateHomepageData(request); //để nạp toàn bộ dữ liệu cần cho giao diện.
 
-        request.setAttribute("query", ""); //Set các filter mặc địn
+        request.setAttribute("query", ""); //Set các filter mặc định
         request.setAttribute("selectedType", "");
         request.setAttribute("selectedSubtype", "");
 
@@ -78,6 +78,7 @@ public class HomepageController extends BaseController {
         request.setAttribute("systemNotes", systemNotes);
 
         request.setAttribute("faqs", buildFaqEntries());
+        
         request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions()); //tuỳ chọn filter loại sản phẩm
     }
 
