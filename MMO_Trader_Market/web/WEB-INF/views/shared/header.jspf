@@ -30,7 +30,6 @@
 </c:url>
 <c:url value="/wallet" var="walletUrl" />
 <c:url value="/orders" var="ordersUrl" />
-<c:url value="/admin" var="adminDashboardUrl" />
 <c:url value="/dashboard" var="sellerDashboardUrl" />
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
 <c:set var="isAuthPage"
@@ -144,11 +143,6 @@
 
         <!-- Account Actions -->
         <div class="site-header__actions">
-            <c:if test="${isLoggedIn and userRole eq 1}">
-                <a class="button button--ghost site-header__dashboard" href="${adminDashboardUrl}">
-                    Trang admin
-                </a>
-            </c:if>
             <c:choose>
                 <c:when test="${isLoggedIn}">
                     <div class="menu menu--account" aria-label="Tài khoản người dùng">

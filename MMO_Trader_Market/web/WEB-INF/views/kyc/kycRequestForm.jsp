@@ -12,16 +12,28 @@
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
+    request.setAttribute("headerTitle", "Menu");
+    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
     request.setAttribute("headerModifier", "layout__header--split");
 
     List<Map<String, String>> navItems = new ArrayList<>();
     String contextPath = request.getContextPath();
 
-    Map<String, String> productLink = new HashMap<>();
-    productLink.put("href", contextPath + "/products");
-    productLink.put("label", "Danh sách sản phẩm");
-    navItems.add(productLink);
+    Map<String, String> homeLink = new HashMap<>();
+    homeLink.put("href", contextPath + "/home");
+    homeLink.put("label", "Trở về trang chủ");
+    navItems.add(homeLink);
 
+    Map<String, String> guideLink = new HashMap<>();
+    guideLink.put("href", contextPath + "/styleguide");
+    guideLink.put("label", "Thư viện giao diện");
+    navItems.add(guideLink);
+
+    Map<String, String> logoutLink = new HashMap<>();
+    logoutLink.put("href", contextPath + "/auth?action=logout");
+    logoutLink.put("label", "Đăng xuất");
+    logoutLink.put("modifier", "menu__item--danger");
+    navItems.add(logoutLink);
 
     request.setAttribute("navItems", navItems);
 %>

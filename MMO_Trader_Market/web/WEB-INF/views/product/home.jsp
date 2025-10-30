@@ -26,9 +26,9 @@
 
     <section class="panel landing__hero">
         <div class="landing__hero-main">
-            <h2>Chợ tài khoản MMO dành cho seller và buyer chuyên nghiệp</h2>
+            <h2>Chợ tài khoản MMO chuyên nghiệp, UY TÍN </h2>
             <p class="landing__lead">
-                Thống kê trên trang được đồng bộ trực tiếp từ cơ sở dữ liệu MySQL của hệ thống.
+                Điều mà chúng tôi đã đạt được:
             </p>
             <c:set var="summary" value="${summary}" />
             <ul class="landing__metrics">
