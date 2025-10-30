@@ -202,6 +202,16 @@ CREATE TABLE `orders` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
+-- View tổng hợp số lượng sản phẩm đã bán dựa trên bảng orders
+DROP VIEW IF EXISTS `product_sales_view`;
+CREATE VIEW `product_sales_view` AS
+SELECT
+  o.product_id,
+  SUM(o.quantity) AS sold_count
+FROM orders o
+WHERE o.status = 'Completed'
+GROUP BY o.product_id;
+
 DROP TABLE IF EXISTS `deposit_requests`;
 CREATE TABLE `deposit_requests` (
   `id` int NOT NULL AUTO_INCREMENT,
