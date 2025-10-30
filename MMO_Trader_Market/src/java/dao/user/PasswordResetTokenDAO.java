@@ -13,7 +13,7 @@ import java.sql.Timestamp;
  * DAO thao tác bảng password_reset_tokens.
  */
 public class PasswordResetTokenDAO {
-
+//tạo bản ghi token đặt lại mật khẩu
     public void createToken(int userId, String token, Timestamp expiresAt) throws SQLException {
         final String sql = """
                 INSERT INTO password_reset_tokens (user_id, token, expires_at)
