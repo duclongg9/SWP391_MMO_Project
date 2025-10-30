@@ -121,8 +121,8 @@ public class UserService {
     }
 
     public Users loginWithGoogle(String googleId, String email, String displayName) {
-        String normalizedGoogleId = requireText(googleId, "Google ID không hợp lệ");
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedGoogleId = requireText(googleId, "Google ID không hợp lệ"); // ép ggid k null, rỗng-> ném lỗi
+        String normalizedEmail = normalizeEmail(email); // chuẩn hóa
         validateEmail(normalizedEmail);
         String normalizedName = displayName == null || displayName.isBlank()
                 ? normalizedEmail
@@ -151,7 +151,7 @@ public class UserService {
         }
 
         try {
-            Users user = userDAO.getUserByEmail(normalizedEmail);
+            Users user = userDAO.getUserByEmail(normalizedEmail); // lấy ng dùng theo email
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
