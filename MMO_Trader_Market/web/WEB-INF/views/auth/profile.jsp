@@ -6,6 +6,9 @@
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="model.Products" %>
+<fmt:setLocale value="vi_VN" scope="request" />
+<c:set var="extraStylesheet" scope="request"
+       value="${pageContext.request.contextPath}/assets/css/components/filterbar.css" />
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
