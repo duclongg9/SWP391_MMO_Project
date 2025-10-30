@@ -11,7 +11,7 @@ public class Users {
     private String avatarUrl;
     private String hashedPassword;
     private String googleId;
-    private Boolean status;
+    private int status;
     private Date createdAt;
     private Date updatedAt;
     private String roleName;
@@ -35,8 +35,7 @@ public class Users {
                 + '}';
     }
 
-    public Users(Integer id, Integer roleId, String email, String name, String avatarUrl, String hashedPassword, String googleId,
-            Boolean status, Date createdAt, Date updatedAt) {
+    public Users(Integer id, Integer roleId, String email, String name, String avatarUrl, String hashedPassword, String googleId, int status, Date createdAt, Date updatedAt, String roleName) {
         this.id = id;
         this.roleId = roleId;
         this.email = email;
@@ -47,7 +46,10 @@ public class Users {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.roleName = roleName;
     }
+
+    
 
     public Integer getId() {
         return id;
@@ -105,13 +107,15 @@ public class Users {
         this.googleId = googleId;
     }
 
-    public Boolean getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(Boolean status) {
+    public void setStatus(int status) {
         this.status = status;
     }
+
+ 
 
     public Date getCreatedAt() {
         return createdAt;

@@ -1,8 +1,14 @@
 package service;
 
 import dao.user.EmailVerificationTokenDAO;
+import conf.AppConfig;
 import dao.user.PasswordResetTokenDAO;
 import dao.user.UserDAO;
+import jakarta.servlet.http.Part;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import model.PasswordResetToken;
 import model.Users;
 import units.HashPassword;
@@ -15,8 +21,12 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import utils.ImageUtils;
 
 public class UserService {
+
+    private static final String RELATIVE_UPLOAD_DIR = AppConfig.get("upload.avatar.relative");
+    private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.avatar.absolute");
 
     // Regex kiểm tra định dạng email hợp lệ.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
@@ -56,30 +66,29 @@ public class UserService {
      */
     public Users registerNewUser(String email, String name, String password, String confirmPassword) {
         String normalizedEmail = normalizeEmail(email);
+
         validateEmail(normalizedEmail);
 
         String normalizedName = requireText(name, "Vui lòng nhập tên hiển thị");
         String rawPassword = requireText(password, "Vui lòng nhập mật khẩu");
         validatePassword(rawPassword);
-        ensurePasswordMatch(rawPassword, confirmPassword);
+        ensurePasswordMatch(rawPassword, confirmPassword); // bảo đảm ===
+        
 
         try {
-            ensureEmailAvailable(normalizedEmail);
+            ensureEmailAvailable(normalizedEmail); // check mail trùng
             String hashedPassword = HashPassword.toSHA1(rawPassword);
             Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID,
-                    false);
+                    2);
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
-            String verificationCode = createAndStoreVerificationCode(created.getId());
-            // hàm xử lý khởi tạo mail tới tài khoản email thông qua hàm getMail và getName để lấy nội dung người dùng.
-            sendVerificationEmail(created.getEmail(), created.getName(), verificationCode);
+            String verificationCode = createAndStoreVerificationCode(created.getId()); //Tạo mã xác thực email duy nhất
+            sendVerificationEmail(created.getEmail(), created.getName(), verificationCode); // gửi mail kèm code 
             return created;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể gửi email xác thực tài khoản. Vui lòng thử lại sau.", e);
-        }
+        } 
     }
 
     public Users authenticate(String email, String password) {
@@ -98,29 +107,32 @@ public class UserService {
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
-        if (Boolean.FALSE.equals(user.getStatus())) {
+        if ((user.getStatus()) == 2) {
             if (isEmailVerificationPending(user)) {
                 throw new InactiveAccountException("Tài khoản của bạn chưa được xác thực email", user);
             }
+        }
+        
+        if((user.getStatus()) == 0){
             throw new IllegalStateException("Tài khoản của bạn đang bị khóa");
         }
         return user;
     }
 
     public Users loginWithGoogle(String googleId, String email, String displayName) {
-        String normalizedGoogleId = requireText(googleId, "Google ID không hợp lệ");
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedGoogleId = requireText(googleId, "Google ID không hợp lệ"); // ép ggid k null, rỗng-> ném lỗi
+        String normalizedEmail = normalizeEmail(email); // chuẩn hóa
         validateEmail(normalizedEmail);
         String normalizedName = displayName == null || displayName.isBlank()
                 ? normalizedEmail
                 : displayName.trim();
 
         try {
-            Users existingGoogleUser = userDAO.getUserByGoogleId(normalizedGoogleId);
+            Users existingGoogleUser = userDAO.getUserByGoogleId(normalizedGoogleId); //Tra cứu theo googleId
             if (existingGoogleUser != null) {
                 return existingGoogleUser;
             }
-            Users linkedUser = linkGoogleAccount(normalizedEmail, normalizedGoogleId);
+            Users linkedUser = linkGoogleAccount(normalizedEmail, normalizedGoogleId); // ch có-> liên kết vào user sẵn có theo email
             if (linkedUser != null) {
                 return linkedUser;
             }
@@ -131,23 +143,22 @@ public class UserService {
     }
 
     public void requestPasswordReset(String email, String resetBaseUrl) {
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedEmail = normalizeEmail(email); // chuẩn hóa
         validateEmail(normalizedEmail);
         if (resetBaseUrl == null || resetBaseUrl.isBlank()) {
             throw new IllegalArgumentException("Thiếu đường dẫn reset mật khẩu");
         }
 
         try {
-            Users user = userDAO.getUserByEmail(normalizedEmail);
+            Users user = userDAO.getUserByEmail(normalizedEmail); // lấy ng dùng theo email
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-
-            String token = UUID.randomUUID().toString().replace("-", "");
-            Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L));
+            String token = UUID.randomUUID().toString().replace("-", ""); // tạo UUID ngẫu nhiên, bỏ -,''
+            Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L)); //hời điểm hết hạn
             passwordResetTokenDAO.createToken(user.getId(), token, expiresAt);
-            String resetLink = resetBaseUrl + "?token=" + token;
-            sendResetMail(user.getEmail(), user.getName(), resetLink);
+            String resetLink = resetBaseUrl + "?token=" + token; //Tạo URL đầy đủ, bấm trong email.
+            sendResetMail(user.getEmail(), user.getName(), resetLink); // gửi mail cho ng dùng
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
@@ -179,25 +190,25 @@ public class UserService {
         validateEmail(normalizedEmail);
         String normalizedCode = requireText(code, "Vui lòng nhập mã xác thực");
         try {
-            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail); //Lấy user theo email
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            if (Boolean.TRUE.equals(user.getStatus())) {
+            if (Boolean.TRUE.equals(user.getStatus())) { // ng dùng đã active =1
                 return false;
             }
-            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId());
+            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId()); //lấy mã xác thực đang lưu trong DB 
             if (storedCode == null || storedCode.isBlank()) {
                 throw new IllegalStateException("Tài khoản này không có mã xác thực hợp lệ");
             }
-            if (!storedCode.equals(normalizedCode)) {
+            if (!storedCode.equals(normalizedCode)) { //So sánh mã
                 throw new IllegalArgumentException("Mã xác thực không chính xác");
             }
-            int updated = userDAO.activateUser(user.getId());
-            if (updated < 1) {
+            int updated = userDAO.activateUser(user.getId()); //kích hoạt tài khoản
+            if (updated == 2) {
                 throw new IllegalStateException("Không thể kích hoạt tài khoản lúc này. Vui lòng thử lại sau");
             }
-            emailVerificationTokenDAO.deleteByUserId(user.getId());
+            emailVerificationTokenDAO.deleteByUserId(user.getId()); // xóa userid, code
             return true;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi xác thực email", e);
@@ -217,12 +228,12 @@ public class UserService {
                 throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
             }
 
-            String hashed = HashPassword.toSHA1(normalizedPassword);
+            String hashed = HashPassword.toSHA1(normalizedPassword); // băm mk
             int updated = userDAO.updateUserPassword(resetToken.getUserId(), hashed);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại");
             }
-            passwordResetTokenDAO.markUsed(resetToken.getId());
+            passwordResetTokenDAO.markUsed(resetToken.getId()); //Đánh dấu token đã dùng để không thể dùng lại
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể đặt lại mật khẩu lúc này. Vui lòng thử lại sau.", e);
         }
@@ -247,16 +258,63 @@ public class UserService {
     /**
      * Cập nhật tên hiển thị
      */
-    public int updateMyProfile(int id, String name) {
-        try {
-            int updated = userDAO.updateUserProfileBasic(id, name);
-            if (updated < 1) {
-                throw new IllegalArgumentException("Tài khoản của bạn không tồn tại hoặc đã bị khóa");
+    public int updateMyProfile(int id, String name, Part avatar) throws IOException, SQLException {
+        Users current = userDAO.getUserByUserId(id);
+        boolean changed = false;
+
+        //người dùng có update tên
+        String finalName = current.getName();
+        if (name != null && !name.trim().isEmpty()) {
+
+            name = name.trim().replaceAll("\\s{2,}", " "); // xoá khoảng trắng thừa
+
+            if (!name.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
+                throw new IOException("Tên chỉ được chứa chữ ,khoảng trắng, không chứa ký tự đặc biệt.");
             }
-            return updated;
-        } catch (SQLException e) {
-            throw new RuntimeException("DB gặp sự cố khi cập nhật dữ liệu người dùng", e);
+            finalName = name;
+            changed = true;
         }
+        
+        //Người dùng nhập ảnh
+        String avatarRel = current.getAvatarUrl(); // giữ ảnh cũ mặc định
+        Path avatarPath = null;
+        if (avatar != null && avatar.getSize() > 0) {
+            // Validate MIME
+            if (!ImageUtils.isAllowedImage(avatar.getContentType())) {
+                throw new IOException("Chỉ chấp nhận ảnh JPG, PNG, hoặc WebP.");
+            }
+
+            Path uploadDir = Paths.get(ABSOLUTE_UPLOAD_DIR);
+            Files.createDirectories(uploadDir);
+
+            // Tạo tên file duy nhất
+            String avatarFileName = "avata_" + UUID.randomUUID() + ImageUtils.extFromMime(avatar.getContentType());
+
+            avatarPath = uploadDir.resolve(avatarFileName);
+
+            // Ghi file
+            try {
+                avatar.write(avatarPath.toString());
+            } catch (Exception e) {
+                throw new IOException("Không thể lưu file ảnh lên máy chủ.", e);
+            }
+
+            // Lưu DB
+             avatarRel = RELATIVE_UPLOAD_DIR + "/" + avatarFileName;
+             changed = true;
+        }
+        //Gắn cờ, nếu không có gì thay đổi thì không update DB
+        if(!changed){
+            return 0;
+        }
+        
+        int rows = userDAO.updateUserProfileBasic(id, finalName, avatarRel);
+        if (rows <= 0) {
+            Files.deleteIfExists(avatarPath);
+            throw new IOException("Cập nhật thông tin người dùng thất ");
+        }
+
+        return rows;
     }
 
     public int updatePassword(int id, String oldPassword, String newPassword) {
@@ -400,7 +458,7 @@ public class UserService {
     }
 
     private boolean isEmailVerificationPending(Users user) {
-        if (user == null || user.getId() == null || !Boolean.FALSE.equals(user.getStatus())) {
+        if (user == null || user.getId() == null ||user.getStatus()==1){
             return false;
         }
         try {
@@ -412,13 +470,13 @@ public class UserService {
 
     private String createAndStoreVerificationCode(int userId) throws SQLException {
         for (int attempt = 0; attempt < 5; attempt++) {
-            String code = generateVerificationCode();
+            String code = generateVerificationCode(); //// 1) Sinh mã ngẫu nhiên (OTP/token)
             try {
                 emailVerificationTokenDAO.createToken(userId, code);
-                return code;
+                return code; // // 3) Thành công → trả mã
             } catch (SQLException e) {
                 if (isDuplicateCode(e) && attempt < 4) {
-                    continue;
+                    continue; //// 4) Nếu đụng UNIQUE (mã bị trùng) → thử lại
                 }
                 throw e;
             }
@@ -438,14 +496,13 @@ public class UserService {
         int code = RANDOM.nextInt(900000) + 100000;
         return String.valueOf(code);
     }
-
     private Users linkGoogleAccount(String email, String googleId) throws SQLException {
-        Users existingEmailUser = userDAO.getUserByEmail(email);
+        Users existingEmailUser = userDAO.getUserByEmail(email); //// user theo email đã có trong hệ thống
         if (existingEmailUser == null) {
             return null;
         }
-        userDAO.updateGoogleId(existingEmailUser.getId(), googleId);
-        existingEmailUser.setGoogleId(googleId);
+        userDAO.updateGoogleId(existingEmailUser.getId(), googleId); //cập nhật googleId vào DB
+        existingEmailUser.setGoogleId(googleId); //cập nhật lại giá trị trên object đang dùng,
         return existingEmailUser;
     }
 

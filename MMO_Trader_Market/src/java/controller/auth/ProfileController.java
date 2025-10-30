@@ -7,11 +7,13 @@ package controller.auth;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,6 +30,11 @@ import service.UserService;
  * @author D E L L
  */
 @WebServlet(name = "ProfileController", urlPatterns = {"/profile"})
+@MultipartConfig(
+        fileSizeThreshold = 1 * 1024 * 1024, // 1MB cache
+        maxFileSize = 10 * 1024 * 1024, // 10MB/file
+        maxRequestSize = 20 * 1024 * 1024 // 20MB/tổng
+)
 public class ProfileController extends HttpServlet {
 
     // Dịch vụ người dùng phục vụ các thao tác xem và cập nhật hồ sơ.
@@ -118,8 +125,9 @@ public class ProfileController extends HttpServlet {
             switch (action) {
                 case "updateProfile": {
                     String name = request.getParameter("fullName");
+                    Part avatar = request.getPart("avatar");
                     // Cập nhật tên hiển thị của người dùng hiện tại.
-                    viewProfileService.updateMyProfile(user, name);
+                    viewProfileService.updateMyProfile(user, name, avatar);
                     session.setAttribute("msg", "Thông tin đã được cập nhật.");
                     response.sendRedirect(request.getContextPath() + "/profile");
                     break;
@@ -146,6 +154,8 @@ public class ProfileController extends HttpServlet {
         } catch (RuntimeException e) {
             // Lỗi hệ thống: ghi nhận flash chung và quay lại trang hồ sơ.
             response.sendRedirect(request.getContextPath() + "/profile");
+        } catch (SQLException ex) {
+            Logger.getLogger(ProfileController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
