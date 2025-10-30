@@ -75,7 +75,7 @@ public class ProductDetailController extends BaseController {
                 }
             }
 
-            boolean canBuy = isAuthenticated && product.isAvailable()
+            boolean canBuy = isAuthenticated && product.isAvailable() //Kiểm tra người dùng đã đăng nhập chưa 
                     // Chỉ cho phép mua khi sản phẩm còn khả dụng và có dữ liệu bàn giao.
                     && productService.hasDeliverableCredentials(product.getId(), product.getVariants());
 
