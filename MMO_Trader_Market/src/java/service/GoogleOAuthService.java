@@ -30,8 +30,8 @@ public class GoogleOAuthService {
     // Tạo URL điều hướng người dùng sang màn hình đăng nhập Google.
     public String buildAuthorizationUrl(String state) {
         String clientId = requireConfig("google.clientId");
-        String redirectUri = requireConfig("google.redirectUri");
-        String scope = urlEncode("openid email profile");
+        String redirectUri = requireConfig("google.redirectUri"); // lấy cấu hình từ file .properties
+        String scope = urlEncode("openid email profile"); //chuyển từ OAuth2 sang OpenID Connect (cho phép lấy ID Token / danh tính).
         return AUTH_ENDPOINT
                 + "?response_type=code"
                 + "&client_id=" + urlEncode(clientId)
@@ -39,11 +39,11 @@ public class GoogleOAuthService {
                 + "&scope=" + scope
                 + "&state=" + urlEncode(state)
                 + "&prompt=select_account";
-    }
+    } //Ghép URL đầy đủ tới Authorization Endpoint của Google
 
-    // Đổi mã ủy quyền lấy thông tin tài khoản Google.
+    // Đổi mã ủy quyền(authorization code) lấy thông tin tài khoản Google.
     public GoogleProfile fetchUserProfile(String code) {
-        JsonObject tokenResponse = exchangeCodeForTokens(code);
+        JsonObject tokenResponse = exchangeCodeForTokens(code); //Gọi token endpoint của Google để đổi code lấy token
         String accessToken = getRequiredField(tokenResponse, "access_token");
         JsonObject userInfo = requestUserInfo(accessToken);
         return mapProfile(userInfo);

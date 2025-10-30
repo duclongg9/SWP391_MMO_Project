@@ -185,7 +185,7 @@ public class ManageUserDAO {
             int val = (statusObj instanceof Boolean) ? ((Boolean) statusObj ? 1 : 0) : ((Number) statusObj).intValue();
             active = val == 1;
         }
-        u.setStatus(active);
+        u.setStatus(1);
         u.setRoleName(rs.getString("role_name"));
         Timestamp cAt = rs.getTimestamp("created_at");
         Timestamp uAt = rs.getTimestamp("updated_at");

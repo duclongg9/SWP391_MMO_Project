@@ -49,7 +49,7 @@
 
         <!--Form cập nhật thông tin -->
         <form id="profileForm" class="card" method="post"
-              action="${pageContext.request.contextPath}/profile">
+              action="${pageContext.request.contextPath}/profile" enctype="multipart/form-data">
             <input type="hidden" name="action" value="updateProfile">
             <div class="panel__header">
                 <h2 class="panel__title">Thông tin người dùng</h2>
@@ -60,8 +60,9 @@
                     <tr>
                         <th scope="row"><label>Ảnh đại diện</label></th>
                         <td>
-                            <img src="${pageContext.request.contextPath}/assets/img/user-placeholder.svg"
-                                 alt="Ảnh đại diện" class="avatar">
+                            <img src="${pageContext.request.contextPath}${myProfile.avatarUrl}" 
+                                alt="Ảnh đại diện" class="avatar" style="width:80px;height:80px;border-radius:50%;">
+                           
                         </td>
                     </tr>
 
@@ -73,7 +74,7 @@
                     <tr>
                         <th scope="row"><label for="fullName">Họ và tên</label></th>
                         <td>
-                            <input id="fullName" name="fullName" type="text" required maxlength="100"
+                            <input id="fullName" name="fullName" type="text" maxlength="100"
                                    autocomplete="name" placeholder="${myProfile.name}">
                         </td>
                     </tr>
@@ -84,6 +85,14 @@
                             <input id="email" name="email" type="email" autocomplete="email"
                                    placeholder="${myProfile.email}"readonly>
                         </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="email">Chọn ảnh đại diện:</label></th>
+                        <td scope="row">
+                        <div class="form-card__field">
+                            <input id="avatar" name="avatar" type="file" accept="image/*" class="form-control" >
+                         </div>
+                         </td>  
                     </tr>
 
                     <tr>
