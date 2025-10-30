@@ -49,7 +49,8 @@ public class ProductListController extends BaseController {
         List<ProductTypeOption> typeOptions = productService.getTypeOptions();
         String requestedType = request.getParameter("type");
         String normalizedType = productService.normalizeTypeCode(requestedType);
-        if (normalizedType == null) {
+        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty();
+        if (normalizedType == null && hasRawType) {
             Optional<String> fallbackType = typeOptions.stream()
                     .map(ProductTypeOption::getCode)
                     .findFirst();
@@ -78,12 +79,16 @@ public class ProductListController extends BaseController {
 
         PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
                 normalizedKeyword, page, size);
-        List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(normalizedType);
-        String currentTypeLabel = typeOptions.stream()
-                .filter(option -> option.getCode().equals(normalizedType))
-                .map(ProductTypeOption::getLabel)
-                .findFirst()
-                .orElse(productService.getTypeLabel(normalizedType));
+        List<ProductSubtypeOption> subtypeOptions = normalizedType == null
+                ? List.of()
+                : productService.getSubtypeOptions(normalizedType);
+        String currentTypeLabel = normalizedType == null
+                ? "Tất cả sản phẩm"
+                : typeOptions.stream()
+                        .filter(option -> option.getCode().equals(normalizedType))
+                        .map(ProductTypeOption::getLabel)
+                        .findFirst()
+                        .orElse(productService.getTypeLabel(normalizedType));
 
         request.setAttribute("pageTitle", currentTypeLabel + " - Sản phẩm");
         request.setAttribute("items", result.getItems());
@@ -93,7 +98,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("pageSize", result.getSize());
         request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("selectedType", normalizedType);
+        request.setAttribute("selectedType", normalizedType == null ? "" : normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
         request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
         request.setAttribute("typeOptions", typeOptions);

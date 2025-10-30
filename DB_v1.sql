@@ -606,7 +606,7 @@ VALUES
   JSON_OBJECT('variant_code','gmail-edu-6m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','6m'),'price',300000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available'),
   JSON_OBJECT('variant_code','gmail-edu-12m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','12m'),'price',520000.0000,'inventory_count',8,'image_url','gmail2.jpg','status','Available')
 ),NOW(),NOW()),
-(1030,1,'SOCIAL','OTHER','Telegram Premium','Nâng cấp Telegram Premium theo kỳ hạn.','Tính năng Premium: upload lớn, chuyển giọng nói sang text, sticker/emoji nâng cao.',115000.0000,'telegram.png',JSON_ARRAY('tiktok.png'),26,110,'Available','DURATION_PLAN',JSON_ARRAY(
+(1030,1,'SOCIAL','OTHER','Telegram Premium','Nâng cấp Telegram Premium theo kỳ hạn.','Tính năng Premium: upload lớn, chuyển giọng nói sang text, sticker/emoji nâng cao.',115000.0000,'telegram.png',JSON_ARRAY(),26,110,'Available','DURATION_PLAN',JSON_ARRAY(
   JSON_OBJECT('variant_code','tg-prem-1m','attributes', JSON_OBJECT('service','telegram','duration','1m'),'price',115000.0000,'inventory_count',16,'image_url','telegram.png','status','Available'),
   JSON_OBJECT('variant_code','tg-prem-12m','attributes', JSON_OBJECT('service','telegram','duration','12m'),'price',1150000.0000,'inventory_count',10,'image_url','tiktok.png','status','Available')
 ),NOW(),NOW());

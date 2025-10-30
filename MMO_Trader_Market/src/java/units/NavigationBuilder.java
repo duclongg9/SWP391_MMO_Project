@@ -30,13 +30,6 @@ public final class NavigationBuilder {
         HttpSession session = request.getSession(false);
         Integer roleId = session == null ? null : (Integer) session.getAttribute("userRole");
 
-        if (isAdminRole(roleId)) {
-            items.add(createNavItem(contextPath + RoleHomeResolver.ADMIN_HOME, "Dashboard",
-                    isActive(currentPath, RoleHomeResolver.ADMIN_HOME)));
-            items.add(createNavItem(contextPath + "/orders", "Quản lý đơn hàng",
-                    isActive(currentPath, "/orders")));
-        }
-
         if (isSellerRole(roleId)) {
             Map<String, Object> sellerDropdown = buildSellerDropdown(contextPath, currentPath);
             if (sellerDropdown != null) {
