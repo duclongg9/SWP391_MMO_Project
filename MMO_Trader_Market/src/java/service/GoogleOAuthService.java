@@ -41,9 +41,9 @@ public class GoogleOAuthService {
                 + "&prompt=select_account";
     } //Ghép URL đầy đủ tới Authorization Endpoint của Google
 
-    // Đổi mã ủy quyền lấy thông tin tài khoản Google.
+    // Đổi mã ủy quyền(authorization code) lấy thông tin tài khoản Google.
     public GoogleProfile fetchUserProfile(String code) {
-        JsonObject tokenResponse = exchangeCodeForTokens(code);
+        JsonObject tokenResponse = exchangeCodeForTokens(code); //Gọi token endpoint của Google để đổi code lấy token
         String accessToken = getRequiredField(tokenResponse, "access_token");
         JsonObject userInfo = requestUserInfo(accessToken);
         return mapProfile(userInfo);

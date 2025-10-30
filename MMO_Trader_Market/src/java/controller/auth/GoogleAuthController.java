@@ -70,13 +70,13 @@ public class GoogleAuthController extends BaseController {
             sendErrorFlash(request, response, "Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại.");
             return;
         }
-        session.removeAttribute(SESSION_STATE);
+        session.removeAttribute(SESSION_STATE); //Xóa state sau khi dùng để tránh reuse
         try {
             // Lấy thông tin hồ sơ từ Google và đăng nhập (hoặc tạo mới) tài khoản nội bộ.
             GoogleProfile profile = googleOAuthService.fetchUserProfile(code);
             Users user = userService.loginWithGoogle(profile.getGoogleId(), profile.getEmail(), profile.getName());
             HttpSession newSession = renewSession(request);
-            newSession.setAttribute("currentUser", user);
+            newSession.setAttribute("currentUser", user); //gắn các thuộc tính phiên dùng cho app
             newSession.setAttribute("userId", user.getId());
             newSession.setAttribute("userRole", user.getRoleId());
             // Đăng nhập thành công thì đưa người dùng về trang chủ phù hợp.

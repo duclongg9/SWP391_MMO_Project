@@ -27,17 +27,9 @@ import java.util.logging.Logger;
  */
 @WebServlet(name = "RegisterController", urlPatterns = {"/register"})
 public class RegisterController extends BaseController {
-
-    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
-
-    // Bộ ghi log dùng theo dõi các lỗi hệ thống trong quá trình đăng ký.
     private static final Logger LOGGER = Logger.getLogger(RegisterController.class.getName());
-
-    // Lớp dịch vụ xử lý nghiệp vụ đăng ký người dùng mới.
     private final UserService userService = new UserService(new UserDAO());
-
-    // Hiển thị biểu mẫu đăng ký cho khách truy cập.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -64,15 +56,11 @@ public class RegisterController extends BaseController {
             forward(request, response, "auth/register");
             return;
         }
-
         try {
-            // Gọi dịch vụ để tạo tài khoản mới dựa trên thông tin từ form.
             Users createdUser = userService.registerNewUser(email, name, password, confirmPassword);
-
             HttpSession session = request.getSession();
-            // Lưu thông báo và email để hiển thị sau khi chuyển hướng sang trang đăng nhập.
             session.setAttribute("registerSuccess",
-                    "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.");
+                    "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."); //flash scope để mang thông điệp qua redirect
             session.setAttribute("newUserEmail", createdUser.getEmail());
             session.setAttribute("pendingVerificationEmail", createdUser.getEmail());
             session.setAttribute("showVerificationModal", Boolean.TRUE);
