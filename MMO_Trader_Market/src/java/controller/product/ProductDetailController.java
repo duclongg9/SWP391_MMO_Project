@@ -29,20 +29,16 @@ import java.util.List;
  */
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail/*"})
 public class ProductDetailController extends BaseController {
-
-    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
-
     // Dịch vụ sản phẩm giúp truy vấn chi tiết và tìm kiếm sản phẩm liên quan.
     private final ProductService productService = new ProductService();
-
     // Xử lý yêu cầu hiển thị chi tiết sản phẩm bằng token mã hóa hoặc ID cũ.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String token = extractTokenFromPath(request);
+        String token = extractTokenFromPath(request); //    // Tách token sản phẩm từ phần path của URL thân thiện.
         if (token == null) {
-            int legacyId = parsePositiveInt(request.getParameter("id"));
+            int legacyId = parsePositiveInt(request.getParameter("id")); //id phải là số dương
             if (legacyId > 0) {
                 // Hỗ trợ URL cũ ?id=... bằng cách chuyển sang đường dẫn mới.
                 String redirect = buildProductRedirect(request, legacyId);
