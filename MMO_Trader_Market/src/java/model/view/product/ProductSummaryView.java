@@ -6,14 +6,11 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * <p>
  * View model gọn nhẹ dùng chung cho trang chủ, trang duyệt và khối gợi ý sản
- * phẩm.</p>
- * <p>
+ * phẩm.
  * {@link service.ProductService} chuyển đổi từ
  * {@link model.product.ProductListRow} sang lớp này để cung cấp đủ thông tin
- * hiển thị (ảnh đại diện, giá min/max, nhãn loại, shop) cho nhiều JSP.</p>
- *
+ * hiển thị (ảnh đại diện, giá min/max, nhãn loại, shop) cho nhiều JSP.
  * @author longpdhe171902
  */
 public class ProductSummaryView {

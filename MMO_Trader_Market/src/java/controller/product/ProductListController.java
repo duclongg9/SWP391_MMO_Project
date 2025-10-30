@@ -48,8 +48,9 @@ public class ProductListController extends BaseController {
         List<ProductTypeOption> typeOptions = productService.getTypeOptions(); //Lấy danh sách type khả dụng
         String requestedType = request.getParameter("type"); //Lấy type từ query, normalize về code hợp lệ
         String normalizedType = productService.normalizeTypeCode(requestedType);
-        if (normalizedType == null) {
-            Optional<String> fallbackType = typeOptions.stream() //Có dữ liệu type → chuyển hướng sang type đầu tiên
+        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty();
+        if (normalizedType == null && hasRawType) {
+            Optional<String> fallbackType = typeOptions.stream()
                     .map(ProductTypeOption::getCode)
                     .findFirst();
             if (fallbackType.isPresent()) {
@@ -77,12 +78,16 @@ public class ProductListController extends BaseController {
 //Gọi service lấy kết quả trang (items, page, size, total, totalPages).
         PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
                 normalizedKeyword, page, size);
-        List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(normalizedType);
-        String currentTypeLabel = typeOptions.stream() //lấy nhãn hiển thị của type
-                .filter(option -> option.getCode().equals(normalizedType))
-                .map(ProductTypeOption::getLabel)
-                .findFirst()
-                .orElse(productService.getTypeLabel(normalizedType));
+        List<ProductSubtypeOption> subtypeOptions = normalizedType == null
+                ? List.of()
+                : productService.getSubtypeOptions(normalizedType);
+        String currentTypeLabel = normalizedType == null
+                ? "Tất cả sản phẩm"
+                : typeOptions.stream()
+                        .filter(option -> option.getCode().equals(normalizedType))
+                        .map(ProductTypeOption::getLabel)
+                        .findFirst()
+                        .orElse(productService.getTypeLabel(normalizedType));
 
         request.setAttribute("pageTitle", currentTypeLabel + " - Sản phẩm");
         request.setAttribute("items", result.getItems());
@@ -92,7 +97,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("pageSize", result.getSize());
         request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("selectedType", normalizedType);
+        request.setAttribute("selectedType", normalizedType == null ? "" : normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
         request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
         request.setAttribute("typeOptions", typeOptions);
