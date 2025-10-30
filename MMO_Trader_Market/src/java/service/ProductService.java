@@ -442,6 +442,8 @@ public class ProductService {
                 if (option == null) {
                     continue;
                 }
+                String resolvedImage = resolveImagePath(option.getImageUrl());
+                option.setImageUrl(resolvedImage);
                 normalized.add(option);
             }
             return List.copyOf(normalized);
