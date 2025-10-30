@@ -56,7 +56,7 @@ public class EmailVerificationTokenDAO {
             }
         }
     }
-
+//xóa userid trong bảng email_very..
     public int deleteByUserId(int userId) throws SQLException {
         final String sql = """
                 DELETE FROM email_verification_tokens
