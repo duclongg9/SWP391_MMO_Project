@@ -34,14 +34,8 @@ import java.util.Map;
  */
 @WebServlet(name = "HomepageController", urlPatterns = {"/home"})
 public class HomepageController extends BaseController {
-
-    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
-
-    // Dịch vụ tổng hợp dữ liệu cho trang chủ (sản phẩm, shop, thông báo...).
     private final HomepageService homepageService = new HomepageService();
-
-    // Đón yêu cầu GET tới trang chủ và chuẩn bị dữ liệu hiển thị.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -51,9 +45,9 @@ public class HomepageController extends BaseController {
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
 
-        populateHomepageData(request);
+        populateHomepageData(request); //để nạp toàn bộ dữ liệu cần cho giao diện.
 
-        request.setAttribute("query", "");
+        request.setAttribute("query", ""); //Set các filter mặc địn
         request.setAttribute("selectedType", "");
         request.setAttribute("selectedSubtype", "");
 
@@ -63,16 +57,16 @@ public class HomepageController extends BaseController {
     // Tải toàn bộ dữ liệu cần thiết cho trang chủ và gán vào request.
     private void populateHomepageData(HttpServletRequest request) {
         MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
-        request.setAttribute("summary", summary);
+        request.setAttribute("summary", summary); //số liệu tổng quan
 
         List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featuredProducts);
+        request.setAttribute("featuredProducts", featuredProducts); //danh sách sản phẩm nổi bật
 
         List<Shops> shops = homepageService.loadActiveShops();
         request.setAttribute("shops", shops);
         request.setAttribute("shopIcons", buildShopIconMap());
 
-        request.setAttribute("productCategories", homepageService.loadProductCategories());
+        request.setAttribute("productCategories", homepageService.loadProductCategories()); //danh mục chính
 
         CustomerProfileView profile = homepageService.loadHighlightedBuyer();
         request.setAttribute("customerProfile", profile);
@@ -84,7 +78,7 @@ public class HomepageController extends BaseController {
         request.setAttribute("systemNotes", systemNotes);
 
         request.setAttribute("faqs", buildFaqEntries());
-        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
+        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions()); //tuỳ chọn filter loại sản phẩm
     }
 
     // Xây dựng bộ ánh xạ trạng thái shop sang biểu tượng hiển thị nhanh.
