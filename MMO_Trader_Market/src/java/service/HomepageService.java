@@ -36,9 +36,11 @@ import java.util.Objects;
 public class HomepageService {
 
     // Số lượng shop tối đa hiển thị ở trang chủ.
-    private static final int SHOP_LIMIT = 4;
+    private static final int DEFAULT_SHOP_LIMIT = 4;
+    private static final int MAX_SHOP_LIMIT = 12;
     // Số lượng tin nhắn chứng thực hiển thị.
-    private static final int MESSAGE_LIMIT = 3;
+    private static final int DEFAULT_MESSAGE_LIMIT = 3;
+    private static final int MAX_MESSAGE_LIMIT = 12;
 
     // Dịch vụ sản phẩm để lấy dữ liệu hiển thị.
     private final ProductService productService = new ProductService();
@@ -62,10 +64,25 @@ public class HomepageService {
     }
 
     /**
+     * Lấy danh sách sản phẩm nổi bật với khả năng điều chỉnh giới hạn.
+     */
+    public List<ProductSummaryView> loadFeaturedProducts(int limit) {
+        return productService.getHomepageHighlights(limit);
+    }
+
+    /**
      * Truy vấn các shop đang hoạt động để hiển thị trong carousel.
      */
     public List<Shops> loadActiveShops() {
-        return shopDAO.findActive(SHOP_LIMIT);
+        return loadActiveShops(DEFAULT_SHOP_LIMIT);
+    }
+
+    /**
+     * Truy vấn shop đang hoạt động với giới hạn linh hoạt.
+     */
+    public List<Shops> loadActiveShops(int limit) {
+        int resolvedLimit = Math.max(1, Math.min(limit, MAX_SHOP_LIMIT));
+        return shopDAO.findActive(resolvedLimit);
     }
 
     /**
@@ -99,7 +116,15 @@ public class HomepageService {
      * Lấy danh sách tin nhắn gần nhất để hiển thị bằng block testimonial.
      */
     public List<ConversationMessageView> loadRecentMessages() {
-        return conversationMessageDAO.findLatest(MESSAGE_LIMIT);
+        return loadRecentMessages(DEFAULT_MESSAGE_LIMIT);
+    }
+
+    /**
+     * Lấy danh sách tin nhắn mới nhất với giới hạn linh hoạt.
+     */
+    public List<ConversationMessageView> loadRecentMessages(int limit) {
+        int resolvedLimit = Math.max(1, Math.min(limit, MAX_MESSAGE_LIMIT));
+        return conversationMessageDAO.findLatest(resolvedLimit);
     }
 
     /**
