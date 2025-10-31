@@ -5,12 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.Shops;
-import model.SystemConfigs;
-import model.view.ConversationMessageView;
-import model.view.CustomerProfileView;
-import model.view.MarketplaceSummary;
-import model.view.product.ProductSummaryView;
 import service.HomepageService;
 
 import java.io.IOException;
@@ -40,50 +34,13 @@ public class HomepageController extends BaseController {
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
 
-        populateHomepageData(request); //để nạp toàn bộ dữ liệu cần cho giao diện.
-
         request.setAttribute("query", ""); //Set các filter mặc định
         request.setAttribute("selectedType", "");
         request.setAttribute("selectedSubtype", "");
+        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
+        request.setAttribute("faqs", buildFaqEntries());
 
         forward(request, response, "product/home");
-    }
-
-    // Tải toàn bộ dữ liệu cần thiết cho trang chủ và gán vào request.
-    private void populateHomepageData(HttpServletRequest request) {
-        MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
-        request.setAttribute("summary", summary); //số liệu tổng quan
-
-        List<ProductSummaryView> featuredProducts = homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featuredProducts); //danh sách sản phẩm nổi bật
-
-        List<Shops> shops = homepageService.loadActiveShops();
-        request.setAttribute("shops", shops);
-        request.setAttribute("shopIcons", buildShopIconMap());
-
-        request.setAttribute("productCategories", homepageService.loadProductCategories()); //danh mục chính
-
-        CustomerProfileView profile = homepageService.loadHighlightedBuyer();
-        request.setAttribute("customerProfile", profile);
-
-        List<ConversationMessageView> messages = homepageService.loadRecentMessages();
-        request.setAttribute("recentMessages", messages);
-
-        List<SystemConfigs> systemNotes = homepageService.loadSystemNotes();
-        request.setAttribute("systemNotes", systemNotes);
-
-        request.setAttribute("faqs", buildFaqEntries());
-        
-        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions()); //tuỳ chọn filter loại sản phẩm
-    }
-
-    // Xây dựng bộ ánh xạ trạng thái shop sang biểu tượng hiển thị nhanh.
-    private Map<String, String> buildShopIconMap() {
-        Map<String, String> icons = new HashMap<>();
-        icons.put("Active", "🛍️");
-        icons.put("Pending", "⏳");
-        icons.put("Suspended", "⚠️");
-        return icons;
     }
 
     // Chuẩn bị danh sách câu hỏi thường gặp hiển thị trên trang chủ.
