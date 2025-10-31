@@ -35,10 +35,12 @@ import java.util.Objects;
  */
 public class HomepageService {
 
-    // Số lượng shop tối đa hiển thị ở trang chủ.
-    private static final int SHOP_LIMIT = 4;
+    // Số lượng shop hiển thị mặc định và giới hạn trên để tránh query nặng.
+    private static final int DEFAULT_SHOP_LIMIT = 4;
+    private static final int MAX_SHOP_LIMIT = 12;
     // Số lượng tin nhắn chứng thực hiển thị.
-    private static final int MESSAGE_LIMIT = 3;
+    private static final int DEFAULT_MESSAGE_LIMIT = 3;
+    private static final int MAX_MESSAGE_LIMIT = 10;
 
     // Dịch vụ sản phẩm để lấy dữ liệu hiển thị.
     private final ProductService productService = new ProductService();
@@ -62,10 +64,25 @@ public class HomepageService {
     }
 
     /**
+     * Phiên bản cho phép truyền giới hạn linh hoạt (phục vụ fragment endpoint).
+     */
+    public List<ProductSummaryView> loadFeaturedProducts(int limit) {
+        return productService.getHomepageHighlights(limit);
+    }
+
+    /**
      * Truy vấn các shop đang hoạt động để hiển thị trong carousel.
      */
     public List<Shops> loadActiveShops() {
-        return shopDAO.findActive(SHOP_LIMIT);
+        return loadActiveShops(DEFAULT_SHOP_LIMIT);
+    }
+
+    /**
+     * Cho phép caller truyền giới hạn shop linh hoạt.
+     */
+    public List<Shops> loadActiveShops(int limit) {
+        int safeLimit = resolveLimit(limit, DEFAULT_SHOP_LIMIT, MAX_SHOP_LIMIT);
+        return shopDAO.findActive(safeLimit);
     }
 
     /**
@@ -99,7 +116,15 @@ public class HomepageService {
      * Lấy danh sách tin nhắn gần nhất để hiển thị bằng block testimonial.
      */
     public List<ConversationMessageView> loadRecentMessages() {
-        return conversationMessageDAO.findLatest(MESSAGE_LIMIT);
+        return loadRecentMessages(DEFAULT_MESSAGE_LIMIT);
+    }
+
+    /**
+     * Cho phép caller truyền giới hạn số thông điệp được hiển thị.
+     */
+    public List<ConversationMessageView> loadRecentMessages(int limit) {
+        int safeLimit = resolveLimit(limit, DEFAULT_MESSAGE_LIMIT, MAX_MESSAGE_LIMIT);
+        return conversationMessageDAO.findLatest(safeLimit);
     }
 
     /**
@@ -152,5 +177,12 @@ public class HomepageService {
      */
     private double roundToOneDecimal(double value) {
         return Math.round(value * 10.0) / 10.0;
+    }
+
+    private int resolveLimit(int requestedLimit, int defaultLimit, int maxLimit) {
+        int candidate = requestedLimit <= 0 ? defaultLimit : requestedLimit;
+        int upperBound = Math.max(defaultLimit, maxLimit);
+        int normalized = Math.max(candidate, 1);
+        return Math.min(normalized, upperBound);
     }
 }
