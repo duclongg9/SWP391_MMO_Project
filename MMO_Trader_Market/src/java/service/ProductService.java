@@ -51,6 +51,7 @@ public class ProductService {
 
     // Số lượng sản phẩm nổi bật hiển thị trên trang chủ.
     private static final int DEFAULT_HOMEPAGE_LIMIT = 6;
+    private static final int MAX_HOMEPAGE_LIMIT = 24;
     // Số lượng sản phẩm tương tự hiển thị ở trang chi tiết.
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
     // Đường dẫn gốc tới thư mục ảnh sản phẩm.
@@ -118,7 +119,18 @@ public class ProductService {
      * {@link ProductSummaryView}.
      */
     public List<ProductSummaryView> getHomepageHighlights() {
-        List<ProductListRow> rows = productDAO.findTopAvailable(DEFAULT_HOMEPAGE_LIMIT);
+        return getHomepageHighlights(DEFAULT_HOMEPAGE_LIMIT);
+    }
+
+    /**
+     * Lấy danh sách sản phẩm nổi bật với giới hạn linh hoạt.
+     *
+     * @param limit số lượng sản phẩm mong muốn
+     * @return danh sách sản phẩm nổi bật đã ánh xạ
+     */
+    public List<ProductSummaryView> getHomepageHighlights(int limit) {
+        int resolvedLimit = Math.max(1, Math.min(limit, MAX_HOMEPAGE_LIMIT));
+        List<ProductListRow> rows = productDAO.findTopAvailable(resolvedLimit);
         return rows.stream().map(this::toSummaryView).toList();
     }
 
