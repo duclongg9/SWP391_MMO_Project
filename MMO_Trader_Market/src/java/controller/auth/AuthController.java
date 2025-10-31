@@ -32,21 +32,13 @@ import java.util.logging.Logger;
 @WebServlet(name = "AuthController", urlPatterns = {"/auth"})
 public class AuthController extends BaseController {
 
-    // Định danh phiên bản của Servlet để đảm bảo khả năng tuần tự hóa ổn định.
     private static final long serialVersionUID = 1L;
-
-    // Bộ ghi log phục vụ theo dõi các lỗi bất ngờ trong quá trình đăng nhập.
     private static final Logger LOGGER = Logger.getLogger(AuthController.class.getName());
-    //thông báo đăng ký thành công sau khi chuyển hướng.
     private static final String FLASH_SUCCESS = "registerSuccess";
     private static final String FLASH_RESET_SUCCESS = "resetSuccess";
-    // Khóa flash message thông báo xác thực email thành công.
     private static final String FLASH_VERIFICATION_SUCCESS = "verificationSuccess";
-    // Khóa flash message dùng để điền sẵn email mới đăng ký.
     private static final String FLASH_EMAIL = "newUserEmail";
-    // thông báo lỗi đến từ đăng nhập OAuth.
     private static final String FLASH_ERROR = "oauthError";
-    // Khóa flash chứa email cần hiện modal xác thực.
     private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
     private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
     private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
@@ -56,13 +48,12 @@ public class AuthController extends BaseController {
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
 
-    // Xử lý các yêu cầu GET đến trang /auth: hiển thị form đăng nhập hoặc đăng xuất.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
-            // Người dùng yêu cầu đăng xuất: hủy session và xóa cookie ghi nhớ.
+            // hủy session và xóa cookie ghi nhớ.
             invalidateSession(request);
             //xóa cookie remember-me và bản ghi token DB.
             rememberMeService.clearRememberMe(request, response);
