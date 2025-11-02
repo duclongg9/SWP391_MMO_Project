@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<Context docBase="E:\SWP391_MMO_Project\MMO_Trader_Market\web" path="/MMO_Trader_Market">
+<Context docBase="E:/SWP391_MMO_Project/MMO_Trader_Market/web" path="/MMO_Trader_Market">
   <Resources cacheMaxSize="10240">
     <PreResources base="E:/SWP391_MMO_Project/out/production/SWP391_MMO_Project" className="org.apache.catalina.webresources.DirResourceSet" webAppMount="/WEB-INF/classes"/>
     <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet-api-6.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet-api-6.0.0.jar"/>
@@ -10,5 +10,6 @@
     <PostResources base="C:/Users/Admin/Downloads/jbcrypt-0.4.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jbcrypt-0.4.jar"/>
     <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet.jsp.jstl-api-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-api-2.0.0.jar"/>
     <PostResources base="C:/Users/Admin/Downloads/jakarta.servlet.jsp.jstl-2.0.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.servlet.jsp.jstl-2.0.0.jar"/>
+    <PostResources base="E:/SWP391_MMO_Project/MMO_Trader_Market/lib/mysql-connector-j-9.3.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/mysql-connector-j-9.3.0.jar"/>
   </Resources>
 </Context>
