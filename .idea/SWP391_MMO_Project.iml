@@ -9,6 +9,10 @@
         <webroots>
           <root url="file://$MODULE_DIR$/MMO_Trader_Market/build/web" relative="/" />
         </webroots>
+        <sourceRoots>
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/src/java" />
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/web" />
+        </sourceRoots>
       </configuration>
     </facet>
     <facet type="web" name="Web3">
@@ -19,6 +23,10 @@
         <webroots>
           <root url="file://$MODULE_DIR$/.smarttomcat/SWP391_MMO_Project/conf" relative="/WEB-INF" />
         </webroots>
+        <sourceRoots>
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/src/java" />
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/web" />
+        </sourceRoots>
       </configuration>
     </facet>
     <facet type="web" name="Web2">
@@ -28,6 +36,20 @@
         </descriptors>
         <webroots>
           <root url="file://$MODULE_DIR$/MMO_Trader_Market/web" relative="/" />
+        </webroots>
+        <sourceRoots>
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/src/java" />
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/web" />
+        </sourceRoots>
+      </configuration>
+    </facet>
+    <facet type="web" name="Web4">
+      <configuration>
+        <descriptors>
+          <deploymentDescriptor name="web.xml" url="file://$MODULE_DIR$/MMO_Trader_Market/conf/web.xml" />
+        </descriptors>
+        <webroots>
+          <root url="file://$MODULE_DIR$/MMO_Trader_Market/conf" relative="/WEB-INF" />
         </webroots>
       </configuration>
     </facet>
@@ -107,6 +129,15 @@
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/Downloads/jakarta.servlet.jsp.jstl-2.0.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/MMO_Trader_Market/lib/mysql-connector-j-9.3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
