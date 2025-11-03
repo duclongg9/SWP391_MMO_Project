@@ -9,9 +9,12 @@ import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
 import model.Products;
+import model.TransactionType;
 import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
+import model.view.OrderWalletEvent;
+import model.WalletTransactions;
 import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
@@ -19,8 +22,13 @@ import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,6 +55,7 @@ public class OrderService {
     );
     // Bảng ánh xạ trạng thái sang nhãn tiếng Việt.
     private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
+    private static final Map<TransactionType, String> TRANSACTION_TYPE_LABELS = buildTransactionTypeLabels();
 
     // DAO quản lý đơn hàng.
     private final OrderDAO orderDAO;
@@ -397,6 +406,130 @@ public class OrderService {
     }
 
     /**
+     * Lấy thông tin giao dịch thanh toán gắn với đơn hàng (nếu có).
+     *
+     * @param order bản ghi đơn hàng cần tra cứu
+     * @return {@link Optional} chứa giao dịch nếu tìm thấy và thuộc về người mua
+     */
+    public Optional<WalletTransactions> getPaymentTransactionForOrder(Orders order) {
+        if (order == null) {
+            return Optional.empty();
+        }
+        Integer txId = order.getPaymentTransactionId();
+        Integer buyerId = order.getBuyerId();
+        if (txId == null || buyerId == null) {
+            return Optional.empty();
+        }
+        return walletTransactionDAO.findByIdForUser(txId, buyerId);
+    }
+
+    /**
+     * Xây dựng timeline mô tả các bước thao tác ví cho đơn hàng.
+     *
+     * @param order bản ghi đơn cần hiển thị
+     * @param paymentTxOpt giao dịch ví thực tế (nếu đã ghi nhận)
+     * @return danh sách sự kiện theo thứ tự thời gian
+     */
+    public List<OrderWalletEvent> buildWalletTimeline(Orders order, Optional<WalletTransactions> paymentTxOpt) {
+        if (order == null) {
+            return Collections.emptyList();
+        }
+        List<OrderWalletEvent> events = new ArrayList<>();
+        Date createdAt = copyDate(order.getCreatedAt());
+        Integer orderId = order.getId();
+        events.add(new OrderWalletEvent(
+                "QUEUE_ENQUEUED",
+                "Đưa vào hàng đợi xử lý",
+                "Người mua xác nhận \"Mua ngay\". Hệ thống tạo đơn và gửi thông điệp cho worker bất đồng bộ.",
+                createdAt,
+                null,
+                null,
+                buildSyntheticReference("Q", orderId, 1),
+                false));
+
+        Date walletStepTime = copyDate(order.getUpdatedAt());
+        if (walletStepTime == null) {
+            walletStepTime = createdAt;
+        }
+        StringBuilder walletDesc = new StringBuilder("Worker khóa ví người mua, kiểm tra trạng thái hoạt động và số dư trước khi trừ tiền.");
+        BigDecimal totalAmount = order.getTotalAmount();
+        if (totalAmount != null) {
+            walletDesc.append(' ').append("Tổng tiền cần thanh toán: ")
+                    .append(formatCurrency(totalAmount)).append(" đ.");
+        }
+        events.add(new OrderWalletEvent(
+                "WALLET_VALIDATED",
+                "Kiểm tra số dư ví",
+                walletDesc.toString(),
+                walletStepTime,
+                totalAmount,
+                null,
+                buildSyntheticReference("V", orderId, 2),
+                false));
+
+        if (paymentTxOpt.isPresent()) {
+            WalletTransactions tx = paymentTxOpt.get();
+            Date transactionTime = copyDate(tx.getCreatedAt());
+            if (transactionTime == null) {
+                transactionTime = walletStepTime;
+            }
+            TransactionType type = tx.getTransactionTypeEnum();
+            String typeLabel = getTransactionTypeLabel(type);
+            String normalizedTypeLabel = typeLabel == null
+                    ? "thanh toán"
+                    : typeLabel.toLowerCase(Locale.ROOT);
+            String desc = "Ghi nhận giao dịch " + normalizedTypeLabel + " và cập nhật số dư ví.";
+            events.add(new OrderWalletEvent(
+                    "PAYMENT_CAPTURED",
+                    "Trừ tiền ví",
+                    desc,
+                    transactionTime,
+                    tx.getAmount(),
+                    tx.getBalanceAfter(),
+                    tx.getId() == null ? null : "#" + tx.getId(),
+                    true));
+        } else {
+            events.add(new OrderWalletEvent(
+                    "PAYMENT_PENDING",
+                    "Chờ ghi nhận giao dịch",
+                    "Worker đang xử lý các bước trừ tiền và sẽ cập nhật mã giao dịch ngay khi hoàn tất.",
+                    walletStepTime,
+                    null,
+                    null,
+                    buildSyntheticReference("P", orderId, 3),
+                    true));
+        }
+
+        String status = order.getStatus();
+        if (status != null && !status.isBlank()) {
+            Date statusTime = copyDate(order.getUpdatedAt());
+            String statusLabel = getStatusLabel(status);
+            String desc = "Trạng thái đơn hàng hiện tại: " + statusLabel + ".";
+            events.add(new OrderWalletEvent(
+                    "ORDER_STATUS",
+                    "Cập nhật trạng thái đơn",
+                    desc,
+                    statusTime,
+                    null,
+                    null,
+                    buildSyntheticReference("S", orderId, 4),
+                    false));
+        }
+
+        return events;
+    }
+
+    /**
+     * Trả về nhãn tiếng Việt cho loại giao dịch ví.
+     */
+    public String getTransactionTypeLabel(TransactionType type) {
+        if (type == null) {
+            return "Không xác định";
+        }
+        return TRANSACTION_TYPE_LABELS.getOrDefault(type, type.getDbValue());
+    }
+
+    /**
      * Chuẩn hóa trạng thái đầu vào (đầu chữ hoa, phần còn lại chữ thường) và
      * kiểm tra hợp lệ.
      */
@@ -427,6 +560,37 @@ public class OrderService {
         labels.put(OrderStatus.FAILED, "Thất bại");
         labels.put(OrderStatus.REFUNDED, "Đã hoàn tiền");
         labels.put(OrderStatus.DISPUTED, "Khiếu nại");
+        return labels;
+    }
+
+    private static Date copyDate(Date input) {
+        return input == null ? null : new Date(input.getTime());
+    }
+
+    private static String buildSyntheticReference(String prefix, Integer orderId, int step) {
+        if (prefix == null || orderId == null) {
+            return null;
+        }
+        int normalized = Math.max(orderId, 1);
+        String base = Integer.toString(normalized, 36).toUpperCase();
+        return prefix + '-' + base + '-' + step;
+    }
+
+    private static String formatCurrency(BigDecimal amount) {
+        NumberFormat format = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        format.setMinimumFractionDigits(0);
+        format.setMaximumFractionDigits(2);
+        return format.format(amount);
+    }
+
+    private static Map<TransactionType, String> buildTransactionTypeLabels() {
+        Map<TransactionType, String> labels = new EnumMap<>(TransactionType.class);
+        labels.put(TransactionType.PURCHASE, "Thanh toán đơn hàng");
+        labels.put(TransactionType.DEPOSIT, "Nạp tiền vào ví");
+        labels.put(TransactionType.WITHDRAWAL, "Rút tiền");
+        labels.put(TransactionType.REFUND, "Hoàn tiền");
+        labels.put(TransactionType.FEE, "Phí giao dịch");
+        labels.put(TransactionType.PAYOUT, "Chi trả");
         return labels;
     }
 
