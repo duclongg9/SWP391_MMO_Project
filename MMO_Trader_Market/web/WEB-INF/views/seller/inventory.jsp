@@ -1,12 +1,25 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%
-    request.setAttribute("pageTitle", "Cập nhật kho - Quản lý cửa hàng");
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerModifier", "layout__header--split");
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content seller-page">
+    <c:if test="${not empty successMessage}">
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; color: #155724;">
+            ${successMessage}
+        </div>
+    </c:if>
+    
+    <c:if test="${not empty errorMessage}">
+        <div style="background-color: #fee; border: 1px solid #fcc; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; color: #c00;">
+            ${errorMessage}
+        </div>
+    </c:if>
+
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Sinh credential ảo</h2>
@@ -37,59 +50,91 @@
             <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
         </div>
         <div class="panel__body">
-            <table class="table table--interactive">
+            <c:choose>
+                <c:when test="${empty products}">
+                    <p style="text-align: center; padding: 2rem; color: #666;">
+                        Chưa có sản phẩm nào. <a href="${pageContext.request.contextPath}/seller/products/create">Thêm sản phẩm đầu tiên</a>
+                    </p>
+                </c:when>
+                <c:otherwise>
+                    <table class="table table--interactive" style="width: 100%;">
                 <thead>
                     <tr>
-                        <th>Sản phẩm</th>
+                                <th>ID</th>
+                                <th>Tên sản phẩm</th>
                         <th>Loại</th>
+                                <th>Giá (VNĐ)</th>
                         <th>Tồn kho</th>
                         <th>Đã bán</th>
                         <th>Trạng thái</th>
+                                <th style="text-align: center;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Gmail Doanh nghiệp 50GB</td>
-                        <td>Email</td>
-                        <td>19</td>
-                        <td>128</td>
-                        <td><span class="badge">Available</span></td>
+                            <c:forEach var="product" items="${products}">
+                                <tr>
+                                    <td>${product.id}</td>
+                                    <td><strong>${product.name}</strong></td>
+                                    <td>${product.productType} / ${product.productSubtype}</td>
+                                    <td><fmt:formatNumber value="${product.price}" type="number" groupingUsed="true"/></td>
+                                    <td>${product.inventoryCount != null ? product.inventoryCount : 0}</td>
+                                    <td>${product.soldCount != null ? product.soldCount : 0}</td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${product.status == 'Available'}">
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.875rem;">
+                                                    Đang bán
+                                                </span>
+                                            </c:when>
+                                            <c:when test="${product.status == 'Unlisted'}">
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.875rem;">
+                                                    Ngừng bán
+                                                </span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.875rem;">
+                                                    ${product.status}
+                                                </span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                            <a href="${pageContext.request.contextPath}/seller/products/edit?id=${product.id}" 
+                                               style="padding: 0.25rem 0.75rem; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
+                                                Sửa
+                                            </a>
+                                            <c:choose>
+                                                <c:when test="${product.status == 'Available'}">
+                                                    <form action="${pageContext.request.contextPath}/seller/inventory" method="post" style="display: inline; margin: 0;">
+                                                        <input type="hidden" name="action" value="stop"/>
+                                                        <input type="hidden" name="productId" value="${product.id}"/>
+                                                        <button type="submit" 
+                                                                style="padding: 0.25rem 0.75rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
+                                                                onclick="return confirm('Bạn có chắc muốn ngừng bán sản phẩm này?')">
+                                                            Ngừng bán
+                                                        </button>
+                                                    </form>
+                                                </c:when>
+                                                <c:when test="${product.status == 'Unlisted'}">
+                                                    <form action="${pageContext.request.contextPath}/seller/inventory" method="post" style="display: inline; margin: 0;">
+                                                        <input type="hidden" name="action" value="resume"/>
+                                                        <input type="hidden" name="productId" value="${product.id}"/>
+                                                        <button type="submit" 
+                                                                style="padding: 0.25rem 0.75rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">
+                                                            Mở bán lại
+                                                        </button>
+                                                    </form>
+                                                </c:when>
+                                            </c:choose>
+                                        </div>
+                                    </td>
                     </tr>
-                    <tr>
-                        <td>Tài khoản TikTok Pro</td>
-                        <td>Mạng xã hội</td>
-                        <td>40</td>
-                        <td>58</td>
-                        <td><span class="badge">Available</span></td>
-                    </tr>
-                    <tr>
-                        <td>Valorant VP (top-up)</td>
-                        <td>Game</td>
-                        <td>100</td>
-                        <td>121</td>
-                        <td><span class="badge badge--ghost">Pending</span></td>
-                    </tr>
-                    <tr>
-                        <td>Canva Pro chính chủ</td>
-                        <td>Phần mềm</td>
-                        <td>60</td>
-                        <td>187</td>
-                        <td><span class="badge">Available</span></td>
-                    </tr>
+                            </c:forEach>
                 </tbody>
             </table>
-        </div>
-    </section>
-    <section class="panel">
-        <div class="panel__header">
-            <h2 class="panel__title">Lịch sử điều chỉnh gần đây</h2>
-        </div>
-        <div class="panel__body">
-            <ul class="guide-list">
-                <li>29/01: +5 tồn kho cho Spotify Premium (restock thủ công).</li>
-                <li>26/01: -1 tồn kho sau đơn hàng #5002 (Disputed).</li>
-                <li>20/01: -1 tồn kho sau đơn hàng #5001 (Completed).</li>
-            </ul>
+                </c:otherwise>
+            </c:choose>
         </div>
     </section>
 </main>

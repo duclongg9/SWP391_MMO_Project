@@ -85,17 +85,14 @@ public class ProfileController extends HttpServlet {
             Users myProfile = viewProfileService.viewMyProfile(user);
             request.setAttribute("myProfile", myProfile);
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
-            return;
         } catch (IllegalArgumentException e) {
             // Hiển thị lỗi nghiệp vụ như dữ liệu không tồn tại.
             request.setAttribute("emg", e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
-            return;
         } catch (RuntimeException e) {
             // Thông báo lỗi hệ thống chung nếu truy vấn thất bại bất ngờ.
             request.setAttribute("emg", "Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
-            return;
         }
 
     }

@@ -698,4 +698,133 @@ public class ProductDAO extends BaseDAO {
     public record ProductInventoryLock(Integer inventoryCount, String variantSchema, String variantsJson) {
 
     }
+
+    /**
+     * Lấy danh sách sản phẩm của một shop.
+     *
+     * @param shopId mã shop
+     * @return danh sách sản phẩm
+     */
+    public List<Products> findByShopId(int shopId) {
+        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE shop_id = ? ORDER BY created_at DESC";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            List<Products> products = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+            return products;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop", ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Cập nhật thông tin sản phẩm.
+     *
+     * @param product đối tượng sản phẩm cần cập nhật
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateProduct(Products product) {
+        final String sql = "UPDATE products SET product_type = ?, product_subtype = ?, name = ?, "
+                + "short_description = ?, description = ?, price = ?, primary_image_url = ?, "
+                + "inventory_count = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setString(1, product.getProductType());
+            statement.setString(2, product.getProductSubtype());
+            statement.setString(3, product.getName());
+            statement.setString(4, product.getShortDescription());
+            statement.setString(5, product.getDescription());
+            statement.setBigDecimal(6, product.getPrice());
+            statement.setString(7, product.getPrimaryImageUrl());
+            statement.setInt(8, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
+            statement.setString(9, product.getStatus());
+            statement.setInt(10, product.getId());
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật sản phẩm", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Thay đổi trạng thái sản phẩm.
+     *
+     * @param productId mã sản phẩm
+     * @param status trạng thái mới (Available, OutOfStock, Unlisted)
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateStatus(int productId, String status) {
+        final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setString(1, status);
+            statement.setInt(2, productId);
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Tạo sản phẩm mới và đăng lên shop.
+     *
+     * @param product đối tượng sản phẩm cần tạo
+     * @return true nếu tạo thành công
+     */
+    public boolean createProduct(Products product) {
+        final String sql = "INSERT INTO products (shop_id, product_type, product_subtype, name, "
+                + "short_description, description, price, primary_image_url, gallery_json, "
+                + "inventory_count, sold_count, status, variant_schema, variants_json, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setInt(1, product.getShopId());
+            statement.setString(2, product.getProductType());
+            statement.setString(3, product.getProductSubtype());
+            statement.setString(4, product.getName());
+            statement.setString(5, product.getShortDescription());
+            statement.setString(6, product.getDescription());
+            statement.setBigDecimal(7, product.getPrice());
+            statement.setString(8, product.getPrimaryImageUrl());
+            statement.setString(9, product.getGalleryJson());
+            statement.setInt(10, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
+            statement.setString(11, product.getStatus());
+            
+            // Set default values cho variant_schema và variants_json nếu null
+            String variantSchema = product.getVariantSchema();
+            if (variantSchema == null || variantSchema.trim().isEmpty()) {
+                variantSchema = "none"; // Giá trị mặc định
+            }
+            statement.setString(12, variantSchema);
+            
+            String variantsJson = product.getVariantsJson();
+            if (variantsJson == null || variantsJson.trim().isEmpty()) {
+                variantsJson = "[]"; // JSON array rỗng
+            }
+            statement.setString(13, variantsJson);
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tạo sản phẩm mới", ex);
+            return false;
+        }
+    }
 }
