@@ -129,4 +129,32 @@ public class WalletsDAO {
         }
         return wallet;
     }
+
+    //Hàm lấy ra số dư trong ví
+    public BigDecimal getWalletBalanceByUserId(int userId) {
+        BigDecimal amount = null;
+        String sql = """
+                     SELECT balance FROM mmo_schema.wallets
+                     WHERE user_id = ?
+                     LIMIT 1
+                     """;
+        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next()) amount = rs.getBigDecimal(1);
+            }
+            return amount;
+        } catch (SQLException e) {
+            Logger.getLogger(WalletsDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);
+        }
+        return null;
+    }
+    
+    //Hàm trừ tiền trong ví
+    public boolean decreaseBalance(int userId , BigDecimal balance) throws SQLException{
+        BigDecimal presentBalance = getWalletBalanceByUserId(userId);
+        boolean results = updateBalance(DBConnect.getConnection(), userId, (presentBalance.add(balance)));
+        return results;
+    }
 }
