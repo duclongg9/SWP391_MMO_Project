@@ -115,60 +115,107 @@
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
         </div>
         <div class="panel__body">
+            <style>
+                .order-detail__info-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2rem;
+                }
+
+                .order-detail__info-column {
+                    flex: 1 1 260px;
+                    min-width: 0;
+                }
+
+                .order-detail__info-column--wallet {
+                    border-left: 1px solid #e2e8f0;
+                    padding-left: 1.5rem;
+                }
+
+                .order-detail__info-title {
+                    margin: 0 0 1rem 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                @media (max-width: 768px) {
+                    .order-detail__info-grid {
+                        flex-direction: column;
+                    }
+
+                    .order-detail__info-column--wallet {
+                        border-left: none;
+                        border-top: 1px solid #e2e8f0;
+                        padding-left: 0;
+                        padding-top: 1.5rem;
+                    }
+                }
+            </style>
             <div class="grid grid--two-columns">
                 <div class="card">
                     <h3 class="card__title">Thông tin đơn</h3>
-                    <ul class="definition-list">
-                        <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
-                        <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
-                            <c:if test="${not empty order.variantCode}">
-                            <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
-                            </c:if>
-                            <c:if test="${order.quantity ne null}">
-                            <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
-                            </c:if>
-                            <c:if test="${order.unitPrice ne null}">
-                            <li><span>Đơn giá:</span>
-                                <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
-                            </li>
-                        </c:if>
-                        <li><span>Tổng tiền:</span>
-                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
-                        </li>
-                        <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
-                        <li><span>Ngày tạo:</span>
-                            <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
-                        </li>
+                    <div class="order-detail__info-grid">
+                        <div class="order-detail__info-column">
+                            <h4 class="order-detail__info-title">Đơn hàng</h4>
+                            <ul class="definition-list">
+                                <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
+                                <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
+                                <c:if test="${not empty order.variantCode}">
+                                    <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                                </c:if>
+                                <c:if test="${order.quantity ne null}">
+                                    <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                                </c:if>
+                                <c:if test="${order.unitPrice ne null}">
+                                    <li><span>Đơn giá:</span>
+                                        <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                </c:if>
+                                <li><span>Tổng tiền:</span>
+                                    <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
+                                </li>
+                                <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
+                                <li><span>Ngày tạo:</span>
+                                    <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                </li>
+                            </ul>
+                        </div>
                         <c:if test="${not empty paymentTransaction}">
-                            <li><span>Mã giao dịch ví:</span> #<c:out value="${paymentTransaction.id}" /></li>
-                            <li><span>Loại giao dịch:</span> <c:out value="${paymentTransactionTypeLabel}" /></li>
-                            <li><span>Số tiền trừ:</span>
-                                <c:choose>
-                                    <c:when test="${not empty paymentTransactionAmountAbs}">
-                                        -<fmt:formatNumber value="${paymentTransactionAmountAbs}" type="currency" currencySymbol="" /> đ
-                                    </c:when>
-                                    <c:when test="${not empty paymentTransaction.amount}">
-                                        <fmt:formatNumber value="${paymentTransaction.amount}" type="currency" currencySymbol="" /> đ
-                                    </c:when>
-                                    <c:otherwise>
-                                        Không xác định
-                                    </c:otherwise>
-                                </c:choose>
-                            </li>
-                            <li><span>Số dư trước:</span>
-                                <fmt:formatNumber value="${paymentTransaction.balanceBefore}" type="currency" currencySymbol="" /> đ
-                            </li>
-                            <li><span>Số dư sau:</span>
-                                <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
-                            </li>
-                            <li><span>Thời gian thanh toán:</span>
-                                <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
-                            </li>
-                            <c:if test="${not empty paymentTransaction.note}">
-                                <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
-                            </c:if>
+                            <div class="order-detail__info-column order-detail__info-column--wallet">
+                                <h4 class="order-detail__info-title">Giao dịch ví</h4>
+                                <ul class="definition-list">
+                                    <li><span>Mã giao dịch ví:</span> #<c:out value="${paymentTransaction.id}" /></li>
+                                    <li><span>Loại giao dịch:</span> <c:out value="${paymentTransactionTypeLabel}" /></li>
+                                    <li><span>Số tiền trừ:</span>
+                                        <c:choose>
+                                            <c:when test="${not empty paymentTransactionAmountAbs}">
+                                                -<fmt:formatNumber value="${paymentTransactionAmountAbs}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:when test="${not empty paymentTransaction.amount}">
+                                                <fmt:formatNumber value="${paymentTransaction.amount}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:otherwise>
+                                                Không xác định
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </li>
+                                    <li><span>Số dư trước:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceBefore}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Số dư sau:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Thời gian thanh toán:</span>
+                                        <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                    </li>
+                                    <c:if test="${not empty paymentTransaction.note}">
+                                        <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
+                                    </c:if>
+                                </ul>
+                            </div>
                         </c:if>
-                    </ul>
+                    </div>
                 </div>
                 <div class="card">
                     <h3 class="card__title">Sản phẩm</h3>
