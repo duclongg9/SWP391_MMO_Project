@@ -40,20 +40,19 @@ public class ProductDAO extends BaseDAO {
             "p.gallery_json", "p.inventory_count", "COALESCE(ps.sold_count, 0) AS sold_count", "p.status",
             "p.variant_schema", "p.variants_json", "p.created_at", "p.updated_at");
 
+    // Sử dụng sold_count trực tiếp từ bảng products thay vì view
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.price, p.inventory_count, COALESCE(ps.sold_count, 0) AS sold_count, p.status, "
+            + "p.short_description, p.price, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, "
             + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
             + "FROM products p "
-            + "JOIN shops s ON s.id = p.shop_id "
-            + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id";
+            + "JOIN shops s ON s.id = p.shop_id";
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.description, p.price, p.inventory_count, COALESCE(ps.sold_count, 0) AS sold_count, p.status, "
+            + "p.short_description, p.description, p.price, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, "
             + "p.primary_image_url, p.gallery_json, p.variant_schema, p.variants_json, "
             + "s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
             + "FROM products p "
-            + "JOIN shops s ON s.id = p.shop_id "
-            + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id WHERE p.id = ? LIMIT 1";
+            + "JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
 
     private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
             + "FROM products p JOIN shops s ON s.id = p.shop_id "
@@ -313,8 +312,12 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu tồn tại
      */
     public Optional<Products> findById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products p "
-                + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id WHERE p.id = ? LIMIT 1";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p WHERE p.id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
@@ -335,9 +338,12 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu còn bán
      */
     public Optional<Products> findAvailableById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id"
-                + " WHERE p.id = ? AND p.status = 'Available' LIMIT 1";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p WHERE p.id = ? AND p.status = 'Available' LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
@@ -481,9 +487,12 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm phù hợp
      */
     public List<Products> search(String keyword, int limit, int offset) {
-        StringBuilder sql = new StringBuilder("SELECT ");
-        sql.append(PRODUCT_COLUMNS)
-                .append(" FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id");
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        StringBuilder sql = new StringBuilder("SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, ");
+        sql.append("p.short_description, p.description, p.price, p.primary_image_url, ");
+        sql.append("p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, ");
+        sql.append("p.variant_schema, p.variants_json, p.created_at, p.updated_at ");
+        sql.append("FROM products p");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         sql.append(" ORDER BY p.updated_at DESC LIMIT ? OFFSET ?");
@@ -511,9 +520,12 @@ public class ProductDAO extends BaseDAO {
      */
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id"
-                + " ORDER BY p.updated_at DESC LIMIT ?";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p ORDER BY p.updated_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
             List<Products> products = new ArrayList<>();
