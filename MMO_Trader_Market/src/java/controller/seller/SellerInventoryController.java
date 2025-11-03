@@ -7,6 +7,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Products;
+import model.Shops;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -27,20 +30,41 @@ public class SellerInventoryController extends SellerBaseController {
         if (!ensureSellerAccess(request, response)) {
             return;
         }
-        HttpSession session = request.getSession(false);
+        
+        HttpSession session = request.getSession();
+        Integer userId = (Integer) session.getAttribute("userId");
+        
+        // Xử lý flash messages
         if (session != null) {
             Object success = session.getAttribute("sellerInventoryFlashSuccess");
             if (success instanceof String) {
                 request.setAttribute("flashSuccess", success);
+                session.removeAttribute("sellerInventoryFlashSuccess");
             }
             Object error = session.getAttribute("sellerInventoryFlashError");
             if (error instanceof String) {
                 request.setAttribute("flashError", error);
+                session.removeAttribute("sellerInventoryFlashError");
             }
-            session.removeAttribute("sellerInventoryFlashSuccess");
-            session.removeAttribute("sellerInventoryFlashError");
         }
-        request.setAttribute("pageTitle", "Cập nhật kho - Quản lý cửa hàng");
+        
+        // Lấy shop của seller
+        Shops shop = shopDAO.findByOwnerId(userId);
+        if (shop == null) {
+            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
+            forward(request, response, "seller/inventory");
+            return;
+        }
+        
+        // Lấy danh sách sản phẩm
+        List<Products> products = productDAO.findByShopId(shop.getId());
+        
+        // Log để debug
+        System.out.println("DEBUG - SellerInventory: userId=" + userId + ", shopId=" + shop.getId() + ", products found=" + products.size());
+        
+        request.setAttribute("shop", shop);
+        request.setAttribute("products", products);
+        request.setAttribute("pageTitle", "Quản lý kho hàng - " + shop.getName());
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
         forward(request, response, "seller/inventory");
