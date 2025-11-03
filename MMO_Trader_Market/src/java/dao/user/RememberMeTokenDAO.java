@@ -33,13 +33,10 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     /**
      * Tạo mã ghi nhớ đăng nhập mới cho người dùng.
-     *
      * @param userId mã người dùng sở hữu token
      * @param selector mã định danh công khai lưu trên cookie
      * @param hashedValidator giá trị validator đã được băm
      * @param expiresAt thời điểm hết hạn
-     * @return token vừa tạo hoặc {@code null} nếu thất bại
-     * @throws SQLException khi thao tác chèn lỗi
      */
     public RememberMeToken createToken(int userId, String selector, String hashedValidator, Timestamp expiresAt)
             throws SQLException {
@@ -121,9 +118,6 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     /**
      * Xóa token theo mã định danh chính.
-     *
-     * @param id mã token
-     * @throws SQLException khi thao tác xóa lỗi
      */
     public void deleteById(int id) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE id = ?";
@@ -134,10 +128,8 @@ public class RememberMeTokenDAO extends BaseDAO {
     }
 
     /**
-     * Xóa token dựa trên selector (ví dụ khi người dùng đăng xuất từ cookie).
-     *
-     * @param selector giá trị selector cần xóa
-     * @throws SQLException khi truy vấn lỗi
+     * Xóa token dựa trên selector 
+    
      */
     public void deleteBySelector(String selector) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE selector = ?";
@@ -149,9 +141,6 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     /**
      * Xóa toàn bộ token ghi nhớ của một người dùng.
-     *
-     * @param userId mã người dùng
-     * @throws SQLException khi câu lệnh SQL lỗi
      */
     public void deleteAllForUser(int userId) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE user_id = ?";

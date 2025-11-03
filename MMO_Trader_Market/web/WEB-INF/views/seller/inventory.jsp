@@ -21,15 +21,33 @@
     </c:if>
 
     <section class="panel">
-        <div class="panel__header" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h2 class="panel__title">Quản lý kho hàng</h2>
-                <p class="panel__subtitle">Danh sách sản phẩm trong cửa hàng của bạn</p>
-            </div>
-            <a href="${pageContext.request.contextPath}/seller/products/create" 
-               class="button button--primary" style="text-decoration: none;">
-                + Thêm sản phẩm mới
-            </a>
+        <div class="panel__header">
+            <h2 class="panel__title">Sinh credential ảo</h2>
+            <p class="panel__subtitle">Tạo nhanh dữ liệu bàn giao để kiểm thử luồng mua hàng trước khi kết nối hệ thống thực tế.</p>
+        </div>
+        <div class="panel__body">
+            <c:if test="${not empty flashSuccess}">
+                <div class="alert alert--success" role="status">${flashSuccess}</div>
+            </c:if>
+            <c:if test="${not empty flashError}">
+                <div class="alert alert--danger" role="alert">${flashError}</div>
+            </c:if>
+            <form method="post" action="${pageContext.request.contextPath}/seller/credentials/generate"
+                  style="display:flex;flex-direction:column;gap:12px;max-width:560px;">
+                <p class="text-muted" style="margin:0;">
+                    Nhấn nút bên dưới để hệ thống sinh credential ảo cho <strong>toàn bộ sản phẩm</strong> và các biến thể
+                    đã cấu hình tồn kho trong cơ sở dữ liệu. Mỗi SKU sẽ được bổ sung đủ số lượng theo tồn kho hiện tại.
+                </p>
+                <div>
+                    <button type="submit" class="button button--primary">Sinh credential cho toàn bộ sản phẩm</button>
+                </div>
+            </form>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="panel__header">
+            <h2 class="panel__title">Tồn kho tổng quan</h2>
+            <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
         </div>
         <div class="panel__body">
             <c:choose>

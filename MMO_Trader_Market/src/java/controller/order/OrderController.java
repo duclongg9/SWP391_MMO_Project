@@ -8,11 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Orders;
 import model.Products;
+import model.WalletTransactions;
 import model.view.OrderDetailView;
+import model.view.OrderWalletEvent;
 import service.OrderService;
 import units.IdObfuscator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -24,20 +27,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * <p>
+ * 
  * Servlet điều phối toàn bộ luồng mua sản phẩm của người mua từ lúc gửi yêu cầu
  * "Mua ngay" tới khi người dùng truy cập lịch sử đơn và xem dữ liệu bàn
- * giao.</p>
- * <p>
- * Controller này chịu trách nhiệm:</p>
- * <ul>
- * <li>Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử
- * lý nghiệp vụ.</li>
- * <li>Định tuyến tới đúng trang JSP, truyền dữ liệu view model (OrderRow,
- * OrderDetailView)</li>
- * <li>Gắn kết với hàng đợi xử lý bất đồng bộ thông qua
- * {@link service.OrderService#placeOrderPending}</li>
- * </ul>
+ * giao.
+ * 
+ * Controller này chịu trách nhiệm:
+ * 
+ * Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử
+ * lý nghiệp vụ.
+ * Định tuyến tới đúng trang JSP, truyền dữ liệu view model (OrderRow,
+ * OrderDetailView)
+ * Gắn kết với hàng đợi xử lý bất đồng bộ thông qua
+ * {@link service.OrderService#placeOrderPending}
+ * 
  *
  * @author longpdhe171902
  */
@@ -60,14 +63,14 @@ public class OrderController extends BaseController {
 
     /**
      * Xử lý các yêu cầu POST. Ở thời điểm hiện tại chỉ có một entry point duy
-     * nhất là <code>/order/buy-now</code>. Dòng chảy cụ thể:
-     * <ol>
-     * <li>Đọc {@code servletPath} để xác định hành động.</li>
-     * <li>Nếu là "buy-now" thì chuyển cho
-     * {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}.</li>
-     * <li>Nếu không khớp, trả về HTTP 405 để thông báo phương thức không được
-     * hỗ trợ.</li>
-     * </ol>
+     * nhất là /order/buy-now. Dòng chảy cụ thể:
+     * 
+     * Đọc {@code servletPath} để xác định hành động.
+     * Nếu là "buy-now" thì chuyển cho
+     * {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}.
+     * Nếu không khớp, trả về HTTP 405 để thông báo phương thức không được
+     * hỗ trợ.
+     * 
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -85,14 +88,14 @@ public class OrderController extends BaseController {
 
     /**
      * Xử lý các yêu cầu GET cho ba đường dẫn:
-     * <ul>
-     * <li><code>/orders</code>: chuyển hướng 302 tới trang lịch sử cá nhân để
-     * tái sử dụng logic phân trang.</li>
-     * <li><code>/orders/my</code>: tải danh sách đơn có lọc, gán vào request
-     * attribute để JSP dựng bảng.</li>
-     * <li><code>/orders/detail/&lt;token&gt;</code>: hiển thị chi tiết kèm
-     * credential nếu đã bàn giao.</li>
-     * </ul>
+     * 
+     * /orders: chuyển hướng 302 tới trang lịch sử cá nhân để
+     * tái sử dụng logic phân trang.
+     * /orders/my: tải danh sách đơn có lọc, gán vào request
+     * attribute để JSP dựng bảng.
+     * /orders/detail/&lt;token&gt;: hiển thị chi tiết kèm
+     * credential nếu đã bàn giao.
+     * 
      * Nếu đường dẫn không khớp sẽ phản hồi HTTP 404.
      */
     @Override
@@ -104,8 +107,14 @@ public class OrderController extends BaseController {
                 redirectToMyOrders(request, response);
             case "/orders/my" ->
                 showMyOrders(request, response);
-            case "/orders/detail" ->
-                showOrderDetail(request, response);
+            case "/orders/detail" -> {
+                String pathInfo = request.getPathInfo();
+                if (pathInfo != null && pathInfo.endsWith("/wallet-events")) {
+                    handleWalletEventsApi(request, response);
+                } else {
+                    showOrderDetail(request, response);
+                }
+            }
             default ->
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
@@ -123,18 +132,19 @@ public class OrderController extends BaseController {
     /**
      * Tiếp nhận yêu cầu mua ngay từ trang chi tiết sản phẩm. Hàm này xử lý toàn
      * bộ phần đầu luồng cho tới khi đơn được đưa vào hàng đợi:
-     * <ol>
-     * <li>Kiểm tra người dùng đăng nhập và có vai trò buyer/seller để được phép
-     * mua.</li>
-     * <li>Đọc các tham số {@code productId}, {@code qty}, {@code variantCode}
-     * do form gửi lên.</li>
-     * <li>Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi thì sinh
-     * ngẫu nhiên) để chống double-submit.</li>
-     * <li>Ủy quyền cho
-     * {@link OrderService#placeOrderPending(int, int, int, String, String)}.</li>
-     * <li>Nếu thành công, redirect sang trang chi tiết đơn; nếu lỗi nghiệp vụ
-     * -> HTTP 400/409.</li>
-     * </ol>
+     * 
+     * Kiểm tra người dùng đăng nhập và có vai trò buyer/seller để được phép
+     * mua.
+     * Đọc các tham số {@code productId}, {@code qty}, {@code variantCode}
+     * do form gửi lên.
+     * Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi thì sinh
+     * ngẫu nhiên) để chống double-submit.
+     * Ủy quyền cho
+     * {@link OrderService#placeOrderPending(int, int, int, String, String)}.
+     * Nếu thành công, redirect sang trang chi tiết đơn; 
+     * nếu lỗi nghiệp vụ
+     * -> HTTP 400/409.
+     * 
      */
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -187,16 +197,16 @@ public class OrderController extends BaseController {
      * Hiển thị danh sách đơn hàng của người mua kèm phân trang và lọc trạng
      * thái. Tầng controller chịu trách nhiệm thu thập tham số và chuyển dữ liệu
      * xuống JSP:
-     * <ol>
-     * <li>Lấy trạng thái filter, số trang, kích thước trang từ query
-     * string.</li>
-     * <li>Gọi {@link OrderService#getMyOrders(int, String, int, int)} để truy
-     * vấn DB qua DAO.</li>
-     * <li>Đổ danh sách {@code OrderRow} và meta phân trang vào request
-     * attribute "items", "total", ...</li>
-     * <li>Forward tới view <code>/WEB-INF/views/order/my.jsp</code> để dựng
-     * giao diện.</li>
-     * </ol>
+     * 
+     * Lấy trạng thái filter, số trang, kích thước trang từ query
+     * string.
+     * Gọi {@link OrderService#getMyOrders(int, String, int, int)} để truy
+     * vấn DB qua DAO.
+     * Đổ danh sách {@code OrderRow} và meta phân trang vào request
+     * attribute "items", "total", ...
+     * Forward tới view /WEB-INF/views/order/my.jsp để dựng
+     * giao diện.
+     * 
      */
     private void showMyOrders(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -246,15 +256,15 @@ public class OrderController extends BaseController {
     /**
      * Hiển thị chi tiết một đơn hàng cụ thể nếu thuộc sở hữu người dùng. Sau
      * khi qua bước kiểm tra quyền truy cập, controller sẽ:
-     * <ol>
-     * <li>Đọc {@code id} của đơn từ query string và validate.</li>
-     * <li>Gọi {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và
-     * credential.</li>
-     * <li>Đưa các đối tượng domain vào request attribute cho JSP:
-     * {@code order}, {@code product}, {@code credentials}.</li>
-     * <li>Tính sẵn nhãn trạng thái tiếng Việt thông qua
-     * {@link OrderService#getStatusLabel(String)}.</li>
-     * </ol>
+     * 
+     * Đọc {@code id} của đơn từ query string và validate.
+     * Gọi {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và
+     * credential.
+     * Đưa các đối tượng domain vào request attribute cho JSP:
+     * {@code order}, {@code product}, {@code credentials}.
+     * Tính sẵn nhãn trạng thái tiếng Việt thông qua
+     * {@link OrderService#getStatusLabel(String)}.
+     * 
      */
     private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -307,6 +317,17 @@ public class OrderController extends BaseController {
         Orders order = detail.order();
         Products product = detail.product();
         List<String> credentials = detail.credentials();
+        Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        if (paymentTxOpt.isPresent()) {
+            WalletTransactions paymentTx = paymentTxOpt.get();
+            request.setAttribute("paymentTransaction", paymentTx);
+            request.setAttribute("paymentTransactionTypeLabel",
+                    orderService.getTransactionTypeLabel(paymentTx.getTransactionTypeEnum()));
+            BigDecimal amount = paymentTx.getAmount();
+            if (amount != null) {
+                request.setAttribute("paymentTransactionAmountAbs", amount.abs());
+            }
+        }
 
         request.setAttribute("order", order);
         request.setAttribute("product", product);
@@ -321,6 +342,136 @@ public class OrderController extends BaseController {
         request.setAttribute("orderToken", IdObfuscator.encode(orderId));
 
         forward(request, response, "order/detail");
+    }
+
+    /**
+     * Phản hồi JSON mô tả các sự kiện ví của đơn hàng để giao diện tải bằng AJAX.
+     */
+    private void handleWalletEventsApi(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || !pathInfo.contains("/wallet-events")) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String token = extractTokenFromPath(request);
+        if (token == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        int orderId;
+        try {
+            orderId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
+        if (detailOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Orders order = detailOpt.get().order();
+        Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
+        response.setContentType("application/json; charset=UTF-8");
+        response.getWriter().write(buildWalletEventsPayload(events));
+    }
+
+    private String buildWalletEventsPayload(List<OrderWalletEvent> events) {
+        StringBuilder builder = new StringBuilder();
+        builder.append('{').append("\"events\":[");
+        for (int i = 0; i < events.size(); i++) {
+            OrderWalletEvent event = events.get(i);
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('{');
+            appendJsonField(builder, "sequence", Integer.toString(i + 1), false);
+            appendJsonField(builder, "code", escapeJson(event.getCode()), true);
+            appendJsonField(builder, "title", escapeJson(event.getTitle()), true);
+            appendJsonField(builder, "description", escapeJson(event.getDescription()), true);
+            appendJsonField(builder, "occurredAt", formatIso(event.getOccurredAt()), true);
+            appendJsonField(builder, "amount", formatDecimal(event.getAmount()), true);
+            appendJsonField(builder, "balanceAfter", formatDecimal(event.getBalanceAfter()), true);
+            appendJsonField(builder, "reference", escapeJson(event.getReference()), true);
+            appendJsonField(builder, "primary", Boolean.toString(event.isPrimary()), false);
+            trimTrailingComma(builder);
+            builder.append('}');
+        }
+        builder.append(']');
+        builder.append('}');
+        return builder.toString();
+    }
+
+    private void appendJsonField(StringBuilder builder, String name, String value, boolean quote) {
+        if (value == null) {
+            return;
+        }
+        builder.append('"').append(name).append('"').append(':');
+        if (quote) {
+            builder.append('"').append(value).append('"');
+        } else {
+            builder.append(value);
+        }
+        builder.append(',');
+    }
+
+    private void trimTrailingComma(StringBuilder builder) {
+        int length = builder.length();
+        if (length > 0 && builder.charAt(length - 1) == ',') {
+            builder.setLength(length - 1);
+        }
+    }
+
+    private String escapeJson(String input) {
+        if (input == null) {
+            return null;
+        }
+        StringBuilder escaped = new StringBuilder(input.length() + 8);
+        for (int i = 0; i < input.length(); i++) {
+            char ch = input.charAt(i);
+            switch (ch) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (ch < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) ch));
+                    } else {
+                        escaped.append(ch);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
+    private String formatIso(java.util.Date date) {
+        if (date == null) {
+            return null;
+        }
+        return java.time.ZonedDateTime.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    private String formatDecimal(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        return value.stripTrailingZeros().toPlainString();
     }
 
     /**
