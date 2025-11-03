@@ -45,6 +45,9 @@ public class SellerInventoryController extends SellerBaseController {
         // Lấy danh sách sản phẩm
         List<Products> products = productDAO.findByShopId(shop.getId());
         
+        // Log để debug
+        System.out.println("DEBUG - SellerInventory: userId=" + userId + ", shopId=" + shop.getId() + ", products found=" + products.size());
+        
         request.setAttribute("shop", shop);
         request.setAttribute("products", products);
         request.setAttribute("pageTitle", "Quản lý kho hàng - " + shop.getName());
