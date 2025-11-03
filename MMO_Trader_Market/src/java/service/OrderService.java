@@ -230,14 +230,14 @@ public class OrderService {
             }
         }
 
-        // 3. Đối chiếu và tự động bổ sung credential theo biến thể nhằm đảm bảo khi worker chạy sẽ có dữ liệu bàn giao.
-        CredentialDAO.CredentialAvailability credentialAvailability = credentialDAO
-                .ensureAvailabilityForOrder(productId, resolvedVariantCode, quantity);
-        if (resolvedVariantCode != null) {
-            if (credentialAvailability.available() < quantity) {
+        // 3. Kiểm tra tồn kho credential trước khi cho phép đặt mua.
+        CredentialDAO.CredentialAvailability credentialAvailability = resolvedVariantCode != null
+                ? credentialDAO.fetchAvailability(productId, resolvedVariantCode)
+                : credentialDAO.fetchAvailability(productId);
+        if (credentialAvailability.available() < quantity) {
+            if (resolvedVariantCode != null) {
                 throw new IllegalStateException("Biến thể sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
             }
-        } else if (credentialAvailability.available() < quantity) {
             throw new IllegalStateException("Sản phẩm tạm thời hết mã bàn giao, vui lòng thử lại sau.");
         }
 
