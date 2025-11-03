@@ -31,34 +31,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * <p>
- * Dịch vụ nghiệp vụ cho toàn bộ luồng hiển thị sản phẩm: trang chủ, trang
- * duyệt, trang chi tiết.</p>
- * <p>
- * Lớp này nhận dữ liệu thô từ {@link dao.product.ProductDAO} và
- * {@link dao.order.CredentialDAO}, chuẩn hóa, ghép nhãn tiếng Việt, parse JSON
- * biến thể bằng Gson rồi chuyển thành các view model sử dụng trực tiếp ở
- * JSP.</p>
- * <p>
- * Các phương thức chính mô tả rõ quy trình lọc theo danh mục, phân trang, xác
- * định khoảng giá, kiểm tra tồn kho và tính toán số lượng credential còn bàn
- * giao được.</p>
- *
- * @author longpdhe171902
- */
+
 public class ProductService {
 
-    // Số lượng sản phẩm nổi bật hiển thị trên trang chủ.
     private static final int DEFAULT_HOMEPAGE_LIMIT = 6;
-    // Số lượng sản phẩm tương tự hiển thị ở trang chi tiết.
+    private static final int MAX_HOMEPAGE_LIMIT = 12;
     private static final int DEFAULT_SIMILAR_LIMIT = 4;
     // Đường dẫn gốc tới thư mục ảnh sản phẩm.
     private static final String PRODUCT_IMAGE_BASE_PATH = "/assets/images/products/";
-
-    // Bảng ánh xạ mã loại -> nhãn tiếng Việt.
     private static final Map<String, String> TYPE_LABELS;
-    // Bảng ánh xạ mã subtype -> nhãn tiếng Việt.
     private static final Map<String, String> SUBTYPE_LABELS;
     // Danh sách cấu hình loại + subtype phục vụ dropdown.
     private static final List<ProductTypeOption> TYPE_OPTIONS;
@@ -118,8 +99,24 @@ public class ProductService {
      * {@link ProductSummaryView}.
      */
     public List<ProductSummaryView> getHomepageHighlights() {
-        List<ProductListRow> rows = productDAO.findTopAvailable(DEFAULT_HOMEPAGE_LIMIT);
+        return getHomepageHighlights(DEFAULT_HOMEPAGE_LIMIT);
+    }
+
+    /**
+     * Phiên bản cho phép client truyền giới hạn tùy ý nhưng vẫn được chặn ở
+     * mức tối đa để tránh truy vấn nặng.
+     */
+    public List<ProductSummaryView> getHomepageHighlights(int limit) {
+        int safeLimit = resolveLimit(limit, DEFAULT_HOMEPAGE_LIMIT, MAX_HOMEPAGE_LIMIT);
+        List<ProductListRow> rows = productDAO.findTopAvailable(safeLimit);
         return rows.stream().map(this::toSummaryView).toList();
+    }
+
+    private int resolveLimit(int requestedLimit, int defaultLimit, int maxLimit) {
+        int candidate = requestedLimit <= 0 ? defaultLimit : requestedLimit;
+        int upperBound = Math.max(defaultLimit, maxLimit);
+        int normalized = Math.max(candidate, 1);
+        return Math.min(normalized, upperBound);
     }
 
     /**
