@@ -72,7 +72,7 @@
             <!-- Họ tên chủ tài khoản -->
             <div class="form-card__field">
               <label for="fullName" class="form-card__label">Tên chủ tài khoản</label>
-              <input id="fullName" name="fullName" type="text" class="form-card__input"
+              <input id="accountName" name="accountName" type="text" class="form-card__input"
                      placeholder="VD: Nguyen Van A" required maxlength="100">
               <p class="form-note">Tên hiển thị trên tài khoản ngân hàng.</p>
             </div>
