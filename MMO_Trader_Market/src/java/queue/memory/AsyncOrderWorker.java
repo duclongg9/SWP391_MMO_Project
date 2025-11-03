@@ -180,34 +180,12 @@ public class AsyncOrderWorker implements OrderWorker {
      * Khóa credential phù hợp với sản phẩm/biến thể.
      */
     private void reserveCredentials(Connection connection, OrderProcessingContext context) throws SQLException {
-        ensureCredentialPool(connection, context);
         List<Integer> credentialIds = credentialDAO.pickFreeCredentialIds(connection,
                 context.message().productId(), context.message().qty(), context.normalizedVariantCode());
         if (credentialIds.size() < context.message().qty()) {
             failWithReason(connection, context.order(), "Không đủ credential sẵn sàng để giao", Level.WARNING);
         }
         context.setCredentialIds(credentialIds);
-    }
-
-    /**
-     * Đảm bảo kho credential luôn >= tồn kho sản phẩm bằng cách tự động sinh
-     * credential ảo khi thiếu.
-     */
-    private void ensureCredentialPool(Connection connection, OrderProcessingContext context) throws SQLException {
-        int targetInventory = context.variantInventory() != null
-                ? Math.max(context.variantInventory(), context.message().qty())
-                : Math.max(context.availableInventory(), context.message().qty());
-        if (targetInventory <= 0) {
-            return;
-        }
-        CredentialDAO.CredentialAvailability availability = credentialDAO.fetchAvailabilityForVariant(connection,
-                context.message().productId(), context.normalizedVariantCode());
-        int missing = targetInventory - availability.available();
-        if (missing <= 0) {
-            return;
-        }
-        credentialDAO.generateFakeCredentials(connection, context.message().productId(),
-                context.normalizedVariantCode(), missing);
     }
 
     /**
