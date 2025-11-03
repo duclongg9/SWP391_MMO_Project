@@ -527,23 +527,38 @@
             hour12: false
         });
 
-        fetch(endpoint, {headers: {'Accept': 'application/json'}})
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Không thể tải dữ liệu');
-                }
-                return response.json();
-            })
-            .then(payload => {
-                if (!payload || !Array.isArray(payload.events)) {
-                    showError('Dữ liệu ví không hợp lệ.');
-                    return;
-                }
-                renderEvents(payload.events);
-            })
-            .catch(() => {
-                showError('Không thể tải dữ liệu ví. Vui lòng thử lại sau.');
-            });
+        let isFetching = false;
+
+        function loadEvents() {
+            if (isFetching) {
+                return;
+            }
+            isFetching = true;
+            fetch(endpoint, {headers: {'Accept': 'application/json'}})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Không thể tải dữ liệu');
+                    }
+                    return response.json();
+                })
+                .then(payload => {
+                    if (!payload || !Array.isArray(payload.events)) {
+                        showError('Dữ liệu ví không hợp lệ.');
+                        return;
+                    }
+                    renderEvents(payload.events);
+                })
+                .catch(() => {
+                    showError('Không thể tải dữ liệu ví. Vui lòng thử lại sau.');
+                })
+                .finally(() => {
+                    isFetching = false;
+                });
+        }
+
+        // Gọi API ngay lập tức rồi thiết lập polling để cập nhật liên tục trên giao diện.
+        loadEvents();
+        setInterval(loadEvents, 5000);
 
         function renderEvents(events) {
             container.innerHTML = '';
