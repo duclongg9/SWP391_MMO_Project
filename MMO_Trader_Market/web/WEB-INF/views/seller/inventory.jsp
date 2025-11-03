@@ -20,24 +20,13 @@
                 <div class="alert alert--danger" role="alert">${flashError}</div>
             </c:if>
             <form method="post" action="${pageContext.request.contextPath}/seller/credentials/generate"
-                  style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;">
-                <div class="form-card__field" style="min-width:200px;">
-                    <label for="productId">Mã sản phẩm *</label>
-                    <input id="productId" name="productId" type="number" min="1" required class="form-control"
-                           placeholder="Ví dụ: 1001">
-                </div>
-                <div class="form-card__field" style="min-width:200px;">
-                    <label for="variantCode">Biến thể (tùy chọn)</label>
-                    <input id="variantCode" name="variantCode" type="text" class="form-control"
-                           placeholder="VD: vip-30ngay">
-                </div>
-                <div class="form-card__field" style="min-width:160px;">
-                    <label for="quantity">Số lượng *</label>
-                    <input id="quantity" name="quantity" type="number" min="1" max="500" value="10" required
-                           class="form-control">
-                </div>
-                <div class="form-card__field" style="margin-top:22px;">
-                    <button type="submit" class="button button--primary">Sinh credential</button>
+                  style="display:flex;flex-direction:column;gap:12px;max-width:560px;">
+                <p class="text-muted" style="margin:0;">
+                    Nhấn nút bên dưới để hệ thống sinh credential ảo cho <strong>toàn bộ sản phẩm</strong> và các biến thể
+                    đã cấu hình tồn kho trong cơ sở dữ liệu. Mỗi SKU sẽ được bổ sung đủ số lượng theo tồn kho hiện tại.
+                </p>
+                <div>
+                    <button type="submit" class="button button--primary">Sinh credential cho toàn bộ sản phẩm</button>
                 </div>
             </form>
         </div>

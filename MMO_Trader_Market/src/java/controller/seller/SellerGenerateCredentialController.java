@@ -29,34 +29,16 @@ public class SellerGenerateCredentialController extends SellerBaseController {
             return;
         }
         HttpSession session = request.getSession();
-        String productIdRaw = request.getParameter("productId");
-        String quantityRaw = request.getParameter("quantity");
-        String variantCode = request.getParameter("variantCode");
         try {
-            int productId = Integer.parseInt(productIdRaw);
-            int quantity = Integer.parseInt(quantityRaw);
-            if (productId <= 0 || quantity <= 0) {
-                throw new IllegalArgumentException("Tham số không hợp lệ");
-            }
-            int inserted = credentialDAO.generateFakeCredentials(productId, variantCode, quantity);
-            if (inserted > 0) {
-                String normalizedVariant = variantCode == null ? null : variantCode.trim();
-                if (normalizedVariant != null && normalizedVariant.isEmpty()) {
-                    normalizedVariant = null;
-                }
-                StringBuilder message = new StringBuilder();
-                message.append("Đã sinh ").append(inserted).append(" credential ảo cho sản phẩm #").append(productId);
-                if (normalizedVariant != null) {
-                    message.append(" (biến thể ").append(normalizedVariant).append(")");
-                }
-                session.setAttribute("sellerInventoryFlashSuccess", message.append('.').toString());
+            CredentialDAO.BulkGenerationSummary summary = credentialDAO.seedAllProductsFromInventory();
+            if (summary.generatedCredentials() > 0) {
+                session.setAttribute("sellerInventoryFlashSuccess",
+                        String.format("Đã bổ sung %d credential cho %d SKU.",
+                                summary.generatedCredentials(), summary.skuTouched()));
             } else {
-                session.setAttribute("sellerInventoryFlashError",
-                        "Không thể sinh credential ảo, vui lòng thử lại sau.");
+                session.setAttribute("sellerInventoryFlashSuccess",
+                        "Tất cả sản phẩm đã có đủ credential để bàn giao.");
             }
-        } catch (NumberFormatException | IllegalArgumentException ex) {
-            session.setAttribute("sellerInventoryFlashError",
-                    "Tham số không hợp lệ, vui lòng kiểm tra mã sản phẩm và số lượng.");
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
             session.setAttribute("sellerInventoryFlashError",

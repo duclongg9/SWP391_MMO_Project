@@ -15,6 +15,9 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import model.product.ProductVariantOption;
+import service.util.ProductVariantUtils;
+
 /**
  * DAO for product_credentials table.
  */
@@ -213,6 +216,81 @@ public class CredentialDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Sinh credential ảo cho toàn bộ sản phẩm dựa trên tồn kho đã cấu hình.
+     *
+     * <p>
+     * Với mỗi sản phẩm không có biến thể, phương thức sẽ kiểm tra số credential
+     * chưa bán hiện có và sinh thêm nếu thiếu so với {@code inventory_count}.
+     * Đối với sản phẩm có biến thể, tồn kho được đọc từ {@code variants_json}
+     * và xử lý tương tự cho từng biến thể.</p>
+     *
+     * @return thống kê số credential đã sinh và số SKU được bổ sung
+     */
+    public BulkGenerationSummary seedAllProductsFromInventory() {
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                List<ProductSeedRow> products = loadSeedableProducts(connection);
+                int generated = 0;
+                int touchedSkus = 0;
+                for (ProductSeedRow product : products) {
+                    if (ProductVariantUtils.hasVariants(product.variantSchema())) {
+                        List<ProductVariantOption> variants = ProductVariantUtils
+                                .parseVariants(product.variantSchema(), product.variantsJson());
+                        for (ProductVariantOption variant : variants) {
+                            Integer inventory = variant.getInventoryCount();
+                            if (inventory == null || inventory <= 0) {
+                                continue;
+                            }
+                            String normalizedCode = ProductVariantUtils.normalizeCode(variant.getVariantCode());
+                            if (normalizedCode == null) {
+                                continue;
+                            }
+                            CredentialAvailability availability = fetchAvailabilityForVariant(connection,
+                                    product.id(), normalizedCode);
+                            int missing = inventory - availability.available();
+                            if (missing <= 0) {
+                                continue;
+                            }
+                            generateFakeCredentials(connection, product.id(), normalizedCode, missing);
+                            generated += missing;
+                            touchedSkus++;
+                        }
+                    } else {
+                        Integer inventory = product.inventoryCount();
+                        if (inventory == null || inventory <= 0) {
+                            continue;
+                        }
+                        CredentialAvailability availability = fetchAvailability(connection, product.id());
+                        int missing = inventory - availability.available();
+                        if (missing <= 0) {
+                            continue;
+                        }
+                        generateFakeCredentials(connection, product.id(), null, missing);
+                        generated += missing;
+                        touchedSkus++;
+                    }
+                }
+                connection.commit();
+                return new BulkGenerationSummary(generated, touchedSkus);
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+        }
+        return new BulkGenerationSummary(0, 0);
+    }
+
     public void markCredentialsSold(int orderId, List<Integer> ids) {
         try (Connection connection = getConnection()) {
             markCredentialsSold(connection, orderId, ids);
@@ -374,6 +452,21 @@ public class CredentialDAO extends BaseDAO {
                 new Object[]{quantity, productId, normalized == null ? "" : " - biến thể " + normalized});
     }
 
+    private List<ProductSeedRow> loadSeedableProducts(Connection connection) throws SQLException {
+        final String sql = "SELECT id, inventory_count, variant_schema, variants_json FROM products";
+        List<ProductSeedRow> products = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                products.add(new ProductSeedRow(
+                        rs.getInt("id"),
+                        (Integer) rs.getObject("inventory_count"),
+                        rs.getString("variant_schema"),
+                        rs.getString("variants_json")));
+            }
+        }
+        return products;
+    }
+
     private String normalizeVariantCode(String variantCode) {
         if (variantCode == null) {
             return null;
@@ -417,5 +510,13 @@ public class CredentialDAO extends BaseDAO {
 
     private char randomPasswordSymbol() {
         return PASSWORD_SYMBOLS[RANDOM.nextInt(PASSWORD_SYMBOLS.length)];
+    }
+
+    public record BulkGenerationSummary(int generatedCredentials, int skuTouched) {
+
+    }
+
+    private record ProductSeedRow(int id, Integer inventoryCount, String variantSchema, String variantsJson) {
+
     }
 }
