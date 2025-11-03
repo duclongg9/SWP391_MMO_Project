@@ -10,6 +10,7 @@ import model.Orders;
 import model.Products;
 import model.WalletTransactions;
 import model.view.OrderDetailView;
+import model.view.OrderWalletEvent;
 import service.OrderService;
 import units.IdObfuscator;
 
@@ -311,6 +312,8 @@ public class OrderController extends BaseController {
         Products product = detail.product();
         List<String> credentials = detail.credentials();
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        List<OrderWalletEvent> walletTimeline = orderService.buildWalletTimeline(order, paymentTxOpt);
+        request.setAttribute("walletTimeline", walletTimeline);
         if (paymentTxOpt.isPresent()) {
             WalletTransactions paymentTx = paymentTxOpt.get();
             request.setAttribute("paymentTransaction", paymentTx);
