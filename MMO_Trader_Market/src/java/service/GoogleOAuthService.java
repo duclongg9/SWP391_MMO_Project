@@ -21,12 +21,10 @@ public class GoogleOAuthService {
     private static final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
     // API lấy thông tin người dùng.
     private static final String USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo";
-
     // HTTP client chuẩn để gọi API Google.
     private final HttpClient httpClient = HttpClient.newHttpClient();
     // Gson phục vụ parse JSON phản hồi.
     private final Gson gson = new Gson();
-
     // Tạo URL điều hướng người dùng sang màn hình đăng nhập Google.
     public String buildAuthorizationUrl(String state) {
         String clientId = requireConfig("google.clientId");
