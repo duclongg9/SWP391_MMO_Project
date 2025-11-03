@@ -45,7 +45,8 @@
                 <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
             </c:if>
         </div>
-
+        <!--Alerts -->
+        
         <!--Thông tin ví -->
         <input type="hidden" name="action" value="updateProfile">
         <div class="panel__header">
