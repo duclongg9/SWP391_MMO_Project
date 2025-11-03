@@ -706,7 +706,14 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm
      */
     public List<Products> findByShopId(int shopId) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products WHERE shop_id = ? ORDER BY created_at DESC";
+        // Sử dụng query đơn giản hơn, lấy sold_count trực tiếp từ bảng products
+        // thay vì LEFT JOIN với view (view có thể không tồn tại)
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p " +
+                "WHERE p.shop_id = ? ORDER BY p.created_at DESC";
         try (Connection connection = getConnection(); 
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, shopId);
@@ -716,9 +723,10 @@ public class ProductDAO extends BaseDAO {
                     products.add(mapRow(rs));
                 }
             }
+            LOGGER.log(Level.INFO, "Đã tải {0} sản phẩm cho shop_id={1}", new Object[]{products.size(), shopId});
             return products;
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop", ex);
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop_id=" + shopId, ex);
             return List.of();
         }
     }
