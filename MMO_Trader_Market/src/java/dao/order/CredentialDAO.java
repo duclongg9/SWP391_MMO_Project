@@ -58,10 +58,13 @@ public class CredentialDAO extends BaseDAO {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
+            // Khóa cứng product_id để tránh lấy nhầm credential của sản phẩm khác.
             statement.setInt(index++, productId);
             if (normalized != null) {
+                // Biến thể được chuẩn hóa về chữ thường để khớp với dữ liệu đã lưu.
                 statement.setString(index++, normalized);
             }
+            // LIMIT = số lượng người mua đặt -> đảm bảo lấy đúng số credential cần.
             statement.setInt(index, qty);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -74,6 +77,7 @@ public class CredentialDAO extends BaseDAO {
 
     public CredentialAvailability fetchAvailability(int productId) {
         try (Connection connection = getConnection()) {
+            // Mở kết nối riêng mỗi lần gọi để tái sử dụng được ở cả controller và worker.
             return fetchAvailability(connection, productId);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể thống kê credential khả dụng", ex);
@@ -129,6 +133,7 @@ public class CredentialDAO extends BaseDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             statement.setInt(1, productId);
             if (!filterDefaultVariant) {
+                // Nếu có mã biến thể cụ thể thì bind vào vị trí thứ 2 của câu lệnh.
                 statement.setString(2, normalized);
             }
             try (ResultSet rs = statement.executeQuery()) {
@@ -166,6 +171,7 @@ public class CredentialDAO extends BaseDAO {
                         : fetchAvailabilityForVariant(connection, productId, normalized);
                 int missing = requiredQuantity - availability.available();
                 if (missing > 0) {
+                    // Không đủ credential -> sinh thêm credential ảo để worker có dữ liệu bàn giao.
                     generateFakeCredentials(connection, productId, normalized, missing);
                     availability = normalized == null
                             ? fetchAvailability(connection, productId)
@@ -175,6 +181,7 @@ public class CredentialDAO extends BaseDAO {
                 return availability;
             } catch (SQLException ex) {
                 try {
+                    // Thất bại ở giữa transaction -> rollback để tránh dữ liệu dở dang.
                     connection.rollback();
                 } catch (SQLException rollbackEx) {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
@@ -197,11 +204,13 @@ public class CredentialDAO extends BaseDAO {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                // Phân nhánh xuống hàm dùng chung để tái sử dụng logic insert/rollback.
                 generateFakeCredentials(connection, productId, variantCode, quantity);
                 connection.commit();
                 return quantity;
             } catch (SQLException ex) {
                 try {
+                    // Gặp lỗi insert -> hoàn tác để không ghi ra credential rác.
                     connection.rollback();
                 } catch (SQLException rollbackEx) {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);

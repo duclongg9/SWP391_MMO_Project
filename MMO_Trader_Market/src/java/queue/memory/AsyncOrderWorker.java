@@ -87,6 +87,7 @@ public class AsyncOrderWorker implements OrderWorker {
         }
         Orders order = optionalOrder.get();
         if (isTerminal(order.getStatus())) {
+            // Đơn đã ở trạng thái kết thúc -> không xử lý lại để tránh trừ tiền lần hai.
             return;
         }
         try (Connection connection = orderDAO.openConnection()) {
@@ -107,11 +108,14 @@ public class AsyncOrderWorker implements OrderWorker {
                 finalizeFulfillment(connection, context);
                 // B6: Hoàn tất đơn hàng và commit transaction.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
+                // Mọi thao tác thành công -> chốt giao dịch để ghi xuống DB.
                 connection.commit();
             } catch (SQLException ex) {
+                // Có lỗi SQL -> rollback để dữ liệu ví/tồn kho không bị lệch.
                 connection.rollback();
                 throw ex;
             } finally {
+                // Khôi phục lại chế độ auto-commit giúp connection pool tái sử dụng an toàn.
                 connection.setAutoCommit(true);
             }
         }
@@ -125,6 +129,7 @@ public class AsyncOrderWorker implements OrderWorker {
         if (resolved == null || resolved.isBlank()) {
             resolved = context.order().getVariantCode();
         }
+        // Chuẩn hóa chuỗi biến thể để các hàm tìm kiếm/so khớp hoạt động nhất quán.
         context.setNormalizedVariantCode(ProductVariantUtils.normalizeCode(resolved));
     }
 
@@ -200,6 +205,7 @@ public class AsyncOrderWorker implements OrderWorker {
         String note = "Thanh toán đơn hàng #" + context.order().getId();
         int walletTxId = walletTransactionDAO.insertTransaction(connection, context.wallet().getId(), context.order().getId(),
                 TransactionType.PURCHASE, context.totalAmount().negate(), context.balanceBefore(), balanceAfter, note);
+        // Lưu mã giao dịch vào order để màn hình chi tiết có thể truy ngược dòng tiền.
         orderDAO.assignPaymentTransaction(connection, context.order().getId(), walletTxId);
     }
 

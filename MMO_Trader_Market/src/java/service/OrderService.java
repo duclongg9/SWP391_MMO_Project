@@ -176,6 +176,7 @@ public class OrderService {
         }
         String trimmedKey = Objects.requireNonNullElse(idempotencyKey, "").trim();
         if (trimmedKey.isEmpty()) {
+            // Nếu client không truyền khóa, sinh ngẫu nhiên để đảm bảo tránh double-submit.
             trimmedKey = UUID.randomUUID().toString();
         }
         String normalizedVariant = ProductVariantUtils.normalizeCode(variantCode);
@@ -187,6 +188,7 @@ public class OrderService {
                 throw new IllegalStateException("Khóa idempotency đã được sử dụng bởi tài khoản khác.");
             }
             if (isOrderActive(order.getStatus())) {
+                // Trường hợp người mua lặp lại request nhưng đơn vẫn đang xử lý -> trả về id hiện tại.
                 return order.getId();
             }
             // Đơn hàng cũ đã kết thúc vòng đời, cấp một khóa mới để tạo giao dịch mới.
@@ -198,6 +200,7 @@ public class OrderService {
         Integer productInventory = product.getInventoryCount();
         List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                 product.getVariantSchema(), product.getVariantsJson());
+        // 3. Sau khi đã có dữ liệu sản phẩm, chuẩn bị các thuộc tính phục vụ tính toán đơn giá/tồn kho.
         Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedVariant);
         ProductVariantOption selectedVariant = variantOpt.orElse(null);
         if (normalizedVariant != null) {
@@ -290,6 +293,7 @@ public class OrderService {
         String normalizedProduct = productName == null ? null : productName.trim();
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
+        // Đếm tổng số bản ghi phù hợp filter để tính toán phân trang.
         long totalItemsLong = orderDAO.countByBuyer(userId, normalizedStatus, orderId, normalizedProduct, fromDate, toDate);
         int totalPages = totalItemsLong == 0 ? 1 : (int) Math.ceil((double) totalItemsLong / safeSize);
         int currentPage = Math.min(safePage, totalPages);
@@ -438,16 +442,7 @@ public class OrderService {
         List<OrderWalletEvent> events = new ArrayList<>();
         Date createdAt = copyDate(order.getCreatedAt());
         Integer orderId = order.getId();
-        events.add(new OrderWalletEvent(
-                "QUEUE_ENQUEUED",
-                "Đưa vào hàng đợi xử lý",
-                "Người mua xác nhận \"Mua ngay\". Hệ thống tạo đơn và gửi thông điệp cho worker bất đồng bộ.",
-                createdAt,
-                null,
-                null,
-                buildSyntheticReference("Q", orderId, 1),
-                false));
-
+        // Bỏ qua sự kiện hàng đợi để giao diện không hiển thị bước này nhưng vẫn giữ nguyên luồng API.
         Date walletStepTime = copyDate(order.getUpdatedAt());
         if (walletStepTime == null) {
             walletStepTime = createdAt;
@@ -465,7 +460,7 @@ public class OrderService {
                 walletStepTime,
                 totalAmount,
                 null,
-                buildSyntheticReference("V", orderId, 2),
+                buildSyntheticReference("V", orderId, 1),
                 false));
 
         if (paymentTxOpt.isPresent()) {
@@ -497,7 +492,7 @@ public class OrderService {
                     walletStepTime,
                     null,
                     null,
-                    buildSyntheticReference("P", orderId, 3),
+                    buildSyntheticReference("P", orderId, events.size() + 1),
                     true));
         }
 
@@ -513,7 +508,7 @@ public class OrderService {
                     statusTime,
                     null,
                     null,
-                    buildSyntheticReference("S", orderId, 4),
+                    buildSyntheticReference("S", orderId, events.size() + 1),
                     false));
         }
 
