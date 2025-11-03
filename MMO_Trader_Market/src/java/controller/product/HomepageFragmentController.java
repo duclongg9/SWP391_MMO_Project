@@ -13,9 +13,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Cung cấp các fragment HTML cho trang chủ. Mỗi fragment được tải qua AJAX để
- * tách riêng thành các transaction độc lập, tránh việc một truy vấn chậm làm
- * chậm cả trang.
+tách trang chủ thành nhiều “mảnh” độc lập để truy vấn chậm ở một phần không làm chậm cả trang.
  */
 @WebServlet(name = "HomepageFragmentController", urlPatterns = {"/fragment/home/*"})
 public class HomepageFragmentController extends HttpServlet {
