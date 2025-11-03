@@ -66,6 +66,29 @@ public class ShopDAO extends BaseDAO {
     }
 
     /**
+     * Tìm shop theo owner_id.
+     *
+     * @param ownerId mã người dùng sở hữu shop
+     * @return shop nếu tìm thấy, null nếu không tìm thấy
+     */
+    public Shops findByOwnerId(int ownerId) {
+        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+                + "FROM shops WHERE owner_id = ? LIMIT 1";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải shop theo owner_id", ex);
+        }
+        return null;
+    }
+
+    /**
      * Ánh xạ dữ liệu kết quả sang đối tượng {@link Shops}.
      */
     private Shops mapRow(ResultSet rs) throws SQLException {
