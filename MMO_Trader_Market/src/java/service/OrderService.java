@@ -9,9 +9,11 @@ import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
 import model.Products;
+import model.TransactionType;
 import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
+import model.WalletTransactions;
 import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
@@ -47,6 +49,7 @@ public class OrderService {
     );
     // Bảng ánh xạ trạng thái sang nhãn tiếng Việt.
     private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
+    private static final Map<TransactionType, String> TRANSACTION_TYPE_LABELS = buildTransactionTypeLabels();
 
     // DAO quản lý đơn hàng.
     private final OrderDAO orderDAO;
@@ -397,6 +400,34 @@ public class OrderService {
     }
 
     /**
+     * Lấy thông tin giao dịch thanh toán gắn với đơn hàng (nếu có).
+     *
+     * @param order bản ghi đơn hàng cần tra cứu
+     * @return {@link Optional} chứa giao dịch nếu tìm thấy và thuộc về người mua
+     */
+    public Optional<WalletTransactions> getPaymentTransactionForOrder(Orders order) {
+        if (order == null) {
+            return Optional.empty();
+        }
+        Integer txId = order.getPaymentTransactionId();
+        Integer buyerId = order.getBuyerId();
+        if (txId == null || buyerId == null) {
+            return Optional.empty();
+        }
+        return walletTransactionDAO.findByIdForUser(txId, buyerId);
+    }
+
+    /**
+     * Trả về nhãn tiếng Việt cho loại giao dịch ví.
+     */
+    public String getTransactionTypeLabel(TransactionType type) {
+        if (type == null) {
+            return "Không xác định";
+        }
+        return TRANSACTION_TYPE_LABELS.getOrDefault(type, type.getDbValue());
+    }
+
+    /**
      * Chuẩn hóa trạng thái đầu vào (đầu chữ hoa, phần còn lại chữ thường) và
      * kiểm tra hợp lệ.
      */
@@ -427,6 +458,17 @@ public class OrderService {
         labels.put(OrderStatus.FAILED, "Thất bại");
         labels.put(OrderStatus.REFUNDED, "Đã hoàn tiền");
         labels.put(OrderStatus.DISPUTED, "Khiếu nại");
+        return labels;
+    }
+
+    private static Map<TransactionType, String> buildTransactionTypeLabels() {
+        Map<TransactionType, String> labels = new EnumMap<>(TransactionType.class);
+        labels.put(TransactionType.PURCHASE, "Thanh toán đơn hàng");
+        labels.put(TransactionType.DEPOSIT, "Nạp tiền vào ví");
+        labels.put(TransactionType.WITHDRAWAL, "Rút tiền");
+        labels.put(TransactionType.REFUND, "Hoàn tiền");
+        labels.put(TransactionType.FEE, "Phí giao dịch");
+        labels.put(TransactionType.PAYOUT, "Chi trả");
         return labels;
     }
 
