@@ -5,6 +5,7 @@
 package service;
 
 import dao.user.WithdrawRequestDAO;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
@@ -45,7 +46,7 @@ public class WithdrawService {
         //Mã hóa tham số để an toàn khi đưa lên URL
         String qAmount = "amount=" + amountVnd;
         String qInfo = "addInfo=" + enc(addInfo);
-        String qName = "accountName=" + accountName;
+        String qName = "accountName=" + enc(accountName);
 
         //Ghép toàn bộ URL hoàn chỉnh
         return url + "?" + qAmount + "&" + qInfo + "&" + qName;
@@ -94,8 +95,8 @@ public class WithdrawService {
     }
     
     //Tạo Withdraw Request
-    public int createWithdrawRequest(int userId, long amount, String bankAccountInfo){
-        if (amount < 100000) {
+    public int createWithdrawRequest(int userId, BigDecimal amount, String bankAccountInfo){
+        if (amount.compareTo(BigDecimal.valueOf(100000)) < 0) {
             throw new IllegalArgumentException("Số tiền chuyển phải lớn hơn hoặc bằng 100k ");
         }
         int results =  wrdao.createWithDrawRequest(userId, amount, bankAccountInfo);

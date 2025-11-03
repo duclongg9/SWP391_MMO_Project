@@ -5,6 +5,7 @@
 package dao.user;
 
 import dao.connect.DBConnect;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,17 +31,18 @@ public class WithdrawRequestDAO {
     private static final String COL_PROCESSED_AT = "processed_at";
     
     //Tạo một yêu cầu rút tiền mới 
-    public int createWithDrawRequest(int userId, double amount, String bankAccountInfo){
+    public int createWithDrawRequest(int userId, BigDecimal amount, String bankAccountInfo){
         String sql = """
                      INSERT INTO mmo_schema.withdrawal_requests
                      (user_id, amount, bank_account_info, status, admin_proof_url, created_at, processed_at)
-                     VALUES (?, ?, ?,pending, ?, NOW(), NOW())
+                     VALUES (?, ?, ?,'Pending', NULL, NOW(), NOW())
                      """;   
         try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
             ps.setInt(1, userId);
-            ps.setDouble(2, amount);
+            ps.setBigDecimal(2, amount);
             ps.setString(3, bankAccountInfo);
-            ps.setNull(4,Types.LONGNVARCHAR);
+            int rows = ps.executeUpdate();
+            return rows;
         } catch (SQLException e) {
             Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);
         }
