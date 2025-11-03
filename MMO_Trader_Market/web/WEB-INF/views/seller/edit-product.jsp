@@ -23,12 +23,13 @@
         </div>
     </c:if>
 
-    <form action="${pageContext.request.contextPath}/seller/products/create" method="post" enctype="multipart/form-data">
-    <section class="panel">
-        <div class="panel__header">
-            <h2 class="panel__title">Thông tin sản phẩm</h2>
-            <p class="panel__subtitle">Bổ sung mô tả chi tiết, giá bán và ảnh minh hoạ trước khi đăng bán.</p>
-        </div>
+    <form action="${pageContext.request.contextPath}/seller/products/edit" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="productId" value="${product.id}"/>
+        <section class="panel">
+            <div class="panel__header">
+                <h2 class="panel__title">Chỉnh sửa sản phẩm</h2>
+                <p class="panel__subtitle">Cập nhật thông tin sản phẩm của bạn</p>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem;">
                 <!-- Cột trái -->
                 <div>
@@ -38,7 +39,7 @@
                         </label>
                         <input class="form-input" type="text" id="product-name" name="productName" 
                                placeholder="Ví dụ: Gmail Doanh nghiệp 100GB" 
-                               value="${productName}" required maxlength="255"
+                               value="${product.name}" required maxlength="255"
                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     
@@ -49,11 +50,11 @@
                         <select class="form-input" id="product-type" name="productType" required
                                 style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                             <option value="">-- Chọn loại --</option>
-                            <option value="EMAIL" ${productType == 'EMAIL' ? 'selected' : ''}>Email</option>
-                            <option value="SOCIAL" ${productType == 'SOCIAL' ? 'selected' : ''}>Mạng xã hội</option>
-                            <option value="GAME" ${productType == 'GAME' ? 'selected' : ''}>Game</option>
-                            <option value="SOFTWARE" ${productType == 'SOFTWARE' ? 'selected' : ''}>Phần mềm</option>
-                            <option value="OTHER" ${productType == 'OTHER' ? 'selected' : ''}>Khác</option>
+                            <option value="EMAIL" ${product.productType == 'EMAIL' ? 'selected' : ''}>Email</option>
+                            <option value="SOCIAL" ${product.productType == 'SOCIAL' ? 'selected' : ''}>Mạng xã hội</option>
+                            <option value="GAME" ${product.productType == 'GAME' ? 'selected' : ''}>Game</option>
+                            <option value="SOFTWARE" ${product.productType == 'SOFTWARE' ? 'selected' : ''}>Phần mềm</option>
+                            <option value="OTHER" ${product.productType == 'OTHER' ? 'selected' : ''}>Khác</option>
                         </select>
                     </div>
                     
@@ -64,14 +65,13 @@
                         <select class="form-input" id="product-subtype" name="productSubtype" required
                                 style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                             <option value="">-- Chọn phân loại --</option>
-                            <option value="GMAIL" ${productSubtype == 'GMAIL' ? 'selected' : ''}>Gmail</option>
-                            <option value="FACEBOOK" ${productSubtype == 'FACEBOOK' ? 'selected' : ''}>Facebook</option>
-                            <option value="TIKTOK" ${productSubtype == 'TIKTOK' ? 'selected' : ''}>TikTok</option>
-                            <option value="CANVA" ${productSubtype == 'CANVA' ? 'selected' : ''}>Canva</option>
-                            <option value="VALORANT" ${productSubtype == 'VALORANT' ? 'selected' : ''}>Valorant</option>
-                            <option value="OTHER" ${productSubtype == 'OTHER' ? 'selected' : ''}>Khác</option>
+                            <option value="GMAIL" ${product.productSubtype == 'GMAIL' ? 'selected' : ''}>Gmail</option>
+                            <option value="FACEBOOK" ${product.productSubtype == 'FACEBOOK' ? 'selected' : ''}>Facebook</option>
+                            <option value="TIKTOK" ${product.productSubtype == 'TIKTOK' ? 'selected' : ''}>TikTok</option>
+                            <option value="CANVA" ${product.productSubtype == 'CANVA' ? 'selected' : ''}>Canva</option>
+                            <option value="VALORANT" ${product.productSubtype == 'VALORANT' ? 'selected' : ''}>Valorant</option>
+                            <option value="OTHER" ${product.productSubtype == 'OTHER' ? 'selected' : ''}>Khác</option>
                         </select>
-                        <small style="color: #666; font-size: 0.875rem;">Chọn phân loại phù hợp với sản phẩm</small>
                     </div>
                 </div>
                 
@@ -83,31 +83,39 @@
                         </label>
                         <input class="form-input" type="number" id="product-price" name="price" 
                                placeholder="250000" 
-                               value="${price}" required min="0" step="1000"
+                               value="${product.price}" required min="0" step="1000"
                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     
                     <div style="margin-bottom: 1.25rem;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;" for="product-inventory">
-                            Số lượng
+                            Số lượng tồn kho
                         </label>
                         <input class="form-input" type="number" id="product-inventory" name="inventory" 
                                placeholder="0" 
-                               value="${inventory}" min="0"
+                               value="${product.inventoryCount}" min="0"
                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <small style="color: #666; font-size: 0.875rem;">Để 0 nếu chưa có hàng.</small>
+                        <small style="color: #666; font-size: 0.875rem;">Số lượng sản phẩm còn trong kho</small>
                     </div>
                     
                     <div style="margin-bottom: 1.25rem;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;" for="product-image">
                             Ảnh sản phẩm
                         </label>
+                        <c:if test="${not empty product.primaryImageUrl}">
+                            <div style="margin-bottom: 0.5rem;">
+                                <img src="${pageContext.request.contextPath}/${product.primaryImageUrl}" 
+                                     alt="Ảnh hiện tại" 
+                                     style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px; object-fit: cover;">
+                                <p style="font-size: 0.875rem; color: #666; margin-top: 0.25rem;">Ảnh hiện tại</p>
+                            </div>
+                        </c:if>
                         <input class="form-input" type="file" id="product-image" name="productImage" 
                                accept="image/*"
                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <small style="color: #666; font-size: 0.875rem;">Chọn ảnh từ máy (JPG, PNG, GIF, WEBP - tối đa 10MB)</small>
+                        <small style="color: #666; font-size: 0.875rem;">Chọn ảnh mới nếu muốn thay đổi (JPG, PNG, GIF, WEBP - tối đa 10MB)</small>
                     </div>
-            </div>
+                </div>
                 
                 <!-- Phần mô tả - full width -->
                 <div style="grid-column: 1 / -1;">
@@ -117,8 +125,8 @@
                         </label>
                         <textarea class="form-input" id="short-description" name="shortDescription" 
                                   rows="2" placeholder="Mô tả ngắn về sản phẩm"
-                                  style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; resize: vertical;">${shortDescription}</textarea>
-            </div>
+                                  style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; resize: vertical;">${product.shortDescription}</textarea>
+                    </div>
                     
                     <div style="margin-bottom: 1.25rem;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;" for="description">
@@ -126,28 +134,22 @@
                         </label>
                         <textarea class="form-input" id="description" name="description" 
                                   rows="5" placeholder="Mô tả chi tiết, chính sách bảo hành..."
-                                  style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; resize: vertical;">${description}</textarea>
+                                  style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; resize: vertical;">${product.description}</textarea>
+                    </div>
+                </div>
             </div>
-            </div>
-        </div>
-        <div class="panel__footer">
+            <div class="panel__footer" style="display: flex; gap: 1rem;">
                 <button class="button button--primary" type="submit">
-                    Đăng sản phẩm ngay
-            </button>
-        </div>
-    </section>
+                    Lưu thay đổi
+                </button>
+                <a href="${pageContext.request.contextPath}/seller/inventory" 
+                   class="button button--ghost" style="text-decoration: none;">
+                    Hủy
+                </a>
+            </div>
+        </section>
     </form>
-    
-    <section class="panel">
-        <div class="panel__header">
-            <h2 class="panel__title">Mẹo đăng sản phẩm hiệu quả</h2>
-        </div>
-        <ul class="guide-list">
-            <li>Chuẩn bị ít nhất 3 hình ảnh minh hoạ chất lượng cao.</li>
-            <li>Nhập mô tả rõ ràng về quyền lợi bàn giao và chính sách bảo hành.</li>
-            <li>Cập nhật tồn kho thực tế để hệ thống tự động khóa đơn khi bán hết.</li>
-        </ul>
-    </section>
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+

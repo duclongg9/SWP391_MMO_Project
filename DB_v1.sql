@@ -76,7 +76,7 @@ CREATE TABLE `products` (
   `shop_id` int NOT NULL,
 
   -- Loại & Subtype cố định (ENUM)
-  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME'),
+  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME', 'OTHER'),
   `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
 
   `name` varchar(255) NOT NULL,
@@ -393,9 +393,9 @@ INSERT INTO `roles` (`id`,`name`) VALUES
 
 -- Users (hash minh hoạ)
 INSERT INTO `users` (`id`,`role_id`,`email`,`name`,`avatar_url`,`hashed_password`,`google_id`,`status`,`created_at`,`updated_at`) VALUES
- (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'mNy+OfwBVzPj9442CM86ANCQGd0=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','uiDM8xbTll23hMnK00khkszc0xk=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
- (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','TgmCHMtVdyWoZp4cTH7vvEBfrQA=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
+ (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
+ (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
 
 -- KYC statuses
 INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
