@@ -100,10 +100,11 @@ public class OrderDAO extends BaseDAO {
                 + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_code, "
                 + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
                 + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
-                + "p.gallery_json AS p_gallery_json, p.inventory_count, p.sold_count AS p_sold_count, p.status AS p_status, "
+                + "p.gallery_json AS p_gallery_json, p.inventory_count, COALESCE(ps.sold_count, 0) AS p_sold_count, p.status AS p_status, "
                 + "p.variant_schema AS p_variant_schema, p.variants_json AS p_variants_json, "
                 + "p.created_at AS p_created_at, p.updated_at AS p_updated_at "
                 + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id "
                 + "WHERE o.id = ? AND o.buyer_id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
@@ -516,8 +517,8 @@ public class OrderDAO extends BaseDAO {
         product.setGalleryJson(rs.getString("p_gallery_json"));
         int inventory = rs.getInt("inventory_count");
         product.setInventoryCount(rs.wasNull() ? null : inventory);
-        int sold = rs.getInt("p_sold_count");
-        product.setSoldCount(rs.wasNull() ? null : sold);
+        Number soldNumber = (Number) rs.getObject("p_sold_count");
+        product.setSoldCount(soldNumber == null ? null : soldNumber.intValue());
         product.setStatus(rs.getString("p_status"));
         product.setVariantSchema(rs.getString("p_variant_schema"));
         product.setVariantsJson(rs.getString("p_variants_json"));
