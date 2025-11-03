@@ -39,6 +39,11 @@ public class SellerGenerateCredentialController extends SellerBaseController {
                 session.setAttribute("sellerInventoryFlashSuccess",
                         "Tất cả sản phẩm đã có đủ credential để bàn giao.");
             }
+
+        } catch (IllegalArgumentException ex) {
+            session.setAttribute("sellerInventoryFlashError",
+                    "Tham số không hợp lệ, vui lòng kiểm tra mã sản phẩm và số lượng.");
+
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
             session.setAttribute("sellerInventoryFlashError",
