@@ -155,7 +155,40 @@
             <c:if test="${not empty product.shortDescription}">
                 <p class="product-detail__summary"><c:out value="${product.shortDescription}" /></p>
             </c:if>
-            <form class="product-detail__form" method="post" action="${cPath}/order/buy-now">
+            <c:url var="purchaseCheckUrl" value="/product/detail/${productToken}/availability" />
+            <style>
+                .product-detail__availability {
+                    margin-top: 1rem;
+                }
+
+                .product-detail__availability-card {
+                    border-radius: 12px;
+                    padding: 1rem 1.25rem;
+                    background: #f8fafc;
+                    border: 1px solid #cbd5f5;
+                    color: #1e293b;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.4rem;
+                }
+
+                .product-detail__availability-card--ok {
+                    border-color: #22c55e;
+                    background: #ecfdf5;
+                    color: #166534;
+                }
+
+                .product-detail__availability-card--warn {
+                    border-color: #f97316;
+                    background: #fff7ed;
+                    color: #9a3412;
+                }
+
+                .product-detail__availability-meta {
+                    font-size: 0.95rem;
+                }
+            </style>
+            <form class="product-detail__form" method="post" action="${cPath}/order/buy-now" data-check-endpoint="${purchaseCheckUrl}">
                 <input type="hidden" name="productId" value="${product.encodedId}" />
                 <c:if test="${product.hasVariants}">
                     <fieldset class="product-detail__variants">
@@ -194,6 +227,11 @@
                     <input class="product-detail__input" type="number" id="qty" name="qty" min="1" max="${product.inventoryCount != null ? product.inventoryCount : 1}" value="1"
                            <c:if test="${not canBuy}">disabled</c:if> />
                     </div>
+                <div class="product-detail__availability" id="purchaseCheckStatus">
+                    <div class="product-detail__availability-card product-detail__availability-card--warn">
+                        <div class="product-detail__availability-meta">Hệ thống sẽ kiểm tra ví và tồn kho sau khi bạn chọn biến thể.</div>
+                    </div>
+                </div>
                 <c:choose>
                     <c:when test="${canBuy}">
                         <button class="button button--primary" id="buyButton" type="submit">Mua ngay</button>
@@ -298,6 +336,9 @@
         const inventoryDisplay = document.getElementById('inventoryDisplay');
         const qtyInput = document.getElementById('qty');
         const buyButton = document.getElementById('buyButton');
+        const purchaseForm = document.querySelector('.product-detail__form');
+        const availabilityContainer = document.getElementById('purchaseCheckStatus');
+        const checkEndpoint = purchaseForm ? purchaseForm.dataset.checkEndpoint : null;
         const priceContainer = document.querySelector('.product-detail__pricing');
         const minPrice = priceContainer && priceContainer.dataset.minPrice
                 ? parseFloat(priceContainer.dataset.minPrice)
@@ -309,6 +350,8 @@
         const variantInputs = document.querySelectorAll('input[name="variantCode"]');
         const thumbnails = document.querySelectorAll('.product-detail__thumbnail');
         const mainImage = document.getElementById('mainImage');
+        let inventoryAllowsPurchase = true;
+        let walletAllowsPurchase = true;
 
         function normalizeUrl(url) {
             if (!url) {
@@ -377,6 +420,9 @@
             if (!radio) {
                 updatePriceRange(minPrice, maxPrice);
                 setActiveThumbnail(mainImage ? mainImage.src : '');
+                inventoryAllowsPurchase = true;
+                requestPurchasePreview(null);
+                updateBuyButton();
                 return;
             }
             const variantPrice = parseFloat(radio.dataset.price || '0');
@@ -401,26 +447,21 @@
                     qtyInput.value = 1;
                 }
             }
-            if (buyButton) {
-                if (variantInventory <= 0) {
-                    buyButton.disabled = true;
-                    buyButton.textContent = 'Hết hàng';
-                } else {
-                    buyButton.disabled = false;
-                    buyButton.textContent = 'Mua ngay';
-                }
-            }
+            inventoryAllowsPurchase = variantInventory > 0;
             const variantImage = radio.dataset.image;
             if (variantImage) {
                 updateMainImage(variantImage);
             }
             setActiveThumbnail(variantImage || (mainImage ? mainImage.src : ''));
+            requestPurchasePreview(radio.value || null);
+            updateBuyButton();
         }
 
         function initializeVariants() {
             if (!variantInputs.length) {
                 updatePriceRange(minPrice, maxPrice);
                 setActiveThumbnail(mainImage ? mainImage.src : '');
+                requestPurchasePreview(null);
                 return;
             }
             let selected = Array.from(variantInputs).find(input => input.checked);
@@ -433,6 +474,107 @@
             updateForVariant(selected);
             variantInputs.forEach(input => {
                 input.addEventListener('change', () => updateForVariant(input));
+            });
+        }
+
+        function updateBuyButton() {
+            if (!buyButton) {
+                return;
+            }
+            if (!inventoryAllowsPurchase) {
+                buyButton.disabled = true;
+                buyButton.textContent = 'Hết hàng';
+                return;
+            }
+            if (!walletAllowsPurchase) {
+                buyButton.disabled = true;
+                buyButton.textContent = 'Không đủ số dư ví';
+                return;
+            }
+            buyButton.disabled = false;
+            buyButton.textContent = 'Mua ngay';
+        }
+
+        function renderPurchaseStatus(payload) {
+            if (!availabilityContainer) {
+                return;
+            }
+            availabilityContainer.innerHTML = '';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'product-detail__availability-card';
+            if (!payload) {
+                wrapper.textContent = 'Không thể kiểm tra thông tin ví và tồn kho.';
+                availabilityContainer.appendChild(wrapper);
+                return;
+            }
+            if (payload.canPurchase) {
+                wrapper.classList.add('product-detail__availability-card--ok');
+                wrapper.textContent = 'Ví đủ số dư và kho sẵn sàng cho đơn hàng này.';
+                if (payload.totalPrice) {
+                    const totalNumber = Number(payload.totalPrice);
+                    if (Number.isFinite(totalNumber)) {
+                        const priceInfo = document.createElement('div');
+                        priceInfo.className = 'product-detail__availability-meta';
+                        priceInfo.textContent = 'Tổng tiền dự kiến: ' + formatter.format(totalNumber);
+                        wrapper.appendChild(priceInfo);
+                    }
+                }
+            } else {
+                wrapper.classList.add('product-detail__availability-card--warn');
+                wrapper.textContent = 'Không thể hoàn tất thanh toán ngay.';
+                if (Array.isArray(payload.blockers) && payload.blockers.length) {
+                    payload.blockers.forEach(message => {
+                        const item = document.createElement('div');
+                        item.className = 'product-detail__availability-meta';
+                        item.textContent = message;
+                        wrapper.appendChild(item);
+                    });
+                }
+            }
+            availabilityContainer.appendChild(wrapper);
+        }
+
+        function requestPurchasePreview(selectedVariantCode) {
+            if (!checkEndpoint) {
+                return;
+            }
+            const quantity = qtyInput ? Math.max(parseInt(qtyInput.value || '1', 10), 1) : 1;
+            const params = new URLSearchParams();
+            params.set('quantity', String(quantity));
+            if (selectedVariantCode) {
+                params.set('variantCode', selectedVariantCode);
+            }
+            fetch(checkEndpoint + '?' + params.toString(), {headers: {'Accept': 'application/json'}})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Preview failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.hasInventory === false) {
+                        inventoryAllowsPurchase = false;
+                    }
+                    const walletReady = Boolean(data.walletActive) && Boolean(data.walletHasBalance);
+                    walletAllowsPurchase = walletReady && Boolean(data.hasCredentials !== false);
+                    renderPurchaseStatus(data);
+                    updateBuyButton();
+                })
+                .catch(() => {
+                    walletAllowsPurchase = true;
+                    renderPurchaseStatus(null);
+                    updateBuyButton();
+                });
+        }
+
+        if (qtyInput) {
+            qtyInput.addEventListener('change', () => {
+                const selected = Array.from(variantInputs).find(input => input.checked);
+                requestPurchasePreview(selected ? selected.value : null);
+            });
+            qtyInput.addEventListener('input', () => {
+                const selected = Array.from(variantInputs).find(input => input.checked);
+                requestPurchasePreview(selected ? selected.value : null);
             });
         }
 
