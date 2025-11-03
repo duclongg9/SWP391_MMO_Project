@@ -393,9 +393,9 @@ INSERT INTO `roles` (`id`,`name`) VALUES
 
 -- Users (hash minh hoạ)
 INSERT INTO `users` (`id`,`role_id`,`email`,`name`,`avatar_url`,`hashed_password`,`google_id`,`status`,`created_at`,`updated_at`) VALUES
- (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
- (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','XTwxySnggWC4I9UyCPsk3dtA5ug=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
+ (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'mNy+OfwBVzPj9442CM86ANCQGd0=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','uiDM8xbTll23hMnK00khkszc0xk=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
+ (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','TgmCHMtVdyWoZp4cTH7vvEBfrQA=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
 
 -- KYC statuses
 INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
@@ -622,8 +622,8 @@ INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
  (1,1,0.0000,1,'2024-01-11 09:00:00','2024-01-11 09:00:00'),
- (2,2,330000.0000,1,'2024-01-12 08:40:00','2024-01-26 09:45:00'),
- (3,3,50000.0000,1,'2024-01-15 08:00:00','2024-01-20 12:10:00');
+ (2,2,330000000.0000,1,'2024-01-12 08:40:00','2024-01-26 09:45:00'),
+ (3,3,5000000.0000,1,'2024-01-15 08:00:00','2024-01-20 12:10:00');
 
 INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
  (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
