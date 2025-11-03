@@ -26,13 +26,8 @@ import service.UserService;
  */
 @WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
 public class ResetPasswordController extends BaseController {
-
-    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
-    // Logger dùng để ghi nhận lỗi bất thường trong quá trình đặt lại mật khẩu.
     private static final Logger LOGGER = Logger.getLogger(ResetPasswordController.class.getName());
-
-    // Dịch vụ người dùng cung cấp nghiệp vụ xác thực token và đổi mật khẩu.
     private final UserService userService = new UserService(new UserDAO());
 
     /**
@@ -64,7 +59,7 @@ public class ResetPasswordController extends BaseController {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String token = request.getParameter("token");
+        String token = request.getParameter("token"); 
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
         try {

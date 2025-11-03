@@ -6,8 +6,8 @@
 <c:url value="/products" var="defaultFilterAction" />
 <c:set var="filterActionValue" value="${empty filterFormAction ? defaultFilterAction : filterFormAction}" />
 
-<c:set var="filterQueryCandidate" value="${not empty filterQuery ? filterQuery : query}" />
-<c:set var="filterQueryValue" value="${empty filterQueryCandidate ? '' : filterQueryCandidate}" />
+<c:set var="filterKeywordCandidate" value="${not empty filterKeyword ? filterKeyword : (not empty filterQuery ? filterQuery : query)}" />
+<c:set var="filterKeywordValue" value="${empty filterKeywordCandidate ? '' : filterKeywordCandidate}" />
 <c:set var="filterTypeCandidate" value="${not empty filterType ? filterType : selectedType}" />
 <c:set var="filterTypeValue" value="${empty filterTypeCandidate ? '' : filterTypeCandidate}" />
 <c:set var="filterSubtypeCandidate" value="${not empty filterSubtype ? filterSubtype : selectedSubtype}" />
@@ -16,15 +16,15 @@
 <c:set var="filterPageSizeValue" value="${empty filterPageSizeCandidate ? 12 : filterPageSizeCandidate}" />
 <c:set var="filterIncludeSizeValue" value="${filterIncludeSize == true or filterIncludeSize == 'true'}" />
 
-<c:set var="queryInputId" value="${filterFormId}-q" />
+<c:set var="keywordInputId" value="${filterFormId}-keyword" />
 <c:set var="typeInputId" value="${filterFormId}-type" />
 <c:set var="subtypeInputId" value="${filterFormId}-subtype" />
 
 <form id="${filterFormId}" class="product-filters" method="get" action="${filterActionValue}">
     <div class="product-filters__group">
-        <label class="product-filters__label" for="${queryInputId}">Tìm sản phẩm </label>
-        <input class="product-filters__input" type="search" id="${queryInputId}" name="q"
-               placeholder="Nhập tên sản phẩm ..." value="${fn:escapeXml(filterQueryValue)}" />
+        <label class="product-filters__label" for="${keywordInputId}">Tìm sản phẩm </label>
+        <input class="product-filters__input" type="search" id="${keywordInputId}" name="keyword"
+               placeholder="Nhập tên sản phẩm ..." value="${fn:escapeXml(filterKeywordValue)}" />
     </div>
     <div class="product-filters__group">
         <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>

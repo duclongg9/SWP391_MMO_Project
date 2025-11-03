@@ -33,63 +33,34 @@ public class GoogleAuthController extends BaseController {
 
     // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
-    // Logger để ghi nhận lỗi phát sinh trong quá trình OAuth.
     private static final Logger LOGGER = Logger.getLogger(GoogleAuthController.class.getName());
-    // Khóa lưu trữ giá trị state trong session nhằm chống giả mạo callback.
     private static final String SESSION_STATE = "googleOauthState";
-
-    // Dịch vụ giao tiếp với Google OAuth để lấy mã và hồ sơ người dùng.
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
-    // Dịch vụ người dùng để ánh xạ tài khoản Google vào hệ thống nội bộ.
     private final UserService userService = new UserService(new UserDAO());
 
-    /**
-     * Xử lý cả hai bước của Google OAuth gồm khởi tạo yêu cầu và đón callback.
-     *
-     * @param request yêu cầu HTTP chứa tham số {@code code} và {@code state}
-     * (nếu có)
-     * @param response phản hồi HTTP để điều hướng trình duyệt
-     */
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String code = request.getParameter("code");
-        String state = request.getParameter("state");
-        if (code == null || code.isBlank()) {
-            // Không có mã trả về => bắt đầu quy trình ủy quyền với Google.
-            startAuthentication(request, response);
+        String code = request.getParameter("code"); //code gg trả về khi ng dùng đồng ý cấp quyền.
+        String state = request.getParameter("state"); // chuỗi dc lưu trog ss
+        if (code == null || code.isBlank()) { // ch cấp quyền
+            startAuthentication(request, response); // Sinh state ngẫu nhiên, lưu vào session, ủy quyền
             return;
         }
         // Có mã và state => xử lý callback từ Google.
         handleCallback(request, response, code, state);
     }
 
-    /**
-     * Tạo state ngẫu nhiên, lưu vào phiên và chuyển hướng người dùng tới trang
-     * cho phép của Google.
-     *
-     * @param request yêu cầu HTTP hiện tại để lấy phiên
-     * @param response phản hồi để điều hướng sang URL uỷ quyền của Google
-     */
+
     private void startAuthentication(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();
-        // Lưu state vào session để xác thực lại khi nhận callback.
-        request.getSession().setAttribute(SESSION_STATE, state);
-        String authorizationUrl = googleOAuthService.buildAuthorizationUrl(state);
-        // Điều hướng người dùng sang trang xác thực của Google.
-        response.sendRedirect(authorizationUrl);
+        request.getSession().setAttribute(SESSION_STATE, state); // lấy ss hiện tại, lưu state vào ss
+        String authorizationUrl = googleOAuthService.buildAuthorizationUrl(state);    // Tạo URL điều hướng.
+        response.sendRedirect(authorizationUrl); // Điều hướng người dùng sang trang xác thực của Google.
     }
 
-    /**
-     * Kiểm tra state, đổi mã Google lấy thông tin người dùng và tạo phiên đăng
-     * nhập nội bộ.
-     *
-     * @param request yêu cầu HTTP chứa phiên hiện tại
-     * @param response phản hồi để điều hướng người dùng tới trang phù hợp theo
-     * vai trò
-     * @param code mã Google trả về sau khi người dùng cấp quyền
-     * @param state giá trị state để kiểm chứng nguồn gốc callback
-     */
+   
     private void handleCallback(HttpServletRequest request, HttpServletResponse response, String code, String state)
             throws IOException {
         HttpSession session = request.getSession(false);
@@ -99,13 +70,13 @@ public class GoogleAuthController extends BaseController {
             sendErrorFlash(request, response, "Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại.");
             return;
         }
-        session.removeAttribute(SESSION_STATE);
+        session.removeAttribute(SESSION_STATE); //Xóa state sau khi dùng để tránh reuse
         try {
             // Lấy thông tin hồ sơ từ Google và đăng nhập (hoặc tạo mới) tài khoản nội bộ.
             GoogleProfile profile = googleOAuthService.fetchUserProfile(code);
             Users user = userService.loginWithGoogle(profile.getGoogleId(), profile.getEmail(), profile.getName());
             HttpSession newSession = renewSession(request);
-            newSession.setAttribute("currentUser", user);
+            newSession.setAttribute("currentUser", user); //gắn các thuộc tính phiên dùng cho app
             newSession.setAttribute("userId", user.getId());
             newSession.setAttribute("userRole", user.getRoleId());
             // Đăng nhập thành công thì đưa người dùng về trang chủ phù hợp.
@@ -123,12 +94,11 @@ public class GoogleAuthController extends BaseController {
 
     /**
      * Hủy phiên cũ (nếu có) và tạo phiên mới nhằm tránh tấn công cố định phiên.
-     *
      * @param request yêu cầu HTTP cần làm mới phiên
      * @return phiên mới sau khi đăng nhập bằng Google thành công
      */
     private HttpSession renewSession(HttpServletRequest request) {
-        HttpSession existing = request.getSession(false);
+        HttpSession existing = request.getSession(false); // lấy ss hiện có, k tạo mới
         if (existing != null) {
             // Hủy bỏ session cũ để đảm bảo an toàn phiên đăng nhập.
             existing.invalidate();
@@ -137,12 +107,7 @@ public class GoogleAuthController extends BaseController {
     }
 
     /**
-     * Ghi nhận thông báo lỗi vào flash session và chuyển hướng về trang đăng
-     * nhập.
-     *
-     * @param request yêu cầu HTTP để đặt thông báo lỗi
-     * @param response phản hồi HTTP dùng để chuyển hướng
-     * @param message nội dung lỗi hiển thị cho người dùng
+     ghi lại thông báo lỗi tạm thời vào session
      */
     private void sendErrorFlash(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
         HttpSession session = request.getSession();

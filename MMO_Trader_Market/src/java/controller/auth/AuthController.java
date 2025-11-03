@@ -130,7 +130,7 @@ public class AuthController extends BaseController {
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
-            handleRememberEmailCookie(request, response, normalizedEmail, rememberMe);
+            handleRememberEmailCookie(request, response, normalizedEmail, rememberMe); //điền sẵn email cho lần sau
             if (rememberMe) {
                 // Tạo cookie ghi nhớ phiên nếu người dùng yêu cầu.
                 rememberMeService.createRememberMeCookie(request, response, user.getId());
