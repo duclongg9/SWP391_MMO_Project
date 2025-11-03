@@ -186,6 +186,33 @@ public class CredentialDAO extends BaseDAO {
         return new CredentialAvailability(0, 0);
     }
 
+    public int generateFakeCredentials(int productId, String variantCode, int quantity) {
+        if (quantity <= 0) {
+            return 0;
+        }
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                generateFakeCredentials(connection, productId, variantCode, quantity);
+                connection.commit();
+                return quantity;
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
+        }
+        return 0;
+    }
+
     public void markCredentialsSold(int orderId, List<Integer> ids) {
         try (Connection connection = getConnection()) {
             markCredentialsSold(connection, orderId, ids);
