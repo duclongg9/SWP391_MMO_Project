@@ -72,8 +72,8 @@
                  aria-labelledby="orderProcessingTitle" aria-describedby="orderProcessingMessage">
                 <h3 id="orderProcessingTitle">Đơn hàng đang được xử lý</h3>
                 <p id="orderProcessingMessage">
-                    Hệ thống đang khóa ví, kiểm tra tồn kho và nạp credential bàn giao.
-                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực.
+                    Hệ thống đang khóa ví, kiểm tra tồn kho, nạp credential bàn giao và ghi nhận giao dịch trừ tiền.
+                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực cùng thông tin giao dịch ví.
                 </p>
                 <div class="order-modal__actions">
                     <button type="button" class="button button--ghost" id="orderProcessingLater">Ở lại trang</button>
@@ -115,31 +115,250 @@
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
         </div>
         <div class="panel__body">
+            <style>
+                .order-detail__info-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2rem;
+                }
+
+                .order-detail__info-column {
+                    flex: 1 1 260px;
+                    min-width: 0;
+                }
+
+                .order-detail__info-column--wallet {
+                    border-left: 1px solid #e2e8f0;
+                    padding-left: 1.5rem;
+                }
+
+                .order-detail__info-title {
+                    margin: 0 0 1rem 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-detail__info-subtitle {
+                    margin: 1.75rem 0 0.75rem;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-wallet-timeline {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                }
+
+                .order-wallet-timeline__item {
+                    display: flex;
+                    gap: 1rem;
+                    align-items: flex-start;
+                }
+
+                .order-wallet-timeline__badge {
+                    width: 2rem;
+                    height: 2rem;
+                    border-radius: 50%;
+                    background: #e2e8f0;
+                    color: #0f172a;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .order-wallet-timeline__item--primary .order-wallet-timeline__badge {
+                    background: #2563eb;
+                    color: #fff;
+                }
+
+                .order-wallet-timeline__content {
+                    flex: 1;
+                    min-width: 0;
+                    padding: 0.75rem 1rem;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+                }
+
+                .order-wallet-timeline__item--primary .order-wallet-timeline__content {
+                    border-color: #2563eb;
+                    box-shadow: 0 16px 30px rgba(37, 99, 235, 0.12);
+                }
+
+                .order-wallet-timeline__header {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 0.5rem 1rem;
+                    margin-bottom: 0.5rem;
+                }
+
+                .order-wallet-timeline__title {
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-wallet-timeline__time {
+                    font-size: 0.9rem;
+                    color: #475569;
+                }
+
+                .order-wallet-timeline__description {
+                    margin: 0 0 0.5rem 0;
+                    color: #475569;
+                    line-height: 1.6;
+                }
+
+                .order-wallet-timeline__reference {
+                    margin: 0 0 0.5rem 0;
+                    color: #0f172a;
+                    font-size: 0.95rem;
+                }
+
+                .order-wallet-timeline__reference span {
+                    font-weight: 600;
+                }
+
+                .order-wallet-timeline__metrics {
+                    margin-top: 0;
+                }
+
+                .order-wallet-timeline__metrics li span {
+                    min-width: 130px;
+                }
+
+                @media (max-width: 768px) {
+                    .order-detail__info-grid {
+                        flex-direction: column;
+                    }
+
+                    .order-detail__info-column--wallet {
+                        border-left: none;
+                        border-top: 1px solid #e2e8f0;
+                        padding-left: 0;
+                        padding-top: 1.5rem;
+                    }
+
+                    .order-wallet-timeline__item {
+                        flex-direction: column;
+                    }
+
+                    .order-wallet-timeline__badge {
+                        margin-bottom: 0.5rem;
+                    }
+                }
+            </style>
             <div class="grid grid--two-columns">
                 <div class="card">
                     <h3 class="card__title">Thông tin đơn</h3>
-                    <ul class="definition-list">
-                        <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
-                        <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
-                            <c:if test="${not empty order.variantCode}">
-                            <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                    <div class="order-detail__info-grid">
+                        <div class="order-detail__info-column">
+                            <h4 class="order-detail__info-title">Đơn hàng</h4>
+                            <ul class="definition-list">
+                                <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
+                                <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
+                                <c:if test="${not empty order.variantCode}">
+                                    <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                                </c:if>
+                                <c:if test="${order.quantity ne null}">
+                                    <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                                </c:if>
+                                <c:if test="${order.unitPrice ne null}">
+                                    <li><span>Đơn giá:</span>
+                                        <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                </c:if>
+                                <li><span>Tổng tiền:</span>
+                                    <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
+                                </li>
+                                <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
+                                <li><span>Ngày tạo:</span>
+                                    <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="order-detail__info-column order-detail__info-column--wallet">
+                            <h4 class="order-detail__info-title">Giao dịch ví</h4>
+                            <c:if test="${not empty walletTimeline}">
+                                <ol class="order-wallet-timeline">
+                                    <c:forEach var="event" items="${walletTimeline}" varStatus="loop">
+                                        <li class="order-wallet-timeline__item${event.primary ? ' order-wallet-timeline__item--primary' : ''}">
+                                            <div class="order-wallet-timeline__badge">${loop.index + 1}</div>
+                                            <div class="order-wallet-timeline__content">
+                                                <div class="order-wallet-timeline__header">
+                                                    <span class="order-wallet-timeline__title"><c:out value="${event.title}" /></span>
+                                                    <c:if test="${not empty event.occurredAt}">
+                                                        <time class="order-wallet-timeline__time">
+                                                            <fmt:formatDate value="${event.occurredAt}" pattern="dd/MM/yyyy HH:mm" />
+                                                        </time>
+                                                    </c:if>
+                                                </div>
+                                                <p class="order-wallet-timeline__description"><c:out value="${event.description}" /></p>
+                                                <c:if test="${not empty event.reference}">
+                                                    <p class="order-wallet-timeline__reference">Mã tham chiếu: <span><c:out value="${event.reference}" /></span></p>
+                                                </c:if>
+                                                <c:if test="${not empty event.amount or not empty event.balanceAfter}">
+                                                    <ul class="definition-list order-wallet-timeline__metrics">
+                                                        <c:if test="${not empty event.amount}">
+                                                            <li><span>Số tiền:</span>
+                                                                <fmt:formatNumber value="${event.amount}" type="currency" currencySymbol="" /> đ
+                                                            </li>
+                                                        </c:if>
+                                                        <c:if test="${not empty event.balanceAfter}">
+                                                            <li><span>Số dư sau:</span>
+                                                                <fmt:formatNumber value="${event.balanceAfter}" type="currency" currencySymbol="" /> đ
+                                                            </li>
+                                                        </c:if>
+                                                    </ul>
+                                                </c:if>
+                                            </div>
+                                        </li>
+                                    </c:forEach>
+                                </ol>
                             </c:if>
-                            <c:if test="${order.quantity ne null}">
-                            <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                            <c:if test="${not empty paymentTransaction}">
+                                <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
+                                <ul class="definition-list">
+                                    <li><span>Mã giao dịch ví:</span> #<c:out value="${paymentTransaction.id}" /></li>
+                                    <li><span>Loại giao dịch:</span> <c:out value="${paymentTransactionTypeLabel}" /></li>
+                                    <li><span>Số tiền trừ:</span>
+                                        <c:choose>
+                                            <c:when test="${not empty paymentTransactionAmountAbs}">
+                                                -<fmt:formatNumber value="${paymentTransactionAmountAbs}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:when test="${not empty paymentTransaction.amount}">
+                                                <fmt:formatNumber value="${paymentTransaction.amount}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:otherwise>
+                                                Không xác định
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </li>
+                                    <li><span>Số dư trước:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceBefore}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Số dư sau:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Thời gian thanh toán:</span>
+                                        <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                    </li>
+                                    <c:if test="${not empty paymentTransaction.note}">
+                                        <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
+                                    </c:if>
+                                </ul>
                             </c:if>
-                            <c:if test="${order.unitPrice ne null}">
-                            <li><span>Đơn giá:</span>
-                                <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
-                            </li>
-                        </c:if>
-                        <li><span>Tổng tiền:</span>
-                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
-                        </li>
-                        <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
-                        <li><span>Ngày tạo:</span>
-                            <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="card">
                     <h3 class="card__title">Sản phẩm</h3>

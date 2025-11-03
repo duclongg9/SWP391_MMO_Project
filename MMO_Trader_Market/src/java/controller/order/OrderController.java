@@ -8,11 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Orders;
 import model.Products;
+import model.WalletTransactions;
 import model.view.OrderDetailView;
+import model.view.OrderWalletEvent;
 import service.OrderService;
 import units.IdObfuscator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -307,6 +310,19 @@ public class OrderController extends BaseController {
         Orders order = detail.order();
         Products product = detail.product();
         List<String> credentials = detail.credentials();
+        Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        List<OrderWalletEvent> walletTimeline = orderService.buildWalletTimeline(order, paymentTxOpt);
+        request.setAttribute("walletTimeline", walletTimeline);
+        if (paymentTxOpt.isPresent()) {
+            WalletTransactions paymentTx = paymentTxOpt.get();
+            request.setAttribute("paymentTransaction", paymentTx);
+            request.setAttribute("paymentTransactionTypeLabel",
+                    orderService.getTransactionTypeLabel(paymentTx.getTransactionTypeEnum()));
+            BigDecimal amount = paymentTx.getAmount();
+            if (amount != null) {
+                request.setAttribute("paymentTransactionAmountAbs", amount.abs());
+            }
+        }
 
         request.setAttribute("order", order);
         request.setAttribute("product", product);
