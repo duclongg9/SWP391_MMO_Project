@@ -5,10 +5,9 @@ import java.util.Date;
 
 /**
  * View model mô tả từng bước liên quan tới ví khi xử lý đơn hàng.
- * <p>
- * Mỗi sự kiện tương ứng với một hành động trong worker: đưa đơn vào hàng
- * đợi, khóa ví, ghi nhận giao dịch... giúp giao diện trình bày luồng tiền dưới
- * dạng timeline dễ hiểu cho người mua.</p>
+ * Mỗi sự kiện tương ứng với hành động trong worker: đưa đơn vào hàng đợi,
+ * khóa ví, ghi nhận giao dịch... giúp giao diện trình bày luồng tiền dưới dạng
+ * timeline dễ hiểu cho người mua.
  */
 public class OrderWalletEvent {
 

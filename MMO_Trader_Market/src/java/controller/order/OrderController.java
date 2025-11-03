@@ -107,8 +107,14 @@ public class OrderController extends BaseController {
                 redirectToMyOrders(request, response);
             case "/orders/my" ->
                 showMyOrders(request, response);
-            case "/orders/detail" ->
-                showOrderDetail(request, response);
+            case "/orders/detail" -> {
+                String pathInfo = request.getPathInfo();
+                if (pathInfo != null && pathInfo.endsWith("/wallet-events")) {
+                    handleWalletEventsApi(request, response);
+                } else {
+                    showOrderDetail(request, response);
+                }
+            }
             default ->
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
@@ -312,8 +318,6 @@ public class OrderController extends BaseController {
         Products product = detail.product();
         List<String> credentials = detail.credentials();
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
-        List<OrderWalletEvent> walletTimeline = orderService.buildWalletTimeline(order, paymentTxOpt);
-        request.setAttribute("walletTimeline", walletTimeline);
         if (paymentTxOpt.isPresent()) {
             WalletTransactions paymentTx = paymentTxOpt.get();
             request.setAttribute("paymentTransaction", paymentTx);
@@ -338,6 +342,136 @@ public class OrderController extends BaseController {
         request.setAttribute("orderToken", IdObfuscator.encode(orderId));
 
         forward(request, response, "order/detail");
+    }
+
+    /**
+     * Phản hồi JSON mô tả các sự kiện ví của đơn hàng để giao diện tải bằng AJAX.
+     */
+    private void handleWalletEventsApi(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || !pathInfo.contains("/wallet-events")) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String token = extractTokenFromPath(request);
+        if (token == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        int orderId;
+        try {
+            orderId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
+        if (detailOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Orders order = detailOpt.get().order();
+        Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
+        response.setContentType("application/json; charset=UTF-8");
+        response.getWriter().write(buildWalletEventsPayload(events));
+    }
+
+    private String buildWalletEventsPayload(List<OrderWalletEvent> events) {
+        StringBuilder builder = new StringBuilder();
+        builder.append('{').append("\"events\":[");
+        for (int i = 0; i < events.size(); i++) {
+            OrderWalletEvent event = events.get(i);
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('{');
+            appendJsonField(builder, "sequence", Integer.toString(i + 1), false);
+            appendJsonField(builder, "code", escapeJson(event.getCode()), true);
+            appendJsonField(builder, "title", escapeJson(event.getTitle()), true);
+            appendJsonField(builder, "description", escapeJson(event.getDescription()), true);
+            appendJsonField(builder, "occurredAt", formatIso(event.getOccurredAt()), true);
+            appendJsonField(builder, "amount", formatDecimal(event.getAmount()), true);
+            appendJsonField(builder, "balanceAfter", formatDecimal(event.getBalanceAfter()), true);
+            appendJsonField(builder, "reference", escapeJson(event.getReference()), true);
+            appendJsonField(builder, "primary", Boolean.toString(event.isPrimary()), false);
+            trimTrailingComma(builder);
+            builder.append('}');
+        }
+        builder.append(']');
+        builder.append('}');
+        return builder.toString();
+    }
+
+    private void appendJsonField(StringBuilder builder, String name, String value, boolean quote) {
+        if (value == null) {
+            return;
+        }
+        builder.append('"').append(name).append('"').append(':');
+        if (quote) {
+            builder.append('"').append(value).append('"');
+        } else {
+            builder.append(value);
+        }
+        builder.append(',');
+    }
+
+    private void trimTrailingComma(StringBuilder builder) {
+        int length = builder.length();
+        if (length > 0 && builder.charAt(length - 1) == ',') {
+            builder.setLength(length - 1);
+        }
+    }
+
+    private String escapeJson(String input) {
+        if (input == null) {
+            return null;
+        }
+        StringBuilder escaped = new StringBuilder(input.length() + 8);
+        for (int i = 0; i < input.length(); i++) {
+            char ch = input.charAt(i);
+            switch (ch) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (ch < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) ch));
+                    } else {
+                        escaped.append(ch);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
+    private String formatIso(java.util.Date date) {
+        if (date == null) {
+            return null;
+        }
+        return java.time.ZonedDateTime.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    private String formatDecimal(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        return value.stripTrailingZeros().toPlainString();
     }
 
     /**

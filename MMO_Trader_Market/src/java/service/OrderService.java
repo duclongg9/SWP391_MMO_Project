@@ -14,6 +14,7 @@ import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
 import model.view.OrderWalletEvent;
+import model.view.PurchasePreviewResult;
 import model.WalletTransactions;
 import model.Wallets;
 import queue.OrderQueueProducer;
@@ -517,6 +518,107 @@ public class OrderService {
         }
 
         return events;
+    }
+
+    /**
+     * Kiểm tra nhanh điều kiện mua hàng trước khi gửi yêu cầu tạo đơn.
+     *
+     * @param userId mã người mua (có thể {@code null} nếu chưa đăng nhập)
+     * @param productId mã sản phẩm cần mua
+     * @param quantity số lượng đặt mua
+     * @param variantCode mã biến thể (có thể {@code null})
+     * @return kết quả đánh giá tổng hợp
+     */
+    public PurchasePreviewResult previewPurchase(Integer userId, int productId, int quantity, String variantCode) {
+        List<String> blockers = new ArrayList<>();
+        if (quantity <= 0) {
+            blockers.add("Số lượng phải lớn hơn 0.");
+            return new PurchasePreviewResult(false, false, false, false, false, false, false, false, false,
+                    0, 0, null, null, null, List.copyOf(blockers));
+        }
+
+        Optional<Products> productOpt = productDAO.findAvailableById(productId);
+        if (productOpt.isEmpty()) {
+            blockers.add("Sản phẩm không khả dụng hoặc đã bị ẩn.");
+            return new PurchasePreviewResult(false, false, false, false, false, false, false, false, false,
+                    0, 0, null, null, null, List.copyOf(blockers));
+        }
+
+        Products product = productOpt.get();
+        String normalizedVariant = ProductVariantUtils.normalizeCode(variantCode);
+        List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(product.getVariantSchema(),
+                product.getVariantsJson());
+        Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedVariant);
+        ProductVariantOption selectedVariant = variantOpt.orElse(null);
+
+        boolean variantRequired = ProductVariantUtils.hasVariants(product.getVariantSchema());
+        boolean variantValid = !variantRequired;
+        if (normalizedVariant != null) {
+            if (selectedVariant == null || !selectedVariant.isAvailable()) {
+                blockers.add("Biến thể sản phẩm không khả dụng.");
+            } else {
+                variantValid = true;
+            }
+        } else if (variantRequired) {
+            blockers.add("Vui lòng chọn biến thể sản phẩm.");
+        } else {
+            variantValid = true;
+        }
+
+        int availableInventory;
+        if (selectedVariant != null && selectedVariant.getInventoryCount() != null) {
+            availableInventory = Math.max(selectedVariant.getInventoryCount(), 0);
+        } else if (product.getInventoryCount() != null) {
+            availableInventory = Math.max(product.getInventoryCount(), 0);
+        } else {
+            availableInventory = 0;
+        }
+        boolean hasInventory = availableInventory >= quantity;
+        if (!hasInventory && variantValid) {
+            blockers.add("Tồn kho hiện tại không đủ đáp ứng số lượng yêu cầu.");
+        }
+
+        CredentialDAO.CredentialAvailability credentialAvailability = normalizedVariant == null
+                ? credentialDAO.fetchAvailability(productId)
+                : credentialDAO.fetchAvailability(productId, normalizedVariant);
+        int availableCredentials = Math.max(credentialAvailability.available(), 0);
+        boolean hasCredentials = availableCredentials >= quantity;
+        if (!hasCredentials && variantValid) {
+            blockers.add("Kho mã bàn giao chưa sẵn sàng đủ số lượng.");
+        }
+
+        BigDecimal unitPrice = ProductVariantUtils.resolveUnitPrice(product, variantOpt);
+        BigDecimal totalPrice = unitPrice == null ? null : unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+        boolean walletExists = false;
+        boolean walletActive = false;
+        boolean walletHasBalance = false;
+        BigDecimal walletBalance = null;
+        if (userId == null) {
+            blockers.add("Vui lòng đăng nhập để kiểm tra số dư ví.");
+        } else if (userId > 0) {
+            Wallets wallet = walletsDAO.ensureUserWallet(userId);
+            if (wallet != null) {
+                walletExists = true;
+                walletActive = !Boolean.FALSE.equals(wallet.getStatus());
+                walletBalance = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
+                if (!walletActive) {
+                    blockers.add("Ví của bạn đang bị khóa, vui lòng liên hệ hỗ trợ.");
+                } else if (totalPrice != null && walletBalance.compareTo(totalPrice) < 0) {
+                    blockers.add("Số dư ví không đủ để thanh toán đơn hàng.");
+                } else if (totalPrice != null) {
+                    walletHasBalance = true;
+                }
+            } else {
+                blockers.add("Không thể truy vấn ví của tài khoản.");
+            }
+        }
+
+        boolean ok = variantValid && hasInventory && hasCredentials;
+        boolean canPurchase = ok && walletHasBalance;
+        return new PurchasePreviewResult(ok, canPurchase, true, variantValid, hasInventory, hasCredentials,
+                walletExists, walletActive, walletHasBalance, availableInventory, availableCredentials, unitPrice,
+                totalPrice, walletBalance, List.copyOf(blockers));
     }
 
     /**
