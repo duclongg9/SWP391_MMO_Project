@@ -255,6 +255,7 @@ public class WalletTransactionDAO {
             if (relatedEntityId == null) {
                 ps.setNull(2, Types.INTEGER);
             } else {
+                // Ghi nhận khóa ngoại tới đơn hàng/đối tượng liên quan để tiện truy vết.
                 ps.setInt(2, relatedEntityId);
             }
             ps.setString(3, type.getDbValue());
@@ -264,11 +265,13 @@ public class WalletTransactionDAO {
             if (note == null || note.isBlank()) {
                 ps.setNull(7, Types.VARCHAR);
             } else {
+                // Ghi chú giúp người dùng nhận biết giao dịch hiển thị ngoài giao diện ví.
                 ps.setString(7, note);
             }
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
+                    // Trả về ID giao dịch để gắn vào bảng orders/payment log.
                     return rs.getInt(1);
                 }
             }

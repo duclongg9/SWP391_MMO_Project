@@ -40,6 +40,7 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
     private volatile OrderWorker worker;
 
     private InMemoryOrderQueue() {
+        // Khởi động thread dispatcher ngay khi singleton tạo ra để sẵn sàng nhận đơn.
         dispatcher.submit(this::dispatchLoop);
     }
 
@@ -80,6 +81,7 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
                 }
                 OrderWorker current = worker;
                 if (current == null) {
+                    // Chưa có worker sẵn sàng -> trả lại thông điệp vào queue và đợi cấu hình.
                     queue.offer(message);
                     Thread.sleep(1000);
                     continue;
