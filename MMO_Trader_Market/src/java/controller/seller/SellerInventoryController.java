@@ -4,6 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
 /**
@@ -19,6 +20,19 @@ public class SellerInventoryController extends SellerBaseController {
             throws ServletException, IOException {
         if (!ensureSellerAccess(request, response)) {
             return;
+        }
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            Object success = session.getAttribute("sellerInventoryFlashSuccess");
+            if (success instanceof String) {
+                request.setAttribute("flashSuccess", success);
+            }
+            Object error = session.getAttribute("sellerInventoryFlashError");
+            if (error instanceof String) {
+                request.setAttribute("flashError", error);
+            }
+            session.removeAttribute("sellerInventoryFlashSuccess");
+            session.removeAttribute("sellerInventoryFlashError");
         }
         request.setAttribute("pageTitle", "Cập nhật kho - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
