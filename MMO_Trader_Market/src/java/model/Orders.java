@@ -5,15 +5,15 @@ import java.util.Date;
 
 /**
  * Thực thể ánh xạ bảng {@code orders} phục vụ xử lý luồng mua hàng.
- * <p>
- * Các thuộc tính được dùng ở nhiều tầng:</p>
- * <ul>
- * <li>Controller/JSP: đọc
- * {@link #status}, {@link #totalAmount}, {@link #variantCode} để hiển thị.</li>
- * <li>Service/Worker: dựa vào {@link #idempotencyKey}, {@link #holdUntil} để
- * bảo vệ luồng tiền và lock hàng.</li>
- * <li>DAO: map dữ liệu từ ResultSet khi join cùng bảng sản phẩm.</li>
- * </ul>
+ * 
+ * Các thuộc tính được dùng ở nhiều tầng:
+ * 
+ * Controller/JSP: đọc
+ * {@link #status}, {@link #totalAmount}, {@link #variantCode} để hiển thị.
+ * Service/Worker: dựa vào {@link #idempotencyKey}, {@link #holdUntil} để
+ * bảo vệ luồng tiền và lock hàng.
+ * DAO: map dữ liệu từ ResultSet khi join cùng bảng sản phẩm.
+ * 
  *
  * @author longpdhe171902
  */

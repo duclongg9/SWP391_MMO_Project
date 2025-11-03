@@ -145,9 +145,9 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Đảm bảo kho credential của sản phẩm (hoặc biến thể) có đủ số lượng khả
      * dụng để tạo đơn hàng mới.
-     * <p>
+     * 
      * Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và
-     * trả về số liệu mới nhất.</p>
+     * trả về số liệu mới nhất.
      */
     public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
         String normalized = normalizeVariantCode(variantCode);
@@ -227,10 +227,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Kiểm tra người mua đã từng mở khóa thông tin bàn giao hay chưa.
-     * <p>
+     * 
      * Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa
      * vào đây để quyết định có tải plaintext cho người dùng hay yêu cầu xác
-     * nhận lại.</p>
+     * nhận lại.
      */
     public boolean hasViewLog(int orderId, int buyerId) {
         final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
@@ -248,10 +248,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Ghi nhận hành động mở khóa credential của người mua.
-     * <p>
+     * 
      * Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm
      * bảo vệ dữ liệu: nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để
-     * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.</p>
+     * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.
      */
     public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
         final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
@@ -280,10 +280,10 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Truy vấn toàn bộ lịch sử mở khóa credential của một đơn hàng để phục vụ
      * giao diện quản trị.
-     * <p>
+     * 
      * Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời
      * điểm, IP) để admin có thể rà soát khi phát sinh tranh chấp về việc đã xem
-     * dữ liệu hay chưa.</p>
+     * dữ liệu hay chưa.
      */
     public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
         final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
