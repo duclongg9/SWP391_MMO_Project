@@ -76,6 +76,7 @@ public class OrderController extends BaseController {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String path = request.getServletPath();
+        // Phân nhánh theo đường dẫn cụ thể để gọi đúng handler nghiệp vụ.
         if ("/order/buy-now".equals(path)) {
             handleBuyNow(request, response);
             return;
@@ -104,14 +105,18 @@ public class OrderController extends BaseController {
         String path = request.getServletPath();
         switch (path) {
             case "/orders" ->
+                // Điều hướng để tái sử dụng trang "Đơn của tôi".
                 redirectToMyOrders(request, response);
             case "/orders/my" ->
+                // Tải dữ liệu danh sách đơn và forward tới JSP.
                 showMyOrders(request, response);
             case "/orders/detail" -> {
                 String pathInfo = request.getPathInfo();
                 if (pathInfo != null && pathInfo.endsWith("/wallet-events")) {
+                    // API JSON cho phép front-end polling tiến độ ví.
                     handleWalletEventsApi(request, response);
                 } else {
+                    // Trường hợp còn lại: render trang chi tiết đơn hàng.
                     showOrderDetail(request, response);
                 }
             }
@@ -149,6 +154,7 @@ public class OrderController extends BaseController {
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         HttpSession session = request.getSession(false);
+        // Bảo vệ route: chỉ cho phép buyer/seller đăng nhập tiếp tục.
         if (!isBuyerOrSeller(session)) {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
@@ -157,6 +163,7 @@ public class OrderController extends BaseController {
         int productId = decodeIdentifier(request.getParameter("productId"));
         int quantity = parsePositiveInt(request.getParameter("qty"));
         String variantCode = normalize(request.getParameter("variantCode"));
+        // Nếu dữ liệu đầu vào thiếu -> trả lỗi cho client.
         if (userId == null || productId <= 0 || quantity <= 0) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -166,6 +173,7 @@ public class OrderController extends BaseController {
                 .filter(s -> !s.isEmpty())
                 .orElse(UUID.randomUUID().toString());
         try {
+            // Ủy quyền xuống OrderService để tạo đơn và đưa vào hàng đợi xử lý.
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
             String token = IdObfuscator.encode(orderId);
             String redirectUrl = request.getContextPath() + "/orders/detail/" + token + "?processing=1";
@@ -226,6 +234,7 @@ public class OrderController extends BaseController {
         LocalDate today = LocalDate.now();
         LocalDate fromDate = normalizeDate(request.getParameter("fromDate"), today);
         LocalDate toDate = normalizeDate(request.getParameter("toDate"), today);
+        // Nếu người dùng nhập khoảng ngày ngược, tự động điều chỉnh để tránh lỗi truy vấn.
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             fromDate = toDate;
         }
@@ -233,9 +242,11 @@ public class OrderController extends BaseController {
         int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
         int size = parsePositiveIntOrDefault(request.getParameter("size"), DEFAULT_PAGE_SIZE);
 
+        // Gọi service lấy danh sách đơn theo filter + phân trang.
         var result = orderService.getMyOrders(userId, statusParam, orderIdFilter, productParam, fromDate, toDate, page, size);
         Map<String, String> statusLabels = orderService.getStatusLabels();
 
+        // Đổ dữ liệu và metadata xuống request để JSP render bảng.
         request.setAttribute("items", result.getItems());
         request.setAttribute("total", result.getTotalItems());
         request.setAttribute("page", result.getCurrentPage());
@@ -282,6 +293,7 @@ public class OrderController extends BaseController {
         if (token == null) {
             int legacyId = parsePositiveInt(request.getParameter("id"));
             if (legacyId > 0) {
+                // Hỗ trợ đường dẫn cũ ?id= bằng cách chuyển sang URL mới dạng token.
                 String redirectUrl = buildOrderDetailRedirect(request, legacyId);
                 response.sendRedirect(redirectUrl);
                 return;
@@ -304,6 +316,7 @@ public class OrderController extends BaseController {
         String unlockSuccess = null;
         String unlockError = null;
         if (session != null) {
+            // Lấy flash message sau khi người dùng mở khóa credential.
             unlockSuccess = (String) session.getAttribute("orderUnlockSuccess");
             unlockError = (String) session.getAttribute("orderUnlockError");
             session.removeAttribute("orderUnlockSuccess");
@@ -311,6 +324,7 @@ public class OrderController extends BaseController {
         }
         boolean unlocked = orderService.hasUnlockedCredentials(orderId, userId);
         boolean includeCredentials = unlocked || unlockSuccess != null;
+        // Nếu đã được phép xem credential thì nạp lại detail với flag load credential.
         OrderDetailView detail = includeCredentials
                 ? orderService.getDetail(orderId, userId, true).orElse(detailOpt.get())
                 : detailOpt.get();
@@ -383,6 +397,7 @@ public class OrderController extends BaseController {
         }
         Orders order = detailOpt.get().order();
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        // Xây dựng danh sách sự kiện ví và trả về JSON để front-end polling.
         List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
         response.setContentType("application/json; charset=UTF-8");
         response.getWriter().write(buildWalletEventsPayload(events));
