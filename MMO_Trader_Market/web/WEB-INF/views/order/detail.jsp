@@ -72,8 +72,8 @@
                  aria-labelledby="orderProcessingTitle" aria-describedby="orderProcessingMessage">
                 <h3 id="orderProcessingTitle">Đơn hàng đang được xử lý</h3>
                 <p id="orderProcessingMessage">
-                    Hệ thống đang khóa ví, kiểm tra tồn kho và nạp credential bàn giao.
-                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực.
+                    Hệ thống đang khóa ví, kiểm tra tồn kho, nạp credential bàn giao và ghi nhận giao dịch trừ tiền.
+                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực cùng thông tin giao dịch ví.
                 </p>
                 <div class="order-modal__actions">
                     <button type="button" class="button button--ghost" id="orderProcessingLater">Ở lại trang</button>
@@ -139,6 +139,35 @@
                         <li><span>Ngày tạo:</span>
                             <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
                         </li>
+                        <c:if test="${not empty paymentTransaction}">
+                            <li><span>Mã giao dịch ví:</span> #<c:out value="${paymentTransaction.id}" /></li>
+                            <li><span>Loại giao dịch:</span> <c:out value="${paymentTransactionTypeLabel}" /></li>
+                            <li><span>Số tiền trừ:</span>
+                                <c:choose>
+                                    <c:when test="${not empty paymentTransactionAmountAbs}">
+                                        -<fmt:formatNumber value="${paymentTransactionAmountAbs}" type="currency" currencySymbol="" /> đ
+                                    </c:when>
+                                    <c:when test="${not empty paymentTransaction.amount}">
+                                        <fmt:formatNumber value="${paymentTransaction.amount}" type="currency" currencySymbol="" /> đ
+                                    </c:when>
+                                    <c:otherwise>
+                                        Không xác định
+                                    </c:otherwise>
+                                </c:choose>
+                            </li>
+                            <li><span>Số dư trước:</span>
+                                <fmt:formatNumber value="${paymentTransaction.balanceBefore}" type="currency" currencySymbol="" /> đ
+                            </li>
+                            <li><span>Số dư sau:</span>
+                                <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
+                            </li>
+                            <li><span>Thời gian thanh toán:</span>
+                                <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                            </li>
+                            <c:if test="${not empty paymentTransaction.note}">
+                                <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
+                            </c:if>
+                        </c:if>
                     </ul>
                 </div>
                 <div class="card">
