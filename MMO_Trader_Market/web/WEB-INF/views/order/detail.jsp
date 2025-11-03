@@ -302,9 +302,11 @@
                         <div class="order-detail__info-column order-detail__info-column--wallet">
                             <h4 class="order-detail__info-title">Giao dịch ví</h4>
                             <c:url var="walletEventsUrl" value="/orders/detail/${orderToken}/wallet-events" />
+                            <%--
                             <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
                                 <div class="wallet-events__placeholder">Đang tải dữ liệu giao dịch ví...</div>
                             </div>
+                            --%>
                             <c:if test="${not empty paymentTransaction}">
                                 <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
                                 <ul class="definition-list">
