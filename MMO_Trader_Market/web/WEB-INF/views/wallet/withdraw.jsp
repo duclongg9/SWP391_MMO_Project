@@ -55,7 +55,7 @@
     <!-- FORM CHUYỂN KHOẢN -->
     <section class="panel">
       <form method="post"
-            action="${pageContext.request.contextPath}/bankTransfer"
+            action="${pageContext.request.contextPath}/withdraw"
             class="form-card"
             id="bankTransferForm"
             autocomplete="off">
@@ -80,7 +80,7 @@
             <!-- Số tài khoản -->
             <div class="form-card__field">
               <label for="accountNumber" class="form-card__label">Số tài khoản</label>
-              <input id="accountNumber" name="accountNumber" inputmode="numeric" pattern="\\d{6,20}"
+              <input id="accountNumber" name="accountNumber" inputmode="numeric" pattern="\d{6,20}"
                      title="Chỉ nhập số, từ 6 đến 20 ký tự"
                      class="form-card__input" placeholder="VD: 0123456789" required>
               <p class="form-note">Chỉ gồm chữ số (6–20 ký tự).</p>
