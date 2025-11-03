@@ -18,6 +18,7 @@ public final class CredentialsValidator {
      * otherwise
      */
     public static boolean isValid(String username, String password) {
+        // Kiểm tra nhanh cả hai trường không rỗng trước khi chạm tới tầng DAO.
         return username != null && !username.isBlank()
                 && password != null && !password.isBlank();
     }
