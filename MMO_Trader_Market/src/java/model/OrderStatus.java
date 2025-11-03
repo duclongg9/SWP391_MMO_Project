@@ -4,7 +4,7 @@ package model;
  * Enumeration that describes the current lifecycle state of a buyer order.
  *
  * @version 1.0 21/05/2024
- * @author gpt-5-codex
+ * @author longpdhe171902
  */
 public enum OrderStatus {
     PENDING,
