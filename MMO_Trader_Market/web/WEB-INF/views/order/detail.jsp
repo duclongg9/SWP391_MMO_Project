@@ -302,9 +302,11 @@
                         <div class="order-detail__info-column order-detail__info-column--wallet">
                             <h4 class="order-detail__info-title">Giao dịch ví</h4>
                             <c:url var="walletEventsUrl" value="/orders/detail/${orderToken}/wallet-events" />
+                            <%--
                             <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
                                 <div class="wallet-events__placeholder">Đang tải dữ liệu giao dịch ví...</div>
                             </div>
+                            --%>
                             <c:if test="${not empty paymentTransaction}">
                                 <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
                                 <ul class="definition-list">
@@ -527,23 +529,38 @@
             hour12: false
         });
 
-        fetch(endpoint, {headers: {'Accept': 'application/json'}})
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Không thể tải dữ liệu');
-                }
-                return response.json();
-            })
-            .then(payload => {
-                if (!payload || !Array.isArray(payload.events)) {
-                    showError('Dữ liệu ví không hợp lệ.');
-                    return;
-                }
-                renderEvents(payload.events);
-            })
-            .catch(() => {
-                showError('Không thể tải dữ liệu ví. Vui lòng thử lại sau.');
-            });
+        let isFetching = false;
+
+        function loadEvents() {
+            if (isFetching) {
+                return;
+            }
+            isFetching = true;
+            fetch(endpoint, {headers: {'Accept': 'application/json'}})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Không thể tải dữ liệu');
+                    }
+                    return response.json();
+                })
+                .then(payload => {
+                    if (!payload || !Array.isArray(payload.events)) {
+                        showError('Dữ liệu ví không hợp lệ.');
+                        return;
+                    }
+                    renderEvents(payload.events);
+                })
+                .catch(() => {
+                    showError('Không thể tải dữ liệu ví. Vui lòng thử lại sau.');
+                })
+                .finally(() => {
+                    isFetching = false;
+                });
+        }
+
+        // Gọi API ngay lập tức rồi thiết lập polling để cập nhật liên tục trên giao diện.
+        loadEvents();
+        setInterval(loadEvents, 5000);
 
         function renderEvents(events) {
             container.innerHTML = '';
