@@ -72,8 +72,8 @@
                  aria-labelledby="orderProcessingTitle" aria-describedby="orderProcessingMessage">
                 <h3 id="orderProcessingTitle">Đơn hàng đang được xử lý</h3>
                 <p id="orderProcessingMessage">
-                    Hệ thống đang khóa ví, kiểm tra tồn kho và nạp credential bàn giao.
-                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực.
+                    Hệ thống đang khóa ví, kiểm tra tồn kho, nạp credential bàn giao và ghi nhận giao dịch trừ tiền.
+                    Vui lòng bấm "Xem chi tiết đơn hàng" để theo dõi trạng thái cập nhật theo thời gian thực cùng thông tin giao dịch ví.
                 </p>
                 <div class="order-modal__actions">
                     <button type="button" class="button button--ghost" id="orderProcessingLater">Ở lại trang</button>
@@ -115,31 +115,230 @@
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
         </div>
         <div class="panel__body">
+            <style>
+                .order-detail__info-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2rem;
+                }
+
+                .order-detail__info-column {
+                    flex: 1 1 260px;
+                    min-width: 0;
+                }
+
+                .order-detail__info-column--wallet {
+                    border-left: 1px solid #e2e8f0;
+                    padding-left: 1.5rem;
+                }
+
+                .order-detail__info-title {
+                    margin: 0 0 1rem 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-detail__info-subtitle {
+                    margin: 1.75rem 0 0.75rem;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .wallet-events {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                }
+
+                .wallet-event {
+                    display: flex;
+                    gap: 1rem;
+                    align-items: stretch;
+                    padding: 1.25rem;
+                    border-radius: 16px;
+                    border: 1px solid #e2e8f0;
+                    background: #f8fafc;
+                    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+                }
+
+                .wallet-event--primary {
+                    border-color: #2563eb;
+                    box-shadow: 0 16px 28px rgba(37, 99, 235, 0.12);
+                    background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), rgba(248, 250, 252, 1));
+                }
+
+                .wallet-event__index {
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    border-radius: 50%;
+                    background: #e2e8f0;
+                    color: #0f172a;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .wallet-event--primary .wallet-event__index {
+                    background: #2563eb;
+                    color: #fff;
+                }
+
+                .wallet-event__body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .wallet-event__header {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.5rem 1rem;
+                    align-items: center;
+                }
+
+                .wallet-event__title {
+                    font-weight: 600;
+                    color: #0f172a;
+                    font-size: 1rem;
+                }
+
+                .wallet-event__time {
+                    color: #475569;
+                    font-size: 0.92rem;
+                }
+
+                .wallet-event__description {
+                    color: #334155;
+                    line-height: 1.6;
+                }
+
+                .wallet-event__meta {
+                    display: grid;
+                    gap: 0.35rem;
+                }
+
+                .wallet-event__meta-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 0.75rem;
+                    color: #0f172a;
+                    font-size: 0.95rem;
+                }
+
+                .wallet-event__meta-label {
+                    font-weight: 600;
+                }
+
+                .wallet-event__meta-value {
+                    color: #1e293b;
+                }
+
+                .wallet-events__placeholder,
+                .wallet-events__error {
+                    padding: 1.25rem;
+                    border-radius: 12px;
+                    border: 1px dashed #cbd5f5;
+                    background: #eef2ff;
+                    color: #3730a3;
+                }
+
+                @media (max-width: 768px) {
+                    .order-detail__info-grid {
+                        flex-direction: column;
+                    }
+
+                    .order-detail__info-column--wallet {
+                        border-left: none;
+                        border-top: 1px solid #e2e8f0;
+                        padding-left: 0;
+                        padding-top: 1.5rem;
+                    }
+
+                    .wallet-event {
+                        flex-direction: column;
+                    }
+
+                    .wallet-event__meta-row {
+                        flex-direction: column;
+                        align-items: flex-start;
+                    }
+                }
+            </style>
             <div class="grid grid--two-columns">
                 <div class="card">
                     <h3 class="card__title">Thông tin đơn</h3>
-                    <ul class="definition-list">
-                        <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
-                        <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
-                            <c:if test="${not empty order.variantCode}">
-                            <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                    <div class="order-detail__info-grid">
+                        <div class="order-detail__info-column">
+                            <h4 class="order-detail__info-title">Đơn hàng</h4>
+                            <ul class="definition-list">
+                                <li><span>Mã đơn:</span> #<c:out value="${order.id}" /></li>
+                                <li><span>Sản phẩm:</span> <c:out value="${product.name}" /></li>
+                                <c:if test="${not empty order.variantCode}">
+                                    <li><span>Biến thể:</span> <c:out value="${order.variantCode}" /></li>
+                                </c:if>
+                                <c:if test="${order.quantity ne null}">
+                                    <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
+                                </c:if>
+                                <c:if test="${order.unitPrice ne null}">
+                                    <li><span>Đơn giá:</span>
+                                        <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                </c:if>
+                                <li><span>Tổng tiền:</span>
+                                    <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
+                                </li>
+                                <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
+                                <li><span>Ngày tạo:</span>
+                                    <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="order-detail__info-column order-detail__info-column--wallet">
+                            <h4 class="order-detail__info-title">Giao dịch ví</h4>
+                            <c:url var="walletEventsUrl" value="/orders/detail/${orderToken}/wallet-events" />
+                            <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
+                                <div class="wallet-events__placeholder">Đang tải dữ liệu giao dịch ví...</div>
+                            </div>
+                            <c:if test="${not empty paymentTransaction}">
+                                <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
+                                <ul class="definition-list">
+                                    <li><span>Mã giao dịch ví:</span> #<c:out value="${paymentTransaction.id}" /></li>
+                                    <li><span>Loại giao dịch:</span> <c:out value="${paymentTransactionTypeLabel}" /></li>
+                                    <li><span>Số tiền trừ:</span>
+                                        <c:choose>
+                                            <c:when test="${not empty paymentTransactionAmountAbs}">
+                                                -<fmt:formatNumber value="${paymentTransactionAmountAbs}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:when test="${not empty paymentTransaction.amount}">
+                                                <fmt:formatNumber value="${paymentTransaction.amount}" type="currency" currencySymbol="" /> đ
+                                            </c:when>
+                                            <c:otherwise>
+                                                Không xác định
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </li>
+                                    <li><span>Số dư trước:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceBefore}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Số dư sau:</span>
+                                        <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
+                                    </li>
+                                    <li><span>Thời gian thanh toán:</span>
+                                        <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                    </li>
+                                    <c:if test="${not empty paymentTransaction.note}">
+                                        <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
+                                    </c:if>
+                                </ul>
                             </c:if>
-                            <c:if test="${order.quantity ne null}">
-                            <li><span>Số lượng:</span> <c:out value="${order.quantity}" /></li>
-                            </c:if>
-                            <c:if test="${order.unitPrice ne null}">
-                            <li><span>Đơn giá:</span>
-                                <fmt:formatNumber value="${order.unitPrice}" type="currency" currencySymbol="" /> đ
-                            </li>
-                        </c:if>
-                        <li><span>Tổng tiền:</span>
-                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="" /> đ
-                        </li>
-                        <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
-                        <li><span>Ngày tạo:</span>
-                            <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="card">
                     <h3 class="card__title">Sản phẩm</h3>
@@ -301,5 +500,153 @@
         </div>
     </section>
 </main>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('walletEvents');
+        if (!container) {
+            return;
+        }
+        const endpoint = container.dataset.endpoint;
+        if (!endpoint) {
+            showError('Không tìm thấy nguồn dữ liệu ví.');
+            return;
+        }
+
+        const formatter = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+            maximumFractionDigits: 0,
+            minimumFractionDigits: 0
+        });
+        const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+
+        fetch(endpoint, {headers: {'Accept': 'application/json'}})
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Không thể tải dữ liệu');
+                }
+                return response.json();
+            })
+            .then(payload => {
+                if (!payload || !Array.isArray(payload.events)) {
+                    showError('Dữ liệu ví không hợp lệ.');
+                    return;
+                }
+                renderEvents(payload.events);
+            })
+            .catch(() => {
+                showError('Không thể tải dữ liệu ví. Vui lòng thử lại sau.');
+            });
+
+        function renderEvents(events) {
+            container.innerHTML = '';
+            if (!events.length) {
+                const empty = document.createElement('div');
+                empty.className = 'wallet-events__placeholder';
+                empty.textContent = 'Chưa có dữ liệu ví để hiển thị.';
+                container.appendChild(empty);
+                return;
+            }
+            events.forEach(event => {
+                const item = document.createElement('div');
+                item.className = 'wallet-event';
+                if (event.primary === true) {
+                    item.classList.add('wallet-event--primary');
+                }
+
+                const index = document.createElement('div');
+                index.className = 'wallet-event__index';
+                const sequenceValue = Number.isFinite(Number(event.sequence)) ? Number(event.sequence) : 0;
+                index.textContent = sequenceValue > 0 ? String(sequenceValue) : '#';
+                item.appendChild(index);
+
+                const body = document.createElement('div');
+                body.className = 'wallet-event__body';
+
+                const header = document.createElement('div');
+                header.className = 'wallet-event__header';
+                const title = document.createElement('span');
+                title.className = 'wallet-event__title';
+                title.textContent = event.title || 'Sự kiện ví';
+                header.appendChild(title);
+
+                if (event.occurredAt) {
+                    const time = document.createElement('span');
+                    time.className = 'wallet-event__time';
+                    const parsedTime = new Date(event.occurredAt);
+                    if (!isNaN(parsedTime.getTime())) {
+                        time.textContent = dateFormatter.format(parsedTime);
+                        header.appendChild(time);
+                    }
+                }
+
+                body.appendChild(header);
+
+                if (event.description) {
+                    const description = document.createElement('div');
+                    description.className = 'wallet-event__description';
+                    description.textContent = event.description;
+                    body.appendChild(description);
+                }
+
+                const meta = document.createElement('div');
+                meta.className = 'wallet-event__meta';
+
+                if (event.reference) {
+                    meta.appendChild(buildMetaRow('Mã tham chiếu', event.reference));
+                }
+
+                if (event.amount) {
+                    const amountNumber = Number(event.amount);
+                    if (Number.isFinite(amountNumber)) {
+                        meta.appendChild(buildMetaRow('Số tiền', formatter.format(amountNumber)));
+                    }
+                }
+
+                if (event.balanceAfter) {
+                    const balanceNumber = Number(event.balanceAfter);
+                    if (Number.isFinite(balanceNumber)) {
+                        meta.appendChild(buildMetaRow('Số dư sau', formatter.format(balanceNumber)));
+                    }
+                }
+
+                if (meta.children.length > 0) {
+                    body.appendChild(meta);
+                }
+
+                item.appendChild(body);
+                container.appendChild(item);
+            });
+        }
+
+        function buildMetaRow(label, value) {
+            const row = document.createElement('div');
+            row.className = 'wallet-event__meta-row';
+            const labelEl = document.createElement('span');
+            labelEl.className = 'wallet-event__meta-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('span');
+            valueEl.className = 'wallet-event__meta-value';
+            valueEl.textContent = value;
+            row.append(labelEl, valueEl);
+            return row;
+        }
+
+        function showError(message) {
+            container.innerHTML = '';
+            const error = document.createElement('div');
+            error.className = 'wallet-events__error';
+            error.textContent = message;
+            container.appendChild(error);
+        }
+    });
+</script>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
