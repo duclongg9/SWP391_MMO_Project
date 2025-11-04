@@ -3,11 +3,9 @@ package model.view.product;
 import java.util.List;
 
 /**
- * <p>
- * Một lựa chọn loại sản phẩm bao gồm danh sách subtype con.</p>
- * <p>
+ * Một lựa chọn loại sản phẩm bao gồm danh sách subtype con.
  * Dữ liệu cấu trúc cây này giúp JSP render menu chọn loại sản phẩm đồng nhất
- * với rule kinh doanh.</p>
+ * với rule kinh doanh.
  *
  * @author longpdhe171902
  */

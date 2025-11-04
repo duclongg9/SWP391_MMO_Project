@@ -30,7 +30,6 @@ import java.util.Set;
 @WebServlet(name = "ProductListController", urlPatterns = {"/products"})
 public class ProductListController extends BaseController {
 
-    // Mã phiên bản phục vụ tuần tự hóa servlet.
     private static final long serialVersionUID = 1L;
     // Trang mặc định khi không có tham số page.
     private static final int DEFAULT_PAGE = 1;
@@ -46,10 +45,11 @@ public class ProductListController extends BaseController {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<ProductTypeOption> typeOptions = productService.getTypeOptions();
-        String requestedType = request.getParameter("type");
+        List<ProductTypeOption> typeOptions = productService.getTypeOptions(); //Lấy danh sách type khả dụng
+        String requestedType = request.getParameter("type"); //Lấy type từ query, normalize về code hợp lệ
         String normalizedType = productService.normalizeTypeCode(requestedType);
-        if (normalizedType == null) {
+        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty();
+        if (normalizedType == null && hasRawType) {
             Optional<String> fallbackType = typeOptions.stream()
                     .map(ProductTypeOption::getCode)
                     .findFirst();
@@ -61,29 +61,33 @@ public class ProductListController extends BaseController {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-
-        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
+//Lấy trang (mặc định 1) và kích thước trang (mặc định 5).
+        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE); 
         int sizeCandidate = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
         int size = PAGE_SIZE_OPTIONS.contains(sizeCandidate) ? sizeCandidate : DEFAULT_SIZE;
-
+//Chuẩn hoá keyword: trim, rỗng ⇒ coi như không có.
         String rawKeyword = request.getParameter("keyword");
         String normalizedKeyword = rawKeyword == null ? null : rawKeyword.trim();
         if (normalizedKeyword != null && normalizedKeyword.isBlank()) {
             normalizedKeyword = null;
         }
-
+//Lấy danh sách subtype được chọn (có thể nhiều), chuẩn hoá theo type hiện tại.
         List<String> subtypeFilters = productService.normalizeSubtypeCodes(normalizedType,
                 request.getParameterValues("subtype"));
         Set<String> selectedSubtypeSet = new LinkedHashSet<>(subtypeFilters);
-
+//Gọi service lấy kết quả trang (items, page, size, total, totalPages).
         PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
                 normalizedKeyword, page, size);
-        List<ProductSubtypeOption> subtypeOptions = productService.getSubtypeOptions(normalizedType);
-        String currentTypeLabel = typeOptions.stream()
-                .filter(option -> option.getCode().equals(normalizedType))
-                .map(ProductTypeOption::getLabel)
-                .findFirst()
-                .orElse(productService.getTypeLabel(normalizedType));
+        List<ProductSubtypeOption> subtypeOptions = normalizedType == null
+                ? List.of()
+                : productService.getSubtypeOptions(normalizedType);
+        String currentTypeLabel = normalizedType == null
+                ? "Tất cả sản phẩm"
+                : typeOptions.stream()
+                        .filter(option -> option.getCode().equals(normalizedType))
+                        .map(ProductTypeOption::getLabel)
+                        .findFirst()
+                        .orElse(productService.getTypeLabel(normalizedType));
 
         request.setAttribute("pageTitle", currentTypeLabel + " - Sản phẩm");
         request.setAttribute("items", result.getItems());
@@ -93,7 +97,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("pageSize", result.getSize());
         request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
-        request.setAttribute("selectedType", normalizedType);
+        request.setAttribute("selectedType", normalizedType == null ? "" : normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
         request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
         request.setAttribute("typeOptions", typeOptions);
