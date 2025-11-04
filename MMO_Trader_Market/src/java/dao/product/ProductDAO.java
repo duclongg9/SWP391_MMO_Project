@@ -30,6 +30,7 @@ import java.util.logging.Logger;
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
  */
+
 public class ProductDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(ProductDAO.class.getName());
