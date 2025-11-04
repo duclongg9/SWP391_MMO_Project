@@ -35,6 +35,10 @@ public class ProductVariantOption {
     @SerializedName("inventory_count")
     private Integer inventoryCount;
 
+    // URL ảnh đại diện cho biến thể (nếu có).
+    @SerializedName("image_url")
+    private String imageUrl;
+
     // Trạng thái khả dụng của biến thể.
     private String status;
 
@@ -81,6 +85,16 @@ public class ProductVariantOption {
         this.status = status;
     }
 
+    // Lấy URL ảnh biến thể.
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    // Gán URL ảnh biến thể sau khi chuẩn hóa.
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
     /**
      * Cho biết biến thể có thể bán hay không dựa trên trạng thái.
      */
@@ -95,13 +109,14 @@ public class ProductVariantOption {
                 + ", attributes=" + attributes
                 + ", price=" + price
                 + ", inventoryCount=" + inventoryCount
+                + ", imageUrl='" + imageUrl + '\''
                 + ", status='" + status + '\''
                 + '}';
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variantCode, attributes, price, inventoryCount, status);
+        return Objects.hash(variantCode, attributes, price, inventoryCount, imageUrl, status);
     }
 
     @Override
@@ -117,6 +132,7 @@ public class ProductVariantOption {
                 && Objects.equals(attributes, other.attributes)
                 && Objects.equals(price, other.price)
                 && Objects.equals(inventoryCount, other.inventoryCount)
+                && Objects.equals(imageUrl, other.imageUrl)
                 && Objects.equals(status, other.status);
     }
 }
