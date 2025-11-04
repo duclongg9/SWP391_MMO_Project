@@ -17,6 +17,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,23 +61,7 @@ public class WalletTransactionDAO {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    WalletTransactions wt = new WalletTransactions();
-                    wt.setId(rs.getInt(COL_ID));
-                    int walletId = rs.getInt(COL_WALLET_ID);
-                    wt.setWalletId(walletId);
-                    wt.setWallet(wdao.getWalletById(walletId));
-                    Object relatedEntity = rs.getObject(COL_RELATED_ENTITY);
-                    wt.setRelatedEntityId(relatedEntity == null ? null : ((Number) relatedEntity).intValue());
-                    String s = rs.getString(COL_TRANSACTION_TYPE);
-                    if (s != null) {
-                        wt.setTransactionType(TransactionType.fromDbValue(s));
-                    }
-                    wt.setAmount(rs.getBigDecimal(COL_AMOUNT));
-                    wt.setBalanceBefore(rs.getBigDecimal(COL_BALANCE_BEFORE));
-                    wt.setBalanceAfter(rs.getBigDecimal(COL_BALANCE_AFTER));
-                    wt.setNote(rs.getString(COL_NOTE));
-                    java.sql.Timestamp c = rs.getTimestamp(COL_CREATED_AT);
-                    wt.setCreatedAt(c != null ? new java.util.Date(c.getTime()) : null);
+                    WalletTransactions wt = mapTransaction(rs, true);
                     list.add(wt);
                 }
                 return list;
@@ -180,24 +165,7 @@ public class WalletTransactionDAO {
             ps.setInt(14, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    WalletTransactions wt = new WalletTransactions();
-                    wt.setId(rs.getInt(COL_ID));
-                    int walletId = rs.getInt(COL_WALLET_ID);
-                    wt.setWalletId(walletId);
-                    wt.setWallet(wdao.getWalletById(walletId));
-                    Object relatedEntity = rs.getObject(COL_RELATED_ENTITY);
-                    wt.setRelatedEntityId(relatedEntity == null ? null : ((Number) relatedEntity).intValue());
-                    //map từ ENUM java --> enum DB
-                    String s = rs.getString(COL_TRANSACTION_TYPE); //"Deposit" | "Purchase" |
-                    TransactionType type = TransactionType.fromDbValue(s);
-
-                    wt.setTransactionType(type);
-                    wt.setAmount(rs.getBigDecimal(COL_AMOUNT));
-                    wt.setBalanceBefore(rs.getBigDecimal(COL_BALANCE_BEFORE));
-                    wt.setBalanceAfter(rs.getBigDecimal(COL_BALANCE_AFTER));
-                    wt.setNote(rs.getString(COL_NOTE));
-                    java.sql.Timestamp c = rs.getTimestamp(COL_CREATED_AT);
-                    wt.setCreatedAt(c != null ? new java.util.Date(c.getTime()) : null);
+                    WalletTransactions wt = mapTransaction(rs, true);
                     list.add(wt);
                 }
                 return list;
@@ -208,12 +176,70 @@ public class WalletTransactionDAO {
         return null;
     }
 
+    /**
+     * Tìm giao dịch ví theo mã đồng thời đảm bảo thuộc sở hữu của người dùng.
+     *
+     * @param transactionId mã giao dịch ví
+     * @param userId mã người dùng cần xác thực
+     * @return {@link Optional} chứa giao dịch nếu tìm thấy
+     */
+    public Optional<WalletTransactions> findByIdForUser(int transactionId, int userId) {
+        String sql = """
+              SELECT wt.*
+              FROM wallet_transactions AS wt
+              JOIN wallets AS w ON w.id = wt.wallet_id
+              WHERE wt.id = ? AND w.user_id = ?
+              LIMIT 1
+              """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, transactionId);
+            ps.setInt(2, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapTransaction(rs, false));
+                }
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE,
+                    "Lỗi liên quan đến lấy dữ liệu từ DB", e);
+        }
+        return Optional.empty();
+    }
+
     public static void main(String[] args) {
         WalletTransactionDAO wdao = new WalletTransactionDAO();
         List<WalletTransactions> list = wdao.getListWalletTransactionPaging(1, 1, 5, null, null, null, null, null);
         for (WalletTransactions walletTransactions : list) {
             System.out.println(walletTransactions);
         }
+    }
+
+    private WalletTransactions mapTransaction(ResultSet rs, boolean includeWallet) throws SQLException {
+        WalletTransactions wt = new WalletTransactions();
+        wt.setId(rs.getInt(COL_ID));
+        int walletId = rs.getInt(COL_WALLET_ID);
+        wt.setWalletId(walletId);
+        if (includeWallet) {
+            wt.setWallet(wdao.getWalletById(walletId));
+        }
+        Object relatedEntity = rs.getObject(COL_RELATED_ENTITY);
+        wt.setRelatedEntityId(relatedEntity == null ? null : ((Number) relatedEntity).intValue());
+        String s = rs.getString(COL_TRANSACTION_TYPE);
+        if (s != null) {
+            try {
+                wt.setTransactionType(TransactionType.fromDbValue(s));
+            } catch (IllegalArgumentException ex) {
+                Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.WARNING,
+                        "Không nhận diện được transaction_type {0}", s);
+            }
+        }
+        wt.setAmount(rs.getBigDecimal(COL_AMOUNT));
+        wt.setBalanceBefore(rs.getBigDecimal(COL_BALANCE_BEFORE));
+        wt.setBalanceAfter(rs.getBigDecimal(COL_BALANCE_AFTER));
+        wt.setNote(rs.getString(COL_NOTE));
+        Timestamp c = rs.getTimestamp(COL_CREATED_AT);
+        wt.setCreatedAt(c != null ? new java.util.Date(c.getTime()) : null);
+        return wt;
     }
 
     public int insertTransaction(Connection connection, int walletId, Integer relatedEntityId, TransactionType type,
@@ -229,6 +255,7 @@ public class WalletTransactionDAO {
             if (relatedEntityId == null) {
                 ps.setNull(2, Types.INTEGER);
             } else {
+                // Ghi nhận khóa ngoại tới đơn hàng/đối tượng liên quan để tiện truy vết.
                 ps.setInt(2, relatedEntityId);
             }
             ps.setString(3, type.getDbValue());
@@ -238,11 +265,13 @@ public class WalletTransactionDAO {
             if (note == null || note.isBlank()) {
                 ps.setNull(7, Types.VARCHAR);
             } else {
+                // Ghi chú giúp người dùng nhận biết giao dịch hiển thị ngoài giao diện ví.
                 ps.setString(7, note);
             }
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
+                    // Trả về ID giao dịch để gắn vào bảng orders/payment log.
                     return rs.getInt(1);
                 }
             }

@@ -31,6 +31,7 @@
 <c:url value="/wallet" var="walletUrl" />
 <c:url value="/orders" var="ordersUrl" />
 <c:url value="/dashboard" var="sellerDashboardUrl" />
+<c:url value="/admin" var="adminDashboardUrl"/>
 <c:set var="currentUri" value="${pageContext.request.requestURI}" />
 <c:set var="isAuthPage"
        value="${fn:contains(currentUri, '/auth')
