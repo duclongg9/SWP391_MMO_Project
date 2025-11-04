@@ -27,23 +27,13 @@ public class UserService {
 
     private static final String RELATIVE_UPLOAD_DIR = AppConfig.get("upload.avatar.relative");
     private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.avatar.absolute");
-
-    // Regex kiểm tra định dạng email hợp lệ.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
-    // Regex yêu cầu mật khẩu tối thiểu 8 ký tự và có cả chữ lẫn số.
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
-    // Role mặc định khi tạo tài khoản mới (Guest).
     private static final int DEFAULT_ROLE_ID = 3;
-    // Thời hạn hiệu lực của token đặt lại mật khẩu (phút).
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 30;
-    // Bộ sinh số ngẫu nhiên dùng cho token và mã xác thực email.
     private static final SecureRandom RANDOM = new SecureRandom();
-
-    // DAO người dùng thao tác với bảng users.
     private final UserDAO userDAO;
-    // DAO token đặt lại mật khẩu.
     private final PasswordResetTokenDAO passwordResetTokenDAO;
-    // DAO lưu trữ mã xác thực email.
     private final EmailVerificationTokenDAO emailVerificationTokenDAO;
 
     public UserService(UserDAO userDAO) {
@@ -143,7 +133,7 @@ public class UserService {
     }
 
     public void requestPasswordReset(String email, String resetBaseUrl) {
-        String normalizedEmail = normalizeEmail(email); // chuẩn hóa
+        String normalizedEmail = normalizeEmail(email); 
         validateEmail(normalizedEmail);
         if (resetBaseUrl == null || resetBaseUrl.isBlank()) {
             throw new IllegalArgumentException("Thiếu đường dẫn reset mật khẩu");
@@ -154,11 +144,11 @@ public class UserService {
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            String token = UUID.randomUUID().toString().replace("-", ""); // tạo UUID ngẫu nhiên, bỏ -,''
+            String token = UUID.randomUUID().toString().replace("-", ""); 
             Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L)); //hời điểm hết hạn
             passwordResetTokenDAO.createToken(user.getId(), token, expiresAt);
             String resetLink = resetBaseUrl + "?token=" + token; //Tạo URL đầy đủ, bấm trong email.
-            sendResetMail(user.getEmail(), user.getName(), resetLink); // gửi mail cho ng dùng
+            sendResetMail(user.getEmail(), user.getName(), resetLink); 
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
@@ -190,18 +180,18 @@ public class UserService {
         validateEmail(normalizedEmail);
         String normalizedCode = requireText(code, "Vui lòng nhập mã xác thực");
         try {
-            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail); //Lấy user theo email
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail); 
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            if (Boolean.TRUE.equals(user.getStatus())) { // ng dùng đã active =1
+            if (Boolean.TRUE.equals(user.getStatus())) { 
                 return false;
             }
-            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId()); //lấy mã xác thực đang lưu trong DB 
+            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId());  
             if (storedCode == null || storedCode.isBlank()) {
                 throw new IllegalStateException("Tài khoản này không có mã xác thực hợp lệ");
             }
-            if (!storedCode.equals(normalizedCode)) { //So sánh mã
+            if (!storedCode.equals(normalizedCode)) { 
                 throw new IllegalArgumentException("Mã xác thực không chính xác");
             }
             int updated = userDAO.activateUser(user.getId()); //kích hoạt tài khoản

@@ -4,6 +4,7 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="request" />
 <c:set var="cPath" value="${pageContext.request.contextPath}" />
+<c:set var="fragmentBase" value="${cPath}/fragment/home" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
@@ -24,134 +25,16 @@
         </div>
     </section>
 
-    <section class="panel landing__hero">
-        <div class="landing__hero-main">
-            <h2>Chợ tài khoản MMO chuyên nghiệp, UY TÍN </h2>
-            <p class="landing__lead">
-                Điều mà chúng tôi đã đạt được:
-            </p>
-            <c:set var="summary" value="${summary}" />
-            <ul class="landing__metrics">
-                <li>
-                    <strong>
-                        <fmt:formatNumber value="${summary.totalCompletedOrders}" type="number" />
-                    </strong> đơn đã hoàn tất
-                </li>
-                <li>
-                    <strong>
-                        <fmt:formatNumber value="${summary.activeShopCount}" type="number" />
-                    </strong> shop đang hoạt động
-                </li>
-                <li>
-                    <strong>
-                        <fmt:formatNumber value="${summary.activeBuyerCount}" type="number" />
-                    </strong> người mua đã xác minh
-                </li>
-            </ul>
+    <section class="panel landing__hero" id="home-summary" data-fragment-url="${fragmentBase}/summary">
+        <div class="fragment fragment--loading">
+            <p>Đang tải dữ liệu tổng quan...</p>
         </div>
-
-        <aside class="landing__categories" id="product-types">
-            <h3 class="landing__aside-title">Danh mục chính</h3>
-            <c:choose>
-                <c:when test="${empty productCategories}">
-                    <p>Đang cập nhật dữ liệu.</p>
-                </c:when>
-                <c:otherwise>
-                    <ul class="category-menu">
-                        <c:forEach var="category" items="${productCategories}">
-                            <c:url var="categoryUrl" value="/products">
-                                <c:param name="type" value="${category.typeCode}" />
-                            </c:url>
-                            <li class="category-menu__item">
-                                <span class="category-menu__icon">🏷️</span>
-                                <div>
-                                    <strong><a href="${categoryUrl}"><c:out value="${category.typeLabel}" /></a></strong>
-                                    <p><fmt:formatNumber value="${category.availableProducts}" type="number" /> sản phẩm khả dụng</p>
-                                </div>
-                            </li>
-                        </c:forEach>
-                    </ul>
-                </c:otherwise>
-            </c:choose>
-        </aside>
     </section>
 
 
-    <section class="panel landing__section">
-        <div class="panel__header">
-            <h3 class="panel__title">Sản phẩm nổi bật</h3>
-            <span class="panel__tag">Dữ liệu trực tiếp</span>
-        </div>
-
-        <div class="landing__products">
-            <c:choose>
-                <c:when test="${empty featuredProducts}">
-                    <p>Chưa có dữ liệu.</p>
-                </c:when>
-                <c:otherwise>
-                    <c:forEach var="product" items="${featuredProducts}">
-                        <article class="product-card product-card--featured product-card--grid">
-                            <div class="product-card__image product-card__media">
-                                <c:choose>
-                                    <c:when test="${not empty product.primaryImageUrl}">
-                                        <c:set var="featuredImageSource" value="${product.primaryImageUrl}" />
-                                        <c:choose>
-                                            <c:when test="${fn:startsWith(featuredImageSource, 'http://')
-                                                            or fn:startsWith(featuredImageSource, 'https://')
-                                                            or fn:startsWith(featuredImageSource, '//')
-                                                            or fn:startsWith(featuredImageSource, 'data:')
-                                                            or fn:startsWith(featuredImageSource, cPath)}">
-                                                <c:set var="featuredImageUrl" value="${featuredImageSource}" />
-                                            </c:when>
-                                            <c:otherwise>
-                                                <c:url var="featuredImageUrl" value="${featuredImageSource}" />
-                                            </c:otherwise>
-                                        </c:choose>
-                                        <img class="product-card__img" src="${featuredImageUrl}" alt="Ảnh sản phẩm ${fn:escapeXml(product.name)}" loading="lazy" />
-                                    </c:when>
-                                    <c:otherwise>
-                                        <div class="product-card__placeholder">Không có ảnh</div>
-                                    </c:otherwise>
-                                </c:choose>
-                            </div>
-                            <div class="product-card__body product-card__body--stack">
-                                <header class="product-card__header">
-                                    <h4><c:out value="${product.name}" /></h4>
-                                </header>
-                                <p class="product-card__meta">
-                                    <span><c:out value="${product.productTypeLabel}" /> • <c:out value="${product.productSubtypeLabel}" /></span>
-                                    <span>Shop: <strong><c:out value="${product.shopName}" /></strong></span>
-                                </p>
-                                <p class="product-card__description"><c:out value="${product.shortDescription}" /></p>
-                                <p class="product-card__price">
-                                    <c:choose>
-                                        <c:when test="${product.minPrice eq product.maxPrice}">
-                                            Giá
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:when>
-                                        <c:otherwise>
-                                            Giá từ
-                                            <fmt:formatNumber value="${product.minPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                            –
-                                            <fmt:formatNumber value="${product.maxPrice}" type="currency" currencySymbol="đ" minFractionDigits="0" maxFractionDigits="0" />
-                                        </c:otherwise>
-                                    </c:choose>
-                                </p>
-                                <ul class="product-card__meta product-card__meta--stats">
-                                    <li>Tồn kho: <strong><c:out value="${product.inventoryCount}" /></strong></li>
-                                    <li>Đã bán: <strong><c:out value="${product.soldCount}" /></strong></li>
-                                </ul>
-                                <footer class="product-card__footer">
-                                    <c:url var="detailUrl" value="/product/detail/${product.encodedId}" />
-                                    <div class="product-card__actions product-card__actions--justify">
-                                        <a class="button button--primary product-card__cta" href="${detailUrl}">Xem chi tiết</a>
-                                    </div>
-                                </footer>
-                            </div>
-                        </article>
-                    </c:forEach>
-                </c:otherwise>
-            </c:choose>
+    <section class="panel landing__section" id="home-featured" data-fragment-url="${fragmentBase}/featured">
+        <div class="fragment fragment--loading">
+            <p>Đang tải sản phẩm nổi bật...</p>
         </div>
     </section>
 
@@ -177,25 +60,14 @@
         </div>
     </section>
 
-    <section class="panel landing__section">
-        <div class="panel__header">
-            <h3 class="panel__title">Cấu hình hệ thống</h3>
+    <section class="panel landing__section" id="system-notes" data-fragment-url="${fragmentBase}/system-notes">
+        <div class="fragment fragment--loading">
+            <p>Đang tải cấu hình hệ thống...</p>
         </div>
-        <c:if test="${empty systemNotes}">
-            <p>Chưa có dữ liệu.</p>
-        </c:if>
-        <c:if test="${not empty systemNotes}">
-            <ol class="tips-list">
-                <c:forEach var="config" items="${systemNotes}">
-                    <li>
-                        <strong><c:out value="${config.description}" /></strong>
-                    </li>
-                </c:forEach>
-            </ol>
-        </c:if>
     </section>
 
 </main>
 
+<script src="${cPath}/assets/Script/home.js" defer></script>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

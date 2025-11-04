@@ -38,8 +38,8 @@ public class EmailVerificationController extends BaseController {
             session.setAttribute("newUserEmail", normalizedEmail); //prefill ô email ở trang login
             session.setAttribute("verificationSuccess",
                     activated
-                            ? "Xác thực email thành công! Bạn có thể đăng nhập." // true
-                            : "Email đã được xác thực trước đó. Vui lòng đăng nhập."); // false
+                            ? "Xác thực email thành công! Bạn có thể đăng nhập." 
+                            : "Email đã được xác thực trước đó. Vui lòng đăng nhập."); 
             response.sendRedirect(request.getContextPath() + "/auth");
         } catch (IllegalArgumentException e) {
             prepareErrorState(request, normalizedEmail, e.getMessage(), null);
@@ -58,7 +58,7 @@ public class EmailVerificationController extends BaseController {
     }
 // chuẩn bị state lỗi , giữ lại dữ liệu ng dùng vừa nhập
     private void prepareErrorState(HttpServletRequest request, String email, String message, String attributeOverride) {
-        String attribute = attributeOverride == null ? "verificationError" : attributeOverride; //Nếu không truyền tên thuộc tính lỗi riêng,dùng mặc định
+        String attribute = attributeOverride == null ? "verificationError" : attributeOverride; 
         request.setAttribute(attribute, message);
         request.setAttribute("showVerificationModal", true);
         request.setAttribute("verificationEmail", email); //JSP/FE mở modal xác thực
