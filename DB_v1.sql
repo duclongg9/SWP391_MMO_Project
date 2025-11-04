@@ -76,7 +76,7 @@ CREATE TABLE `products` (
   `shop_id` int NOT NULL,
 
   -- Loại & Subtype cố định (ENUM)
-  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME', 'OTHER'),
+  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME'),
   `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
 
   `name` varchar(255) NOT NULL,
@@ -622,7 +622,7 @@ INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
  (1,1,0.0000,1,'2024-01-11 09:00:00','2024-01-11 09:00:00'),
- (2,2,330000000.0000,1,'2024-01-12 08:40:00','2024-01-26 09:45:00'),
+ (2,2,33000000.0000,1,'2024-01-12 08:40:00','2024-01-26 09:45:00'),
  (3,3,5000000.0000,1,'2024-01-15 08:00:00','2024-01-20 12:10:00');
 
 INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
