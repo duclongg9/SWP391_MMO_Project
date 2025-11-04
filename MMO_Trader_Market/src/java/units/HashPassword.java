@@ -30,7 +30,7 @@ public class HashPassword {
     }
 
     public static void main(String[] args) {
-        String test = "admin";
+        String test = "kino1234";
         System.out.println(toSHA1(test));
     }
 }
