@@ -36,7 +36,6 @@ public class RegisterController extends BaseController {
         forward(request, response, "auth/register");
     }
 
-    // Tiếp nhận thông tin đăng ký và tạo tài khoản mới.
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -68,11 +67,9 @@ public class RegisterController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {
-            // Lỗi nghiệp vụ (email đã tồn tại, mật khẩu không hợp lệ...).
             request.setAttribute("error", e.getMessage());
             forward(request, response, "auth/register");
         } catch (RuntimeException e) {
-            // Ghi log lỗi bất thường và trả lại mã lỗi cho người dùng.
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error during registration, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);

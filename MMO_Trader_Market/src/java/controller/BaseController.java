@@ -11,12 +11,11 @@ import units.NavigationBuilder;
 import units.RoleHomeResolver;
 
 /**
- * Base servlet that provides convenience helpers for forwarding to JSP views.
  */
 public abstract class BaseController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-
+//chuyển tới trang JSP
     protected void forward(HttpServletRequest request, HttpServletResponse response, String view)
             throws ServletException, IOException {
         ensureNavigation(request);
@@ -25,9 +24,7 @@ public abstract class BaseController extends HttpServlet {
     }
 
     /**
-     * Redirects administrators to the dedicated admin dashboard.
-     *
-     * @return {@code true} if the response has been committed due to a redirect
+     nếu là admin thì đẩy về trang admin.
      */
     protected boolean redirectAdminHome(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -43,7 +40,7 @@ public abstract class BaseController extends HttpServlet {
         }
         return false;
     }
-
+//đảm bảo có dữ liệu menu cho layout.
     private void ensureNavigation(HttpServletRequest request) {
         if (request.getAttribute("navItems") == null) {
             request.setAttribute("navItems", NavigationBuilder.build(request));
