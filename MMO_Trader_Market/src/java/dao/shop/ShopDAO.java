@@ -1,6 +1,7 @@
 package dao.shop;
 
 import dao.BaseDAO;
+import dao.connect.DBConnect;
 import model.Shops;
 
 import java.sql.Connection;
@@ -80,5 +81,22 @@ public class ShopDAO extends BaseDAO {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
         }
         return shop;
+    }
+
+    //Lấy tổng số shop đang hoạt động
+    public int getTotalActiveShops() {
+        String sql = """
+        SELECT COUNT(*) AS total_active_shops
+        FROM mmo_schema.shops
+        WHERE status = 'Active'
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total_active_shops");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0; // Nếu có lỗi hoặc không có kết quả
     }
 }
