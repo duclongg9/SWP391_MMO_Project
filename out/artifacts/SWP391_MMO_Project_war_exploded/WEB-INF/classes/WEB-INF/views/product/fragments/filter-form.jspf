@@ -1,0 +1,129 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+<c:set var="filterFormId" value="${empty filterFormId ? 'product-filter-form' : filterFormId}" />
+<c:url value="/products" var="defaultFilterAction" />
+<c:set var="filterActionValue" value="${empty filterFormAction ? defaultFilterAction : filterFormAction}" />
+
+<c:set var="filterKeywordCandidate" value="${not empty filterKeyword ? filterKeyword : (not empty filterQuery ? filterQuery : query)}" />
+<c:set var="filterKeywordValue" value="${empty filterKeywordCandidate ? '' : filterKeywordCandidate}" />
+<c:set var="filterTypeCandidate" value="${not empty filterType ? filterType : selectedType}" />
+<c:set var="filterTypeValue" value="${empty filterTypeCandidate ? '' : filterTypeCandidate}" />
+<c:set var="filterSubtypeCandidate" value="${not empty filterSubtype ? filterSubtype : selectedSubtype}" />
+<c:set var="filterSubtypeValue" value="${empty filterSubtypeCandidate ? '' : filterSubtypeCandidate}" />
+<c:set var="filterPageSizeCandidate" value="${not empty filterPageSize ? filterPageSize : size}" />
+<c:set var="filterPageSizeValue" value="${empty filterPageSizeCandidate ? 12 : filterPageSizeCandidate}" />
+<c:set var="filterIncludeSizeValue" value="${filterIncludeSize == true or filterIncludeSize == 'true'}" />
+
+<c:set var="keywordInputId" value="${filterFormId}-keyword" />
+<c:set var="typeInputId" value="${filterFormId}-type" />
+<c:set var="subtypeInputId" value="${filterFormId}-subtype" />
+
+<form id="${filterFormId}" class="product-filters" method="get" action="${filterActionValue}">
+    <div class="product-filters__group">
+        <label class="product-filters__label" for="${keywordInputId}">Tìm sản phẩm </label>
+        <input class="product-filters__input" type="search" id="${keywordInputId}" name="keyword"
+               placeholder="Nhập tên sản phẩm ..." value="${fn:escapeXml(filterKeywordValue)}" />
+    </div>
+    <div class="product-filters__group">
+        <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>
+                <c:set var="hasOther" value="${false}" />
+        <c:forEach var="option" items="${typeOptions}">
+            <c:if test="${option.code == 'OTHER'}">
+                <c:set var="hasOther" value="${true}" />
+            </c:if>
+        </c:forEach>
+        <select class="product-filters__select" id="${typeInputId}" name="type">
+            <option value="">Tất cả</option>
+            
+            <c:forEach var="option" items="${typeOptions}">
+                <option value="${option.code}" <c:if test="${option.code == filterTypeValue}">selected</c:if>>
+                    <c:out value="${option.label}" />
+                </option>
+            </c:forEach>
+            <c:if test="${filterTypeValue == 'OTHER' and not hasOther}">
+                <option value="OTHER" selected>Khác</option>
+            </c:if>
+        </select>
+    </div>
+    <div class="product-filters__group">
+        <label class="product-filters__label" for="${subtypeInputId}">Phân loại chi tiết</label>
+        <select class="product-filters__select" id="${subtypeInputId}" name="subtype"
+                data-initial="${fn:escapeXml(filterSubtypeValue)}">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <input type="hidden" name="page" value="1" />
+    <c:if test="${filterIncludeSizeValue}">
+        <input type="hidden" name="size" value="${filterPageSizeValue}" />
+    </c:if>
+    <button class="button button--primary" type="submit">Áp dụng</button>
+</form>
+
+<script>
+    (function () {
+        var form = document.getElementById('${filterFormId}');
+        if (!form) {
+            return;
+        }
+        var typeSelect = form.querySelector('select[name="type"]');
+        var subtypeSelect = form.querySelector('select[name="subtype"]');
+        if (!typeSelect || !subtypeSelect) {
+            return;
+        }
+
+        var initialSubtype = subtypeSelect.dataset.initial || '';
+        var SUBTYPE_OPTIONS = {
+            DEFAULT: [{code: '', label: 'Tất cả'}],
+            EMAIL: [
+                {code: '', label: 'Tất cả'},
+                {code: 'GMAIL', label: 'Gmail'}
+            ],
+            SOCIAL: [
+                {code: '', label: 'Tất cả'},
+                {code: 'FACEBOOK', label: 'Facebook'},
+                {code: 'TIKTOK', label: 'TikTok'}
+            ],
+            SOFTWARE: [
+                {code: '', label: 'Tất cả'},
+                {code: 'CANVA', label: 'Canva'}
+            ],
+            GAME: [
+                {code: '', label: 'Tất cả'},
+                {code: 'VALORANT', label: 'Valorant'}
+            ]
+        };
+
+        function resolveKey(value) {
+            if (!value) {
+                return 'DEFAULT';
+            }
+            var upper = value.toUpperCase();
+            return SUBTYPE_OPTIONS[upper] ? upper : 'DEFAULT';
+        }
+
+        function renderSubtypeOptions(typeValue, selectedValue) {
+            var key = resolveKey(typeValue);
+            var options = SUBTYPE_OPTIONS[key] || SUBTYPE_OPTIONS.DEFAULT;
+            while (subtypeSelect.firstChild) {
+                subtypeSelect.removeChild(subtypeSelect.firstChild);
+            }
+            options.forEach(function (option) {
+                var opt = document.createElement('option');
+                opt.value = option.code;
+                opt.textContent = option.label;
+                if (option.code === selectedValue) {
+                    opt.selected = true;
+                }
+                subtypeSelect.appendChild(opt);
+            });
+        }
+
+        renderSubtypeOptions(typeSelect.value, initialSubtype);
+
+        typeSelect.addEventListener('change', function () {
+            renderSubtypeOptions(typeSelect.value, '');
+        });
+    })();
+</script>
