@@ -13,14 +13,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import service.UserService;
 
+/**
+ * Điều phối luồng "Đặt lại mật khẩu" khi người dùng truy cập từ email quên mật
+ * khẩu.
+ * <p>
+ * - Hiển thị form đặt lại kèm kiểm tra token hợp lệ. - Xác thực mật khẩu mới,
+ * cập nhật dữ liệu và thông báo thành công. - Ghi nhận lỗi tiếng Việt khi token
+ * sai, mật khẩu không hợp lệ hoặc xảy ra sự cố.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
+ */
 @WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
 public class ResetPasswordController extends BaseController {
-
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ResetPasswordController.class.getName());
-
     private final UserService userService = new UserService(new UserDAO());
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -36,13 +44,13 @@ public class ResetPasswordController extends BaseController {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String token = request.getParameter("token");
+        String token = request.getParameter("token"); 
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
         try {
             userService.resetPassword(token, password, confirmPassword);
             HttpSession session = request.getSession();
-            session.setAttribute("resetSuccess", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại");
+            session.setAttribute("resetSuccess", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại"); //flash message
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {

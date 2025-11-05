@@ -3,6 +3,9 @@ package units;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import model.view.product.ProductTypeOption;
+import service.ProductService;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,66 +17,48 @@ import java.util.Map;
 public final class NavigationBuilder {
 
     private static final String ACTIVE_CLASS = "menu__item--active";
-    private static final String ICON_CLASS = "menu__item--icon";
-    private static final String BUTTON_CLASS = "menu__item--button";
+    private static final ProductService PRODUCT_SERVICE = new ProductService();
 
     private NavigationBuilder() {
     }
 
-    public static List<Map<String, String>> build(HttpServletRequest request) {
-        List<Map<String, String>> items = new ArrayList<>();
+    public static List<Map<String, Object>> build(HttpServletRequest request) {
+        List<Map<String, Object>> items = new ArrayList<>();
         String contextPath = request.getContextPath();
         String currentPath = resolveCurrentPath(request);
 
         HttpSession session = request.getSession(false);
         Integer roleId = session == null ? null : (Integer) session.getAttribute("userRole");
 
-        if (isAdminRole(roleId)) {
-            items.add(createNavItem(contextPath + "/dashboard", "Dashboard",
-                    isActive(currentPath, "/dashboard")));
-            items.add(createNavItem(contextPath + "/orders", "Quản lý đơn hàng",
-                    isActive(currentPath, "/orders")));
-        }
-
-        addBaseItems(items, contextPath, currentPath);
-
-        if (roleId == null) {
-            if (shouldDisplayAuthCta(currentPath)) {
-                items.add(createIconItem(contextPath + "/auth", "👤", "Đăng nhập", true,
-                        isActive(currentPath, "/auth")));
+        if (isSellerRole(roleId)) {
+            Map<String, Object> sellerDropdown = buildSellerDropdown(contextPath, currentPath);
+            if (sellerDropdown != null) {
+                items.add(sellerDropdown);
             }
-            return items;
         }
 
-        if (isBuyerRole(roleId)) {
-            items.add(createNavItem(contextPath + "/wallet", "Ví của tôi",
-                    isActive(currentPath, "/wallet")));
-            items.add(createNavItem(contextPath + "/orders", "Đơn hàng",
-                    isActive(currentPath, "/orders")));
-            items.add(createIconItem(contextPath + "/profile", "👤", "Tài khoản", false,
-                    isActive(currentPath, "/profile")));
-        } else {
-            items.add(createIconItem(contextPath + "/profile", "👤", "Quản trị viên", false,
-                    isActive(currentPath, "/profile")));
-        }
+        addBaseItems(items, request, contextPath, currentPath);
 
-        items.add(createLogoutItem(contextPath));
         return items;
     }
 
-    private static void addBaseItems(List<Map<String, String>> items, String contextPath, String currentPath) {
-        items.add(createNavItem(contextPath + "/products", "Danh sách sản phẩm",
-                isActive(currentPath, "/products")));
-        items.add(createNavItem(contextPath + "/home#product-types", "Loại sản phẩm", false));
-        items.add(createNavItem(contextPath + "/home#faq", "FAQ", false));
+    private static void addBaseItems(List<Map<String, Object>> items, HttpServletRequest request,
+            String contextPath, String currentPath) {
+        Map<String, Object> productItem = buildProductDropdown(request, contextPath, currentPath);
+        if (productItem != null) {
+            items.add(productItem);
+        } else {
+            items.add(createNavItem(contextPath + "/products", "Sản phẩm", isActive(currentPath, "/products")));
+        }
+        items.add(createNavItem(contextPath + "/faq", "FAQ", isActive(currentPath, "/faq")));
     }
 
-    private static Map<String, String> createNavItem(String href, String text, boolean active) {
+    private static Map<String, Object> createNavItem(String href, String text, boolean active) {
         return createNavItem(href, text, active, null);
     }
 
-    private static Map<String, String> createNavItem(String href, String text, boolean active, String extraClasses) {
-        Map<String, String> item = new HashMap<>();
+    private static Map<String, Object> createNavItem(String href, String text, boolean active, String extraClasses) {
+        Map<String, Object> item = new HashMap<>();
         item.put("href", href);
         item.put("text", text);
         item.put("label", text);
@@ -85,25 +70,84 @@ public final class NavigationBuilder {
         return item;
     }
 
-    private static Map<String, String> createIconItem(String href, String icon, String text,
-            boolean highlight, boolean active) {
-        String extraClasses = ICON_CLASS + (highlight ? " " + BUTTON_CLASS : "");
-        Map<String, String> item = createNavItem(href, text, active, extraClasses);
-        item.put("icon", icon);
-        item.put("srText", text);
-        return item;
+    private static Map<String, Object> buildProductDropdown(HttpServletRequest request, String contextPath,
+            String currentPath) {
+        List<ProductTypeOption> typeOptions = PRODUCT_SERVICE.getTypeOptions();
+        if (typeOptions.isEmpty()) {
+            return null;
+        }
+        String requestedType = request.getParameter("type");
+        String normalizedType = PRODUCT_SERVICE.normalizeTypeCode(requestedType);
+        if (normalizedType == null) {
+            normalizedType = typeOptions.get(0).getCode();
+        }
+        boolean active = isActive(currentPath, "/products");
+        String fallbackHref = contextPath + "/products?type=" + typeOptions.get(0).getCode();
+        String selectedLabel = typeOptions.get(0).getLabel();
+
+        List<Map<String, Object>> children = new ArrayList<>();
+        for (ProductTypeOption option : typeOptions) {
+            Map<String, Object> child = new HashMap<>();
+            child.put("href", contextPath + "/products?type=" + option.getCode());
+            child.put("text", option.getLabel());
+            child.put("label", option.getLabel());
+            child.put("code", option.getCode());
+            boolean childActive = active && option.getCode().equalsIgnoreCase(normalizedType);
+            child.put("active", childActive);
+            children.add(child);
+            if (option.getCode().equalsIgnoreCase(normalizedType)) {
+                fallbackHref = contextPath + "/products?type=" + option.getCode();
+                selectedLabel = option.getLabel();
+            }
+        }
+
+        Map<String, Object> dropdown = createNavItem(fallbackHref, "Sản phẩm", active);
+        dropdown.put("dropdown", true);
+        dropdown.put("children", children);
+        dropdown.put("selectedLabel", selectedLabel);
+        return dropdown;
     }
 
-    private static Map<String, String> createLogoutItem(String contextPath) {
-        Map<String, String> item = createNavItem(contextPath + "/auth?action=logout", "Đăng xuất", false);
-        String existingModifier = item.get("modifier");
-        StringBuilder modifierBuilder = new StringBuilder();
-        if (existingModifier != null && !existingModifier.isBlank()) {
-            modifierBuilder.append(existingModifier.trim()).append(' ');
-        }
-        modifierBuilder.append("menu__item--danger menu__item--logout");
-        item.put("modifier", modifierBuilder.toString());
-        return item;
+    private static Map<String, Object> buildSellerDropdown(String contextPath, String currentPath) {
+        List<Map<String, Object>> children = new ArrayList<>();
+
+        Map<String, Object> dashboardItem = new HashMap<>();
+        dashboardItem.put("href", contextPath + "/dashboard");
+        dashboardItem.put("text", "Dashboard");
+        dashboardItem.put("label", "Dashboard");
+        boolean dashboardActive = isActive(currentPath, "/dashboard");
+        dashboardItem.put("active", dashboardActive);
+        children.add(dashboardItem);
+
+        Map<String, Object> createProductItem = new HashMap<>();
+        createProductItem.put("href", contextPath + "/seller/products/create");
+        createProductItem.put("text", "Tạo sản phẩm");
+        createProductItem.put("label", "Tạo sản phẩm");
+        boolean createActive = isActive(currentPath, "/seller/products/create");
+        createProductItem.put("active", createActive);
+        children.add(createProductItem);
+
+        Map<String, Object> inventoryItem = new HashMap<>();
+        inventoryItem.put("href", contextPath + "/seller/inventory");
+        inventoryItem.put("text", "Cập nhật kho");
+        inventoryItem.put("label", "Cập nhật kho");
+        boolean inventoryActive = isActive(currentPath, "/seller/inventory");
+        inventoryItem.put("active", inventoryActive);
+        children.add(inventoryItem);
+
+        Map<String, Object> incomeItem = new HashMap<>();
+        incomeItem.put("href", contextPath + "/seller/income");
+        incomeItem.put("text", "Thu nhập");
+        incomeItem.put("label", "Thu nhập");
+        boolean incomeActive = isActive(currentPath, "/seller/income");
+        incomeItem.put("active", incomeActive);
+        children.add(incomeItem);
+
+        boolean active = dashboardActive || createActive || inventoryActive || incomeActive;
+        Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
+        dropdown.put("dropdown", true);
+        dropdown.put("children", children);
+        return dropdown;
     }
 
     private static boolean isActive(String currentPath, String path) {
@@ -111,21 +155,6 @@ public final class NavigationBuilder {
             return currentPath == null || currentPath.isEmpty() || "/".equals(currentPath);
         }
         return currentPath.equals(path) || currentPath.startsWith(path + "/");
-    }
-
-    private static boolean shouldDisplayAuthCta(String currentPath) {
-        if (currentPath == null) {
-            return true;
-        }
-
-        return !currentPath.equals("/auth")
-                && !currentPath.startsWith("/auth/")
-                && !currentPath.equals("/register")
-                && !currentPath.startsWith("/register/")
-                && !currentPath.equals("/forgot-password")
-                && !currentPath.startsWith("/forgot-password/")
-                && !currentPath.equals("/reset-password")
-                && !currentPath.startsWith("/reset-password/");
     }
 
     private static String resolveCurrentPath(HttpServletRequest request) {
@@ -137,11 +166,11 @@ public final class NavigationBuilder {
         return uri;
     }
 
-    private static boolean isBuyerRole(Integer roleId) {
-        return roleId != null && roleId == 3;
+    private static boolean isAdminRole(Integer roleId) {
+        return roleId != null && roleId == 1;
     }
 
-    private static boolean isAdminRole(Integer roleId) {
-        return roleId != null && roleId != 3;
+    private static boolean isSellerRole(Integer roleId) {
+        return roleId != null && roleId == 2;
     }
 }

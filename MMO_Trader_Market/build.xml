@@ -32,6 +32,14 @@
         <echo>Log: ${basedir}/mbg.out.log</echo>
         <echo>Err: ${basedir}/mbg.err.log</echo>
     </target>
+
+    <!-- Ensure configuration files end up on the runtime classpath -->
+    <target name="-post-compile">
+        <mkdir dir="${build.classes.dir}/conf"/>
+        <copy todir="${build.classes.dir}/conf">
+            <fileset dir="${conf.dir}" includes="**/*.properties"/>
+        </copy>
+    </target>
 <!-- Import NetBeans generated targets (e.g. run-deploy) -->
     <import file="nbproject/build-impl.xml"/>
 

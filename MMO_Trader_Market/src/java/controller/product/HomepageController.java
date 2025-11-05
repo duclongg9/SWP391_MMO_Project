@@ -5,12 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.Products;
-import model.Shops;
-import model.SystemConfigs;
-import model.view.ConversationMessageView;
-import model.view.CustomerProfileView;
-import model.view.MarketplaceSummary;
 import service.HomepageService;
 
 import java.io.IOException;
@@ -19,73 +13,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Handles requests for the public facing homepage where visitors discover
- * available account products.
- */
 @WebServlet(name = "HomepageController", urlPatterns = {"/home"})
 public class HomepageController extends BaseController {
-
     private static final long serialVersionUID = 1L;
-
     private final HomepageService homepageService = new HomepageService();
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setAttribute("pageTitle", "Chợ tài khoản MMO - Trang chủ");
         request.setAttribute("bodyClass", "layout layout--landing");
-//        request.setAttribute("headerTitle", "MMO Trader Market");
-//        request.setAttribute("headerSubtitle", "Nền tảng demo mua bán tài khoản an toàn");
 
-        populateHomepageData(request);
+        request.setAttribute("query", ""); //Set các filter mặc định
+        request.setAttribute("selectedType", "");
+        request.setAttribute("selectedSubtype", "");
+        request.setAttribute("typeOptions", homepageService.loadFilterTypeOptions());
+        request.setAttribute("faqs", buildFaqEntries());
 
         forward(request, response, "product/home");
     }
 
-    private void populateHomepageData(HttpServletRequest request) {
-        MarketplaceSummary summary = homepageService.loadMarketplaceSummary();
-        request.setAttribute("summary", summary);
-
-        List<Products> featuredProducts = homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featuredProducts);
-
-        List<Shops> shops = homepageService.loadActiveShops();
-        request.setAttribute("shops", shops);
-        request.setAttribute("shopIcons", buildShopIconMap());
-
-        CustomerProfileView profile = homepageService.loadHighlightedBuyer();
-        request.setAttribute("customerProfile", profile);
-
-        List<ConversationMessageView> messages = homepageService.loadRecentMessages();
-        request.setAttribute("recentMessages", messages);
-
-        List<SystemConfigs> systemNotes = homepageService.loadSystemNotes();
-        request.setAttribute("systemNotes", systemNotes);
-
-        request.setAttribute("productTypes", buildProductTypeList());
-        request.setAttribute("faqs", buildFaqEntries());
-    }
-
-    private Map<String, String> buildShopIconMap() {
-        Map<String, String> icons = new HashMap<>();
-        icons.put("Active", "🛍️");
-        icons.put("Pending", "⏳");
-        icons.put("Suspended", "⚠️");
-        return icons;
-    }
-
-    private List<Map<String, String>> buildProductTypeList() {
-        List<Map<String, String>> types = new ArrayList<>();
-
-        types.add(createEntry("Tài khoản game", "Tài khoản đã được xác minh và đảm bảo an toàn."));
-        types.add(createEntry("Dịch vụ nâng hạng", "Gói hỗ trợ tăng cấp nhanh chóng cho nhiều tựa game."));
-        types.add(createEntry("Vật phẩm số", "Mã nạp, skin hiếm và vật phẩm sự kiện giới hạn."));
-        types.add(createEntry("Gian hàng doanh nghiệp", "Gói tuỳ chỉnh cho studio và nhà phát hành."));
-
-        return types;
-    }
-
+    // Chuẩn bị danh sách câu hỏi thường gặp hiển thị trên trang chủ.
     private List<Map<String, String>> buildFaqEntries() {
         List<Map<String, String>> faqs = new ArrayList<>();
 
@@ -101,6 +48,7 @@ public class HomepageController extends BaseController {
         return faqs;
     }
 
+    // Tạo một phần tử FAQ bao gồm tiêu đề và mô tả.
     private Map<String, String> createEntry(String title, String description) {
         Map<String, String> entry = new HashMap<>();
         entry.put("title", title);

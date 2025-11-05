@@ -5,13 +5,15 @@ import dao.order.OrderDAO;
 import dao.shop.ShopDAO;
 import dao.system.SystemConfigDAO;
 import dao.user.BuyerDAO;
-import model.Products;
 import model.Shops;
 import model.SystemConfigs;
 import model.Users;
 import model.view.ConversationMessageView;
 import model.view.CustomerProfileView;
 import model.view.MarketplaceSummary;
+import model.view.product.ProductCategorySummary;
+import model.view.product.ProductSummaryView;
+import model.view.product.ProductTypeOption;
 import model.OrderStatus;
 
 import java.time.LocalDate;
@@ -20,26 +22,80 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * <p>
+ * Dịch vụ tổng hợp dữ liệu cho trang chủ: sản phẩm nổi bật, shop hoạt động,
+ * thống kê marketplace.</p>
+ * <p>
+ * Lớp này điều phối nhiều DAO (sản phẩm, shop, đơn hàng, tin nhắn) và
+ * {@link ProductService} để chuẩn bị view model trước khi controller đẩy sang
+ * JSP.</p>
+ *
+ * @author longpdhe171902
+ */
 public class HomepageService {
 
-    private static final int SHOP_LIMIT = 4;
-    private static final int MESSAGE_LIMIT = 3;
+    // Số lượng shop hiển thị mặc định và giới hạn trên để tránh query nặng.
+    private static final int DEFAULT_SHOP_LIMIT = 4;
+    private static final int MAX_SHOP_LIMIT = 12;
+    // Số lượng tin nhắn chứng thực hiển thị.
+    private static final int DEFAULT_MESSAGE_LIMIT = 3;
+    private static final int MAX_MESSAGE_LIMIT = 10;
 
+    // Dịch vụ sản phẩm để lấy dữ liệu hiển thị.
     private final ProductService productService = new ProductService();
+    // DAO thao tác bảng shop.
     private final ShopDAO shopDAO = new ShopDAO();
+    // DAO đơn hàng để lấy thống kê.
     private final OrderDAO orderDAO = new OrderDAO();
+    // DAO người mua.
     private final BuyerDAO buyerDAO = new BuyerDAO();
+    // DAO tin nhắn dùng cho phần testimonial.
     private final ConversationMessageDAO conversationMessageDAO = new ConversationMessageDAO();
+    // DAO cấu hình hệ thống.
     private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
-    public List<Products> loadFeaturedProducts() {
-        return productService.homepageHighlights();
+    /**
+     * Lấy danh sách sản phẩm nổi bật từ
+     * {@link ProductService#getHomepageHighlights()}.
+     */
+    public List<ProductSummaryView> loadFeaturedProducts() {
+        return productService.getHomepageHighlights();
     }
 
+    /**
+     * Phiên bản cho phép truyền giới hạn linh hoạt (phục vụ fragment endpoint).
+     */
+    public List<ProductSummaryView> loadFeaturedProducts(int limit) {
+        return productService.getHomepageHighlights(limit);
+    }
+
+    /**
+     * Truy vấn các shop đang hoạt động để hiển thị trong carousel.
+     */
     public List<Shops> loadActiveShops() {
-        return shopDAO.findActive(SHOP_LIMIT);
+        return loadActiveShops(DEFAULT_SHOP_LIMIT);
     }
 
+    /**
+     * Cho phép caller truyền giới hạn shop linh hoạt.
+     */
+    public List<Shops> loadActiveShops(int limit) {
+        int safeLimit = resolveLimit(limit, DEFAULT_SHOP_LIMIT, MAX_SHOP_LIMIT);
+        return shopDAO.findActive(safeLimit);
+    }
+
+    /**
+     * Tính toán số sản phẩm theo từng loại cho menu lọc nhanh.
+     */
+    public List<ProductCategorySummary> loadProductCategories() {
+        return productService.getHomepageCategories();
+    }
+
+    /**
+     * Tổng hợp thống kê chung về marketplace: đơn hoàn tất, shop và buyer hoạt
+     * động.
+     */
     public MarketplaceSummary loadMarketplaceSummary() {
         long completedOrders = orderDAO.countByStatus(OrderStatus.COMPLETED);
         long activeShops = shopDAO.countActive();
@@ -47,20 +103,48 @@ public class HomepageService {
         return new MarketplaceSummary(completedOrders, activeShops, activeBuyers);
     }
 
+    /**
+     * Lấy thông tin khách hàng tiêu biểu dựa theo số lượng đơn hoàn tất.
+     */
     public CustomerProfileView loadHighlightedBuyer() {
         return buyerDAO.findTopBuyerByCompletedOrders()
                 .map(this::buildProfile)
                 .orElse(null);
     }
 
+    /**
+     * Lấy danh sách tin nhắn gần nhất để hiển thị bằng block testimonial.
+     */
     public List<ConversationMessageView> loadRecentMessages() {
-        return conversationMessageDAO.findLatest(MESSAGE_LIMIT);
+        return loadRecentMessages(DEFAULT_MESSAGE_LIMIT);
     }
 
+    /**
+     * Cho phép caller truyền giới hạn số thông điệp được hiển thị.
+     */
+    public List<ConversationMessageView> loadRecentMessages(int limit) {
+        int safeLimit = resolveLimit(limit, DEFAULT_MESSAGE_LIMIT, MAX_MESSAGE_LIMIT);
+        return conversationMessageDAO.findLatest(safeLimit);
+    }
+
+    /**
+     * Lấy ghi chú/hướng dẫn hệ thống để hiển thị cho người dùng mới.
+     */
     public List<SystemConfigs> loadSystemNotes() {
         return systemConfigDAO.findAll();
     }
 
+    /**
+     * Load danh sách loại sản phẩm phục vụ dropdown bộ lọc ở trang chủ.
+     */
+    public List<ProductTypeOption> loadFilterTypeOptions() {
+        return productService.getTypeOptions();
+    }
+
+    /**
+     * Dựng view model khách hàng tiêu biểu từ bản ghi {@link Users} kết hợp
+     * thống kê đơn hàng.
+     */
     private CustomerProfileView buildProfile(Users buyer) {
         long totalOrders = orderDAO.countByBuyer(buyer.getId());
         long completedOrders = orderDAO.countByBuyerAndStatus(buyer.getId(), OrderStatus.COMPLETED);
@@ -77,6 +161,10 @@ public class HomepageService {
                 satisfaction);
     }
 
+    /**
+     * Chuyển đổi {@link Date} sang {@link LocalDate} để đồng nhất với các view
+     * khác.
+     */
     private LocalDate toLocalDate(Date date) {
         if (date == null) {
             return LocalDate.now();
@@ -84,8 +172,17 @@ public class HomepageService {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
+    /**
+     * Làm tròn điểm hài lòng tới 1 chữ số thập phân.
+     */
     private double roundToOneDecimal(double value) {
         return Math.round(value * 10.0) / 10.0;
     }
-}
 
+    private int resolveLimit(int requestedLimit, int defaultLimit, int maxLimit) {
+        int candidate = requestedLimit <= 0 ? defaultLimit : requestedLimit;
+        int upperBound = Math.max(defaultLimit, maxLimit);
+        int normalized = Math.max(candidate, 1);
+        return Math.min(normalized, upperBound);
+    }
+}

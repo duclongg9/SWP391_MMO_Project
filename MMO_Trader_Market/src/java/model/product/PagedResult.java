@@ -3,11 +3,6 @@ package model.product;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Generic paginated result wrapper for product listing flows.
- *
- * @param <T> element type
- */
 public class PagedResult<T> {
 
     private final List<T> items;
@@ -27,19 +22,15 @@ public class PagedResult<T> {
     public List<T> getItems() {
         return items;
     }
-
     public int getPage() {
         return page;
     }
-
     public int getSize() {
         return size;
     }
-
     public int getTotalPages() {
         return totalPages;
     }
-
     public long getTotalItems() {
         return totalItems;
     }

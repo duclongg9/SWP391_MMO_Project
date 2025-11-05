@@ -2,7 +2,6 @@ package dao.user;
 
 import dao.BaseDAO;
 import dao.connect.DBConnect;
-import java.lang.System.Logger.Level;
 import model.RememberMeToken;
 
 import java.util.logging.Logger;
@@ -14,7 +13,11 @@ import java.sql.Timestamp;
 import java.sql.Statement;
 
 /**
- * DAO for managing remember-me persistent login tokens.
+ * DAO quản lý bảng {@code remember_me_tokens} phục vụ tính năng đăng nhập ghi
+ * nhớ.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 public class RememberMeTokenDAO extends BaseDAO {
 
@@ -28,6 +31,13 @@ public class RememberMeTokenDAO extends BaseDAO {
 
     private static final Logger LOGGER = Logger.getLogger(RememberMeTokenDAO.class.getName());
 
+    /**
+     * Tạo mã ghi nhớ đăng nhập mới cho người dùng.
+     * @param userId mã người dùng sở hữu token
+     * @param selector mã định danh công khai lưu trên cookie
+     * @param hashedValidator giá trị validator đã được băm
+     * @param expiresAt thời điểm hết hạn
+     */
     public RememberMeToken createToken(int userId, String selector, String hashedValidator, Timestamp expiresAt)
             throws SQLException {
         final String sql = """
@@ -59,6 +69,12 @@ public class RememberMeTokenDAO extends BaseDAO {
         return null;
     }
 
+    /**
+     * Tìm token dựa trên trường selector được gửi từ cookie.
+     *
+     * @param selector giá trị selector cần tìm
+     * @return token tương ứng hoặc {@code null}
+     */
     public RememberMeToken findBySelector(String selector) {
         final String sql = """
                 SELECT * FROM remember_me_tokens
@@ -78,6 +94,14 @@ public class RememberMeTokenDAO extends BaseDAO {
         return null;
     }
 
+    /**
+     * Cập nhật validator và hạn dùng của token hiện tại.
+     *
+     * @param id mã token
+     * @param hashedValidator validator mới đã băm
+     * @param expiresAt thời điểm hết hạn mới
+     * @throws SQLException khi truy vấn lỗi
+     */
     public void updateValidator(int id, String hashedValidator, Timestamp expiresAt) throws SQLException {
         final String sql = """
                 UPDATE remember_me_tokens
@@ -92,6 +116,9 @@ public class RememberMeTokenDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Xóa token theo mã định danh chính.
+     */
     public void deleteById(int id) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE id = ?";
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -100,6 +127,10 @@ public class RememberMeTokenDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Xóa token dựa trên selector 
+    
+     */
     public void deleteBySelector(String selector) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE selector = ?";
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -108,6 +139,9 @@ public class RememberMeTokenDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Xóa toàn bộ token ghi nhớ của một người dùng.
+     */
     public void deleteAllForUser(int userId) throws SQLException {
         final String sql = "DELETE FROM remember_me_tokens WHERE user_id = ?";
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -116,6 +150,13 @@ public class RememberMeTokenDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Ánh xạ dữ liệu ResultSet thành đối tượng {@link RememberMeToken}.
+     *
+     * @param rs hàng dữ liệu đang đọc
+     * @return token tương ứng
+     * @throws SQLException khi đọc dữ liệu lỗi
+     */
     private RememberMeToken mapRow(ResultSet rs) throws SQLException {
         RememberMeToken token = new RememberMeToken();
         token.setId(rs.getInt(COL_ID));
@@ -128,16 +169,22 @@ public class RememberMeTokenDAO extends BaseDAO {
         return token;
     }
 
-    private void logSqlError(String findBySelector, SQLException e) {
+    /**
+     * Ghi log chi tiết khi xảy ra lỗi truy vấn để dễ dàng truy vết.
+     *
+     * @param operation tên thao tác đang thực hiện
+     * @param e ngoại lệ SQL bắt được
+     */
+    private void logSqlError(String operation, SQLException e) {
         LOGGER.log(java.util.logging.Level.SEVERE,
                 String.format("[RememberMeTokenDAO] SQL error during %s: %s (SQLState=%s, ErrorCode=%d)",
-                        findBySelector, e.getMessage(), e.getSQLState(), e.getErrorCode()),
+                        operation, e.getMessage(), e.getSQLState(), e.getErrorCode()),
                 e);
 
         for (SQLException next = e.getNextException(); next != null; next = next.getNextException()) {
             LOGGER.log(java.util.logging.Level.SEVERE,
                     String.format("[RememberMeTokenDAO] NextException during %s: %s (SQLState=%s, ErrorCode=%d)",
-                            findBySelector, next.getMessage(), next.getSQLState(), next.getErrorCode()),
+                            operation, next.getMessage(), next.getSQLState(), next.getErrorCode()),
                     next);
         }
     }

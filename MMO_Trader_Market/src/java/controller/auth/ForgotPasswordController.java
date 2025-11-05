@@ -17,7 +17,6 @@ public class ForgotPasswordController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ForgotPasswordController.class.getName());
-
     private final UserService userService = new UserService(new UserDAO());
 
     @Override
@@ -26,13 +25,14 @@ public class ForgotPasswordController extends BaseController {
         forward(request, response, "auth/forgot-password");
     }
 
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String email = request.getParameter("email");
         try {
-            String resetBaseUrl = buildResetBaseUrl(request);
-            userService.requestPasswordReset(email, resetBaseUrl);
+            String resetBaseUrl = buildResetBaseUrl(request); // tạo dd
+            userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
             request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
@@ -45,15 +45,17 @@ public class ForgotPasswordController extends BaseController {
         forward(request, response, "auth/forgot-password");
     }
 
+//trả về chuỗi URL, lấy request để lấy thông tin host, cổng, context path hiện tại.
     private String buildResetBaseUrl(HttpServletRequest request) {
         String scheme = request.getScheme();
         String serverName = request.getServerName();
         int port = request.getServerPort();
         String contextPath = request.getContextPath();
         StringBuilder builder = new StringBuilder();
-        builder.append(scheme).append("://").append(serverName);
+        builder.append(scheme).append("://").append(serverName); 
         if (("http".equalsIgnoreCase(scheme) && port != 80)
                 || ("https".equalsIgnoreCase(scheme) && port != 443)) {
+            // Bổ sung port nếu không sử dụng cổng mặc định của HTTP/HTTPS.
             builder.append(":").append(port);
         }
         builder.append(contextPath).append("/reset-password");

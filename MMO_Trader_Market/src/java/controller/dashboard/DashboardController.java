@@ -24,4 +24,5 @@ public class DashboardController extends BaseController {
         request.setAttribute("products", productService.homepageHighlights());
         forward(request, response, "dashboard/index");
     }
+
 }

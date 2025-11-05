@@ -5,6 +5,7 @@ import java.util.Objects;
 
 /**
  * Immutable container for paginated results.
+ *
  * @param <T> element type
  */
 public class PaginatedResult<T> {

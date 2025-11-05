@@ -4,6 +4,7 @@ import controller.BaseController;
 import dao.user.RememberMeTokenDAO;
 import dao.user.UserDAO;
 import model.Users;
+import service.InactiveAccountException;
 import service.RememberMeService;
 import service.UserService;
 import units.RoleHomeResolver;
@@ -19,38 +20,47 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Handles login and logout requests following the MVC pattern.
+ * Điều phối luồng "Đăng nhập" cho người dùng đã có tài khoản.
+ * <p>
+ * - Hỗ trợ đăng nhập nội bộ bằng email/mật khẩu và ghi nhớ phiên. - Chuyển
+ * hướng khách (Role Guest) sang trang đăng nhập của hệ thống khác (Google) khi
+ * cần. - Cung cấp chức năng đăng xuất và dọn dẹp phiên, cookie nhớ tài khoản.
+ *
+ * @version 1.0 27/05/2024
+ * @author hoaltthe176867
  */
 @WebServlet(name = "AuthController", urlPatterns = {"/auth"})
 public class AuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-
     private static final Logger LOGGER = Logger.getLogger(AuthController.class.getName());
     private static final String FLASH_SUCCESS = "registerSuccess";
     private static final String FLASH_RESET_SUCCESS = "resetSuccess";
+    private static final String FLASH_VERIFICATION_SUCCESS = "verificationSuccess";
     private static final String FLASH_EMAIL = "newUserEmail";
     private static final String FLASH_ERROR = "oauthError";
+    private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
+    private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
+    private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
 
     private final UserDAO userDAO = new UserDAO();
     private final UserService userService = new UserService(userDAO);
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
-    
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
-            invalidateSession(request);
+            invalidateSession(request);  
             rememberMeService.clearRememberMe(request, response);
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
 
-        HttpSession session = request.getSession(false);
-        Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser");
+        HttpSession session = request.getSession(false); 
+        Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser"); // đọc attibute và ép kiểu
         if (currentUser != null) {
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(currentUser));
             return;
@@ -58,8 +68,12 @@ public class AuthController extends BaseController {
         if (session != null) {
             moveFlash(session, request, FLASH_SUCCESS, "success");
             moveFlash(session, request, FLASH_RESET_SUCCESS, "success");
+            moveFlash(session, request, FLASH_VERIFICATION_SUCCESS, "success");
             moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_EMAIL, "verificationEmail");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_MODAL, "showVerificationModal");
+            moveFlash(session, request, FLASH_PENDING_VERIFICATION_NOTICE, "verificationNotice");
         }
 
         Cookie[] cookies = request.getCookies();
@@ -85,7 +99,7 @@ public class AuthController extends BaseController {
         String email = request.getParameter("email");
         String normalizedEmail = email == null ? null : email.trim();
         String password = request.getParameter("password");
-        boolean rememberMe = request.getParameter("rememberMe") != null;
+        boolean rememberMe = request.getParameter("rememberMe") != null; 
         if (normalizedEmail == null || normalizedEmail.isBlank() || password == null || password.isBlank()) {
             request.setAttribute("error", "Vui lòng nhập đầy đủ email và mật khẩu");
             request.setAttribute("prefillEmail", normalizedEmail);
@@ -95,21 +109,42 @@ public class AuthController extends BaseController {
         }
 
         try {
+            // Xác thực thông tin đăng nhập và lưu thông tin người dùng vào session mới.
             Users user = userService.authenticate(normalizedEmail, password);
-            HttpSession session = renewSession(request);
+            HttpSession session = renewSession(request); 
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
-            handleRememberEmailCookie(request, response, normalizedEmail, rememberMe);
+            handleRememberEmailCookie(request, response, normalizedEmail, rememberMe); //điền sẵn email cho lần sau
             if (rememberMe) {
+                // Tạo cookie ghi nhớ phiên nếu người dùng yêu cầu.
                 rememberMeService.createRememberMeCookie(request, response, user.getId());
             } else {
                 rememberMeService.clearRememberMe(request, response);
             }
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (InactiveAccountException e) { // tài khoản chưa kích hoạt
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail);
+            request.setAttribute("rememberMeChecked", rememberMe);
+            request.setAttribute("showVerificationModal", true);
+            request.setAttribute("verificationEmail", normalizedEmail);
+            request.setAttribute("verificationNotice",
+                    "Vui lòng nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
+            try {
+                userService.resendVerificationCode(normalizedEmail);
+                request.setAttribute("verificationNotice", "Chúng tôi đã gửi lại mã xác thực đến " + normalizedEmail + ".");
+            } catch (IllegalArgumentException | IllegalStateException resendEx) {
+                request.setAttribute("verificationError", resendEx.getMessage()); //  lỗi nghiệp vụ
+            } catch (RuntimeException resendEx) {
+                LOGGER.log(Level.SEVERE, "Unable to resend verification code", resendEx); 
+                request.setAttribute("verificationError",
+                        "Hệ thống không thể gửi lại mã xác thực lúc này. Vui lòng thử lại sau.");
+            }
+            forward(request, response, "auth/login");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            request.setAttribute("error", e.getMessage());
+            request.setAttribute("prefillEmail", normalizedEmail); 
             request.setAttribute("rememberMeChecked", rememberMe);
             forward(request, response, "auth/login");
         } catch (RuntimeException e) {
@@ -124,7 +159,7 @@ public class AuthController extends BaseController {
 
     private HttpSession renewSession(HttpServletRequest request) {
         HttpSession existing = request.getSession(false);
-        if (existing != null) {
+        if (existing != null) { // ss đã tạo nma ch có currentUser
             existing.invalidate();
         }
         return request.getSession(true);
@@ -137,6 +172,7 @@ public class AuthController extends BaseController {
         }
     }
 
+    // Di chuyển dữ liệu dạng flash từ session xuống request và xóa khỏi session.
     private void moveFlash(HttpSession session, HttpServletRequest request, String sessionKey, String requestKey) {
         Object value = session.getAttribute(sessionKey);
         if (value != null) {
@@ -145,17 +181,18 @@ public class AuthController extends BaseController {
         }
     }
 
+    // quản lý cookie, điền sẵn email cho lần sau
     private void handleRememberEmailCookie(HttpServletRequest request, HttpServletResponse response,
             String email, boolean rememberMe) {
-        String contextPath = request.getContextPath();
+        String contextPath = request.getContextPath(); // dg dan goc
         if (contextPath == null || contextPath.isEmpty()) {
             contextPath = "/";
         }
 
         Cookie cookie = new Cookie("rememberedEmail", rememberMe ? email : "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(request.isSecure());
-        cookie.setPath(contextPath);
+        cookie.setHttpOnly(true); 
+        cookie.setSecure(request.isSecure()); 
+        cookie.setPath(contextPath); 
         cookie.setMaxAge(rememberMe ? 60 * 60 * 24 * 30 : 0);
         response.addCookie(cookie);
     }

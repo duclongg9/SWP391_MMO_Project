@@ -2,6 +2,14 @@ package model.view;
 
 import java.time.LocalDate;
 
+/**
+ * View model cho khối "Khách hàng tiêu biểu" trên homepage.
+ * Được {@link service.HomepageService} dựng từ bản ghi {@link model.Users} cùng
+ * thống kê đơn hàng, truyền xuống JSP để hiển thị tên, email, thời gian tham
+ * gia và điểm hài lòng.
+ *
+ * @author longpdhe171902
+ */
 public class CustomerProfileView {
 
     private final String displayName;
@@ -51,4 +59,3 @@ public class CustomerProfileView {
         return satisfactionScore;
     }
 }
-
