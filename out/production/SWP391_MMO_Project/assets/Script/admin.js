@@ -21,10 +21,11 @@
                 const tab = link.dataset.tab;
                 const titleEl = document.getElementById('pageTitle');
                 const contentEl = document.getElementById('tabContent');
-                if (titleEl) titleEl.textContent = titleMap[tab] || "";
+                if (titleEl)
+                    titleEl.textContent = titleMap[tab] || "";
                 if (contentEl) {
                     contentEl.innerHTML =
-                        `<div class="card p-3 mt-2">
+                            `<div class="card p-3 mt-2">
                <h5>${titleMap[tab] || ""}</h5>
                <p>Nội dung tab: <b>${tab}</b></p>
              </div>`;
@@ -51,7 +52,7 @@
         }
 
         const fromInput = document.getElementById("fromDate");
-        const toInput   = document.getElementById("toDate");
+        const toInput = document.getElementById("toDate");
 
         let fromPicker = null, toPicker = null;
 
@@ -61,7 +62,8 @@
                 maxDate: "today",
                 allowInput: true,
                 onChange: ([date]) => {
-                    if (toPicker) toPicker.set("minDate", date || null);
+                    if (toPicker)
+                        toPicker.set("minDate", date || null);
                 }
             });
         }
@@ -72,30 +74,12 @@
                 maxDate: "today",
                 allowInput: true,
                 onChange: ([date]) => {
-                    if (fromPicker) fromPicker.set("maxDate", date || "today");
+                    if (fromPicker)
+                        fromPicker.set("maxDate", date || "today");
                 }
             });
         }
 
-        // Nút mở lịch (nếu có)
-        const btnFrom = document.getElementById('btnFrom');
-        if (btnFrom && fromPicker) btnFrom.addEventListener('click', () => fromPicker.open());
 
-        const btnTo = document.getElementById('btnTo');
-        if (btnTo && toPicker) btnTo.addEventListener('click', () => toPicker.open());
-
-        // Tìm kiếm (nếu có)
-        const btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) {
-            btnSearch.addEventListener('click', () => {
-                const q   = (document.getElementById('keyword') || {}).value?.trim() || "";
-                const rol = (document.getElementById('role') || {}).value || "";
-                const f   = (fromInput || {}).value || "";
-                const t   = (toInput || {}).value || "";
-                console.log('Search with:', { q, rol, f, t });
-
-                // TODO: fetch(`${base}/admin/users?keyword=${encodeURIComponent(q)}&role=${rol}&from=${f}&to=${t}`)
-            });
-        }
     });
 })();

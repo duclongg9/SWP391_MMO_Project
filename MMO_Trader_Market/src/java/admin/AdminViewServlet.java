@@ -60,7 +60,9 @@ public class AdminViewServlet extends HttpServlet {
     // ------ Pagination helpers ------
     private static int ceilDiv(int total, int size) {
         return Math.max(1, (int)Math.ceil(total / (double)Math.max(1, size)));
+
     }
+
     private static int clampPage(int page, int pages) {
         if (page < 1) return 1;
         if (page > pages) return pages;
@@ -179,7 +181,7 @@ public class AdminViewServlet extends HttpServlet {
         java.util.Map<String,String> errs = new java.util.LinkedHashMap<>();
 
         // Validate cơ bản
-        if (name == null || name.length() < 2)              errs.put("name", "Họ tên phải từ 2 ký tự.");
+        if (name == null || name.length() < 5)              errs.put("name", "Họ tên phải từ 2 ký tự.");
         if (email == null || !email.matches("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))
             errs.put("email", "Email không hợp lệ.");
         if (password == null || password.length() < 6)      errs.put("password", "Mật khẩu tối thiểu 6 ký tự.");
@@ -215,7 +217,7 @@ public class AdminViewServlet extends HttpServlet {
                             password, org.mindrot.jbcrypt.BCrypt.gensalt(10));
                     try (PreparedStatement ps = con.prepareStatement(
                             "INSERT INTO users(name,email,hashed_password,role_id,status,created_at,updated_at) " +
-                                    "VALUES (?,?,?,?,1,NOW(),NOW())")) {
+                                    "VALUES (?,?,?,?,0,NOW(),NOW())")) {
                         ps.setString(1, name);
                         ps.setString(2, email);
                         ps.setString(3, hashed);

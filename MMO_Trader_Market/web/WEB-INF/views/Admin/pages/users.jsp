@@ -100,7 +100,7 @@
                         <td>${u.roleName}</td>
                         <td>
                             <c:choose>
-                                <c:when test="${u.status == true}">
+                                <c:when test="${u.status eq 1}">
                                     <span class="badge bg-success">Hoạt động</span>
                                 </c:when>
                                 <c:otherwise>
@@ -112,14 +112,14 @@
                             <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="ban">
-                                <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != true}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != 0}">disabled</c:if>>
                                     <i class="bi bi-flag"></i> Ban
                                 </button>
                             </form>
                             <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="unban">
-                                <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == true}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == 1}">disabled</c:if>>
                                     <i class="bi bi-flag"></i> Unban
                                 </button>
                             </form>
