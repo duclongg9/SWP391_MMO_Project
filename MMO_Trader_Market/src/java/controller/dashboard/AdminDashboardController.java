@@ -14,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import service.AdnimDashboardService;
@@ -54,8 +56,13 @@ public class AdminDashboardController extends HttpServlet {
         int presentYear = now.getYear();
         int presentMonth = now.getMonthValue();
         
-        //Lấy những năm có thông tin
-        
+        List<Integer> avaliableYear = new ArrayList<>();
+        try {
+            //Lấy những năm có thông tin
+            avaliableYear = adminDashboard.getAvailableYears();
+        } catch (SQLException ex) {
+            Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         //Lấy thông tin theo ngày hiện tại
         BigDecimal totalDeposit = BigDecimal.ZERO;
@@ -68,12 +75,15 @@ public class AdminDashboardController extends HttpServlet {
         }
         int orderByMonth = adminDashboard.totalOrder(presentMonth, presentYear);
         int shopByMonth = adminDashboard.totalShop();
+        
         //Gửi thông tin lên frontend
-        //thông tin về finance theo tháng
-        request.setAttribute("orderByMonth", orderByMonth);
-        request.setAttribute("shopByMonth", shopByMonth);
-        request.setAttribute("totalDeposit", totalDeposit);
-        request.setAttribute("totalWithdraw", totalWithdraw);
+            //Thông tin năm có dữ liệu
+            request.setAttribute("years", avaliableYear);
+            //thông tin về finance theo tháng
+            request.setAttribute("orderByMonth", orderByMonth);
+            request.setAttribute("shopByMonth", shopByMonth);
+            request.setAttribute("totalDeposit", totalDeposit);
+            request.setAttribute("totalWithdraw", totalWithdraw);
 
         request.getRequestDispatcher("WEB-INF/views/Admin/dashboard.jsp").forward(request, response);
     }
