@@ -17,17 +17,18 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Trang tạo sản phẩm mới cho người bán.
+ * Controller chỉnh sửa sản phẩm.
  */
-@WebServlet(name = "SellerCreateProductController", urlPatterns = {"/seller/products/create"})
+@WebServlet(name = "SellerEditProductController", urlPatterns = {"/seller/products/edit"})
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024,      // 1MB
     maxFileSize = 1024 * 1024 * 10,       // 10MB
     maxRequestSize = 1024 * 1024 * 15     // 15MB
 )
-public class SellerCreateProductController extends SellerBaseController {
+public class SellerEditProductController extends SellerBaseController {
 
     private static final long serialVersionUID = 1L;
     
@@ -41,28 +42,47 @@ public class SellerCreateProductController extends SellerBaseController {
             return;
         }
         
-        // Kiểm tra seller có shop chưa
+        String productIdStr = request.getParameter("id");
+        if (productIdStr == null || productIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        int productId = Integer.parseInt(productIdStr);
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
+        // Kiểm tra shop
         Shops shop = shopDAO.findByOwnerId(userId);
         if (shop == null) {
-            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng. Vui lòng tạo cửa hàng trước.");
-            forward(request, response, "seller/create-product");
+            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
             return;
         }
         
-        if (!"Active".equals(shop.getStatus())) {
-            request.setAttribute("errorMessage", "Cửa hàng của bạn chưa được kích hoạt.");
-            forward(request, response, "seller/create-product");
+        // Lấy sản phẩm
+        Optional<Products> productOpt = productDAO.findById(productId);
+        if (productOpt.isEmpty()) {
+            session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
             return;
         }
         
+        Products product = productOpt.get();
+        
+        // Kiểm tra sản phẩm có thuộc shop của seller không
+        if (!product.getShopId().equals(shop.getId())) {
+            session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm này.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        request.setAttribute("product", product);
         request.setAttribute("shop", shop);
-        request.setAttribute("pageTitle", "Đăng sản phẩm mới - Quản lý cửa hàng");
+        request.setAttribute("pageTitle", "Chỉnh sửa sản phẩm - " + product.getName());
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
-        forward(request, response, "seller/create-product");
+        forward(request, response, "seller/edit-product");
     }
     
     @Override
@@ -72,6 +92,13 @@ public class SellerCreateProductController extends SellerBaseController {
             return;
         }
         
+        String productIdStr = request.getParameter("productId");
+        if (productIdStr == null || productIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        int productId = Integer.parseInt(productIdStr);
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
@@ -79,7 +106,22 @@ public class SellerCreateProductController extends SellerBaseController {
         Shops shop = shopDAO.findByOwnerId(userId);
         if (shop == null || !"Active".equals(shop.getStatus())) {
             request.setAttribute("errorMessage", "Cửa hàng không hợp lệ.");
-            doGet(request, response);
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        // Lấy sản phẩm hiện tại
+        Optional<Products> productOpt = productDAO.findById(productId);
+        if (productOpt.isEmpty()) {
+            session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        Products existingProduct = productOpt.get();
+        if (!existingProduct.getShopId().equals(shop.getId())) {
+            session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm này.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
             return;
         }
         
@@ -95,12 +137,17 @@ public class SellerCreateProductController extends SellerBaseController {
         // Validate
         List<String> errors = new ArrayList<>();
         
-        // Xử lý upload ảnh
-        String primaryImageUrl = null;
+        // Xử lý upload ảnh mới (nếu có)
+        String primaryImageUrl = existingProduct.getPrimaryImageUrl(); // Giữ ảnh cũ
         try {
             Part filePart = request.getPart("productImage");
             if (filePart != null && filePart.getSize() > 0) {
                 String applicationPath = request.getServletContext().getRealPath("");
+                // Xóa ảnh cũ nếu có
+                if (primaryImageUrl != null && !primaryImageUrl.trim().isEmpty()) {
+                    FileUploadUtil.deleteFile(primaryImageUrl, applicationPath);
+                }
+                // Lưu ảnh mới
                 primaryImageUrl = FileUploadUtil.saveFile(filePart, applicationPath);
             }
         } catch (Exception e) {
@@ -113,6 +160,10 @@ public class SellerCreateProductController extends SellerBaseController {
         
         if (productType == null || productType.trim().isEmpty()) {
             errors.add("Vui lòng chọn loại sản phẩm");
+        }
+        
+        if (productSubtype == null || productSubtype.trim().isEmpty()) {
+            errors.add("Vui lòng chọn phân loại chi tiết");
         }
         
         BigDecimal price = null;
@@ -143,41 +194,33 @@ public class SellerCreateProductController extends SellerBaseController {
         
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
-            request.setAttribute("productName", productName);
-            request.setAttribute("productType", productType);
-            request.setAttribute("productSubtype", productSubtype);
-            request.setAttribute("shortDescription", shortDescription);
-            request.setAttribute("description", description);
-            request.setAttribute("price", priceStr);
-            request.setAttribute("inventory", inventoryStr);
-            request.setAttribute("primaryImageUrl", primaryImageUrl);
+            request.setAttribute("product", existingProduct);
             request.setAttribute("shop", shop);
             doGet(request, response);
             return;
         }
         
-        // Tạo sản phẩm
-        Products product = new Products();
-        product.setShopId(shop.getId());
-        product.setProductType(productType);
-        product.setProductSubtype(productSubtype);
-        product.setName(productName);
-        product.setShortDescription(shortDescription);
-        product.setDescription(description);
-        product.setPrice(price);
-        product.setInventoryCount(inventory);
-        product.setPrimaryImageUrl(primaryImageUrl);
-        product.setStatus("Available"); // Đăng thẳng lên shop
+        // Cập nhật sản phẩm
+        existingProduct.setProductType(productType);
+        existingProduct.setProductSubtype(productSubtype);
+        existingProduct.setName(productName);
+        existingProduct.setShortDescription(shortDescription);
+        existingProduct.setDescription(description);
+        existingProduct.setPrice(price);
+        existingProduct.setInventoryCount(inventory);
+        existingProduct.setPrimaryImageUrl(primaryImageUrl);
         
-        boolean success = productDAO.createProduct(product);
+        boolean success = productDAO.updateProduct(existingProduct);
         
         if (success) {
-            session.setAttribute("successMessage", "Đã đăng sản phẩm thành công!");
+            session.setAttribute("successMessage", "Đã cập nhật sản phẩm thành công!");
             response.sendRedirect(request.getContextPath() + "/seller/inventory");
         } else {
-            request.setAttribute("errorMessage", "Không thể đăng sản phẩm. Vui lòng thử lại.");
+            request.setAttribute("errorMessage", "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
+            request.setAttribute("product", existingProduct);
             request.setAttribute("shop", shop);
             doGet(request, response);
         }
     }
 }
+

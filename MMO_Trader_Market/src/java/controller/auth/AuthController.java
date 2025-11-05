@@ -32,21 +32,13 @@ import java.util.logging.Logger;
 @WebServlet(name = "AuthController", urlPatterns = {"/auth"})
 public class AuthController extends BaseController {
 
-    // Định danh phiên bản của Servlet để đảm bảo khả năng tuần tự hóa ổn định.
     private static final long serialVersionUID = 1L;
-
-    // Bộ ghi log phục vụ theo dõi các lỗi bất ngờ trong quá trình đăng nhập.
     private static final Logger LOGGER = Logger.getLogger(AuthController.class.getName());
-    //thông báo đăng ký thành công sau khi chuyển hướng.
     private static final String FLASH_SUCCESS = "registerSuccess";
     private static final String FLASH_RESET_SUCCESS = "resetSuccess";
-    // Khóa flash message thông báo xác thực email thành công.
     private static final String FLASH_VERIFICATION_SUCCESS = "verificationSuccess";
-    // Khóa flash message dùng để điền sẵn email mới đăng ký.
     private static final String FLASH_EMAIL = "newUserEmail";
-    // thông báo lỗi đến từ đăng nhập OAuth.
     private static final String FLASH_ERROR = "oauthError";
-    // Khóa flash chứa email cần hiện modal xác thực.
     private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
     private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
     private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
@@ -56,32 +48,28 @@ public class AuthController extends BaseController {
     private final RememberMeService rememberMeService = new RememberMeService(new RememberMeTokenDAO(), userDAO);
 
 
-    // Xử lý các yêu cầu GET đến trang /auth: hiển thị form đăng nhập hoặc đăng xuất.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
-            // Người dùng yêu cầu đăng xuất: hủy session và xóa cookie ghi nhớ.
-            invalidateSession(request);
-            //xóa cookie remember-me và bản ghi token DB.
+            invalidateSession(request);  
             rememberMeService.clearRememberMe(request, response);
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
 
-        HttpSession session = request.getSession(false); // ss hiện tại, k tạo mới 
+        HttpSession session = request.getSession(false); 
         Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser"); // đọc attibute và ép kiểu
         if (currentUser != null) {
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(currentUser));
             return;
         }
         if (session != null) {
-            // lấy tb từ session xuống request để hiển thị 1 lần.
             moveFlash(session, request, FLASH_SUCCESS, "success");
             moveFlash(session, request, FLASH_RESET_SUCCESS, "success");
             moveFlash(session, request, FLASH_VERIFICATION_SUCCESS, "success");
-            moveFlash(session, request, FLASH_EMAIL, "prefillEmail"); // điền sẵn email vào
+            moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_EMAIL, "verificationEmail");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_MODAL, "showVerificationModal");
@@ -95,10 +83,8 @@ public class AuthController extends BaseController {
                 if ("rememberedEmail".equals(cookie.getName()) && cookie.getValue() != null
                         && !cookie.getValue().isBlank()) {
                     if (!hasPrefill) {
-                        // Điền sẵn email được lưu trước đó nếu người dùng chưa nhập.
                         request.setAttribute("prefillEmail", cookie.getValue());
                     }
-                    // Đánh dấu checkbox "Ghi nhớ tôi" cho lần đăng nhập kế tiếp.
                     request.setAttribute("rememberMeChecked", true);
                     break;
                 }
@@ -113,9 +99,8 @@ public class AuthController extends BaseController {
         String email = request.getParameter("email");
         String normalizedEmail = email == null ? null : email.trim();
         String password = request.getParameter("password");
-        boolean rememberMe = request.getParameter("rememberMe") != null; // tick ô gh
+        boolean rememberMe = request.getParameter("rememberMe") != null; 
         if (normalizedEmail == null || normalizedEmail.isBlank() || password == null || password.isBlank()) {
-            // Báo lỗi nếu thiếu thông tin đăng nhập, giữ lại email, trạng thái
             request.setAttribute("error", "Vui lòng nhập đầy đủ email và mật khẩu");
             request.setAttribute("prefillEmail", normalizedEmail);
             request.setAttribute("rememberMeChecked", rememberMe);
@@ -126,7 +111,7 @@ public class AuthController extends BaseController {
         try {
             // Xác thực thông tin đăng nhập và lưu thông tin người dùng vào session mới.
             Users user = userService.authenticate(normalizedEmail, password);
-            HttpSession session = renewSession(request); // hủy ss cũ(nếu có), tạo mới -> chống ss fixation.
+            HttpSession session = renewSession(request); 
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
@@ -158,13 +143,11 @@ public class AuthController extends BaseController {
             }
             forward(request, response, "auth/login");
         } catch (IllegalArgumentException | IllegalStateException e) {
-            // Thông báo lỗi nghiệp vụ như sai mật khẩu, tài khoản bị khóa.
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail); 
             request.setAttribute("rememberMeChecked", rememberMe);
             forward(request, response, "auth/login");
         } catch (RuntimeException e) {
-            // Ghi log lỗi hệ thống kèm mã nhận diện để hỗ trợ điều tra.
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error during login, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
@@ -174,7 +157,6 @@ public class AuthController extends BaseController {
         }
     }
 
-    // Tạo mới session để tránh tấn công fixation khi đăng nhập thành công.
     private HttpSession renewSession(HttpServletRequest request) {
         HttpSession existing = request.getSession(false);
         if (existing != null) { // ss đã tạo nma ch có currentUser
@@ -183,7 +165,6 @@ public class AuthController extends BaseController {
         return request.getSession(true);
     }
 
-    // Hủy session hiện tại nếu tồn tại -> đxuat
     private void invalidateSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -208,11 +189,10 @@ public class AuthController extends BaseController {
             contextPath = "/";
         }
 
-        // Cookie chỉ lưu email, thiết lập thuộc tính bảo mật và thời hạn phù hợp.
         Cookie cookie = new Cookie("rememberedEmail", rememberMe ? email : "");
-        cookie.setHttpOnly(true); // đánh dấu, javascript k đọc dc cookie
-        cookie.setSecure(request.isSecure()); //trả về true nếu request hiện tại đi qua HTTPS
-        cookie.setPath(contextPath); //Giới hạn phạm vi URL
+        cookie.setHttpOnly(true); 
+        cookie.setSecure(request.isSecure()); 
+        cookie.setPath(contextPath); 
         cookie.setMaxAge(rememberMe ? 60 * 60 * 24 * 30 : 0);
         response.addCookie(cookie);
     }

@@ -26,27 +26,16 @@ import java.util.logging.Logger;
  */
 public class RememberMeService {
 
-    // Tên cookie lưu token ghi nhớ.
     public static final String COOKIE_NAME = "rememberMeToken";
-    // Độ dài phần selector (dùng tra cứu) tính theo byte.
     private static final int SELECTOR_BYTES = 12;
-    // Độ dài phần validator dùng để đối chiếu hash.
     private static final int VALIDATOR_BYTES = 32;
-    // Số ngày hiệu lực của token.
     private static final int EXPIRY_DAYS = 30;
-    // Bộ sinh số ngẫu nhiên an toàn cho token.
     private static final SecureRandom RANDOM = new SecureRandom();
-    // Bộ mã hóa Base64 URL-safe.
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
-    // Logger ghi nhận các lỗi thao tác DB/token.
     private static final Logger LOGGER = Logger.getLogger(RememberMeService.class.getName());
-
-    // DAO thao tác bảng remember_me_tokens.
     private final RememberMeTokenDAO tokenDAO;
-    // DAO người dùng để tải thông tin user tương ứng token.
     private final UserDAO userDAO;
 
-    // Khởi tạo service với DAO cụ thể.
     public RememberMeService(RememberMeTokenDAO tokenDAO, UserDAO userDAO) {
         this.tokenDAO = tokenDAO;
         this.userDAO = userDAO;
@@ -218,14 +207,12 @@ public class RememberMeService {
         return contextPath;
     }
 
-    // Sinh chuỗi ngẫu nhiên dùng làm selector/validator.
     private String generateRandomToken(int bytes) {
         byte[] randomBytes = new byte[bytes];
         RANDOM.nextBytes(randomBytes);
         return ENCODER.encodeToString(randomBytes);
     }
 
-    // Băm validator bằng SHA-256 để lưu trữ an toàn trong DB.
     private String hashValidator(String validator) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

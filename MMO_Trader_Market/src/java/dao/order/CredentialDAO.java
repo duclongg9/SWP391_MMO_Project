@@ -15,6 +15,9 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import model.product.ProductVariantOption;
+import service.util.ProductVariantUtils;
+
 /**
  * DAO for product_credentials table.
  */
@@ -55,10 +58,13 @@ public class CredentialDAO extends BaseDAO {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
+            // Khóa cứng product_id để tránh lấy nhầm credential của sản phẩm khác.
             statement.setInt(index++, productId);
             if (normalized != null) {
+                // Biến thể được chuẩn hóa về chữ thường để khớp với dữ liệu đã lưu.
                 statement.setString(index++, normalized);
             }
+            // LIMIT = số lượng người mua đặt -> đảm bảo lấy đúng số credential cần.
             statement.setInt(index, qty);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -71,6 +77,7 @@ public class CredentialDAO extends BaseDAO {
 
     public CredentialAvailability fetchAvailability(int productId) {
         try (Connection connection = getConnection()) {
+            // Mở kết nối riêng mỗi lần gọi để tái sử dụng được ở cả controller và worker.
             return fetchAvailability(connection, productId);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể thống kê credential khả dụng", ex);
@@ -126,6 +133,7 @@ public class CredentialDAO extends BaseDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             statement.setInt(1, productId);
             if (!filterDefaultVariant) {
+                // Nếu có mã biến thể cụ thể thì bind vào vị trí thứ 2 của câu lệnh.
                 statement.setString(2, normalized);
             }
             try (ResultSet rs = statement.executeQuery()) {
@@ -145,9 +153,9 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Đảm bảo kho credential của sản phẩm (hoặc biến thể) có đủ số lượng khả
      * dụng để tạo đơn hàng mới.
-     * <p>
+     * 
      * Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và
-     * trả về số liệu mới nhất.</p>
+     * trả về số liệu mới nhất.
      */
     public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
         String normalized = normalizeVariantCode(variantCode);
@@ -163,6 +171,7 @@ public class CredentialDAO extends BaseDAO {
                         : fetchAvailabilityForVariant(connection, productId, normalized);
                 int missing = requiredQuantity - availability.available();
                 if (missing > 0) {
+                    // Không đủ credential -> sinh thêm credential ảo để worker có dữ liệu bàn giao.
                     generateFakeCredentials(connection, productId, normalized, missing);
                     availability = normalized == null
                             ? fetchAvailability(connection, productId)
@@ -172,6 +181,7 @@ public class CredentialDAO extends BaseDAO {
                 return availability;
             } catch (SQLException ex) {
                 try {
+                    // Thất bại ở giữa transaction -> rollback để tránh dữ liệu dở dang.
                     connection.rollback();
                 } catch (SQLException rollbackEx) {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
@@ -184,6 +194,110 @@ public class CredentialDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể đảm bảo credential sẵn sàng", ex);
         }
         return new CredentialAvailability(0, 0);
+    }
+
+    public int generateFakeCredentials(int productId, String variantCode, int quantity) {
+        if (quantity <= 0) {
+            return 0;
+        }
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                // Phân nhánh xuống hàm dùng chung để tái sử dụng logic insert/rollback.
+                generateFakeCredentials(connection, productId, variantCode, quantity);
+                connection.commit();
+                return quantity;
+            } catch (SQLException ex) {
+                try {
+                    // Gặp lỗi insert -> hoàn tác để không ghi ra credential rác.
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Sinh credential ảo cho toàn bộ sản phẩm dựa trên tồn kho đã cấu hình.
+     *
+     * <p>
+     * Với mỗi sản phẩm không có biến thể, phương thức sẽ kiểm tra số credential
+     * chưa bán hiện có và sinh thêm nếu thiếu so với {@code inventory_count}.
+     * Đối với sản phẩm có biến thể, tồn kho được đọc từ {@code variants_json}
+     * và xử lý tương tự cho từng biến thể.</p>
+     *
+     * @return thống kê số credential đã sinh và số SKU được bổ sung
+     */
+    public BulkGenerationSummary seedAllProductsFromInventory() {
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                List<ProductSeedRow> products = loadSeedableProducts(connection);
+                int generated = 0;
+                int touchedSkus = 0;
+                for (ProductSeedRow product : products) {
+                    if (ProductVariantUtils.hasVariants(product.variantSchema())) {
+                        List<ProductVariantOption> variants = ProductVariantUtils
+                                .parseVariants(product.variantSchema(), product.variantsJson());
+                        for (ProductVariantOption variant : variants) {
+                            Integer inventory = variant.getInventoryCount();
+                            if (inventory == null || inventory <= 0) {
+                                continue;
+                            }
+                            String normalizedCode = ProductVariantUtils.normalizeCode(variant.getVariantCode());
+                            if (normalizedCode == null) {
+                                continue;
+                            }
+                            CredentialAvailability availability = fetchAvailabilityForVariant(connection,
+                                    product.id(), normalizedCode);
+                            int missing = inventory - availability.available();
+                            if (missing <= 0) {
+                                continue;
+                            }
+                            generateFakeCredentials(connection, product.id(), normalizedCode, missing);
+                            generated += missing;
+                            touchedSkus++;
+                        }
+                    } else {
+                        Integer inventory = product.inventoryCount();
+                        if (inventory == null || inventory <= 0) {
+                            continue;
+                        }
+                        CredentialAvailability availability = fetchAvailability(connection, product.id());
+                        int missing = inventory - availability.available();
+                        if (missing <= 0) {
+                            continue;
+                        }
+                        generateFakeCredentials(connection, product.id(), null, missing);
+                        generated += missing;
+                        touchedSkus++;
+                    }
+                }
+                connection.commit();
+                return new BulkGenerationSummary(generated, touchedSkus);
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+        }
+        return new BulkGenerationSummary(0, 0);
     }
 
     public void markCredentialsSold(int orderId, List<Integer> ids) {
@@ -227,10 +341,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Kiểm tra người mua đã từng mở khóa thông tin bàn giao hay chưa.
-     * <p>
+     * 
      * Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa
      * vào đây để quyết định có tải plaintext cho người dùng hay yêu cầu xác
-     * nhận lại.</p>
+     * nhận lại.
      */
     public boolean hasViewLog(int orderId, int buyerId) {
         final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
@@ -248,10 +362,10 @@ public class CredentialDAO extends BaseDAO {
 
     /**
      * Ghi nhận hành động mở khóa credential của người mua.
-     * <p>
+     * 
      * Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm
      * bảo vệ dữ liệu: nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để
-     * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.</p>
+     * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.
      */
     public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
         final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
@@ -280,10 +394,10 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Truy vấn toàn bộ lịch sử mở khóa credential của một đơn hàng để phục vụ
      * giao diện quản trị.
-     * <p>
+     * 
      * Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời
      * điểm, IP) để admin có thể rà soát khi phát sinh tranh chấp về việc đã xem
-     * dữ liệu hay chưa.</p>
+     * dữ liệu hay chưa.
      */
     public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
         final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
@@ -347,6 +461,21 @@ public class CredentialDAO extends BaseDAO {
                 new Object[]{quantity, productId, normalized == null ? "" : " - biến thể " + normalized});
     }
 
+    private List<ProductSeedRow> loadSeedableProducts(Connection connection) throws SQLException {
+        final String sql = "SELECT id, inventory_count, variant_schema, variants_json FROM products";
+        List<ProductSeedRow> products = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                products.add(new ProductSeedRow(
+                        rs.getInt("id"),
+                        (Integer) rs.getObject("inventory_count"),
+                        rs.getString("variant_schema"),
+                        rs.getString("variants_json")));
+            }
+        }
+        return products;
+    }
+
     private String normalizeVariantCode(String variantCode) {
         if (variantCode == null) {
             return null;
@@ -390,5 +519,13 @@ public class CredentialDAO extends BaseDAO {
 
     private char randomPasswordSymbol() {
         return PASSWORD_SYMBOLS[RANDOM.nextInt(PASSWORD_SYMBOLS.length)];
+    }
+
+    public record BulkGenerationSummary(int generatedCredentials, int skuTouched) {
+
+    }
+
+    private record ProductSeedRow(int id, Integer inventoryCount, String variantSchema, String variantsJson) {
+
     }
 }

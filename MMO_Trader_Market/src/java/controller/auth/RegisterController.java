@@ -51,7 +51,6 @@ public class RegisterController extends BaseController {
         request.setAttribute("acceptTermsChecked", acceptedTerms);
 
         if (!acceptedTerms) {
-            // Bắt buộc người dùng chấp nhận điều khoản sử dụng.
             request.setAttribute("error", "Vui lòng đồng ý với Điều khoản sử dụng để tiếp tục.");
             forward(request, response, "auth/register");
             return;

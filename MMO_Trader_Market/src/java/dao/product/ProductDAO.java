@@ -40,20 +40,19 @@ public class ProductDAO extends BaseDAO {
             "p.gallery_json", "p.inventory_count", "COALESCE(ps.sold_count, 0) AS sold_count", "p.status",
             "p.variant_schema", "p.variants_json", "p.created_at", "p.updated_at");
 
+    // Sử dụng sold_count trực tiếp từ bảng products thay vì view
     private static final String LIST_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.price, p.inventory_count, COALESCE(ps.sold_count, 0) AS sold_count, p.status, "
+            + "p.short_description, p.price, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, "
             + "p.primary_image_url, p.variant_schema, p.variants_json, s.id AS shop_id, s.name AS shop_name "
             + "FROM products p "
-            + "JOIN shops s ON s.id = p.shop_id "
-            + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id";
+            + "JOIN shops s ON s.id = p.shop_id";
 
     private static final String DETAIL_SELECT = "SELECT p.id, p.product_type, p.product_subtype, p.name, "
-            + "p.short_description, p.description, p.price, p.inventory_count, COALESCE(ps.sold_count, 0) AS sold_count, p.status, "
+            + "p.short_description, p.description, p.price, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, "
             + "p.primary_image_url, p.gallery_json, p.variant_schema, p.variants_json, "
             + "s.id AS shop_id, s.name AS shop_name, s.owner_id AS shop_owner_id "
             + "FROM products p "
-            + "JOIN shops s ON s.id = p.shop_id "
-            + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id WHERE p.id = ? LIMIT 1";
+            + "JOIN shops s ON s.id = p.shop_id WHERE p.id = ? LIMIT 1";
 
     private static final String SHOP_FILTER_SELECT = "SELECT DISTINCT s.id AS shop_id, s.name AS shop_name "
             + "FROM products p JOIN shops s ON s.id = p.shop_id "
@@ -313,8 +312,12 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu tồn tại
      */
     public Optional<Products> findById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS + " FROM products p "
-                + "LEFT JOIN product_sales_view ps ON ps.product_id = p.id WHERE p.id = ? LIMIT 1";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p WHERE p.id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
@@ -335,9 +338,12 @@ public class ProductDAO extends BaseDAO {
      * @return {@link Optional} chứa sản phẩm nếu còn bán
      */
     public Optional<Products> findAvailableById(int id) {
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id"
-                + " WHERE p.id = ? AND p.status = 'Available' LIMIT 1";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p WHERE p.id = ? AND p.status = 'Available' LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rs = statement.executeQuery()) {
@@ -481,9 +487,12 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm phù hợp
      */
     public List<Products> search(String keyword, int limit, int offset) {
-        StringBuilder sql = new StringBuilder("SELECT ");
-        sql.append(PRODUCT_COLUMNS)
-                .append(" FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id");
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        StringBuilder sql = new StringBuilder("SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, ");
+        sql.append("p.short_description, p.description, p.price, p.primary_image_url, ");
+        sql.append("p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, ");
+        sql.append("p.variant_schema, p.variants_json, p.created_at, p.updated_at ");
+        sql.append("FROM products p");
         List<String> parameters = new ArrayList<>();
         appendSearchClause(keyword, sql, parameters);
         sql.append(" ORDER BY p.updated_at DESC LIMIT ? OFFSET ?");
@@ -511,9 +520,12 @@ public class ProductDAO extends BaseDAO {
      */
     public List<Products> findHighlighted(int limit) {
         int resolvedLimit = limit > 0 ? limit : 3;
-        final String sql = "SELECT " + PRODUCT_COLUMNS
-                + " FROM products p LEFT JOIN product_sales_view ps ON ps.product_id = p.id"
-                + " ORDER BY p.updated_at DESC LIMIT ?";
+        // Sử dụng query đơn giản, lấy sold_count trực tiếp từ bảng products
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p ORDER BY p.updated_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, resolvedLimit);
             List<Products> products = new ArrayList<>();
@@ -697,5 +709,142 @@ public class ProductDAO extends BaseDAO {
 
     public record ProductInventoryLock(Integer inventoryCount, String variantSchema, String variantsJson) {
 
+    }
+
+    /**
+     * Lấy danh sách sản phẩm của một shop.
+     *
+     * @param shopId mã shop
+     * @return danh sách sản phẩm
+     */
+    public List<Products> findByShopId(int shopId) {
+        // Sử dụng query đơn giản hơn, lấy sold_count trực tiếp từ bảng products
+        // thay vì LEFT JOIN với view (view có thể không tồn tại)
+        final String sql = "SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, " +
+                "p.short_description, p.description, p.price, p.primary_image_url, " +
+                "p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, " +
+                "p.variant_schema, p.variants_json, p.created_at, p.updated_at " +
+                "FROM products p " +
+                "WHERE p.shop_id = ? ORDER BY p.created_at DESC";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            List<Products> products = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+            LOGGER.log(Level.INFO, "Đã tải {0} sản phẩm cho shop_id={1}", new Object[]{products.size(), shopId});
+            return products;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop_id=" + shopId, ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Cập nhật thông tin sản phẩm.
+     *
+     * @param product đối tượng sản phẩm cần cập nhật
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateProduct(Products product) {
+        final String sql = "UPDATE products SET product_type = ?, product_subtype = ?, name = ?, "
+                + "short_description = ?, description = ?, price = ?, primary_image_url = ?, "
+                + "inventory_count = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setString(1, product.getProductType());
+            statement.setString(2, product.getProductSubtype());
+            statement.setString(3, product.getName());
+            statement.setString(4, product.getShortDescription());
+            statement.setString(5, product.getDescription());
+            statement.setBigDecimal(6, product.getPrice());
+            statement.setString(7, product.getPrimaryImageUrl());
+            statement.setInt(8, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
+            statement.setString(9, product.getStatus());
+            statement.setInt(10, product.getId());
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật sản phẩm", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Thay đổi trạng thái sản phẩm.
+     *
+     * @param productId mã sản phẩm
+     * @param status trạng thái mới (Available, OutOfStock, Unlisted)
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateStatus(int productId, String status) {
+        final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setString(1, status);
+            statement.setInt(2, productId);
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Tạo sản phẩm mới và đăng lên shop.
+     *
+     * @param product đối tượng sản phẩm cần tạo
+     * @return true nếu tạo thành công
+     */
+    public boolean createProduct(Products product) {
+        final String sql = "INSERT INTO products (shop_id, product_type, product_subtype, name, "
+                + "short_description, description, price, primary_image_url, gallery_json, "
+                + "inventory_count, sold_count, status, variant_schema, variants_json, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setInt(1, product.getShopId());
+            statement.setString(2, product.getProductType());
+            statement.setString(3, product.getProductSubtype());
+            statement.setString(4, product.getName());
+            statement.setString(5, product.getShortDescription());
+            statement.setString(6, product.getDescription());
+            statement.setBigDecimal(7, product.getPrice());
+            statement.setString(8, product.getPrimaryImageUrl());
+            statement.setString(9, product.getGalleryJson());
+            statement.setInt(10, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
+            statement.setString(11, product.getStatus());
+            
+            // Set default values cho variant_schema và variants_json nếu null
+            String variantSchema = product.getVariantSchema();
+            if (variantSchema == null || variantSchema.trim().isEmpty()) {
+                variantSchema = "none"; // Giá trị mặc định
+            }
+            statement.setString(12, variantSchema);
+            
+            String variantsJson = product.getVariantsJson();
+            if (variantsJson == null || variantsJson.trim().isEmpty()) {
+                variantsJson = "[]"; // JSON array rỗng
+            }
+            statement.setString(13, variantsJson);
+            
+            return statement.executeUpdate() > 0;
+            
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tạo sản phẩm mới", ex);
+            return false;
+        }
     }
 }
