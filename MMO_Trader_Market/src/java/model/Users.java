@@ -34,7 +34,7 @@ public class Users {
                 + ", updatedAt=" + updatedAt
                 + '}';
     }
-    public boolean isActive() { return status == 1; }
+
     public Users(Integer id, Integer roleId, String email, String name, String avatarUrl, String hashedPassword, String googleId, int status, Date createdAt, Date updatedAt, String roleName) {
         this.id = id;
         this.roleId = roleId;
