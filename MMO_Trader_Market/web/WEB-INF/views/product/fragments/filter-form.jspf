@@ -28,22 +28,21 @@
     </div>
     <div class="product-filters__group">
         <label class="product-filters__label" for="${typeInputId}">Loại sản phẩm</label>
+                <c:set var="hasOther" value="${false}" />
+        <c:forEach var="option" items="${typeOptions}">
+            <c:if test="${option.code == 'OTHER'}">
+                <c:set var="hasOther" value="${true}" />
+            </c:if>
+        </c:forEach>
         <select class="product-filters__select" id="${typeInputId}" name="type">
             <option value="">Tất cả</option>
-            <c:forEach var="code" items="${fn:split('EMAIL,SOCIAL,SOFTWARE,GAME', ',')}">
-                <c:set var="typeLabel" value="" />
-                <c:forEach var="option" items="${typeOptions}">
-                    <c:if test="${option.code == code}">
-                        <c:set var="typeLabel" value="${option.label}" />
-                    </c:if>
-                </c:forEach>
-                <c:if test="${not empty typeLabel}">
-                    <option value="${code}" <c:if test="${code == filterTypeValue}">selected</c:if>>
-                        <c:out value="${typeLabel}" />
-                    </option>
-                </c:if>
+            
+            <c:forEach var="option" items="${typeOptions}">
+                <option value="${option.code}" <c:if test="${option.code == filterTypeValue}">selected</c:if>>
+                    <c:out value="${option.label}" />
+                </option>
             </c:forEach>
-            <c:if test="${filterTypeValue == 'OTHER'}">
+            <c:if test="${filterTypeValue == 'OTHER' and not hasOther}">
                 <option value="OTHER" selected>Khác</option>
             </c:if>
         </select>

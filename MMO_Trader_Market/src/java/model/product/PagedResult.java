@@ -3,31 +3,14 @@ package model.product;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * <p>
- * Đối tượng bao gói kết quả phân trang cho các luồng duyệt sản phẩm.</p>
- * <p>
- * Dữ liệu được dựng từ các truy vấn DAO trả về danh sách record/raw model và
- * được chuyển thành {@code items} để truyền xuống JSP. Thông tin
- * trang/size/tổng mục giúp controller render phân trang chính xác.</p>
- *
- * @param <T> kiểu phần tử trong danh sách sản phẩm
- * @author longpdhe171902
- */
 public class PagedResult<T> {
 
-    // Danh sách phần tử ở trang hiện tại.
     private final List<T> items;
-    // Chỉ số trang hiện tại (bắt đầu từ 1).
     private final int page;
-    // Số lượng phần tử trên mỗi trang.
     private final int size;
-    // Tổng số trang dựa trên tổng phần tử và kích thước trang.
     private final int totalPages;
-    // Tổng số phần tử thỏa điều kiện truy vấn.
     private final long totalItems;
 
-    // Khởi tạo đối tượng phân trang với dữ liệu bất biến.
     public PagedResult(List<T> items, int page, int size, int totalPages, long totalItems) {
         this.items = List.copyOf(Objects.requireNonNull(items, "items"));
         this.page = page;
@@ -36,27 +19,18 @@ public class PagedResult<T> {
         this.totalItems = totalItems;
     }
 
-    // Lấy danh sách phần tử ở trang hiện tại.
     public List<T> getItems() {
         return items;
     }
-
-    // Lấy số trang hiện tại.
     public int getPage() {
         return page;
     }
-
-    // Lấy kích thước trang.
     public int getSize() {
         return size;
     }
-
-    // Lấy tổng số trang.
     public int getTotalPages() {
         return totalPages;
     }
-
-    // Lấy tổng số phần tử.
     public long getTotalItems() {
         return totalItems;
     }
