@@ -17,35 +17,39 @@ import service.GoogleOAuthService.GoogleProfile;
 import service.UserService;
 import units.RoleHomeResolver;
 
+
 @WebServlet(name = "GoogleAuthController", urlPatterns = {"/auth/google"})
 public class GoogleAuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(GoogleAuthController.class.getName());
     private static final String SESSION_STATE = "googleOauthState";
-
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
     private final UserService userService = new UserService(new UserDAO());
+
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String code = request.getParameter("code");
-        String state = request.getParameter("state");
-        if (code == null || code.isBlank()) {
-            startAuthentication(request, response);
+        String code = request.getParameter("code"); //code gg trả về khi ng dùng đồng ý cấp quyền.
+        String state = request.getParameter("state"); 
+        if (code == null || code.isBlank()) { 
+            startAuthentication(request, response); // Sinh state ngẫu nhiên, lưu vào session, ủy quyền
             return;
         }
+        // Có mã và state => xử lý callback từ Google.
         handleCallback(request, response, code, state);
     }
 
+
     private void startAuthentication(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String state = UUID.randomUUID().toString();
-        request.getSession().setAttribute(SESSION_STATE, state);
-        String authorizationUrl = googleOAuthService.buildAuthorizationUrl(state);
-        response.sendRedirect(authorizationUrl);
+        request.getSession().setAttribute(SESSION_STATE, state); // lấy ss hiện tại, lưu state vào ss
+        String authorizationUrl = googleOAuthService.buildAuthorizationUrl(state);    // Tạo URL điều hướng.
+        response.sendRedirect(authorizationUrl); 
     }
 
+   
     private void handleCallback(HttpServletRequest request, HttpServletResponse response, String code, String state)
             throws IOException {
         HttpSession session = request.getSession(false);
@@ -54,12 +58,13 @@ public class GoogleAuthController extends BaseController {
             sendErrorFlash(request, response, "Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại.");
             return;
         }
-        session.removeAttribute(SESSION_STATE);
+        session.removeAttribute(SESSION_STATE); 
         try {
+            // Lấy thông tin hồ sơ từ Google và đăng nhập (hoặc tạo mới) tài khoản nội bộ.
             GoogleProfile profile = googleOAuthService.fetchUserProfile(code);
             Users user = userService.loginWithGoogle(profile.getGoogleId(), profile.getEmail(), profile.getName());
             HttpSession newSession = renewSession(request);
-            newSession.setAttribute("currentUser", user);
+            newSession.setAttribute("currentUser", user); //gắn các thuộc tính phiên dùng cho app
             newSession.setAttribute("userId", user.getId());
             newSession.setAttribute("userRole", user.getRoleId());
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
@@ -73,16 +78,18 @@ public class GoogleAuthController extends BaseController {
     }
 
     private HttpSession renewSession(HttpServletRequest request) {
-        HttpSession existing = request.getSession(false);
+        HttpSession existing = request.getSession(false); // lấy ss hiện có, k tạo mới
         if (existing != null) {
             existing.invalidate();
         }
         return request.getSession(true);
     }
 
+
     private void sendErrorFlash(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
         HttpSession session = request.getSession();
-        session.setAttribute("oauthError", message);
+        // Lưu thông báo lỗi vào session để hiển thị ở trang đăng nhập.
+       session.setAttribute("oauthError", message);
         response.sendRedirect(request.getContextPath() + "/auth");
     }
 }

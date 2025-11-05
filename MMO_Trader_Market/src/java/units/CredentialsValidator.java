@@ -14,9 +14,11 @@ public final class CredentialsValidator {
      *
      * @param username the supplied username
      * @param password the supplied password
-     * @return {@code true} when both fields contain text, {@code false} otherwise
+     * @return {@code true} when both fields contain text, {@code false}
+     * otherwise
      */
     public static boolean isValid(String username, String password) {
+        // Kiểm tra nhanh cả hai trường không rỗng trước khi chạm tới tầng DAO.
         return username != null && !username.isBlank()
                 && password != null && !password.isBlank();
     }

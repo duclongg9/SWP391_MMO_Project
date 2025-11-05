@@ -3,6 +3,8 @@ package queue.memory;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import queue.OrderMessage;
 import queue.OrderQueueProducer;
 import queue.OrderWorker;
@@ -16,6 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Hàng đợi đơn hàng chạy trong bộ nhớ dùng cho môi trường demo/dev.
+ * <p>
+ * Service gọi {@link #publish(int, String, int, int, String)} để đẩy thông điệp
+ * khi người mua đặt hàng, sau đó thread dispatcher sẽ chuyển tiếp cho
+ * {@link AsyncOrderWorker} xử lý luồng tiền và tồn kho.</p>
+ */
 public final class InMemoryOrderQueue implements OrderQueueProducer {
 
     private static final Logger LOGGER = Logger.getLogger(InMemoryOrderQueue.class.getName());
@@ -31,6 +40,7 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
     private volatile OrderWorker worker;
 
     private InMemoryOrderQueue() {
+        // Khởi động thread dispatcher ngay khi singleton tạo ra để sẵn sàng nhận đơn.
         dispatcher.submit(this::dispatchLoop);
     }
 
@@ -38,18 +48,28 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
         return INSTANCE;
     }
 
-    public static synchronized void ensureWorkerInitialized(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO) {
+    /**
+     * Khởi tạo worker bất đồng bộ duy nhất cho hàng đợi. Được gọi từ
+     * {@link service.OrderService} khi service được khởi tạo để gắn đầy đủ DAO
+     * xử lý (trừ tiền, trừ tồn kho, gán credential).
+     */
+    public static synchronized void ensureWorkerInitialized(OrderDAO orderDAO, ProductDAO productDAO,
+            CredentialDAO credentialDAO, WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO) {
+        // Khởi tạo worker duy nhất cho hàng đợi, đảm bảo có đủ DAO phục vụ xử lý ví và đơn hàng.
         if (INSTANCE.worker == null) {
             Objects.requireNonNull(orderDAO, "orderDAO");
             Objects.requireNonNull(productDAO, "productDAO");
             Objects.requireNonNull(credentialDAO, "credentialDAO");
-            INSTANCE.worker = new AsyncOrderWorker(orderDAO, productDAO, credentialDAO);
+            Objects.requireNonNull(walletsDAO, "walletsDAO");
+            Objects.requireNonNull(walletTransactionDAO, "walletTransactionDAO");
+            INSTANCE.worker = new AsyncOrderWorker(orderDAO, productDAO, credentialDAO, walletsDAO, walletTransactionDAO);
         }
     }
 
     @Override
-    public void publish(int orderId, String idemKey, int productId, int qty) {
-        queue.offer(new OrderMessage(orderId, idemKey, productId, qty));
+    public void publish(int orderId, String idemKey, int productId, int qty, String variantCode) {
+        // Mỗi thông điệp chứa thông tin tối thiểu để worker truy vấn thêm dữ liệu cần thiết.
+        queue.offer(new OrderMessage(orderId, idemKey, productId, qty, variantCode));
     }
 
     private void dispatchLoop() {
@@ -61,11 +81,13 @@ public final class InMemoryOrderQueue implements OrderQueueProducer {
                 }
                 OrderWorker current = worker;
                 if (current == null) {
+                    // Chưa có worker sẵn sàng -> trả lại thông điệp vào queue và đợi cấu hình.
                     queue.offer(message);
                     Thread.sleep(1000);
                     continue;
                 }
                 try {
+                    // Đẩy thông điệp sang worker xử lý; mọi lỗi runtime đều được log để tránh mất đơn hàng.
                     current.handle(message);
                 } catch (RuntimeException ex) {
                     LOGGER.log(Level.SEVERE, "Lỗi xử lý thông điệp đơn hàng", ex);

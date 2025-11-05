@@ -13,14 +13,13 @@ import java.sql.Timestamp;
  * DAO thao tác bảng password_reset_tokens.
  */
 public class PasswordResetTokenDAO {
-
+//tạo bản ghi token đặt lại mật khẩu
     public void createToken(int userId, String token, Timestamp expiresAt) throws SQLException {
         final String sql = """
                 INSERT INTO password_reset_tokens (user_id, token, expires_at)
                 VALUES (?, ?, ?)
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ps.setString(2, token);
             ps.setTimestamp(3, expiresAt);
@@ -35,8 +34,7 @@ public class PasswordResetTokenDAO {
                 WHERE token = ? AND used_at IS NULL
                 LIMIT 1
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -53,8 +51,7 @@ public class PasswordResetTokenDAO {
                 SET used_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND used_at IS NULL
                 """;
-        try (Connection conn = DBConnect.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate();
         }

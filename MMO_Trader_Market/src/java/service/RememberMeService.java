@@ -21,7 +21,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Service that encapsulates creation, validation and cleanup of remember-me tokens.
+ * Dịch vụ bao bọc toàn bộ quy trình tạo, xác thực và dọn dẹp token "ghi nhớ
+ * đăng nhập".
  */
 public class RememberMeService {
 
@@ -32,7 +33,6 @@ public class RememberMeService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final Logger LOGGER = Logger.getLogger(RememberMeService.class.getName());
-
     private final RememberMeTokenDAO tokenDAO;
     private final UserDAO userDAO;
 
@@ -41,6 +41,7 @@ public class RememberMeService {
         this.userDAO = userDAO;
     }
 
+    // Tạo token và cookie mới cho người dùng.
     public void createRememberMeCookie(HttpServletRequest request, HttpServletResponse response, int userId) {
         clearRememberMe(request, response);
         String selector = generateRandomToken(SELECTOR_BYTES);
@@ -60,6 +61,7 @@ public class RememberMeService {
         }
     }
 
+    // Tự động đăng nhập dựa trên cookie nếu hợp lệ.
     public Users autoLogin(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = findCookie(request);
         if (cookie == null) {
@@ -93,7 +95,7 @@ public class RememberMeService {
         String storedHashed = token.getHashedValidator();
         if (storedHashed == null || storedHashed.isBlank()
                 || !MessageDigest.isEqual(hashedValidator.getBytes(StandardCharsets.UTF_8),
-                storedHashed.getBytes(StandardCharsets.UTF_8))) {
+                        storedHashed.getBytes(StandardCharsets.UTF_8))) {
             handleCompromisedToken(token, request, response);
             return null;
         }
@@ -109,6 +111,7 @@ public class RememberMeService {
         return user;
     }
 
+    // Xóa cookie và token lưu trên DB.
     public void clearRememberMe(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = findCookie(request);
         if (cookie == null) {
@@ -126,6 +129,7 @@ public class RememberMeService {
         clearCookie(request, response);
     }
 
+    // Tạo token mới sau mỗi lần auto login để tránh reuse token cũ.
     private void rotateToken(HttpServletRequest request, HttpServletResponse response, RememberMeToken token) {
         String newValidator = generateRandomToken(VALIDATOR_BYTES);
         String hashedValidator = hashValidator(newValidator);
@@ -140,6 +144,7 @@ public class RememberMeService {
         }
     }
 
+    // Xử lý tình huống token bị giả mạo: xóa toàn bộ token và cookie.
     private void handleCompromisedToken(RememberMeToken token, HttpServletRequest request, HttpServletResponse response) {
         try {
             tokenDAO.deleteAllForUser(token.getUserId());
@@ -149,6 +154,7 @@ public class RememberMeService {
         clearCookie(request, response);
     }
 
+    // Xóa token đơn lẻ khi hết hạn hoặc user không tồn tại.
     private void removeToken(RememberMeToken token) {
         try {
             tokenDAO.deleteById(token.getId());
@@ -157,6 +163,7 @@ public class RememberMeService {
         }
     }
 
+    // Tìm cookie ghi nhớ trong danh sách cookie của request.
     private Cookie findCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
@@ -170,6 +177,7 @@ public class RememberMeService {
         return null;
     }
 
+    // Xóa cookie bằng cách set giá trị rỗng và maxAge=0.
     private void clearCookie(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = new Cookie(COOKIE_NAME, "");
         cookie.setPath(resolveCookiePath(request));
@@ -179,6 +187,7 @@ public class RememberMeService {
         response.addCookie(cookie);
     }
 
+    // Tạo cookie remember-me với thời hạn và thuộc tính bảo mật phù hợp.
     private Cookie buildCookie(HttpServletRequest request, String value, Timestamp expiresAt, boolean secure) {
         Cookie cookie = new Cookie(COOKIE_NAME, value);
         cookie.setPath(resolveCookiePath(request));
@@ -189,6 +198,7 @@ public class RememberMeService {
         return cookie;
     }
 
+    // Xác định path cookie dựa trên context path hiện tại.
     private String resolveCookiePath(HttpServletRequest request) {
         String contextPath = request.getContextPath();
         if (contextPath == null || contextPath.isEmpty()) {

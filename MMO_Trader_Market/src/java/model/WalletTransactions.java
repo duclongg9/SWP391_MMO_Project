@@ -1,30 +1,30 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
-import java.time.Instant;
+
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- *
- * @author D E L L
+ * Domain model mapping cho bảng {@code wallet_transactions}.
  */
 public class WalletTransactions {
-    private int id;
-    private Wallets walletId;
-    private int relatedEntityId;
-    private TransactionType transactionType;
-    private double amount;
-    private double balanceBefore;
-    private double balanceAfter;
+
+    private Integer id;
+    private Integer walletId;
+    private Wallets wallet;
+    private Integer relatedEntityId;
+    private String transactionType;
+    private BigDecimal amount;
+    private BigDecimal balanceBefore;
+    private BigDecimal balanceAfter;
     private String note;
-    private Instant createdAt;
+    private Date createdAt;
 
     public WalletTransactions() {
     }
 
-    public WalletTransactions(int id, Wallets walletId, int relatedEntityId, TransactionType transactionType, double amount, double balanceBefore, double balanceAfter, String note, Instant createdAt) {
+    public WalletTransactions(Integer id, Integer walletId, Integer relatedEntityId,
+            String transactionType, BigDecimal amount, BigDecimal balanceBefore,
+            BigDecimal balanceAfter, String note, Date createdAt) {
         this.id = id;
         this.walletId = walletId;
         this.relatedEntityId = relatedEntityId;
@@ -36,59 +36,75 @@ public class WalletTransactions {
         this.createdAt = createdAt;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
-    public Wallets getWalletId() {
+    public Integer getWalletId() {
         return walletId;
     }
 
-    public void setWalletId(Wallets walletId) {
+    public void setWalletId(Integer walletId) {
         this.walletId = walletId;
     }
 
-    public int getRelatedEntityId() {
+    public Wallets getWallet() {
+        return wallet;
+    }
+
+    public void setWallet(Wallets wallet) {
+        this.wallet = wallet;
+    }
+
+    public Integer getRelatedEntityId() {
         return relatedEntityId;
     }
 
-    public void setRelatedEntityId(int relatedEntityId) {
+    public void setRelatedEntityId(Integer relatedEntityId) {
         this.relatedEntityId = relatedEntityId;
     }
 
-    public TransactionType getTransactionType() {
+    public String getTransactionType() {
         return transactionType;
     }
 
-    public void setTransactionType(TransactionType transactionType) {
+    public TransactionType getTransactionTypeEnum() {
+        return transactionType == null ? null : TransactionType.fromDbValue(transactionType);
+    }
+
+    public void setTransactionType(String transactionType) {
         this.transactionType = transactionType;
     }
 
-    public double getAmount() {
+    public void setTransactionType(TransactionType transactionType) {
+        this.transactionType = transactionType == null ? null : transactionType.getDbValue();
+    }
+
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 
-    public double getBalanceBefore() {
+    public BigDecimal getBalanceBefore() {
         return balanceBefore;
     }
 
-    public void setBalanceBefore(double balanceBefore) {
+    public void setBalanceBefore(BigDecimal balanceBefore) {
         this.balanceBefore = balanceBefore;
     }
 
-    public double getBalanceAfter() {
+    public BigDecimal getBalanceAfter() {
         return balanceAfter;
     }
 
-    public void setBalanceAfter(double balanceAfter) {
+    public void setBalanceAfter(BigDecimal balanceAfter) {
         this.balanceAfter = balanceAfter;
     }
 
@@ -100,22 +116,26 @@ public class WalletTransactions {
         this.note = note;
     }
 
-    public Instant getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
-    public Date getCreatedAtDate() {
-        return createdAt == null ? null : Date.from(createdAt);
-    }
-    
     @Override
     public String toString() {
-return "WalletTransactions{" + "id=" + id + ", walletId=" + walletId + ", relatedEntityId=" + relatedEntityId + ", transactionType=" + transactionType + ", amount=" + amount + ", balanceBefore=" + balanceBefore + ", balanceAfter=" + balanceAfter + ", note=" + note + ", createdAt=" + createdAt + '}';
+        return "WalletTransactions{"
+                + "id=" + id
+                + ", walletId=" + walletId
+                + ", relatedEntityId=" + relatedEntityId
+                + ", transactionType='" + transactionType + '\''
+                + ", amount=" + amount
+                + ", balanceBefore=" + balanceBefore
+                + ", balanceAfter=" + balanceAfter
+                + ", note='" + note + '\''
+                + ", createdAt=" + createdAt
+                + '}';
     }
-    
-    
 }

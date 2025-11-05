@@ -16,27 +16,32 @@ import service.RememberMeService;
 import java.io.IOException;
 
 /**
- * Filter that restores user sessions from remember-me cookies when applicable.
+ * Bộ lọc khôi phục phiên đăng nhập dựa trên cookie "ghi nhớ tôi" nếu tồn tại.
  */
 @WebFilter("/*")
 public class RememberMeFilter extends HttpFilter {
 
+    // Dịch vụ xử lý logic ghi nhớ đăng nhập.
     private RememberMeService rememberMeService;
 
+    // Khởi tạo filter và tạo instance RememberMeService.
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         super.init(filterConfig);
         this.rememberMeService = new RememberMeService(new RememberMeTokenDAO(), new UserDAO());
     }
 
+    // Trước mỗi request, thử khôi phục phiên từ cookie nếu người dùng chưa đăng nhập.
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (rememberMeService == null) {
+            // Trường hợp filter được khởi tạo lại mà chưa kịp gọi init.
             rememberMeService = new RememberMeService(new RememberMeTokenDAO(), new UserDAO());
         }
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("currentUser") == null) {
+            // Chưa có phiên hợp lệ nên thử tự động đăng nhập bằng token.
             Users user = rememberMeService.autoLogin(request, response);
             if (user != null) {
                 HttpSession newSession = request.getSession(true);

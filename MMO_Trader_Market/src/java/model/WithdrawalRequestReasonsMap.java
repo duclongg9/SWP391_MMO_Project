@@ -1,6 +1,7 @@
 package model;
 
 public class WithdrawalRequestReasonsMap {
+
     private Integer requestId;
     private Integer reasonId;
 
@@ -12,12 +13,15 @@ public class WithdrawalRequestReasonsMap {
     public Integer getRequestId() {
         return requestId;
     }
+
     public void setRequestId(Integer requestId) {
         this.requestId = requestId;
     }
+
     public Integer getReasonId() {
         return reasonId;
     }
+
     public void setReasonId(Integer reasonId) {
         this.reasonId = reasonId;
     }

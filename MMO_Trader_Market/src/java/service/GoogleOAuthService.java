@@ -15,33 +15,39 @@ import java.util.Objects;
 
 public class GoogleOAuthService {
 
+    // URL ủy quyền của Google.
     private static final String AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+    // API trao đổi mã lấy access token.
     private static final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+    // API lấy thông tin người dùng.
     private static final String USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo";
-
+    // HTTP client chuẩn để gọi API Google.
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    // Gson phục vụ parse JSON phản hồi.
     private final Gson gson = new Gson();
-
+    // Tạo URL điều hướng người dùng sang màn hình đăng nhập Google.
     public String buildAuthorizationUrl(String state) {
         String clientId = requireConfig("google.clientId");
-        String redirectUri = requireConfig("google.redirectUri");
-        String scope = urlEncode("openid email profile");
-        return AUTH_ENDPOINT +
-                "?response_type=code" +
-                "&client_id=" + urlEncode(clientId) +
-                "&redirect_uri=" + urlEncode(redirectUri) +
-                "&scope=" + scope +
-                "&state=" + urlEncode(state) +
-                "&prompt=select_account";
-    }
+        String redirectUri = requireConfig("google.redirectUri"); // lấy cấu hình từ file .properties
+        String scope = urlEncode("openid email profile"); //chuyển từ OAuth2 sang OpenID Connect (cho phép lấy ID Token / danh tính).
+        return AUTH_ENDPOINT
+                + "?response_type=code"
+                + "&client_id=" + urlEncode(clientId)
+                + "&redirect_uri=" + urlEncode(redirectUri)
+                + "&scope=" + scope
+                + "&state=" + urlEncode(state)
+                + "&prompt=select_account";
+    } //Ghép URL đầy đủ tới Authorization Endpoint của Google
 
+    // Đổi mã ủy quyền(authorization code) lấy thông tin tài khoản Google.
     public GoogleProfile fetchUserProfile(String code) {
-        JsonObject tokenResponse = exchangeCodeForTokens(code);
+        JsonObject tokenResponse = exchangeCodeForTokens(code); //Gọi token endpoint của Google để đổi code lấy token
         String accessToken = getRequiredField(tokenResponse, "access_token");
         JsonObject userInfo = requestUserInfo(accessToken);
         return mapProfile(userInfo);
     }
 
+    // Gửi yêu cầu POST với body x-www-form-urlencoded.
     private JsonObject sendPost(String endpoint, String body) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(endpoint))
@@ -62,6 +68,7 @@ public class GoogleOAuthService {
         }
     }
 
+    // Trao đổi code sang token truy cập và refresh token.
     private JsonObject exchangeCodeForTokens(String code) {
         String clientId = requireConfig("google.clientId");
         String clientSecret = requireConfig("google.clientSecret");
@@ -74,6 +81,7 @@ public class GoogleOAuthService {
         return sendPost(TOKEN_ENDPOINT, body);
     }
 
+    // Lấy thông tin hồ sơ người dùng bằng access token.
     private JsonObject requestUserInfo(String accessToken) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(USERINFO_ENDPOINT))
@@ -94,6 +102,7 @@ public class GoogleOAuthService {
         }
     }
 
+    // Chuyển đổi JSON userinfo thành đối tượng GoogleProfile.
     private GoogleProfile mapProfile(JsonObject payload) {
         return new GoogleProfile(
                 getRequiredField(payload, "sub"),
@@ -102,6 +111,7 @@ public class GoogleOAuthService {
         );
     }
 
+    // Đọc cấu hình bắt buộc và báo lỗi nếu thiếu.
     private String requireConfig(String key) {
         String value = AppConfig.get(key);
         if (value == null || value.isBlank()) {
@@ -110,13 +120,18 @@ public class GoogleOAuthService {
         return value;
     }
 
+    // Mã hóa tham số URL với UTF-8.
     private String urlEncode(String value) {
         return URLEncoder.encode(Objects.toString(value, ""), StandardCharsets.UTF_8);
     }
 
     public static final class GoogleProfile {
+
+        // ID Google duy nhất của người dùng.
         private final String googleId;
+        // Email Google.
         private final String email;
+        // Tên đầy đủ từ hồ sơ Google.
         private final String name;
 
         public GoogleProfile(String googleId, String email, String name) {
@@ -125,19 +140,23 @@ public class GoogleOAuthService {
             this.name = name;
         }
 
+        // Lấy Google ID.
         public String getGoogleId() {
             return googleId;
         }
 
+        // Lấy email.
         public String getEmail() {
             return email;
         }
 
+        // Lấy tên hiển thị.
         public String getName() {
             return name;
         }
     }
 
+    // Lấy trường bắt buộc từ JSON, ném lỗi nếu vắng mặt.
     private String getRequiredField(JsonObject payload, String key) {
         if (payload == null || !payload.has(key)) {
             throw new IllegalStateException("Google không trả về trường " + key);
