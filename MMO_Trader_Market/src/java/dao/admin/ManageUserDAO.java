@@ -21,28 +21,29 @@ public class ManageUserDAO {
         List<Users> list = new ArrayList<>();
 
         StringBuilder sb = new StringBuilder("""
-            SELECT 
-                u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
-                r.name AS role_name
-            FROM users u
-            LEFT JOIN roles r ON u.role_id = r.id
-            WHERE 1=1
-        """);
+        SELECT 
+            u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
+            r.name AS role_name
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        WHERE 1=1
+    """);
 
         List<Object> params = new ArrayList<>();
 
-        // 🔸 Tìm theo keyword (name/email LIKE %keyword%)
-        if (keyword != null && !keyword.isEmpty()) {
-            sb.append(" AND (LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ?) ");
-            String like = "%" + keyword.toLowerCase() + "%";
-            params.add(like);
-            params.add(like);
+        String kw = (keyword == null) ? null : keyword.trim();
+        String rl = (role    == null) ? null : role.trim();
+
+        // 🔸 Tìm theo keyword CHỈ THEO TÊN (không theo email)
+        if (kw != null && !kw.isEmpty()) {
+            sb.append(" AND LOWER(u.name) LIKE ? ");
+            params.add("%" + kw.toLowerCase() + "%");
         }
 
-        // 🔸 Lọc theo role
-        if (role != null && !role.isEmpty()) {
-            sb.append(" AND UPPER(r.name) = UPPER(?) ");
-            params.add(role);
+        // 🔸 Lọc theo role (buyer/seller/admin)
+        if (rl != null && !rl.isEmpty()) {
+            sb.append(" AND LOWER(r.name) = ? ");
+            params.add(rl.toLowerCase());
         }
 
         // 🔸 Lọc theo ngày tạo
@@ -58,25 +59,18 @@ public class ManageUserDAO {
             params.add(toAt);
         }
 
-        sb.append(" ORDER BY u.created_at DESC ");
+        sb.append(" ORDER BY u.created_at DESC");
 
         try (PreparedStatement ps = con.prepareStatement(sb.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                Object p = params.get(i);
-                if (p instanceof Timestamp ts) {
-                    ps.setTimestamp(i + 1, ts);
-                } else {
-                    ps.setString(i + 1, p.toString());
-                }
+            int i = 1;
+            for (Object p : params) {
+                if (p instanceof Timestamp ts) ps.setTimestamp(i++, ts);
+                else                          ps.setObject(i++, p);
             }
-
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
+                while (rs.next()) list.add(mapRow(rs));
             }
         }
-
         return list;
     }
 
