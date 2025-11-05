@@ -11,7 +11,7 @@
 <c:set var="total"    value="${pg_total != null ? pg_total : (userList != null ? fn:length(userList) : 0)}" />
 <c:set var="pages"    value="${pg_pages != null ? pg_pages : ((total + pageSize - 1) / pageSize)}" />
 
-<!-- Cờ mở modal (không dùng JS) -->
+
 <c:set var="openCreate" value="${openCreateModal or param.openCreate == '1'}" />
 
 <div class="container-fluid">
@@ -20,62 +20,56 @@
     <!-- ===== Bộ lọc (GET, không auto-submit) ===== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form class="row g-2 align-items-end" action="${base}/admin/users" method="get" novalidate>
-                <!-- Giữ size; khi bấm Tìm kiếm sẽ về page=1 -->
+            <form id="userFilterForm" class="row g-2 align-items-end"
+                  action="${base}/admin/users" method="get" novalidate>
                 <input type="hidden" name="size" value="${pageSize}">
                 <input type="hidden" name="page" value="1">
 
                 <div class="col-12 col-md-3">
-                    <label class="form-label mb-1">Từ khóa</label>
+                    <label class="form-label mb-1" for="q">Từ khóa</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input name="q" type="text" class="form-control"
+                        <input id="q" name="q" type="text" class="form-control"
                                placeholder="Tên hoặc email..." value="${param.q}">
                     </div>
                 </div>
 
                 <div class="col-12 col-md-2">
-                    <label class="form-label mb-1">Vai trò</label>
-                    <select name="role" class="form-select">
+                    <label class="form-label mb-1" for="role">Vai trò</label>
+                    <select id="role" name="role" class="form-select">
                         <c:set var="r" value="${empty param.role ? '' : param.role}"/>
                         <option value=""        ${r==''? 'selected' : ''}>Tất cả</option>
                         <option value="buyer"   ${r=='buyer'? 'selected' : ''}>Buyer</option>
                         <option value="seller"  ${r=='seller'? 'selected' : ''}>Seller</option>
-                        <option value="admin"   ${r=='admin'? 'selected' : ''}>Admin</option>
                     </select>
                 </div>
 
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1">Từ ngày</label>
+                    <label class="form-label mb-1" for="from">Từ ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input name="from" type="text" class="form-control"
+                        <input id="from" name="from" type="date" lang="vi" class="form-control"
                                placeholder="DD-MM-YYYY" value="${param.from}">
                     </div>
                 </div>
 
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1">Đến ngày</label>
+                    <label class="form-label mb-1" for="to">Đến ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input name="to" type="text" class="form-control"
+                        <input id="to" name="to" type="date" lang="vi" class="form-control"
                                placeholder="DD-MM-YYYY" value="${param.to}">
                     </div>
                 </div>
 
                 <div class="col-12 col-md-3 d-flex gap-2">
-                    <button class="btn btn-dark flex-fill" type="submit" formnovalidate>
-                        <i class="bi bi-funnel"></i> Tìm kiếm
-                    </button>
-
-                    <!-- Mở modal không dùng JS: đi kèm query openCreate=1 -->
                     <a class="btn btn-primary flex-fill" href="${base}/admin/users?openCreate=1">
                         <i class="bi bi-plus-circle"></i> Thêm người dùng
                     </a>
-
                     <a class="btn btn-outline-secondary" href="${base}/admin/users">Xóa lọc</a>
                 </div>
             </form>
+
         </div>
     </div>
 
@@ -141,11 +135,7 @@
         </table>
     </div>
 
-    <!-- ===== Phân trang kiểu KYC (không JS) ===== -->
-    <c:url var="usersPath" value="/admin/users"/>
-
-    <c:if test="${pages > 1}">
-        <nav aria-label="Pagination">
+    <nav aria-label="Pagination">
             <ul class="pagination justify-content-center mt-3">
 
                 <!-- Prev -->
@@ -153,6 +143,7 @@
                     <c:url var="uPrev" value="${usersPath}">
                         <c:param name="q"    value="${param.q}" />
                         <c:param name="role" value="${param.role}" />
+
                         <c:param name="from" value="${param.from}" />
                         <c:param name="to"   value="${param.to}" />
                         <c:param name="size" value="${pageSize}" />
@@ -191,7 +182,7 @@
 
             </ul>
         </nav>
-    </c:if>
+
 
     <!-- Debug nhỏ (tuỳ thích) -->
     <div style="position:fixed;bottom:6px;left:6px;font:12px/1 monospace;background:#f6f8fa;border:1px solid #ddd;padding:6px 8px;border-radius:6px;z-index:9999">
@@ -261,3 +252,51 @@
     <style>body{overflow:hidden}</style>
     <div class="modal-backdrop fade show"></div>
 </c:if>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form   = document.getElementById('userFilterForm');
+        if (!form) return;
+
+        const qInput = document.getElementById('q');
+        const roleEl = document.getElementById('role');
+        const fromEl = document.getElementById('from');
+        const toEl   = document.getElementById('to');
+
+        // reset về trang 1 khi filter
+        function resetPageToFirst() {
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden) {
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        // Chặn Enter nếu bạn không muốn reload khi người ta ấn Enter ở role/to
+        form.addEventListener('keydown', (e) => {
+            const el = e.target;
+            // chỉ cho phép Enter ở ô q
+            if (e.key === 'Enter' && el.id !== 'q') {
+                e.preventDefault();
+            }
+        });
+
+        // ✅ Role thay đổi → submit ngay
+        if (roleEl) {
+            roleEl.addEventListener('change', () => {
+                resetPageToFirst();
+                form.submit();
+            });
+        }
+
+        // ✅ To thay đổi → submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', () => {
+                resetPageToFirst();
+                form.submit();
+            });
+        }
+    });
+</script>

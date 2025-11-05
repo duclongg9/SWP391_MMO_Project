@@ -25,7 +25,7 @@ import org.mindrot.jbcrypt.BCrypt;
 
 @WebServlet(name = "AdminRouter", urlPatterns = {"/admin/*"})
 public class AdminViewServlet extends HttpServlet {
-
+    Users user;
     // ------ Date helpers ------
     // Chấp nhận: dd-MM-yyyy, yyyy-MM-dd, dd/MM/yyyy
     private static final DateTimeFormatter FLEX_DMY = new DateTimeFormatterBuilder()
@@ -36,6 +36,8 @@ public class AdminViewServlet extends HttpServlet {
             .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
             .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
             .toFormatter();
+
+
 
     private static LocalDate tryParseDate(String s) {
         if (s == null) return null;
@@ -87,16 +89,79 @@ public class AdminViewServlet extends HttpServlet {
 
         switch (path.toLowerCase()) {
             case "/users":
-                handleCreateUser(req, resp);     // ↓ báo lỗi trong popup
+                handleCreateUser(req, resp);
                 return;
-
             case "/users/status":
-                handleUserStatus(req, resp);     // ban / unban → redirect
+                handleUserStatus(req, resp);
                 return;
-
+            case "/kycs/status":
+                handleKycStatus(req, resp);
+                return;
+            case "/shops/status":
+                handleShopStatus(req, resp);
+                return;
             default:
                 resp.sendError(404);
+        }
+    }
+    private void handleKycStatus(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException, ServletException {
+
+        String action   = req.getParameter("action");   // approve | reject
+        String idStr    = req.getParameter("id");
+        String feedback = req.getParameter("feedback");
+
+        if (idStr == null || !idStr.matches("\\d+")) {
+            resp.sendError(400, "Sai ID");
+            return;
+        }
+        int kycId = Integer.parseInt(idStr);
+
+        try (Connection con = DBConnect.getConnection()) {
+            ManageKycDAO dao = new ManageKycDAO(con);
+            int rows;
+            if ("approve".equalsIgnoreCase(action)) {
+                rows = dao.approveKycAndPromote(kycId, feedback);
+            } else if ("reject".equalsIgnoreCase(action)) {
+                rows = dao.rejectKyc(kycId, (feedback == null ? "" : feedback));
+            } else {
+                resp.sendError(400, "Action không hợp lệ");
                 return;
+            }
+
+            req.getSession().setAttribute("flash", rows > 0 ? "Cập nhật thành công" : "Không có thay đổi");
+            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.sendError(500, e.getMessage());
+        }
+    }
+    private void handleShopStatus(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException, ServletException {
+
+        String idStr  = req.getParameter("id");
+        String action = req.getParameter("action");   // accept | reject
+
+        if (idStr == null || !idStr.matches("\\d+")) {
+            resp.sendError(400, "Sai ID");
+            return;
+        }
+        if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
+            resp.sendError(400, "Action không hợp lệ");
+            return;
+        }
+
+        int shopId = Integer.parseInt(idStr);
+        String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
+
+        try (Connection con = DBConnect.getConnection()) {
+            ManageShopDAO dao = new ManageShopDAO(con);
+            boolean ok = dao.updateStatus(shopId, newStatus);
+            req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.sendError(500, e.getMessage());
         }
     }
 
@@ -210,16 +275,20 @@ public class AdminViewServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/admin/users");
     }
 
-
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
+        Integer user = (Integer) req.getSession().getAttribute("userId");
+        if(user == null){
+            resp.sendRedirect(req.getContextPath() + "/auth");
+            return;
+        }
         String path = req.getPathInfo();
         if (path == null || "/".equals(path)) path = "/dashboard";
 
         switch (path.toLowerCase()) {
+//            case "/dashboard" ->
             case "/users" -> handleUsers(req, resp);
             case "/cashs" -> handleCashs(req, resp);
             case "/shops" -> handleShops(req, resp);
@@ -230,9 +299,10 @@ public class AdminViewServlet extends HttpServlet {
                 req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
                 req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
             }
-
         }
     }
+    // ================== /admin/users ==================
+
 
     // ================== /admin/users ==================
     private void handleUsers(HttpServletRequest req, HttpServletResponse resp)
@@ -378,9 +448,11 @@ public class AdminViewServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String q      = clean(req.getParameter("q"));
-        String status = clean(req.getParameter("status"));
+        String status = clean(req.getParameter("status"));      // all | Active | Pending | Rejected | Banned...
         String from   = clean(req.getParameter("from"));
         String to     = clean(req.getParameter("to"));
+        String sort   = clean(req.getParameter("sort"));        // date_desc | date_asc | status_asc | status_desc
+        if (sort == null || sort.isBlank()) sort = "date_desc"; // giống KYC
 
         final int DEFAULT_SIZE = 8;
         int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
@@ -396,11 +468,14 @@ public class AdminViewServlet extends HttpServlet {
             ManageShopDAO dao = new ManageShopDAO(con);
             List<Shops> list = dao.getAllShops(); // TODO: chuyển DAO paging khi có
 
-            // filter
+            // ===== Filter (giống tinh thần KYC) =====
             if (q != null && !q.isEmpty()) {
                 final String qLower = q.toLowerCase();
                 list = list.stream()
-                        .filter(s -> s.getName() != null && s.getName().toLowerCase().contains(qLower))
+                        .filter(s ->
+                                (s.getName() != null && s.getName().toLowerCase().contains(qLower)) ||
+                                        (s.getOwnerName() != null && s.getOwnerName().toLowerCase().contains(qLower))
+                        )
                         .toList();
             }
             if (status != null && !"all".equalsIgnoreCase(status)) {
@@ -419,17 +494,37 @@ public class AdminViewServlet extends HttpServlet {
                 }).toList();
             }
 
-            // sort mới -> cũ
-            list = list.stream()
-                    .sorted(Comparator.comparing(
-                            s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt(),
-                            Comparator.reverseOrder()))
-                    .toList();
+            // ===== Sort (đồng bộ cách của KYC) =====
+            Comparator<Shops> byDate = Comparator.comparing(
+                    s -> s.getCreatedAt() == null ? new java.util.Date(0) : s.getCreatedAt()
+            );
 
-            // paging
+            // rank trạng thái để sort status_asc/status_desc
+            java.util.Map<String,Integer> rank = new java.util.HashMap<>();
+            // Ưu tiên “đang chờ -> duyệt -> từ chối” tương tự 1/2/3 của KYC,
+            // nhưng với string của Shop:
+            rank.put("Pending",  1);
+            rank.put("Active",   2);
+            rank.put("Rejected", 3);
+            rank.put("Banned",   4);
+
+            Comparator<Shops> byStatus = Comparator.comparing(s -> {
+                String st = (s.getStatus() == null ? "" : s.getStatus());
+                return rank.getOrDefault(st, 9);
+            });
+
+            list = switch (sort) {
+                case "date_asc"    -> list.stream().sorted(byDate).toList();
+                case "status_asc"  -> list.stream().sorted(byStatus).toList();
+                case "status_desc" -> list.stream().sorted(byStatus.reversed()).toList();
+                default            -> list.stream().sorted(byDate.reversed()).toList(); // date_desc
+            };
+
+            // ===== Paging =====
             int total = list.size();
             int pages = ceilDiv(total, size);
             page = clampPage(page, pages);
+
             int fromIdx = Math.max(0, (page - 1) * size);
             int toIdx   = Math.min(total, fromIdx + size);
             List<Shops> pageList = list.subList(fromIdx, toIdx);
@@ -447,16 +542,19 @@ public class AdminViewServlet extends HttpServlet {
             throw new ServletException(e);
         }
 
+        // Giữ filter & sort cho JSP (giống KYC: date -> ISO yyyy-MM-dd)
         req.setAttribute("q", q == null ? "" : q);
         req.setAttribute("status", status == null ? "all" : status);
         req.setAttribute("from", fromD == null ? "" : fromD.toString());
         req.setAttribute("to",   toD   == null ? "" : toD.toString());
+        req.setAttribute("sort", sort);
 
         req.setAttribute("pageTitle", "Quản lý cửa hàng");
         req.setAttribute("active", "shops");
         req.setAttribute("content", "/WEB-INF/views/Admin/pages/shops.jsp");
         req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
     }
+
 
     // ================== /admin/kycs ==================
     private void handleKycs(HttpServletRequest req, HttpServletResponse resp)
@@ -486,8 +584,6 @@ public class AdminViewServlet extends HttpServlet {
 
         try (Connection con = DBConnect.getConnection()) {
             ManageKycDAO dao = new ManageKycDAO(con);
-
-            // Lấy tất cả -> lọc/sort trong RAM (giữ nguyên theo code gốc)
             List<KycRequests> list = dao.getAllKycRequests();
 
             // filter theo tên
@@ -538,9 +634,7 @@ public class AdminViewServlet extends HttpServlet {
             int pages = (int) Math.ceil(total / (double) size);
             if (pages < 1) pages = 1;
 
-
             page = Math.max(1, Math.min(page, pages));
-
             int fromIdx = Math.max(0, (page - 1) * size);
             int toIdx   = Math.min(total, fromIdx + size);
             List<KycRequests> pageList = list.subList(fromIdx, toIdx);

@@ -27,37 +27,30 @@
     </c:if>
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form class="row g-2 align-items-end" action="<c:url value='/admin/kycs'/>" method="get">
-                <!-- Khi lọc → luôn quay về trang 1 -->
+            <form id="kycFilterForm" class="row g-2 align-items-end" action="<c:url value='/admin/kycs'/>" method="get">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="size" value="${pageSize}">
                 <input type="hidden" name="sort" value="${sort}"/>
 
-                <!-- Từ khóa -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label mb-1" for="q">Từ khóa</label>
+                    <label class="form-label mb-1" for="q">Tìm kiếm</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input id="q" name="q" type="search" class="form-control"
-                               placeholder="Tên người dùng… (nhấn Enter để lọc)"
-                               value="${fn:escapeXml(q)}" />
+                               placeholder="Tên người dùng…" value="${fn:escapeXml(q)}" />
                     </div>
-                    <small class="text-muted">Không có nút Lọc; nhấn Enter để tìm.</small>
                 </div>
 
-                <!-- Từ ngày -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="from">Từ ngày</label>
-                    <input id="from" name="from" type="date" class="form-control" value="${fn:escapeXml(from)}">
+                    <input id="from" name="from" type="date" lang="vi" class="form-control" placeholder="DD-MM-YYYY" value="${fn:escapeXml(from)}">
                 </div>
 
-                <!-- Đến ngày -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="to">Đến ngày</label>
-                    <input id="to" name="to" type="date" class="form-control" value="${fn:escapeXml(to)}">
+                    <input id="to" name="to" type="date" lang="vi" class="form-control" placeholder="DD-MM-YYYY" value="${fn:escapeXml(to)}">
                 </div>
 
-                <!-- Trạng thái -->
                 <div class="col-12 col-md-2">
                     <label class="form-label mb-1" for="status">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
@@ -68,14 +61,12 @@
                     </select>
                 </div>
 
-                <!-- Xóa lọc -->
                 <div class="col-12 col-md-2 d-grid">
                     <a class="btn btn-outline-secondary" href="<c:url value='/admin/kycs'/>">Xóa lọc</a>
                 </div>
             </form>
         </div>
     </div>
-
     <!-- ===== Bảng danh sách ===== -->
     <div class="card shadow-sm">
         <div class="card-body">
@@ -126,9 +117,6 @@
                     <c:choose>
                         <c:when test="${not empty kycList}">
                             <c:forEach var="k" items="${kycList}" varStatus="st">
-
-                                <!-- Nếu ảnh đã chuẩn hoá ở Servlet thì có thể dùng trực tiếp k.frontImageUrl ...
-                                Nếu chưa, fallback thêm base vào URL tương đối: -->
                                 <c:set var="frontSrc"  value="${k.frontImageUrl}" />
                                 <c:set var="backSrc"   value="${k.backImageUrl}" />
                                 <c:set var="selfieSrc" value="${k.selfieImageUrl}" />
@@ -198,14 +186,93 @@
                                     </td>
 
                                     <td class="text-center">
-                                        <c:url var="detailUrl" value="/admin/kycs/detail">
-                                            <c:param name="id" value="${k.id}" />
-                                        </c:url>
-                                        <a class="btn btn-sm btn-primary" href="${detailUrl}">
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#kycModal_${k.id}">
                                             <i class="bi bi-eye"></i> Xem chi tiết
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
+
+                                <div class="modal fade" id="kycModal_${k.id}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-dark text-white">
+                                                <h5 class="modal-title">KYC #${k.id} – ${k.userName}</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="small text-muted mb-1">Email</div>
+                                                        <div class="fw-semibold">${k.userEmail}</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="small text-muted mb-1">Số giấy tờ</div>
+                                                        <div class="fw-semibold">${k.idNumber}</div>
+                                                    </div>
+
+                                                    <div class="col-12"><hr/></div>
+
+                                                    <!-- Ảnh: chỉ 1 modal zoom dùng chung, mỗi ảnh có data-full -->
+                                                    <div class="col-md-4 text-center">
+                                                        <div class="small text-muted mb-2">Mặt trước</div>
+                                                        <a href="#" class="zoom-link" data-full="${k.frontImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                                            <img src="${k.frontImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="front"
+                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.frontImageUrl}'">
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-4 text-center">
+                                                        <div class="small text-muted mb-2">Mặt sau</div>
+                                                        <a href="#" class="zoom-link" data-full="${k.backImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                                            <img src="${k.backImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
+                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.backImageUrl}'">
+                                                        </a>
+                                                    </div>
+                                                    <div class="col-md-4 text-center">
+                                                        <div class="small text-muted mb-2">Selfie</div>
+                                                        <a href="#" class="zoom-link" data-full="${k.selfieImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                                            <img src="${k.selfieImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="selfie"
+                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.selfieImageUrl}'">
+                                                        </a>
+                                                    </div>
+
+                                                    <div class="col-12 mt-3">
+                                                        <div class="small text-muted mb-1">Ghi chú/Phản hồi quản trị</div>
+                                                        <form action="${base}/admin/kycs/status" method="post">
+                                                            <input type="hidden" name="id" value="${k.id}"/>
+                                                            <textarea name="feedback" class="form-control" rows="3"
+                                                                      placeholder="Ghi chú cho người dùng (bắt buộc khi từ chối)"
+                                                                      <c:if test="${k.statusId != 1}">disabled</c:if>>${k.adminFeedback}</textarea>
+
+                                                            <div class="d-flex gap-2 mt-3">
+                                                                <c:choose>
+                                                                    <c:when test="${k.statusId == 1}">
+                                                                        <button class="btn btn-success" name="action" value="approve">
+                                                                            <i class="bi bi-check-circle"></i> Accept
+                                                                        </button>
+                                                                        <button class="btn btn-danger" name="action" value="reject"
+                                                                                onclick="return confirm('Từ chối KYC này?');">
+                                                                            <i class="bi bi-x-circle"></i> Reject
+                                                                        </button>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <span class="text-muted align-self-center">Hồ sơ đã xử lý.</span>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+
+                                                                <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Đóng</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
@@ -273,12 +340,125 @@
 
         </ul>
     </nav>
+
+
+
     <div style="position:fixed;bottom:6px;left:6px;font:12px/1 monospace;background:#f6f8fa;border:1px solid #ddd;padding:6px 8px;border-radius:6px;z-index:9999">
         pageNow=${pageNow}, pages=${pages}, total=${total}, size=${pageSize},
         isFirst=${isFirst}, isLast=${isLast}, singlePage=${singlePage}
     </div>
+
+    <div class="modal fade" id="imgZoomModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-center">
+                <img id="zoomImg" src="" alt="Preview" class="img-fluid">
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 <style>
     .table td,.table th{ vertical-align:middle }
+
+    .kyc-thumb {
+        cursor: zoom-in;
+        transition: transform 0.2s ease;
+    }
+    .kyc-thumb:hover {
+        transform: scale(1.05);
+    }
+
+    #imgZoomModal img {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // =============================
+        // ✅ PHẦN 1: AUTO FILTER (trừ ô q)
+        // =============================
+        const form   = document.getElementById('kycFilterForm');
+        if (!form) return; // an toàn
+
+        const qInput = document.getElementById('q');
+        const selStt = document.getElementById('status');
+        const fromEl = document.getElementById('from');
+        const toEl   = document.getElementById('to');
+
+        // Reset về trang 1 trước khi lọc
+        function resetPageToFirst() {
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden) {
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target !== qInput) {
+                e.preventDefault();
+            }
+        });
+
+
+        // Nếu muốn chắc chắn reset page khi Enter ở q:
+        if (qInput) {
+            qInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') resetPageToFirst();
+            });
+        }
+
+        // ✅ Đổi trạng thái -> submit ngay
+        if (selStt) {
+            selStt.addEventListener('change', () => {
+                resetPageToFirst();
+                form.submit();
+            });
+        }
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', () => {
+                resetPageToFirst();
+                form.submit();
+            });
+        }
+        // fromEl: cố ý không gắn sự kiện (chọn from chưa submit)
+
+
+        // ============================= Room Image
+        const zoomModal = document.getElementById('imgZoomModal');
+        if (zoomModal) {
+            let lastDetailModal = null;
+
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('.zoom-link');
+                if (!link) return;
+                e.preventDefault();
+
+                lastDetailModal = e.target.closest('.modal');
+                const full = link.getAttribute('data-full') || link.querySelector('img')?.src;
+                const img = document.getElementById('zoomImg');
+                if (img) img.src = full;
+
+                new bootstrap.Modal(zoomModal).show();
+            });
+
+            zoomModal.addEventListener('hidden.bs.modal', function() {
+                if (lastDetailModal) {
+                    new bootstrap.Modal(lastDetailModal).show();
+                    lastDetailModal = null;
+                }
+            });
+        }
+    });
+</script>
