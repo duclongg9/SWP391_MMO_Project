@@ -80,27 +80,6 @@
             });
         }
 
-        // Nút mở lịch (nếu có)
-        const btnFrom = document.getElementById('btnFrom');
-        if (btnFrom && fromPicker)
-            btnFrom.addEventListener('click', () => fromPicker.open());
 
-        const btnTo = document.getElementById('btnTo');
-        if (btnTo && toPicker)
-            btnTo.addEventListener('click', () => toPicker.open());
-
-        // Tìm kiếm (nếu có)
-        const btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) {
-            btnSearch.addEventListener('click', () => {
-                const q = (document.getElementById('keyword') || {}).value?.trim() || "";
-                const rol = (document.getElementById('role') || {}).value || "";
-                const f = (fromInput || {}).value || "";
-                const t = (toInput || {}).value || "";
-                console.log('Search with:', {q, rol, f, t});
-
-                // TODO: fetch(`${base}/admin/users?keyword=${encodeURIComponent(q)}&role=${rol}&from=${f}&to=${t}`)
-            });
-        }
     });
 })();
