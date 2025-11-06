@@ -162,18 +162,23 @@ function validatePass() {
     const msg = document.getElementById("msg");
 
     // Mật khẩu nhập lại sai
+    // Luôn ẩn cả hai trước khi kiểm tra
+    errMsg.style.display = "none";
+    msg.style.display = "none";
+
+    // Mật khẩu nhập lại sai
     if (newPass && confirmPass && newPass !== confirmPass) {
         errMsg.textContent = "Nhập lại mật khẩu không khớp!";
         errMsg.style.display = "inline";
         return false;
-    }else if(newPass && confirmPass && newPass == confirmPass){
-        msg.textContent = "Khớp";
-        msg.style.display = "inline";
-        errMsg.style.display = "none";
-        return true;
     }
 
-    errMsg.style.display = "inline";
+    // Mật khẩu khớp
+    if (newPass && confirmPass && newPass === confirmPass) {
+        msg.textContent = "Khớp";
+        msg.style.display = "inline";
+        return true;
+    }
     return true;
 }
 </script>
