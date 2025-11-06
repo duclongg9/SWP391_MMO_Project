@@ -16,7 +16,6 @@
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-people me-2"></i>Quản lý người dùng</h4>
-
     <!-- ===== Bộ lọc (GET, không auto-submit) ===== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
@@ -63,13 +62,11 @@
                 </div>
 
                 <div class="col-12 col-md-3 d-flex gap-2">
-                    <a class="btn btn-primary flex-fill" href="${base}/admin/users?openCreate=1">
-                        <i class="bi bi-plus-circle"></i> Thêm người dùng
-                    </a>
                     <a class="btn btn-outline-secondary" href="${base}/admin/users">Xóa lọc</a>
                 </div>
-            </form>
 
+            </form>
+            <div id="toastBox"></div>
         </div>
     </div>
 
@@ -85,6 +82,7 @@
                 <th>Ngày cập nhật</th>
                 <th style="width:140px">Vai trò</th>
                 <th style="width:140px">Trạng thái</th>
+                <th style="width:140px">Avatar</th>
                 <th class="text-center" style="width:170px">Hành động</th>
             </tr>
             </thead>
@@ -98,6 +96,8 @@
                         <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
                         <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
                         <td>${u.roleName}</td>
+                        <td><img src="${u.avatarUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
+                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${u.avatarUrl}'"></td>
                         <td>
                             <c:choose>
                                 <c:when test="${u.status eq 1}">
@@ -109,21 +109,29 @@
                             </c:choose>
                         </td>
                         <td class="text-center">
+                            <!-- Nút Ban -->
                             <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="ban">
-                                <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != 0}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Bạn có chắc muốn BAN người dùng này?')"
+                                        <c:if test="${u.status == 0}">disabled</c:if>>
                                     <i class="bi bi-flag"></i> Ban
                                 </button>
                             </form>
+
+                            <!-- Nút Unban -->
                             <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="unban">
-                                <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == 1}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="return confirm('Bạn có chắc muốn UNBAN người dùng này?')"
+                                        <c:if test="${u.status == 1}">disabled</c:if>>
                                     <i class="bi bi-flag"></i> Unban
                                 </button>
                             </form>
                         </td>
+
                     </tr>
                 </c:if>
             </c:forEach>
@@ -252,20 +260,79 @@
     <style>body{overflow:hidden}</style>
     <div class="modal-backdrop fade show"></div>
 </c:if>
+
+<style>
+    #toastBox{
+        position: fixed;
+        bottom: 30px; right: 30px;
+        display: flex; align-items: flex-end; flex-direction: column;
+        overflow: hidden; padding: 20px; z-index: 9999;
+    }
+
+    .mm-toast{
+        width: 400px; height: 80px; background: #fff;
+        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center; padding: 20px; position: relative;
+        transform: translateX(100%);
+        animation: moveleft 0.5s linear forwards;
+    }
+
+    .mm-toast i{
+        margin: 0 20px;
+        font-size: 35px;
+        color: green;
+    }
+    .mm-toast::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: green;
+        animation: anim 5s linear forwards;
+    }
+
+    @keyframes anim {
+        100%{ width: 0; }
+    }
+    @keyframes moveleft {
+        100%{ transform: translateX(0); }
+    }
+
+
+
+</style>
+
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form   = document.getElementById('userFilterForm');
+
+    const toastBox = document.getElementById('toastBox');
+
+    function showToast(msg){
+        const toast = document.createElement('div');
+        toast.innerHTML = msg;
+        toast.classList.add('mm-toast')
+        toastBox.appendChild(toast);
+        const m = msg.toLowerCase();
+        setTimeout(() =>{
+            toast.remove();
+        }, 6000);
+    }
+
+    // Phần filter form: vì script ở cuối trang, gọi trực tiếp thay vì DOMContentLoaded
+    (function initFilter(){
+        const form = document.getElementById('userFilterForm');
         if (!form) return;
-
-        const qInput = document.getElementById('q');
         const roleEl = document.getElementById('role');
-        const fromEl = document.getElementById('from');
         const toEl   = document.getElementById('to');
+        const fromEl = document.getElementById("from");
+        const today = new Date();
+        today.setHours(0,0,0,0);
 
-        // reset về trang 1 khi filter
-        function resetPageToFirst() {
+        function resetPageToFirst(){
             let pageHidden = form.querySelector('input[name="page"]');
-            if (!pageHidden) {
+            if (!pageHidden){
                 pageHidden = document.createElement('input');
                 pageHidden.type = 'hidden';
                 pageHidden.name = 'page';
@@ -274,16 +341,6 @@
             pageHidden.value = '1';
         }
 
-        // Chặn Enter nếu bạn không muốn reload khi người ta ấn Enter ở role/to
-        form.addEventListener('keydown', (e) => {
-            const el = e.target;
-            // chỉ cho phép Enter ở ô q
-            if (e.key === 'Enter' && el.id !== 'q') {
-                e.preventDefault();
-            }
-        });
-
-        // ✅ Role thay đổi → submit ngay
         if (roleEl) {
             roleEl.addEventListener('change', () => {
                 resetPageToFirst();
@@ -291,12 +348,46 @@
             });
         }
 
-        // ✅ To thay đổi → submit ngay
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.id !== 'q') e.preventDefault();
+        });
+
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }
+            })
+        }
+
+
+        // ✅ End date -> submit ngay
         if (toEl) {
-            toEl.addEventListener('change', () => {
-                resetPageToFirst();
-                form.submit();
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }else{
+                    resetPageToFirst();
+                    form.submit();
+                }
             });
         }
-    });
+    })();
 </script>
+
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

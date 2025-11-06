@@ -17,11 +17,6 @@
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt</h4>
-
-    <c:if test="${not empty flash}">
-        <div class="alert alert-success shadow-sm">${flash}</div>
-        <% session.removeAttribute("flash"); %>
-    </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>
     </c:if>
@@ -64,7 +59,9 @@
                 <div class="col-12 col-md-2 d-grid">
                     <a class="btn btn-outline-secondary" href="<c:url value='/admin/kycs'/>">Xóa lọc</a>
                 </div>
+
             </form>
+            <div id="toastBox"></div>
         </div>
     </div>
     <!-- ===== Bảng danh sách ===== -->
@@ -238,7 +235,7 @@
 
                                                     <div class="col-12 mt-3">
                                                         <div class="small text-muted mb-1">Ghi chú/Phản hồi quản trị</div>
-                                                        <form action="${base}/admin/kycs/status" method="post">
+                                                        <form action="${base}/admin/kycs/status" method="post" onsubmit="return handleApproveSubmit(event, ${k.id});">
                                                             <input type="hidden" name="id" value="${k.id}"/>
                                                             <textarea name="feedback" class="form-control" rows="3"
                                                                       placeholder="Ghi chú cho người dùng (bắt buộc khi từ chối)"
@@ -247,9 +244,11 @@
                                                             <div class="d-flex gap-2 mt-3">
                                                                 <c:choose>
                                                                     <c:when test="${k.statusId == 1}">
-                                                                        <button class="btn btn-success" name="action" value="approve">
+                                                                        <!-- Nút Accept -->
+                                                                        <button type="submit" class="btn btn-success" name="action" value="approve">
                                                                             <i class="bi bi-check-circle"></i> Accept
                                                                         </button>
+                                                                        <!-- Nút Reject -->
                                                                         <button class="btn btn-danger" name="action" value="reject"
                                                                                 onclick="return confirm('Từ chối KYC này?');">
                                                                             <i class="bi bi-x-circle"></i> Reject
@@ -290,53 +289,46 @@
         <ul class="pagination justify-content-center mt-3">
 
             <!-- Prev -->
-            <c:choose>
-                <c:when test="${pageNow <= 1 || pages <= 1}">
-                    <li class="page-item disabled">
-                        <span class="page-link" aria-disabled="true">&laquo;</span>
-                    </li>
-                </c:when>
-                <c:otherwise>
-                    <c:url var="uPrev" value="/admin/kycs">
-                        <c:param name="page" value="${pageNow-1}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="sort" value="${sort}" />
-                        <c:if test="${not empty q}"><c:param name="q" value="${q}"/></c:if>
-                        <c:if test="${not empty from}"><c:param name="from" value="${from}"/></c:if>
-                        <c:if test="${not empty to}"><c:param name="to" value="${to}"/></c:if>
-                        <c:if test="${not empty status && status ne 'all'}"><c:param name="status" value="${status}"/></c:if>
-                    </c:url>
-                    <li class="page-item">
-                        <a class="page-link" href="${uPrev}" aria-label="Previous">&laquo;</a>
-                    </li>
-                </c:otherwise>
-            </c:choose>
+            <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
+                <c:url var="uPrev" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
 
-            <!-- Current page -->
-            <li class="page-item active"><span class="page-link">${pageNow}</span></li>
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow-1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
+            </li>
+
+            <!-- Page numbers: 1..pages -->
+            <c:forEach var="i" begin="1" end="${pages}">
+                <c:url var="uI" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${i}" />
+                </c:url>
+                <li class="page-item ${i == pageNow ? 'active' : ''}">
+                    <a class="page-link" href="${uI}">${i}</a>
+                </li>
+            </c:forEach>
 
             <!-- Next -->
-            <c:choose>
-                <c:when test="${pageNow >= pages || pages <= 1}">
-                    <li class="page-item disabled">
-                        <span class="page-link" aria-disabled="true">&raquo;</span>
-                    </li>
-                </c:when>
-                <c:otherwise>
-                    <c:url var="uNext" value="/admin/kycs">
-                        <c:param name="page" value="${pageNow+1}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="sort" value="${sort}" />
-                        <c:if test="${not empty q}"><c:param name="q" value="${q}"/></c:if>
-                        <c:if test="${not empty from}"><c:param name="from" value="${from}"/></c:if>
-                        <c:if test="${not empty to}"><c:param name="to" value="${to}"/></c:if>
-                        <c:if test="${not empty status && status ne 'all'}"><c:param name="status" value="${status}"/></c:if>
-                    </c:url>
-                    <li class="page-item">
-                        <a class="page-link" href="${uNext}" aria-label="Next">&raquo;</a>
-                    </li>
-                </c:otherwise>
-            </c:choose>
+            <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
+                <c:url var="uNext" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow+1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
+            </li>
 
         </ul>
     </nav>
@@ -375,9 +367,51 @@
         height: auto;
         border-radius: 8px;
     }
+
+    #toastBox{
+        position: fixed;
+        bottom: 30px; right: 30px;
+        display: flex; align-items: flex-end; flex-direction: column;
+        overflow: hidden; padding: 20px; z-index: 9999;
+    }
+
+    .mm-toast{
+        width: 400px; height: 80px; background: #fff;
+        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center; padding: 20px; position: relative;
+        transform: translateX(100%);
+        animation: moveleft 0.5s linear forwards;
+    }
+
+    .mm-toast i{
+        margin: 0 20px;
+        font-size: 35px;
+        color: red;
+    }
+    .mm-toast::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: red;
+        animation: anim 5s linear forwards;
+    }
+
+    @keyframes anim {
+        100%{ width: 0; }
+    }
+    @keyframes moveleft {
+        100%{ transform: translateX(0); }
+    }
+
+
+
 </style>
 
 <script>
+
     document.addEventListener('DOMContentLoaded', function () {
         // =============================
         // ✅ PHẦN 1: AUTO FILTER (trừ ô q)
@@ -390,6 +424,9 @@
         const fromEl = document.getElementById('from');
         const toEl   = document.getElementById('to');
 
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
         // Reset về trang 1 trước khi lọc
         function resetPageToFirst() {
             let pageHidden = form.querySelector('input[name="page"]');
@@ -401,6 +438,20 @@
             }
             pageHidden.value = '1';
         }
+        const toastBox = document.getElementById('toastBox');
+
+        function showToast(msg){
+            const toast = document.createElement('div');
+            toast.innerHTML = msg;
+            toast.classList.add('mm-toast')
+            toastBox.appendChild(toast);
+            const m = msg.toLowerCase();
+            setTimeout(() =>{
+                toast.remove();
+            }, 6000);
+        }
+
+
 
         // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn
         form.addEventListener('keydown', (e) => {
@@ -425,14 +476,30 @@
             });
         }
 
-        // ✅ End date -> submit ngay
-        if (toEl) {
-            toEl.addEventListener('change', () => {
-                resetPageToFirst();
-                form.submit();
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!');
+                    this.value = "";
+                }
             });
         }
-        // fromEl: cố ý không gắn sự kiện (chọn from chưa submit)
+
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                    if(selected > today){
+                        showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                        this.value = "";
+                    }else{
+                        resetPageToFirst();
+                        form.submit();
+                    }
+            });
+        }
 
 
         // ============================= Room Image
@@ -462,3 +529,15 @@
         }
     });
 </script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

@@ -14,11 +14,6 @@
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shop me-2"></i>Quản lý cửa hàng</h4>
-
-    <c:if test="${not empty flash}">
-        <div class="alert alert-success shadow-sm">${flash}</div>
-        <% session.removeAttribute("flash"); %>
-    </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger shadow-sm">${error}</div>
     </c:if>
@@ -75,6 +70,7 @@
                     <a class="btn btn-outline-secondary" href="${base}/admin/shops">Xóa lọc</a>
                 </div>
             </form>
+            <div id="toastBox"></div>
         </div>
     </div>
 
@@ -353,11 +349,23 @@
         if (!form) return;
 
         const ipQ       = document.getElementById('q');
-        const ipFrom    = document.getElementById('from');
-        const ipTo      = document.getElementById('to');
+        const fromEl   = document.getElementById('from');
+        const toEl      = document.getElementById('to');
         const ipStatus  = document.getElementById('status');
         const pageInput = document.getElementById('pageInput');
+        const today = new Date();
+        today.setHours(0,0,0,0);
 
+        function showToast(msg){
+            const toast = document.createElement('div');
+            toast.innerHTML = msg;
+            toast.classList.add('mm-toast')
+            toastBox.appendChild(toast);
+            const m = msg.toLowerCase();
+            setTimeout(() =>{
+                toast.remove();
+            }, 6000);
+        }
         // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn (giống KYC)
         form.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target !== ipQ) {
@@ -383,13 +391,50 @@
             });
         }
 
-        // Đổi 'to' -> reset trang 1 & submit (from cố ý KHÔNG auto-submit)
-        if (ipTo) {
-            ipTo.addEventListener('change', () => {
-                if (pageInput) pageInput.value = '1';
-                form.submit();
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!');
+                    this.value = "";
+                }
+            });
+        }
+        function resetPageToFirst() {
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden) {
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }else{
+                    resetPageToFirst();
+                    form.submit();
+                }
             });
         }
     });
 </script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
 
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

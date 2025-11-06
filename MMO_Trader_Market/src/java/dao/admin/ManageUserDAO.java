@@ -43,29 +43,6 @@ public class ManageUserDAO {
             return ps.executeUpdate();
         }
     }
-    /** 🔹 Lấy toàn bộ user */
-    public List<Users> getAllUsers() {
-        List<Users> list = new ArrayList<>();
-        String sql = """
-                SELECT 
-                    u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
-                    r.name AS role_name
-                FROM users u
-                LEFT JOIN roles r ON u.role_id = r.id
-                ORDER BY u.created_at DESC
-        """;
-
-        try (Connection c = (this.con != null ? this.con : DBConnect.getConnection());
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) list.add(mapRow(rs));
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
 
     /** 🔹 Hàm tìm kiếm có lọc */
     public List<Users> searchUsers(String keyword, String role, Timestamp fromAt, Timestamp toAt) throws SQLException {
@@ -73,7 +50,7 @@ public class ManageUserDAO {
 
         StringBuilder sb = new StringBuilder("""
             SELECT 
-                u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
+                u.id, u.name, u.email, u.status, u.avatar_url, u.created_at, u.updated_at,
                 r.name AS role_name
             FROM users u
             LEFT JOIN roles r ON u.role_id = r.id
@@ -87,7 +64,7 @@ public class ManageUserDAO {
             sb.append(" AND (LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ?) ");
             String like = "%" + keyword.toLowerCase() + "%";
             params.add(like);
-            params.add(like);
+
         }
 
         // 🔸 Lọc theo role
@@ -164,6 +141,7 @@ public class ManageUserDAO {
         u.setId(rs.getInt("id"));
         u.setName(rs.getString("name"));
         u.setEmail(rs.getString("email"));
+        u.setAvatarUrl(rs.getString("avatar_url"));
 
         // status INT (0/1) từ DB
         int status = 0;
