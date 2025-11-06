@@ -57,7 +57,7 @@ public class AdminViewServlet extends HttpServlet {
         try { return Integer.parseInt(clean(s)); } catch (Exception e) { return dft; }
     }
 
-    // ------ Pagination helpers ------
+    // ------ Pagination helpers ------ 20 , 8
     private static int ceilDiv(int total, int size) {
         return Math.max(1, (int)Math.ceil(total / (double)Math.max(1, size)));
 
@@ -107,37 +107,60 @@ public class AdminViewServlet extends HttpServlet {
         }
     }
     private void handleKycStatus(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException, ServletException {
+            throws IOException {
 
-        String action   = req.getParameter("action");   // approve | reject
-        String idStr    = req.getParameter("id");
-        String feedback = req.getParameter("feedback");
+        req.setCharacterEncoding("UTF-8");
 
+        String action   = safe(req.getParameter("action"));   // "approve" | "reject"
+        String idStr    = safe(req.getParameter("id"));
+        String feedback = safe(req.getParameter("feedback"));
+
+        // Validate cơ bản
         if (idStr == null || !idStr.matches("\\d+")) {
-            resp.sendError(400, "Sai ID");
+            req.getSession().setAttribute("flash", "Lỗi: ID không hợp lệ");
+            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
             return;
         }
+        if (!"approve".equalsIgnoreCase(action) && !"reject".equalsIgnoreCase(action)) {
+            req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ");
+            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+            return;
+        }
+        // Bắt buộc ghi chú khi từ chối
+        if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
+            req.getSession().setAttribute("flash", "Lỗi: Vui lòng nhập lý do từ chối");
+            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
+            return;
+        }
+
         int kycId = Integer.parseInt(idStr);
 
         try (Connection con = DBConnect.getConnection()) {
             ManageKycDAO dao = new ManageKycDAO(con);
             int rows;
+
             if ("approve".equalsIgnoreCase(action)) {
                 rows = dao.approveKycAndPromote(kycId, feedback);
-            } else if ("reject".equalsIgnoreCase(action)) {
-                rows = dao.rejectKyc(kycId, (feedback == null ? "" : feedback));
-            } else {
-                resp.sendError(400, "Action không hợp lệ");
-                return;
+                req.getSession().setAttribute(
+                        "flash",
+                        rows > 0 ? "Duyệt KYC thành công!" : "Không có thay đổi"
+                );
+            } else { // reject
+                rows = dao.rejectKyc(kycId, feedback);
+                req.getSession().setAttribute(
+                        "flash",
+                        rows > 0 ? "Từ chối KYC thành công!" : "Không có thay đổi"
+                );
             }
 
-            req.getSession().setAttribute("flash", rows > 0 ? "Cập nhật thành công" : "Không có thay đổi");
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
         } catch (Exception e) {
             e.printStackTrace();
-            resp.sendError(500, e.getMessage());
+            req.getSession().setAttribute("flash", "Lỗi hệ thống: " + e.getMessage());
+            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
         }
     }
+
     private void handleShopStatus(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
@@ -315,11 +338,6 @@ public class AdminViewServlet extends HttpServlet {
         String from = clean(req.getParameter("from"));
         String to   = clean(req.getParameter("to"));
 
-        final int DEFAULT_SIZE = 8;
-        int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
-        int page = parseIntOrDefault(req.getParameter("page"), 1);
-        if (size <= 0) size = DEFAULT_SIZE;
-
         LocalDate fromD = tryParseDate(from);
         LocalDate toD   = tryParseDate(to);
         Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
@@ -337,6 +355,13 @@ public class AdminViewServlet extends HttpServlet {
                             u -> u.getCreatedAt() == null ? new java.util.Date(0) : u.getCreatedAt(),
                             Comparator.reverseOrder()))
                     .toList();
+
+
+            final int DEFAULT_SIZE = 8;
+            int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
+            int page = parseIntOrDefault(req.getParameter("page"), 1);
+            if (size <= 0) size = DEFAULT_SIZE;
+            // total = 20, size = 8, pages = 3; page = (1,3), fromIdx =(0,
 
             int total = list.size();
             int pages = ceilDiv(total, size);

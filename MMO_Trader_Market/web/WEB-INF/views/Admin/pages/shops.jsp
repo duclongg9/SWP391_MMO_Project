@@ -14,11 +14,6 @@
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shop me-2"></i>Quản lý cửa hàng</h4>
-
-    <c:if test="${not empty flash}">
-        <div class="alert alert-success shadow-sm">${flash}</div>
-        <% session.removeAttribute("flash"); %>
-    </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger shadow-sm">${error}</div>
     </c:if>
@@ -75,6 +70,7 @@
                     <a class="btn btn-outline-secondary" href="${base}/admin/shops">Xóa lọc</a>
                 </div>
             </form>
+            <div id="toastBox"></div>
         </div>
     </div>
 
@@ -251,97 +247,137 @@
     </div>
 
     <!-- ===== Phân trang (cửa sổ) ===== -->
-    <c:url var="shopsPath" value="/admin/shops"/>
 
-        <nav aria-label="Pagination">
-            <ul class="pagination justify-content-center mt-3">
 
-                <!-- Prev -->
-                <li class="page-item ${pageNow<=1?'disabled':''}">
-                    <c:url var="uPrev" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="page"   value="${pageNow-1}" />
-                    </c:url>
-                    <a class="page-link" href="${uPrev}" aria-label="Previous">&laquo;</a>
+    <nav aria-label="Pagination">
+        <ul class="pagination justify-content-center mt-3">
+
+            <!-- Prev -->
+            <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
+                <c:url var="uPrev" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow-1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
+            </li>
+
+            <!-- Page numbers: 1..pages -->
+            <c:forEach var="i" begin="1" end="${pages}">
+                <c:url var="uI" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${i}" />
+                </c:url>
+                <li class="page-item ${i == pageNow ? 'active' : ''}">
+                    <a class="page-link" href="${uI}">${i}</a>
                 </li>
+            </c:forEach>
 
-                <!-- window pages -->
-                <c:set var="start" value="${pageNow-2 < 1 ? 1 : pageNow-2}" />
-                <c:set var="end"   value="${pageNow+2 > pages ? pages : pageNow+2}" />
+            <!-- Next -->
+            <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
+                <c:url var="uNext" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow+1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
+            </li>
 
-                <c:if test="${start > 1}">
-                    <c:url var="u1" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="page"   value="1" />
-                    </c:url>
-                    <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                </c:if>
-
-                <c:forEach var="i" begin="${start}" end="${end}">
-                    <c:url var="ui" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="page"   value="${i}" />
-                    </c:url>
-                    <li class="page-item ${i==pageNow?'active':''}">
-                        <a class="page-link" href="${ui}">${i}</a>
-                    </li>
-                </c:forEach>
-
-                <c:if test="${end < pages}">
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                    <c:url var="uLast" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="page"   value="${pages}" />
-                    </c:url>
-                    <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                </c:if>
-
-                <!-- Next -->
-                <li class="page-item ${pageNow>=pages?'disabled':''}">
-                    <c:url var="uNext" value="${shopsPath}">
-                        <c:param name="q"      value="${q}" />
-                        <c:param name="from"   value="${from}" />
-                        <c:param name="to"     value="${to}" />
-                        <c:param name="status" value="${status}" />
-                        <c:param name="size"   value="${pageSize}" />
-                        <c:param name="sort"   value="${sort}" />
-                        <c:param name="page"   value="${pageNow+1}" />
-                    </c:url>
-                    <a class="page-link" href="${uNext}" aria-label="Next">&raquo;</a>
-                </li>
-
-            </ul>
-        </nav>
+        </ul>
+    </nav>
 </div>
 
 <style>
     .card{border-radius:12px}
     .table td,.table th{vertical-align:middle}
     .table thead th{white-space:nowrap}
+
+    #toastBox{
+        position: fixed;
+        bottom: 30px; right: 30px;
+        display: flex; align-items: flex-end; flex-direction: column;
+        overflow: hidden; padding: 20px; z-index: 9999;
+    }
+
+    .mm-toast{
+        width: 400px; height: 80px; background: #fff;
+        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center; padding: 20px; position: relative;
+        transform: translateX(100%);
+        animation: moveleft 0.5s linear forwards;
+    }
+
+    .mm-toast i{
+        margin: 0 20px;
+        font-size: 35px;
+        color: green;
+    }
+    .mm-toast::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: green;
+        animation: anim 5s linear forwards;
+    }
+    .mm-toast.error i{
+        color: red;
+    }
+    .mm-toast.error{
+        color: red;
+    }
+    .mm-toast.error::after{
+        background: red;
+    }
+    @keyframes anim {
+        100%{ width: 0; }
+    }
+    @keyframes moveleft {
+        100%{ transform: translateX(0); }
+    }
+
+
+
+
+
 </style>
 
 <script>
+
+    const toastBox = document.getElementById('toastBox');
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.classList.add('mm-toast');
+
+        if (type === 'error') {
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            toast.classList.add('warning');
+        }
+
+        toast.innerHTML = msg;
+        toastBox.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+
+
     window.addEventListener('DOMContentLoaded', () => {
         // Tự ẩn flash
         document.querySelectorAll('.alert').forEach(a => {
@@ -353,10 +389,13 @@
         if (!form) return;
 
         const ipQ       = document.getElementById('q');
-        const ipFrom    = document.getElementById('from');
-        const ipTo      = document.getElementById('to');
+        const fromEl   = document.getElementById('from');
+        const toEl      = document.getElementById('to');
         const ipStatus  = document.getElementById('status');
         const pageInput = document.getElementById('pageInput');
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
 
         // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn (giống KYC)
         form.addEventListener('keydown', (e) => {
@@ -383,13 +422,50 @@
             });
         }
 
-        // Đổi 'to' -> reset trang 1 & submit (from cố ý KHÔNG auto-submit)
-        if (ipTo) {
-            ipTo.addEventListener('change', () => {
-                if (pageInput) pageInput.value = '1';
-                form.submit();
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!','error');
+                    this.value = "";
+                }
+            });
+        }
+        function resetPageToFirst() {
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden) {
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }else{
+                    resetPageToFirst();
+                    form.submit();
+                }
             });
         }
     });
 </script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
 
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>
