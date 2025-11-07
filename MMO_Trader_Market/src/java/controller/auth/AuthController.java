@@ -1,4 +1,4 @@
-package controller.auth;
+    package controller.auth;
 
 import controller.BaseController;
 import dao.user.RememberMeTokenDAO;

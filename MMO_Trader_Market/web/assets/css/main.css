@@ -2404,4 +2404,39 @@ code {
 .product-card__cta, .product-card__actions, .button--ghost{
     margin-top:auto;
 }
+/*ghi đè css shop*/
+
+/* ---- FIX: nút Sửa / Ẩn luôn cùng một hàng ---- */
+.seller-page td.table__actions{
+  display: block;          /* trả td về block/table-cell behavior */
+  white-space: nowrap;     /* không xuống dòng */
+  vertical-align: middle;
+}
+
+.seller-page td.table__actions .actions{
+  display: inline-flex;    /* nhóm nút nằm cùng hàng */
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-page td.table__actions form{
+  display: inline-block;   /* form không tạo dòng mới */
+  margin: 0;
+}
+
+.seller-page td.table__actions .button{
+  line-height: 1;
+  padding: 8px 12px;
+}
+
+/* chặn rule mobile trước đó đổi thành cột */
+@media (max-width: 768px){
+  .seller-page td.table__actions .actions{
+    display: inline-flex;
+    flex-direction: column;     /* nếu muốn mobile xếp dọc thì để dòng này, */
+    align-items: stretch;       /* hoặc xóa 2 dòng này để vẫn nằm ngang */
+  }
+}
+
 

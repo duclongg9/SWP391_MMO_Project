@@ -30,7 +30,7 @@ public class UserService {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
     private static final int DEFAULT_ROLE_ID = 3;
-    private static final int RESET_TOKEN_EXPIRY_MINUTES = 30;
+    private static final int RESET_TOKEN_EXPIRY_MINUTES = 1440;
     private static final SecureRandom RANDOM = new SecureRandom();
     private final UserDAO userDAO;
     private final PasswordResetTokenDAO passwordResetTokenDAO;
@@ -415,8 +415,8 @@ public class UserService {
         String displayName = resolveDisplayName(email, name);
         String body = "Xin chào " + displayName + ",\n\n"
                 + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản MMO Trader Market. "
-                + "Vui lòng nhấn vào liên kết bên dưới trong vòng " + RESET_TOKEN_EXPIRY_MINUTES
-                + " phút:\n" + resetLink + "\n\n"
+                + "Vui lòng nhấn vào liên kết bên dưới trong vòng " 
+                + " 24 giờ:\n" + resetLink + "\n\n"
                 + "Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.\n\n"
                 + "Trân trọng,\nĐội ngũ MMO Trader Market";
         try {
