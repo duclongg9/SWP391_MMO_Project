@@ -115,7 +115,10 @@
                                 <input type="hidden" name="action" value="ban">
                                 <button class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Bạn có chắc muốn BAN người dùng này?')"
-                                        <c:if test="${u.status == 0}">disabled</c:if>>
+                                        <c:if test="${u.status == 0}">style="
+                                                display: none;"</c:if>
+
+                                >
                                     <i class="bi bi-flag"></i> Ban
                                 </button>
                             </form>
@@ -126,7 +129,8 @@
                                 <input type="hidden" name="action" value="unban">
                                 <button class="btn btn-sm btn-outline-secondary"
                                         onclick="return confirm('Bạn có chắc muốn UNBAN người dùng này?')"
-                                        <c:if test="${u.status == 1}">disabled</c:if>>
+                                        <c:if test="${u.status == 1}">style="
+                                                display: none;"</c:if>>
                                     <i class="bi bi-flag"></i> Unban
                                 </button>
                             </form>

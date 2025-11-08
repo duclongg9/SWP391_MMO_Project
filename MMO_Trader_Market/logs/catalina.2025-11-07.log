@@ -471,3 +471,38 @@
 07-Nov-2025 03:19:19.941 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
 07-Nov-2025 03:19:19.949 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
 07-Nov-2025 03:19:19.953 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+07-Nov-2025 09:32:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+07-Nov-2025 09:32:35.151 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+07-Nov-2025 09:32:35.152 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+07-Nov-2025 09:32:35.152 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+07-Nov-2025 09:32:35.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+07-Nov-2025 09:32:35.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+07-Nov-2025 09:32:35.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+07-Nov-2025 09:32:35.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+07-Nov-2025 09:32:35.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+07-Nov-2025 09:32:35.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+07-Nov-2025 09:32:35.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+07-Nov-2025 09:32:35.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+07-Nov-2025 09:32:35.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+07-Nov-2025 09:32:35.168 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+07-Nov-2025 09:32:35.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+07-Nov-2025 09:32:35.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+07-Nov-2025 09:32:35.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+07-Nov-2025 09:32:35.170 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+07-Nov-2025 09:32:35.171 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+07-Nov-2025 09:32:35.171 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+07-Nov-2025 09:32:35.172 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+07-Nov-2025 09:32:35.172 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=62534
+07-Nov-2025 09:32:35.173 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+07-Nov-2025 09:32:35.180 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+07-Nov-2025 09:32:35.202 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+07-Nov-2025 09:32:35.787 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+07-Nov-2025 09:32:35.818 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [1009] milliseconds
+07-Nov-2025 09:32:35.905 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+07-Nov-2025 09:32:35.905 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+07-Nov-2025 09:32:35.935 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+07-Nov-2025 09:32:35.977 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+07-Nov-2025 09:32:38.759 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+07-Nov-2025 09:32:39.010 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [3,075] ms
+07-Nov-2025 09:32:39.014 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+07-Nov-2025 09:32:39.094 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [3275] milliseconds

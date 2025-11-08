@@ -115,7 +115,10 @@
                                 <input type="hidden" name="action" value="ban">
                                 <button class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Bạn có chắc muốn BAN người dùng này?')"
-                                        <c:if test="${u.status == 0}">disabled</c:if>>
+                                        <c:if test="${u.status == 0}">style="
+                                                display: none;"</c:if>
+
+                                >
                                     <i class="bi bi-flag"></i> Ban
                                 </button>
                             </form>
@@ -126,7 +129,8 @@
                                 <input type="hidden" name="action" value="unban">
                                 <button class="btn btn-sm btn-outline-secondary"
                                         onclick="return confirm('Bạn có chắc muốn UNBAN người dùng này?')"
-                                        <c:if test="${u.status == 1}">disabled</c:if>>
+                                        <c:if test="${u.status == 1}">style="
+                                                display: none;"</c:if>>
                                     <i class="bi bi-flag"></i> Unban
                                 </button>
                             </form>
@@ -292,7 +296,15 @@
         background: green;
         animation: anim 5s linear forwards;
     }
-
+    .mm-toast.error i{
+        color: red;
+    }
+    .mm-toast.error{
+        color: red;
+    }
+    .mm-toast.error::after{
+        background: red;
+    }
     @keyframes anim {
         100%{ width: 0; }
     }
@@ -309,15 +321,22 @@
 
     const toastBox = document.getElementById('toastBox');
 
-    function showToast(msg){
+    function showToast(msg, type = 'success') {
         const toast = document.createElement('div');
+        toast.classList.add('mm-toast');
+
+        if (type === 'error') {
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            toast.classList.add('warning');
+        }
+
         toast.innerHTML = msg;
-        toast.classList.add('mm-toast')
         toastBox.appendChild(toast);
-        const m = msg.toLowerCase();
-        setTimeout(() =>{
+
+        setTimeout(() => {
             toast.remove();
-        }, 6000);
+        }, 5000);
     }
 
     // Phần filter form: vì script ở cuối trang, gọi trực tiếp thay vì DOMContentLoaded
