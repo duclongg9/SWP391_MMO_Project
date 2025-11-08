@@ -138,8 +138,10 @@
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
                                    autocomplete="new-password" oninput="validatePass()"><br>
-                        <label class="alert alert--error" id="errMsg" style="color:red;display:none;"></label>
-                        <label class="alert alert--success" id="msg" style="color:green;display:none;"></label>
+                        <div class="alert-wrapper">
+                            <div class="alert alert--error" id="errMsg" style="display:none;"></div>
+                            <div class="alert alert--success" id="msg" style="display:none;"></div>
+                        </div>
                         </td>
                 
 
@@ -155,30 +157,26 @@
         </form>
 <script>
 function validatePass() {
-    const oldPass = document.getElementById("oldPass").value.trim();
     const newPass = document.getElementById("newPass").value.trim();
     const confirmPass = document.getElementById("confirmPass").value.trim();
     const errMsg = document.getElementById("errMsg");
     const msg = document.getElementById("msg");
 
-    // Mật khẩu nhập lại sai
-    // Luôn ẩn cả hai trước khi kiểm tra
     errMsg.style.display = "none";
     msg.style.display = "none";
 
-    // Mật khẩu nhập lại sai
     if (newPass && confirmPass && newPass !== confirmPass) {
         errMsg.textContent = "Nhập lại mật khẩu không khớp!";
-        errMsg.style.display = "inline";
+        errMsg.style.display = "block";
         return false;
     }
 
-    // Mật khẩu khớp
     if (newPass && confirmPass && newPass === confirmPass) {
-        msg.textContent = "Khớp";
-        msg.style.display = "inline";
+        msg.textContent = "Mật khẩu khớp!";
+        msg.style.display = "block";
         return true;
     }
+
     return true;
 }
 </script>
