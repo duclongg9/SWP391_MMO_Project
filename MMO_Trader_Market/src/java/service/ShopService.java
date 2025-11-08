@@ -4,12 +4,12 @@ import dao.product.ProductDAO;
 import dao.shop.ShopDAO;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import model.Shops;
 import model.view.ShopListItem;
+import service.BusinessException;
 import service.dto.ShopAction;
 import service.dto.ShopFilters;
 
@@ -35,11 +35,10 @@ public class ShopService {
      * @param ownerId id seller
      * @param filters bộ lọc (có thể null)
      * @return danh sách shop đã sắp xếp theo updated_at giảm dần
-     * @throws SQLException       lỗi truy vấn
-     * @throws BusinessException  lỗi nghiệp vụ (ví dụ filter không hợp lệ)
+     * @throws SQLException lỗi truy vấn
      */
     public List<ShopListItem> listByOwner(long ownerId, ShopFilters filters)
-            throws SQLException, BusinessException {
+            throws SQLException {
         ShopFilters sanitized = sanitizeFilters(filters);
         return shopDAO.findByOwnerWithFilters(ownerId, sanitized);
     }
@@ -138,7 +137,13 @@ public class ShopService {
         return shopDAO.findByIdAndOwner(shopId, ownerId);
     }
 
-    private ShopFilters sanitizeFilters(ShopFilters filters) throws BusinessException {
+    /**
+     * Chuẩn hóa bộ lọc danh sách shop, đảm bảo từ khóa rỗng được chuyển thành {@code null}.
+     *
+     * @param filters bộ lọc đầu vào từ controller
+     * @return bộ lọc đã chuẩn hóa, luôn không null
+     */
+    private ShopFilters sanitizeFilters(ShopFilters filters) {
         if (filters == null) {
             return ShopFilters.builder().build();
         }
@@ -147,21 +152,8 @@ public class ShopService {
         if (keyword != null && keyword.isBlank()) {
             keyword = null;
         }
-        LocalDate from = filters.getFromDate();
-        LocalDate to = filters.getToDate();
-        LocalDate today = LocalDate.now();
-        if ((from != null && from.isAfter(today)) || (to != null && to.isAfter(today))) {
-            throw new BusinessException("DATE_IN_FUTURE_NOT_ALLOWED");
-        }
-        if (from != null && to != null && from.isAfter(to)) {
-            LocalDate tmp = from;
-            from = to;
-            to = tmp;
-        }
         return ShopFilters.builder()
                 .keyword(keyword)
-                .fromDate(from)
-                .toDate(to)
                 .build();
     }
 

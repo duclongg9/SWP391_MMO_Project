@@ -6,12 +6,10 @@ import model.view.ShopListItem;
 import service.dto.ShopFilters;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -306,7 +304,7 @@ import java.util.logging.Logger;
          * Lấy danh sách shop của owner kèm thống kê tổng quan.
          *
          * @param ownerId ID của chủ sở hữu
-         * @param filters bộ lọc tên và khoảng thời gian tạo
+         * @param filters bộ lọc tên shop (có thể null)
          * @return danh sách {@link ShopListItem} đã sắp xếp theo thời gian cập nhật giảm dần
          * @throws SQLException nếu có lỗi khi truy vấn database
          */
@@ -331,16 +329,6 @@ import java.util.logging.Logger;
                                 sql.append("AND LOWER(s.name) LIKE ? ");
                                 params.add('%' + keyword.toLowerCase() + '%');
                         }
-                        LocalDate from = filters.getFromDate();
-                        if (from != null) {
-                                sql.append("AND s.created_at >= ? ");
-                                params.add(Date.valueOf(from));
-                        }
-                        LocalDate to = filters.getToDate();
-                        if (to != null) {
-                                sql.append("AND s.created_at < ? ");
-                                params.add(Date.valueOf(to.plusDays(1)));
-                        }
                 }
 
                 sql.append("ORDER BY s.updated_at DESC, s.created_at DESC");
@@ -350,8 +338,6 @@ import java.util.logging.Logger;
                                 Object value = params.get(i);
                                 if (value instanceof String) {
                                         stmt.setString(i + 1, (String) value);
-                                } else if (value instanceof Date) {
-                                        stmt.setDate(i + 1, (Date) value);
                                 } else if (value instanceof Long) {
                                         stmt.setLong(i + 1, (Long) value);
                                 } else if (value instanceof Integer) {

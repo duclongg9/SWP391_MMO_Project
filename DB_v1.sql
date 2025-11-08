@@ -66,7 +66,12 @@ CREATE TABLE `shops` (
   `description` text,
   `status` enum('Pending','Active','Suspended') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_shops_owner` (`owner_id`),
+  KEY `idx_shops_name` (`name`),
+  KEY `idx_shops_created_at` (`created_at`),
+  KEY `idx_shops_updated_at` (`updated_at`)
 ) ENGINE=InnoDB;
 
 -- ========================= PRODUCTS (optimized) =========================

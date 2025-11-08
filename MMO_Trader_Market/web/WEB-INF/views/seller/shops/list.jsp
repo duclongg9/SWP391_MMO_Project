@@ -18,14 +18,6 @@
                 <form class="seller-shop__filters" method="get" action="${cPath}/seller/shops">
                     <input class="seller-shop__search" type="search" name="q" placeholder="Tìm theo tên shop"
                            value="${fn:escapeXml(filterKeyword)}" />
-                    <label class="seller-shop__date">
-                        <span>Từ</span>
-                        <input type="date" name="from" value="${filterFrom}" max="${today}" />
-                    </label>
-                    <label class="seller-shop__date">
-                        <span>Đến</span>
-                        <input type="date" name="to" value="${filterTo}" max="${today}" />
-                    </label>
                     <button class="button button--primary" type="submit">Tìm kiếm</button>
                     <a class="button button--ghost" href="${cPath}/seller/shops">Làm mới</a>
                 </form>
@@ -37,9 +29,6 @@
                 <div class="alert alert--${sessionScope.flashType}"><c:out value="${sessionScope.flashMessage}"/></div>
                 <c:remove var="flashMessage" scope="session"/>
                 <c:remove var="flashType" scope="session"/>
-            </c:if>
-            <c:if test="${not empty filterError}">
-                <div class="alert alert--error"><c:out value="${filterError}" /></div>
             </c:if>
             <c:choose>
                 <c:when test="${not empty shops}">
@@ -152,20 +141,10 @@
     align-items: center;
 }
 .seller-shop__search {
+    flex: 1 1 240px;
     min-width: 220px;
+    max-width: 360px;
     padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    border: 1px solid #dcdcdc;
-}
-.seller-shop__date {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.85rem;
-    color: #555;
-}
-.seller-shop__date input {
-    margin-top: 0.25rem;
-    padding: 0.45rem 0.6rem;
     border-radius: 6px;
     border: 1px solid #dcdcdc;
 }
@@ -207,7 +186,6 @@
         align-items: stretch;
     }
     .seller-shop__search,
-    .seller-shop__filters input[type="date"],
     .seller-shop__filters button,
     .seller-shop__filters .button {
         width: 100%;
