@@ -15,8 +15,10 @@ import units.FileUploadUtil;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Trang tạo sản phẩm mới cho người bán.
@@ -41,24 +43,16 @@ public class SellerCreateProductController extends SellerBaseController {
             return;
         }
         
-        // Kiểm tra seller có shop chưa
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
-        
-        Shops shop = shopDAO.findByOwnerId(userId);
+        String shopIdParam = request.getParameter("shopId");
+        Shops shop = resolveShop(request, response, userId, shopIdParam);
         if (shop == null) {
-            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng. Vui lòng tạo cửa hàng trước.");
-            forward(request, response, "seller/create-product");
             return;
         }
-        
-        if (!"Active".equals(shop.getStatus())) {
-            request.setAttribute("errorMessage", "Cửa hàng của bạn chưa được kích hoạt.");
-            forward(request, response, "seller/create-product");
-            return;
-        }
-        
+
         request.setAttribute("shop", shop);
+        request.setAttribute("shopId", shop.getId());
         request.setAttribute("pageTitle", "Đăng sản phẩm mới - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
@@ -75,11 +69,9 @@ public class SellerCreateProductController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
-        // Kiểm tra shop
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null || !"Active".equals(shop.getStatus())) {
-            request.setAttribute("errorMessage", "Cửa hàng không hợp lệ.");
-            doGet(request, response);
+        String shopIdParam = request.getParameter("shopId");
+        Shops shop = resolveShop(request, response, userId, shopIdParam);
+        if (shop == null) {
             return;
         }
         
@@ -152,6 +144,7 @@ public class SellerCreateProductController extends SellerBaseController {
             request.setAttribute("inventory", inventoryStr);
             request.setAttribute("primaryImageUrl", primaryImageUrl);
             request.setAttribute("shop", shop);
+            request.setAttribute("shopId", shop.getId());
             doGet(request, response);
             return;
         }
@@ -177,7 +170,56 @@ public class SellerCreateProductController extends SellerBaseController {
         } else {
             request.setAttribute("errorMessage", "Không thể đăng sản phẩm. Vui lòng thử lại.");
             request.setAttribute("shop", shop);
+            request.setAttribute("shopId", shop.getId());
             doGet(request, response);
+        }
+    }
+
+    /**
+     * Resolve and validate the target shop before allowing the seller to create
+     * a product. Method ensures correct ownership, verifies the shop is active
+     * and forwards with error messages when validation fails.
+     *
+     * @param request      current HTTP request
+     * @param response     current HTTP response
+     * @param ownerId      id of the seller currently logged in
+     * @param shopIdParam  raw shop id from the query string
+     * @return the resolved {@link Shops} entity when valid; otherwise {@code null}
+     * @throws ServletException when data retrieval fails
+     * @throws IOException      when forwarding/redirecting fails
+     */
+    private Shops resolveShop(HttpServletRequest request, HttpServletResponse response, Integer ownerId, String shopIdParam)
+            throws ServletException, IOException {
+        if (shopIdParam == null || shopIdParam.isBlank()) {
+            request.setAttribute("errorMessage", "Vui lòng chọn cửa hàng trước khi tạo sản phẩm.");
+            forward(request, response, "seller/create-product");
+            return null;
+        }
+        int shopId;
+        try {
+            shopId = Integer.parseInt(shopIdParam);
+        } catch (NumberFormatException ex) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
+        }
+        try {
+            Optional<Shops> opt = shopDAO.findByIdAndOwner(shopId, ownerId);
+            if (opt.isEmpty()) {
+                request.setAttribute("errorMessage", "Không tìm thấy cửa hàng phù hợp.");
+                request.setAttribute("shopId", shopId);
+                forward(request, response, "seller/create-product");
+                return null;
+            }
+            Shops shop = opt.get();
+            if (!"Active".equalsIgnoreCase(shop.getStatus())) {
+                request.setAttribute("errorMessage", "Cửa hàng đang tạm dừng, không thể tạo sản phẩm mới.");
+                request.setAttribute("shopId", shopId);
+                forward(request, response, "seller/create-product");
+                return null;
+            }
+            return shop;
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
         }
     }
 }

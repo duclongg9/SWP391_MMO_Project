@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -30,19 +31,25 @@ public class ForgotPasswordController extends BaseController {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String email = request.getParameter("email");
+        HttpSession session = request.getSession();
         try {
-            String resetBaseUrl = buildResetBaseUrl(request); // tạo dd
-            userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
-            request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            String resetBaseUrl = buildResetBaseUrl(request);
+            userService.requestPasswordReset(email, resetBaseUrl);
+            session.setAttribute("emailNoticeMessage", "Chúng tôi đã gửi liên kết đặt lại mật khẩu tới " + email + ".");
+            session.setAttribute("emailNoticeType", "success");
+            session.setAttribute("emailNoticeEmail", email);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            request.setAttribute("error", e.getMessage());
+            session.setAttribute("emailNoticeMessage", e.getMessage());
+            session.setAttribute("emailNoticeType", "error");
+            session.setAttribute("emailNoticeEmail", email);
         } catch (RuntimeException e) {
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error when requesting password reset, errorId=" + errorId, e);
-            request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
+            session.setAttribute("emailNoticeMessage", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
+            session.setAttribute("emailNoticeType", "error");
+            session.setAttribute("emailNoticeEmail", email);
         }
-        request.setAttribute("email", email);
-        forward(request, response, "auth/forgot-password");
+        response.sendRedirect(request.getContextPath() + "/auth/email-sent");
     }
 
 //trả về chuỗi URL, lấy request để lấy thông tin host, cổng, context path hiện tại.

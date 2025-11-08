@@ -90,7 +90,7 @@ CREATE TABLE `products` (
   `inventory_count` int NOT NULL DEFAULT 0,
   `sold_count` int NOT NULL DEFAULT 0,
 
-  `status` enum('Available','OutOfStock','Unlisted') NOT NULL DEFAULT 'Available',
+  `status` enum('Available','OutOfStock','UNLISTED') NOT NULL DEFAULT 'Available',
 
   -- Biến thể gọn trong 1 cột JSON + schema để UI render
   `variant_schema` ENUM('NONE','COLOR_SIZE','DURATION_PLAN','EDITION_LICENSE','CUSTOM') NOT NULL DEFAULT 'NONE',
@@ -443,7 +443,7 @@ VALUES
  ),
  '2024-01-18 09:15:00','2024-01-26 08:30:00'),
 
--- 1003: SOFTWARE/OTHER (Windows key) - Unlisted
+-- 1003: SOFTWARE/OTHER (Windows key) - UNLISTED
 (1003,1,'SOFTWARE','OTHER',
  'Key Windows 11 Pro',
  'Key bản quyền Windows 11 Pro, kích hoạt online.',
@@ -451,9 +451,9 @@ VALUES
  390000.0000,
  'win11.jpg',
  JSON_ARRAY('office.jpg'),
- 50,42,'Unlisted','EDITION_LICENSE',
+50,42,'UNLISTED','EDITION_LICENSE',
  JSON_ARRAY(
-   JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',50,'image_url','win11.jpg','status','Unlisted')
+  JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',50,'image_url','win11.jpg','status','UNLISTED')
  ),
  '2024-01-19 15:45:00','2024-01-19 15:45:00'),
 

@@ -59,9 +59,6 @@ public class SellerInventoryController extends SellerBaseController {
         // Lấy danh sách sản phẩm
         List<Products> products = productDAO.findByShopId(shop.getId());
         
-        // Log để debug
-        System.out.println("DEBUG - SellerInventory: userId=" + userId + ", shopId=" + shop.getId() + ", products found=" + products.size());
-        
         request.setAttribute("shop", shop);
         request.setAttribute("products", products);
         request.setAttribute("pageTitle", "Quản lý kho hàng - " + shop.getName());
@@ -89,8 +86,8 @@ public class SellerInventoryController extends SellerBaseController {
         HttpSession session = request.getSession();
         
         if ("stop".equals(action)) {
-            // Ngừng bán - chuyển sang Unlisted
-            boolean success = productDAO.updateStatus(productId, "Unlisted");
+            // Ngừng bán - chuyển sang UNLISTED
+            boolean success = productDAO.updateStatus(productId, "UNLISTED");
             if (success) {
                 session.setAttribute("successMessage", "Đã ngừng bán sản phẩm");
             } else {

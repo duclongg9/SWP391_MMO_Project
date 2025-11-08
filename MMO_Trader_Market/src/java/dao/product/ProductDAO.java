@@ -768,23 +768,41 @@ public class ProductDAO extends BaseDAO {
      * Thay đổi trạng thái sản phẩm.
      *
      * @param productId mã sản phẩm
-     * @param status trạng thái mới (Available, OutOfStock, Unlisted)
+     * @param status trạng thái mới (Available, OutOfStock, UNLISTED)
      * @return true nếu cập nhật thành công
      */
     public boolean updateStatus(int productId, String status) {
         final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection connection = getConnection(); 
+
+        try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            
+
             statement.setString(1, status);
             statement.setInt(2, productId);
-            
+
             return statement.executeUpdate() > 0;
-            
+
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm", ex);
             return false;
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái toàn bộ sản phẩm thuộc một shop trong transaction hiện tại.
+     *
+     * @param connection kết nối đang mở (đã được service kiểm soát transaction)
+     * @param shopId     mã shop cần cập nhật
+     * @param status     trạng thái mới cần đặt
+     * @return số bản ghi bị ảnh hưởng
+     * @throws SQLException nếu có lỗi khi thực thi câu lệnh
+     */
+    public int updateStatusByShop(Connection connection, long shopId, String status) throws SQLException {
+        final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status);
+            statement.setLong(2, shopId);
+            return statement.executeUpdate();
         }
     }
 

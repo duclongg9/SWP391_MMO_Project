@@ -1,129 +1,188 @@
 package service;
 
+import dao.product.ProductDAO;
 import dao.shop.ShopDAO;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
-import model.ShopStatsView;
+import java.util.Optional;
+import java.util.regex.Pattern;
 import model.Shops;
+import model.view.ShopListItem;
+import service.dto.ShopAction;
+import service.dto.ShopFilters;
 
 /**
- * Service xử lý logic nghiệp vụ liên quan đến quản lý shop cho seller.
- * Bao gồm: tạo, cập nhật, ẩn/khôi phục shop, và liệt kê shop kèm thống kê.
+ * Xử lý nghiệp vụ quản lý shop cho seller: lọc danh sách, tạo/sửa thông tin và
+ * thay đổi trạng thái kèm cascade sản phẩm.
  */
 public class ShopService {
 
-	private final ShopDAO shopDAO = new ShopDAO();
+    private static final Pattern SHOP_NAME_PATTERN = Pattern.compile("^[\\p{L}\\p{N} ]{3,60}$");
+    private static final int MIN_DESCRIPTION_LENGTH = 20;
+    private static final String STATUS_PENDING = "Pending";
+    private static final String STATUS_ACTIVE = "Active";
+    private static final String STATUS_SUSPENDED = "Suspended";
+    private static final String PRODUCT_STATUS_UNLISTED = "UNLISTED";
 
-	/**
-	 * Tạo shop mới cho seller.
-	 * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (3-255 ký tự, không chỉ khoảng trắng),
-	 * và tự động set status = 'Active', created_at = NOW().
-	 *
-	 * @param ownerId ID của seller (chủ sở hữu shop)
-	 * @param name Tên shop (sẽ được trim và validate)
-	 * @param description Mô tả shop (tùy chọn, có thể null)
-	 * @throws BusinessException nếu vượt quá 5 shop hoặc tên không hợp lệ
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public void createShop(int ownerId, String name, String description) throws BusinessException, SQLException {
-		// Kiểm tra giới hạn tối đa 5 shop
-		if (shopDAO.countByOwner(ownerId) >= 5) {
-			throw new BusinessException("Bạn chỉ được tạo tối đa 5 shop.");
-		}
-		// Chuẩn hóa và validate tên shop
-		String normalizedName = name == null ? "" : name.trim();
-		if (normalizedName.isEmpty() || normalizedName.length() < 3 || normalizedName.length() > 255) {
-			throw new BusinessException("Tên shop phải từ 3 đến 255 ký tự và không được chỉ chứa khoảng trắng.");
-		}
-		// Chuẩn hóa mô tả (trim nếu không null)
-		String desc = description == null ? null : description.trim();
-		// Gọi DAO để tạo shop (status = 'Active', created_at = NOW())
-		shopDAO.create(ownerId, normalizedName, desc);
-	}
+    private final ShopDAO shopDAO = new ShopDAO();
+    private final ProductDAO productDAO = new ProductDAO();
 
-	/**
-	 * Cập nhật tên và mô tả của shop.
-	 * Validate tên giống như tạo mới, và kiểm tra quyền owner trước khi cập nhật.
-	 *
-	 * @param id ID của shop cần cập nhật
-	 * @param ownerId ID của seller (để xác thực quyền)
-	 * @param name Tên mới (sẽ được trim và validate)
-	 * @param description Mô tả mới (tùy chọn, có thể null)
-	 * @throws BusinessException nếu tên không hợp lệ hoặc không tìm thấy shop/không có quyền
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public void updateShop(int id, int ownerId, String name, String description) throws BusinessException, SQLException {
-		// Chuẩn hóa và validate tên shop (giống như tạo mới)
-		String normalizedName = name == null ? "" : name.trim();
-		if (normalizedName.isEmpty() || normalizedName.length() < 3 || normalizedName.length() > 255) {
-			throw new BusinessException("Tên shop phải từ 3 đến 255 ký tự và không được chỉ chứa khoảng trắng.");
-		}
-		String desc = description == null ? null : description.trim();
-		// Cập nhật shop (DAO sẽ kiểm tra owner_id trong WHERE clause)
-		boolean ok = shopDAO.update(id, ownerId, normalizedName, desc);
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
-	}
+    /**
+     * Lấy danh sách shop của owner với bộ lọc đã chuẩn hóa.
+     *
+     * @param ownerId id seller
+     * @param filters bộ lọc (có thể null)
+     * @return danh sách shop đã sắp xếp theo updated_at giảm dần
+     * @throws SQLException       lỗi truy vấn
+     * @throws BusinessException  lỗi nghiệp vụ (ví dụ filter không hợp lệ)
+     */
+    public List<ShopListItem> listByOwner(long ownerId, ShopFilters filters)
+            throws SQLException, BusinessException {
+        ShopFilters sanitized = sanitizeFilters(filters);
+        return shopDAO.findByOwnerWithFilters(ownerId, sanitized);
+    }
 
-	/**
-	 * Ẩn shop bằng cách đổi trạng thái sang 'Suspended'.
-	 * Chỉ cho phép nếu shop thuộc về owner.
-	 *
-	 * @param id ID của shop cần ẩn
-	 * @param ownerId ID của seller (để xác thực quyền)
-	 * @throws BusinessException nếu không tìm thấy shop hoặc không có quyền
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public void hideShop(int id, int ownerId) throws BusinessException, SQLException {
-		// Đổi trạng thái sang 'Suspended' (ngừng hoạt động)
-		boolean ok = shopDAO.setStatus(id, ownerId, "Suspended");
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
-	}
+    /**
+     * Tạo shop mới sau khi chuẩn hóa tên/mô tả và kiểm tra trùng.
+     */
+    public Shops createShop(long ownerId, String rawName, String rawDescription)
+            throws SQLException, BusinessException {
+        String normalizedName = normalizeName(rawName);
+        validateName(normalizedName);
+        if (shopDAO.existsNameInOwner(ownerId, normalizedName, null)) {
+            throw new BusinessException("SHOP_NAME_DUPLICATED");
+        }
+        String description = normalizeDescription(rawDescription);
+        if (description.length() < MIN_DESCRIPTION_LENGTH) {
+            throw new BusinessException("DESCRIPTION_TOO_SHORT");
+        }
+        return shopDAO.insert(ownerId, normalizedName, description, STATUS_PENDING);
+    }
 
-	/**
-	 * Khôi phục shop bằng cách đổi trạng thái sang 'Active'.
-	 * Chỉ cho phép nếu shop thuộc về owner.
-	 *
-	 * @param id ID của shop cần khôi phục
-	 * @param ownerId ID của seller (để xác thực quyền)
-	 * @throws BusinessException nếu không tìm thấy shop hoặc không có quyền
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public void restoreShop(int id, int ownerId) throws BusinessException, SQLException {
-		// Đổi trạng thái sang 'Active' (hoạt động trở lại)
-		boolean ok = shopDAO.setStatus(id, ownerId, "Active");
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
-	}
+    /**
+     * Cập nhật thông tin shop. Nếu tên hoặc mô tả trống/không hợp lệ sẽ ném lỗi.
+     */
+    public Shops updateShop(long ownerId, long shopId, String rawName, String rawDescription)
+            throws SQLException, BusinessException {
+        Optional<Shops> existingOpt = shopDAO.findByIdAndOwner(shopId, ownerId);
+        if (existingOpt.isEmpty()) {
+            throw new BusinessException("FORBIDDEN");
+        }
+        String normalizedName = normalizeName(rawName);
+        validateName(normalizedName);
+        if (shopDAO.existsNameInOwner(ownerId, normalizedName, shopId)) {
+            throw new BusinessException("SHOP_NAME_DUPLICATED");
+        }
+        String description = normalizeDescription(rawDescription);
+        if (description.length() < MIN_DESCRIPTION_LENGTH) {
+            throw new BusinessException("DESCRIPTION_TOO_SHORT");
+        }
+        boolean updated = shopDAO.update(shopId, ownerId, normalizedName, description);
+        if (!updated) {
+            throw new BusinessException("FORBIDDEN");
+        }
+        Shops shop = existingOpt.get();
+        shop.setName(normalizedName);
+        shop.setDescription(description);
+        shop.setUpdatedAt(new java.util.Date());
+        return shop;
+    }
 
-	/**
-	 * Lấy danh sách shop của seller kèm thống kê (số sản phẩm, lượng bán, tồn kho).
-	 * Hỗ trợ sắp xếp theo lượng bán, ngày tạo, hoặc tên.
-	 *
-	 * @param ownerId ID của seller
-	 * @param sortBy Cách sắp xếp: 'sales_desc', 'created_desc', 'name_asc', hoặc null (mặc định sales_desc)
-	 * @return Danh sách ShopStatsView chứa thông tin shop và thống kê
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public List<ShopStatsView> listMyShops(int ownerId, String sortBy) throws SQLException {
-		return shopDAO.findByOwnerWithStats(ownerId, sortBy);
-	}
+    /**
+     * Thay đổi trạng thái shop và cascade sản phẩm nếu cần.
+     */
+    public void changeStatus(long ownerId, long shopId, ShopAction action)
+            throws SQLException, BusinessException {
+        Optional<Shops> existingOpt = shopDAO.findByIdAndOwner(shopId, ownerId);
+        if (existingOpt.isEmpty()) {
+            throw new BusinessException("FORBIDDEN");
+        }
+        try (Connection connection = shopDAO.openConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                boolean success;
+                if (action == ShopAction.HIDE) {
+                    success = shopDAO.updateStatus(connection, shopId, ownerId, STATUS_SUSPENDED);
+                    if (!success) {
+                        throw new BusinessException("FORBIDDEN");
+                    }
+                    productDAO.updateStatusByShop(connection, shopId, PRODUCT_STATUS_UNLISTED);
+                } else if (action == ShopAction.UNHIDE) {
+                    success = shopDAO.updateStatus(connection, shopId, ownerId, STATUS_ACTIVE);
+                    if (!success) {
+                        throw new BusinessException("FORBIDDEN");
+                    }
+                } else {
+                    throw new BusinessException("UNSUPPORTED_ACTION");
+                }
+                connection.commit();
+            } catch (Exception ex) {
+                connection.rollback();
+                if (ex instanceof BusinessException) {
+                    throw (BusinessException) ex;
+                }
+                if (ex instanceof SQLException) {
+                    throw (SQLException) ex;
+                }
+                throw new SQLException("Unexpected error when changing shop status", ex);
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        }
+    }
 
-	/**
-	 * Tìm shop theo ID và owner, dùng để kiểm tra quyền trước khi cho phép chỉnh sửa.
-	 *
-	 * @param id ID của shop
-	 * @param ownerId ID của seller (để xác thực quyền)
-	 * @return Optional chứa Shops nếu tìm thấy và thuộc về owner, Optional.empty() nếu không
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
-	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-		return shopDAO.findByIdAndOwner(id, ownerId);
-	}
+    public Optional<Shops> findByIdAndOwner(long shopId, long ownerId) throws SQLException {
+        return shopDAO.findByIdAndOwner(shopId, ownerId);
+    }
+
+    private ShopFilters sanitizeFilters(ShopFilters filters) throws BusinessException {
+        if (filters == null) {
+            return ShopFilters.builder().build();
+        }
+        String keyword = filters.getKeyword();
+        keyword = keyword == null ? null : keyword.trim();
+        if (keyword != null && keyword.isBlank()) {
+            keyword = null;
+        }
+        LocalDate from = filters.getFromDate();
+        LocalDate to = filters.getToDate();
+        LocalDate today = LocalDate.now();
+        if ((from != null && from.isAfter(today)) || (to != null && to.isAfter(today))) {
+            throw new BusinessException("DATE_IN_FUTURE_NOT_ALLOWED");
+        }
+        if (from != null && to != null && from.isAfter(to)) {
+            LocalDate tmp = from;
+            from = to;
+            to = tmp;
+        }
+        return ShopFilters.builder()
+                .keyword(keyword)
+                .fromDate(from)
+                .toDate(to)
+                .build();
+    }
+
+    private String normalizeName(String rawName) throws BusinessException {
+        if (rawName == null) {
+            throw new BusinessException("SHOP_NAME_INVALID");
+        }
+        String collapsed = rawName.trim().replaceAll("\\s+", " ");
+        if (collapsed.isEmpty()) {
+            throw new BusinessException("SHOP_NAME_INVALID");
+        }
+        return collapsed;
+    }
+
+    private void validateName(String normalizedName) throws BusinessException {
+        if (!SHOP_NAME_PATTERN.matcher(normalizedName).matches()) {
+            throw new BusinessException("SHOP_NAME_INVALID");
+        }
+    }
+
+    private String normalizeDescription(String rawDescription) {
+        return rawDescription == null ? "" : rawDescription.trim();
+    }
 }
-
-

@@ -24,6 +24,7 @@
     </c:if>
 
     <form action="${pageContext.request.contextPath}/seller/products/create" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="shopId" value="${shopId}" />
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Thông tin sản phẩm</h2>

@@ -86,7 +86,7 @@
                                                     Đang bán
                                                 </span>
                                             </c:when>
-                                            <c:when test="${product.status == 'Unlisted'}">
+                                            <c:when test="${product.status == 'UNLISTED'}">
                                                 <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.875rem;">
                                                     Ngừng bán
                                                 </span>
@@ -116,7 +116,7 @@
                                                         </button>
                                                     </form>
                                                 </c:when>
-                                                <c:when test="${product.status == 'Unlisted'}">
+                                                <c:when test="${product.status == 'UNLISTED'}">
                                                     <form action="${pageContext.request.contextPath}/seller/inventory" method="post" style="display: inline; margin: 0;">
                                                         <input type="hidden" name="action" value="resume"/>
                                                         <input type="hidden" name="productId" value="${product.id}"/>
