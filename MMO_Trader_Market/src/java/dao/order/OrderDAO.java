@@ -533,4 +533,110 @@ public class OrderDAO extends BaseDAO {
         return product;
     }
 
+    /**
+     * Tính tổng doanh thu từ các đơn hàng đã hoàn thành của shop trong khoảng thời gian.
+     *
+     * @param shopId mã shop
+     * @param startDate ngày bắt đầu (có thể null)
+     * @param endDate ngày kết thúc (có thể null)
+     * @return tổng doanh thu
+     */
+    public BigDecimal getRevenueByShop(int shopId, Timestamp startDate, Timestamp endDate) {
+        StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed'");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (startDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null) {
+            sql.append(" AND o.created_at < ?");
+            params.add(endDate);
+        }
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    statement.setInt(i + 1, (Integer) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(i + 1, (Timestamp) param);
+                }
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal result = rs.getBigDecimal("total_revenue");
+                    return result == null ? BigDecimal.ZERO : result;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tính doanh thu theo shop", ex);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Đếm số đơn hàng đã hoàn thành nhưng chưa được giải ngân (chưa có wallet transaction PAYOUT).
+     *
+     * @param shopId mã shop
+     * @return số đơn chờ giải ngân
+     */
+    public int countPendingDisbursementOrders(int shopId) {
+        final String sql = "SELECT COUNT(DISTINCT o.id) AS pending_count "
+                + "FROM orders o "
+                + "JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed' "
+                + "AND NOT EXISTS ("
+                + "  SELECT 1 FROM wallet_transactions wt "
+                + "  WHERE wt.related_entity_id = o.id "
+                + "  AND wt.transaction_type = 'Payout'"
+                + ")";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("pending_count");
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn chờ giải ngân", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách đơn hàng của shop để hiển thị trong bảng thu nhập.
+     *
+     * @param shopId mã shop
+     * @param limit số lượng bản ghi
+     * @return danh sách đơn hàng
+     */
+    public List<OrderRow> findByShopId(int shopId, int limit) {
+        final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed' "
+                + "ORDER BY o.created_at DESC LIMIT ?";
+        List<OrderRow> rows = new ArrayList<>();
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            statement.setInt(2, limit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp created = rs.getTimestamp("created_at");
+                    rows.add(new OrderRow(
+                            rs.getInt("id"),
+                            rs.getString("product_name"),
+                            rs.getBigDecimal("total_amount"),
+                            rs.getString("status"),
+                            created == null ? null : new java.util.Date(created.getTime())
+                    ));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải đơn hàng theo shop", ex);
+        }
+        return rows;
+    }
+
 }

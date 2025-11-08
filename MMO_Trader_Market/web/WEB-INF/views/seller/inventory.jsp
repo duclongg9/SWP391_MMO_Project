@@ -62,15 +62,15 @@
                     <tr>
                                 <th>ID</th>
                                 <th>Tên sản phẩm</th>
-                        <th>Loại</th>
+                                <th>Loại</th>
                                 <th>Giá (VNĐ)</th>
-                        <th>Tồn kho</th>
-                        <th>Đã bán</th>
-                        <th>Trạng thái</th>
+                                <th>Tồn kho</th>
+                                <th>Đã bán</th>
+                                <th>Trạng thái</th>
                                 <th style="text-align: center;">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody>`
                             <c:forEach var="product" items="${products}">
                                 <tr>
                                     <td>${product.id}</td>

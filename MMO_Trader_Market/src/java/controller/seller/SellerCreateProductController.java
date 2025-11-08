@@ -106,6 +106,9 @@ public class SellerCreateProductController extends SellerBaseController {
         } catch (Exception e) {
             errors.add("Lỗi upload ảnh: " + e.getMessage());
         }
+        if (primaryImageUrl == null || primaryImageUrl.trim().isEmpty()) {
+            errors.add("Vui lòng chọn ảnh sản phẩm (bắt buộc)");
+        }
         
         if (productName == null || productName.trim().isEmpty()) {
             errors.add("Tên sản phẩm không được để trống");

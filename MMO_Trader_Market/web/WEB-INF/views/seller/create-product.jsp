@@ -100,10 +100,10 @@
                     
                     <div style="margin-bottom: 1.25rem;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;" for="product-image">
-                            Ảnh sản phẩm
+                            Ảnh sản phẩm <span style="color: red;">*</span>
                         </label>
                         <input class="form-input" type="file" id="product-image" name="productImage" 
-                               accept="image/*"
+                               accept="image/*" required
                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                         <small style="color: #666; font-size: 0.875rem;">Chọn ảnh từ máy (JPG, PNG, GIF, WEBP - tối đa 10MB)</small>
                     </div>
@@ -130,10 +130,14 @@
             </div>
             </div>
         </div>
-        <div class="panel__footer">
+        <div class="panel__footer" style="display: flex; gap: 1rem;">
                 <button class="button button--primary" type="submit">
                     Đăng sản phẩm ngay
             </button>
+                <a href="${pageContext.request.contextPath}/seller/inventory" 
+                   class="button button--ghost" style="text-decoration: none;">
+                    Hủy
+                </a>
         </div>
     </section>
     </form>

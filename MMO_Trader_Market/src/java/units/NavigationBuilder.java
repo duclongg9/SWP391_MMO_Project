@@ -129,8 +129,8 @@ public final class NavigationBuilder {
 
         Map<String, Object> inventoryItem = new HashMap<>();
         inventoryItem.put("href", contextPath + "/seller/inventory");
-        inventoryItem.put("text", "Cập nhật kho");
-        inventoryItem.put("label", "Cập nhật kho");
+        inventoryItem.put("text", "Quản lý kho");
+        inventoryItem.put("label", "Quản lý kho");
         boolean inventoryActive = isActive(currentPath, "/seller/inventory");
         inventoryItem.put("active", inventoryActive);
         children.add(inventoryItem);
