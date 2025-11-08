@@ -386,7 +386,16 @@
     .mm-toast i{
         margin: 0 20px;
         font-size: 35px;
+        color: green;
+    }
+    .mm-toast.error i{
         color: red;
+    }
+    .mm-toast.error{
+        color: red;
+    }
+    .mm-toast.error::after{
+        background: red;
     }
     .mm-toast::after{
         content: '';
@@ -395,7 +404,7 @@
         bottom: 0;
         width: 100%;
         height: 5px;
-        background: red;
+        background: green;
         animation: anim 5s linear forwards;
     }
 
@@ -411,7 +420,25 @@
 </style>
 
 <script>
+    const toastBox = document.getElementById('toastBox');
 
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.classList.add('mm-toast');
+
+        if (type === 'error') {
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            toast.classList.add('warning');
+        }
+
+        toast.innerHTML = msg;
+        toastBox.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
     document.addEventListener('DOMContentLoaded', function () {
         // =============================
         // ✅ PHẦN 1: AUTO FILTER (trừ ô q)
@@ -438,18 +465,7 @@
             }
             pageHidden.value = '1';
         }
-        const toastBox = document.getElementById('toastBox');
 
-        function showToast(msg){
-            const toast = document.createElement('div');
-            toast.innerHTML = msg;
-            toast.classList.add('mm-toast')
-            toastBox.appendChild(toast);
-            const m = msg.toLowerCase();
-            setTimeout(() =>{
-                toast.remove();
-            }, 6000);
-        }
 
 
 
@@ -480,7 +496,7 @@
             fromEl.addEventListener("change",function (){
                 const selected = new Date(this.value);
                 if(selected > today){
-                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!');
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!','error');
                     this.value = "";
                 }
             });
