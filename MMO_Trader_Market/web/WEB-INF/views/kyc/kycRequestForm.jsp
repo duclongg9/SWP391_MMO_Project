@@ -3,7 +3,8 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/components/kyc.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css" type="text/css">
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/image-preview.css"/>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -43,12 +44,12 @@
     <section class="panel profile-grid" style="width: 100%">
                 <!--Alerts -->
           <div style="grid-column: 1 / -1;">
-            <c:if test="${not empty msg}">
+<c:if test="${not empty msg}">
               <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
-            </c:if>
-            <c:if test="${not empty emg}">
+</c:if>
+<c:if test="${not empty emg}">
               <div class="alert alert--error" role="alert" aria-live="assertive">${emg}</div>
-            </c:if>
+</c:if>
           </div>
         <section class="panel kyc-panel">
         <section class="panel">
@@ -65,7 +66,7 @@
                   <tr>
                       <td>
                         <div class="form-card__field">
-                        <label for="cccd_number" class="form-card__label">CCCD ID:</label>
+                        <label for="cccd_number" class="form-card__label">CCCD ID:<span class="required-star">*</span></label>
                         <input style="width: 30%" pattern=".{12}" title="Vui lòng nhập đúng 12 ký tự" id="cccd_number" name="cccd_number" type="text" class="form-card__input" required>
                       </div>
                       </td>
@@ -82,23 +83,35 @@
                 <tbody>
                   <tr>
                       <td>
-                         <div class="form-card__field">
-                            <label for="front" class="form-card__label">Chọn ảnh mặt trước CCCD</label>
-                            <input id="front" name="front" type="file" accept="image/*" class="form-control" required>
-                         </div>
+                          <label for="front" class="form-card__label">Chọn ảnh mặt trước CCCD:<span class="required-star">*</span></label>
+                         
                       </td>
                       <td>
-                          <div class="form-card__field">
-                            <label for="back" class="form-card__label">Chọn ảnh mặt sau CCCD</label>
-                            <input id="back" name="back" type="file" accept="image/*" class="form-control" required>
+                          <label for="back" class="form-card__label">Chọn ảnh mặt sau CCCD:<span class="required-star">*</span></label>
+                          
+                      </td>
+                  <tr>
+                      <td>
+                         <div class="form-card__field image-field">
+                            <input id="front" name="front" type="file" accept="image/*" class="form-control file-input" required>
+                            <img id="preview-front" class="image-preview" alt="Xem trước ảnh mặt trước">
+                          </div> 
+                      </td>
+                      <td>
+                          <div class="form-card__field image-field">
+                            <input id="back" name="back" type="file" accept="image/*" class="form-control file-input" required>
+                            <img id="preview-back" class="image-preview" alt="Xem trước ảnh mặt trước">
                           </div>
                       </td>
+                      
+                  </tr>
                   </tr>
                   <tr>
                       <td>
-                           <div class="form-card__field">
-                            <label for="selfie" class="form-card__label">Chọn ảnh cá nhân</label>
-                            <input id="selfie" name="selfie" type="file" accept="image/*" class="form-control" required>
+                          <label for="selfie" class="form-card__label">Chọn ảnh cá nhân:<span class="required-star">*</span></label>
+                           <div class="form-card__field image-field">
+                            <input id="selfie" name="selfie" type="file" accept="image/*" class="form-control file-input" required>
+                            <img id="preview-selfie" class="image-preview" alt="Xem trước ảnh mặt trước">
                           </div>
                       </td>
                       <td></td>
@@ -115,27 +128,6 @@
               </table>            
             </form>
 </section>
-                  
-                  <c:if test="${not empty frontUrl}">
-            <section class="panel">
-                <div class="panel__header">
-                    <h2 class="panel__title">Ảnh đã tải lên</h2>
-                </div>
-
-                <div class="kyc-preview" style="display: flex; gap: 20px; justify-content: center;">
-                    <div>
-                        <p><strong>Mặt trước CCCD</strong></p>
-                        <img src="${frontUrl}" alt="CCCD mặt trước" width="250" height="160" style="object-fit: cover; border-radius: 10px;">
-                    </div>
-                    <div>
-                        <p><strong>Mặt sau CCCD</strong></p>
-                        <img src="${backUrl}" alt="CCCD mặt sau" width="250" height="160" style="object-fit: cover; border-radius: 10px;">
-                    </div>
-                    <div>
-                        <p><strong>Selfie</strong></p>
-                        <img src="${selfieUrl}" alt="Selfie" width="250" height="160" style="object-fit: cover; border-radius: 10px;">
-                    </div>
-                </div>
 
                 <script>
                     // Khóa form khi đã có ảnh KYC
@@ -146,8 +138,36 @@
                         }
                     });
                 </script>
+                
+                <script>
+                function previewImage(inputId, imgId) {
+                  const input = document.getElementById(inputId);
+                  const img = document.getElementById(imgId);
+
+                  input.addEventListener("change", function () {
+                    const file = this.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = e => {
+                        img.src = e.target.result;
+                        img.classList.add("image-preview--visible");
+                      };
+                      reader.readAsDataURL(file);
+                    } else {
+                      img.src = "";
+                      img.classList.remove("image-preview--visible");
+                    }
+                  });
+                }
+
+                document.addEventListener("DOMContentLoaded", () => {
+                  previewImage("front", "preview-front");
+                  previewImage("back", "preview-back");
+                  previewImage("selfie", "preview-selfie");
+                });
+              </script>
             </section>
-        </c:if>
+
 
 </section>
 

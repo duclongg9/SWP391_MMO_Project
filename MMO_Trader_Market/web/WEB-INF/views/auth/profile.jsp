@@ -138,8 +138,8 @@
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
                                    autocomplete="new-password" oninput="validatePass()"><br>
-                        <label id="errMsg" style="color:red;display:none;"></label>
-                        <label id="msg" style="color:green;display:none;"></label>
+                        <label class="alert alert--error" id="errMsg" style="color:red;display:none;"></label>
+                        <label class="alert alert--success" id="msg" style="color:green;display:none;"></label>
                         </td>
                 
 
