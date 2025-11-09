@@ -24,6 +24,7 @@ public class SendMail {
         props.put("mail.smtp.port", "587"); // TLS Port
         props.put("mail.smtp.auth", "true"); // enable authentication
         props.put("mail.smtp.starttls.enable", "true"); // enable STARTTLS
+        props.put("mail.mime.charset", "UTF-8"); // ensure UTF-8 for all MIME parts
 
         // tạo phiên làm việc
         Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
@@ -34,11 +35,14 @@ public class SendMail {
         });
 
         // tạo message
-        Message msg = new MimeMessage(session);
-        msg.setFrom(new InternetAddress(fromEmail, "Admin Material Management"));
+//        Message msg = new MimeMessage(session);
+        MimeMessage msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress(fromEmail, "Admin Material Management", "UTF-8"));
         msg.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
-        msg.setSubject(subject);
-        msg.setText(messageText);
+//        msg.setSubject(subject);
+//        msg.setText(messageText);  // nếu dùng HTML thì dùng setContent(...)
+        msg.setSubject(subject, "UTF-8");
+        msg.setText(messageText, "UTF-8");
 
         // gửi
         Transport.send(msg);

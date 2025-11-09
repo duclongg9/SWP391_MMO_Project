@@ -17,31 +17,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Điều phối luồng "Danh sách sản phẩm" trên marketplace công khai.
- * <p>
- * - Liệt kê sản phẩm theo từng loại chính với phân trang phía server. - Hỗ trợ
- * lọc theo nhiều phân loại con của cùng một loại sản phẩm. - Chuẩn hóa tham số
- * đầu vào để đảm bảo trải nghiệm duyệt sản phẩm mượt mà.
- *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
- */
 @WebServlet(name = "ProductListController", urlPatterns = {"/products"})
 public class ProductListController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-    // Trang mặc định khi không có tham số page.
     private static final int DEFAULT_PAGE = 1;
-    // Kích thước trang mặc định khi người dùng không chọn.
     private static final int DEFAULT_SIZE = 5;
-    // Các tùy chọn số bản ghi mỗi trang được phép hiển thị.
     private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(5, 10, 20, 40);
 
-    // Dịch vụ sản phẩm để truy vấn danh sách theo bộ lọc và phân trang.
     private final ProductService productService = new ProductService();
 
-    // Xử lý yêu cầu GET hiển thị danh sách sản phẩm với các bộ lọc.
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
