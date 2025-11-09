@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="MMO Trader Market - Đăng nhập" />
 <c:set var="bodyClass" value="layout layout--auth" />
@@ -44,7 +44,6 @@
             </div>
         </form>
     </div>
-    <%@ include file="/WEB-INF/views/shared/email-verification-modal.jspf" %>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
