@@ -611,9 +611,22 @@ public class OrderService {
 
         boolean ok = variantValid && hasInventory && hasCredentials;
         boolean canPurchase = ok && walletHasBalance;
-        return new PurchasePreviewResult(ok, canPurchase, true, variantValid, hasInventory, hasCredentials,
-                walletExists, walletActive, walletHasBalance, availableInventory, availableCredentials, unitPrice,
-                totalPrice, walletBalance, List.copyOf(blockers));
+        return new PurchasePreviewResult(
+                ok,
+                canPurchase,
+                true,
+                variantValid,
+                hasInventory,
+                hasCredentials,
+                walletExists,
+                walletActive,
+                walletHasBalance,
+                availableInventory,
+                availableCredentials,
+                unitPrice,
+                totalPrice,
+                walletBalance,
+                List.copyOf(blockers));
     }
 
     /**
