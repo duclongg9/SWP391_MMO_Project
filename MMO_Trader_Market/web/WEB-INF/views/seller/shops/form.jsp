@@ -31,7 +31,7 @@
                     <input type="hidden" name="id" value="${shopId}" />
                 </c:if>
                 <c:set var="shopContextName" value="${not empty shop ? shop.name : formName}" />
-                <c:if test="${not empty shopContextName}">
+                <c:if test="${not empty shopId and not empty shopContextName}">
                     <div class="shop-form__context">
                         Đang quản lý shop: <strong><c:out value="${shopContextName}"/></strong>
                     </div>
@@ -39,18 +39,18 @@
                 <div class="form-card__field">
                     <label class="form-card__label" for="name">Tên shop</label>
                     <input class="form-card__input" type="text" id="name" name="name"
-                           value="${fn:escapeXml(formName)}" maxlength="255" minlength="20"
+                           value="${fn:escapeXml(formName)}" maxlength="50" minlength="8"
                            data-basic-text
                            placeholder="Ví dụ: Cửa hàng tài khoản game chất lượng"
                            required />
-                    <p class="form-note">Tên shop phải tối thiểu 20 ký tự, không chứa ký tự đặc biệt.</p>
+                    <p class="form-note">Tên shop phải từ 8 đến 50 ký tự, không chứa ký tự đặc biệt.</p>
                 </div>
                 <div class="form-card__field">
                     <label class="form-card__label" for="description">Mô tả chi tiết</label>
                     <textarea class="form-card__input shop-form__textarea" id="description" name="description"
-                              rows="5" minlength="20" data-basic-text
+                              rows="5" minlength="8" maxlength="50" data-basic-text
                               placeholder="Giới thiệu điểm mạnh, cam kết bảo hành, thời gian hỗ trợ..." required>${fn:escapeXml(formDescription)}</textarea>
-                    <p class="form-note">Mô tả tối thiểu 20 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -</p>
+                    <p class="form-note">Mô tả phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -</p>
                 </div>
                 <div class="shop-form__actions">
                     <button type="submit" class="button button--primary">
