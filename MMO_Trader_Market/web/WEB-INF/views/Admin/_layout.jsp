@@ -34,7 +34,7 @@
                     </h4>
                 </div>
 
-                <a href="${pageContext.request.contextPath}/admin" class="${active=='dashboard'?'active':''}">
+                <a href="${pageContext.request.contextPath}/admin/dashboard" class="${active=='dashboard'?'active':''}">
                     <i class="bi bi-speedometer2"></i><span>Tổng quan</span>
                 </a>
                 <a href="${pageContext.request.contextPath}/admin/users" class="${active=='users'?'active':''}">

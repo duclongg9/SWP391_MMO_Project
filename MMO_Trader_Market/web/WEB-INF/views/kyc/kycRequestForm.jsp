@@ -66,7 +66,7 @@
                   <tr>
                       <td>
                         <div class="form-card__field">
-                        <label for="cccd_number" class="form-card__label">CCCD ID:<span class="required-star">*</span></label>
+                        <label for="cccd_number" class="form-card__label">CCCD ID:<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
                         <input style="width: 30%" pattern=".{12}" title="Vui lòng nhập đúng 12 ký tự" id="cccd_number" name="cccd_number" type="text" class="form-card__input" required>
                       </div>
                       </td>
@@ -83,11 +83,11 @@
                 <tbody>
                   <tr>
                       <td>
-                          <label for="front" class="form-card__label">Chọn ảnh mặt trước CCCD:<span class="required-star">*</span></label>
+                          <label for="front" class="form-card__label">Chọn ảnh mặt trước CCCD:<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
                          
                       </td>
                       <td>
-                          <label for="back" class="form-card__label">Chọn ảnh mặt sau CCCD:<span class="required-star">*</span></label>
+                          <label for="back" class="form-card__label">Chọn ảnh mặt sau CCCD:<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
                           
                       </td>
                   <tr>
@@ -108,7 +108,7 @@
                   </tr>
                   <tr>
                       <td>
-                          <label for="selfie" class="form-card__label">Chọn ảnh cá nhân:<span class="required-star">*</span></label>
+                          <label for="selfie" class="form-card__label">Chọn ảnh cá nhân:<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
                            <div class="form-card__field image-field">
                             <input id="selfie" name="selfie" type="file" accept="image/*" class="form-control file-input" required>
                             <img id="preview-selfie" class="image-preview" alt="Xem trước ảnh mặt trước">

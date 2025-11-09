@@ -39,7 +39,47 @@
 }
 
 .required-star {
-    color: red;
-    font-weight: bold;
-    margin-left: 2px;
+  color: red;
+  font-weight: bold;
+  margin-left: 2px;
+  position: relative;
+  cursor: help; /* biểu tượng chuột có dấu hỏi */
+}
+
+/* Tooltip CSS */
+.required-star::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 50%; /* hiển thị phía trên ngôi sao */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+/* Mũi tên nhỏ bên dưới tooltip */
+.required-star::before {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Hiện tooltip khi hover */
+.required-star:hover::after,
+.required-star:hover::before {
+  opacity: 1;
 }
