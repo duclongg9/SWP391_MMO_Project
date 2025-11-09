@@ -11,12 +11,20 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import model.Products;
 import model.Shops;
+import model.product.ProductVariantOption;
+import service.util.ProductVariantUtils;
 import units.FileUploadUtil;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -25,8 +33,8 @@ import java.util.Optional;
 @WebServlet(name = "SellerEditProductController", urlPatterns = {"/seller/products/edit"})
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024,      // 1MB
-    maxFileSize = 1024 * 1024 * 10,       // 10MB
-    maxRequestSize = 1024 * 1024 * 15     // 15MB
+    maxFileSize = 1024 * 1024 * 10,       // 10MB per file
+    maxRequestSize = 1024 * 1024 * 50     // 50MB total (cho phép upload nhiều ảnh)
 )
 public class SellerEditProductController extends SellerBaseController {
 
@@ -77,7 +85,14 @@ public class SellerEditProductController extends SellerBaseController {
             return;
         }
         
+        // Parse variants từ product để hiển thị trong JSP
+        List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
+            product.getVariantSchema(), 
+            product.getVariantsJson()
+        );
+        
         request.setAttribute("product", product);
+        request.setAttribute("variants", variants);
         request.setAttribute("shop", shop);
         request.setAttribute("pageTitle", "Chỉnh sửa sản phẩm - " + product.getName());
         request.setAttribute("bodyClass", "layout");
@@ -132,26 +147,117 @@ public class SellerEditProductController extends SellerBaseController {
         String shortDescription = request.getParameter("shortDescription");
         String description = request.getParameter("description");
         String priceStr = request.getParameter("price");
-        String inventoryStr = request.getParameter("inventory");
+        String variantsJsonStr = request.getParameter("variantsJson");
+        String variantIndicesStr = request.getParameter("variantIndices");
         
         // Validate
         List<String> errors = new ArrayList<>();
         
-        // Xử lý upload ảnh mới (nếu có)
-        String primaryImageUrl = existingProduct.getPrimaryImageUrl(); // Giữ ảnh cũ
-        try {
-            Part filePart = request.getPart("productImage");
-            if (filePart != null && filePart.getSize() > 0) {
+        // Xử lý variants với ảnh
+        String primaryImageUrl = null;
+        List<String> galleryImages = new ArrayList<>();
+        List<Map<String, Object>> variants = new ArrayList<>();
+        
+        if (variantsJsonStr != null && !variantsJsonStr.trim().isEmpty()) {
+            try {
                 String applicationPath = request.getServletContext().getRealPath("");
-                // Xóa ảnh cũ nếu có
-                if (primaryImageUrl != null && !primaryImageUrl.trim().isEmpty()) {
-                    FileUploadUtil.deleteFile(primaryImageUrl, applicationPath);
+                Collection<Part> parts = request.getParts();
+                
+                // Parse variants metadata
+                Gson gson = new Gson();
+                Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                List<Map<String, Object>> variantsMetadata = gson.fromJson(variantsJsonStr, listType);
+                
+                // Parse existing variants từ product
+                List<ProductVariantOption> existingVariants = ProductVariantUtils.parseVariants(
+                    existingProduct.getVariantSchema(), 
+                    existingProduct.getVariantsJson()
+                );
+                
+                // Create map of existing variants by variant_code
+                Map<String, ProductVariantOption> existingVariantsMap = new HashMap<>();
+                for (ProductVariantOption existingVariant : existingVariants) {
+                    existingVariantsMap.put(existingVariant.getVariantCode(), existingVariant);
                 }
-                // Lưu ảnh mới
-                primaryImageUrl = FileUploadUtil.saveFile(filePart, applicationPath);
+                
+                // Parse variant indices để biết variant nào có bao nhiêu ảnh
+                Map<Integer, Integer> variantImageCounts = new HashMap<>();
+                if (variantIndicesStr != null && !variantIndicesStr.trim().isEmpty()) {
+                    String[] indices = variantIndicesStr.split(",");
+                    for (String indexStr : indices) {
+                        String[] parts2 = indexStr.split(":");
+                        if (parts2.length == 2) {
+                            int variantIndex = Integer.parseInt(parts2[0]);
+                            int imageCount = Integer.parseInt(parts2[1]);
+                            variantImageCounts.put(variantIndex, imageCount);
+                        }
+                    }
+                }
+                
+                // Process variant images
+                for (int i = 0; i < variantsMetadata.size(); i++) {
+                    Map<String, Object> variantMeta = variantsMetadata.get(i);
+                    String variantCode = (String) variantMeta.get("variant_code");
+                    List<String> variantImages = new ArrayList<>();
+                    
+                    // Get existing images for this variant
+                    ProductVariantOption existingVariant = existingVariantsMap.get(variantCode);
+                    if (existingVariant != null && existingVariant.getImages() != null) {
+                        variantImages.addAll(existingVariant.getImages());
+                    }
+                    
+                    // Remove deleted existing images
+                    @SuppressWarnings("unchecked")
+                    List<String> deletedExistingImages = (List<String>) variantMeta.get("deleted_existing_images");
+                    if (deletedExistingImages != null && !deletedExistingImages.isEmpty()) {
+                        variantImages.removeAll(deletedExistingImages);
+                    }
+                    
+                    // Get image count for this variant
+                    int imageCount = variantImageCounts.getOrDefault(i, 0);
+                    
+                    // Process new images for this variant
+                    for (int j = 0; j < imageCount; j++) {
+                        String partName = "variantImages_" + i + "_" + j;
+                        for (Part part : parts) {
+                            if (partName.equals(part.getName()) && part.getSize() > 0) {
+                                String imageUrl = FileUploadUtil.saveFile(part, applicationPath);
+                                if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                                    variantImages.add(imageUrl);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Validate: mỗi variant phải có ít nhất 1 ảnh, tối đa 3 ảnh
+                    if (variantImages.isEmpty()) {
+                        errors.add("Biến thể \"" + variantMeta.get("name") + "\" phải có ít nhất 1 ảnh");
+                    } else if (variantImages.size() > 3) {
+                        errors.add("Biến thể \"" + variantMeta.get("name") + "\" chỉ được tối đa 3 ảnh");
+                    } else {
+                        // Add images to variant
+                        variantMeta.put("images", variantImages);
+                        variantMeta.put("image_url", variantImages.get(0)); // Ảnh đầu tiên làm ảnh chính
+                        variants.add(variantMeta);
+                        
+                        // Add to gallery (ảnh đầu tiên của variant đầu tiên làm primary)
+                        if (primaryImageUrl == null && i == 0 && !variantImages.isEmpty()) {
+                            primaryImageUrl = variantImages.get(0);
+                        }
+                        galleryImages.addAll(variantImages);
+                    }
+                }
+                
+                if (variants.isEmpty()) {
+                    errors.add("Vui lòng thêm ít nhất một biến thể sản phẩm với ảnh");
+                }
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                errors.add("Lỗi xử lý biến thể: " + e.getMessage());
             }
-        } catch (Exception e) {
-            errors.add("Lỗi upload ảnh: " + e.getMessage());
+        } else {
+            errors.add("Vui lòng thêm ít nhất một biến thể sản phẩm");
         }
         
         if (productName == null || productName.trim().isEmpty()) {
@@ -166,29 +272,15 @@ public class SellerEditProductController extends SellerBaseController {
             errors.add("Vui lòng chọn phân loại chi tiết");
         }
         
-        BigDecimal price = null;
-        if (priceStr == null || priceStr.trim().isEmpty()) {
-            errors.add("Giá bán không được để trống");
-        } else {
-            try {
-                price = new BigDecimal(priceStr);
-                if (price.compareTo(BigDecimal.ZERO) <= 0) {
-                    errors.add("Giá bán phải lớn hơn 0");
+        // Price sẽ là giá thấp nhất của variants
+        BigDecimal price = existingProduct.getPrice();
+        if (!variants.isEmpty()) {
+            price = new BigDecimal(variants.get(0).get("price").toString());
+            for (Map<String, Object> variant : variants) {
+                BigDecimal variantPrice = new BigDecimal(variant.get("price").toString());
+                if (variantPrice.compareTo(price) < 0) {
+                    price = variantPrice;
                 }
-            } catch (NumberFormatException e) {
-                errors.add("Giá bán không hợp lệ");
-            }
-        }
-        
-        Integer inventory = 0;
-        if (inventoryStr != null && !inventoryStr.trim().isEmpty()) {
-            try {
-                inventory = Integer.parseInt(inventoryStr);
-                if (inventory < 0) {
-                    errors.add("Số lượng không được âm");
-                }
-            } catch (NumberFormatException e) {
-                errors.add("Số lượng không hợp lệ");
             }
         }
         
@@ -200,15 +292,42 @@ public class SellerEditProductController extends SellerBaseController {
             return;
         }
         
-        // Cập nhật sản phẩm
+        // Cập nhật sản phẩm (giữ nguyên inventory_count, không cho phép sửa ở đây)
         existingProduct.setProductType(productType);
         existingProduct.setProductSubtype(productSubtype);
         existingProduct.setName(productName);
         existingProduct.setShortDescription(shortDescription);
         existingProduct.setDescription(description);
         existingProduct.setPrice(price);
-        existingProduct.setInventoryCount(inventory);
         existingProduct.setPrimaryImageUrl(primaryImageUrl);
+        // Không cập nhật inventoryCount ở đây, chỉ tăng khi thêm sản phẩm
+        
+        // Lưu gallery_json từ tất cả ảnh của tất cả variants
+        Gson gson = new Gson();
+        String galleryJson;
+        if (!galleryImages.isEmpty()) {
+            galleryJson = gson.toJson(galleryImages);
+        } else {
+            galleryJson = "[]"; // JSON array rỗng nếu không có ảnh
+        }
+        existingProduct.setGalleryJson(galleryJson);
+        
+        // Lưu variants_json
+        if (!variants.isEmpty()) {
+            String variantsJson = gson.toJson(variants);
+            existingProduct.setVariantsJson(variantsJson);
+            existingProduct.setVariantSchema("custom"); // Đánh dấu là có variants
+        } else {
+            existingProduct.setVariantsJson("[]");
+            existingProduct.setVariantSchema("none");
+        }
+        
+        // Debug: Log thông tin cập nhật
+        System.out.println("Updating product ID: " + existingProduct.getId());
+        System.out.println("Primary image URL: " + primaryImageUrl);
+        System.out.println("Gallery JSON: " + galleryJson);
+        System.out.println("Gallery size: " + galleryImages.size());
+        System.out.println("Variants count: " + variants.size());
         
         boolean success = productDAO.updateProduct(existingProduct);
         
