@@ -15,17 +15,17 @@ import java.util.regex.Pattern;
 public class ShopService {
 
         private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\p{N}\\s.,-]+$");
-        private static final int NAME_MIN_LENGTH = 20;
-        private static final int NAME_MAX_LENGTH = 255;
-        private static final int DESCRIPTION_MIN_LENGTH = 20;
-        private static final int DESCRIPTION_MAX_LENGTH = 2000;
+        private static final int NAME_MIN_LENGTH = 8;
+        private static final int NAME_MAX_LENGTH = 50;
+        private static final int DESCRIPTION_MIN_LENGTH = 8;
+        private static final int DESCRIPTION_MAX_LENGTH = 50;
 
         private final ShopDAO shopDAO = new ShopDAO();
         private final ProductDAO productDAO = new ProductDAO();
 
 	/**
 	 * Tạo shop mới cho seller.
-	 * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (3-255 ký tự, không chỉ khoảng trắng),
+         * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (8-50 ký tự, không chỉ khoảng trắng),
 	 * và tự động set status = 'Active', created_at = NOW().
 	 *
 	 * @param ownerId ID của seller (chủ sở hữu shop)

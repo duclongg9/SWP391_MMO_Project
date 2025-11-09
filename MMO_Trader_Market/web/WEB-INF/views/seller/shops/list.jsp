@@ -20,19 +20,21 @@
                         <input class="form-input shop-toolbar__search-input" type="search" name="q"
                                value="${fn:escapeXml(keyword)}"
                                placeholder="Tìm kiếm theo tên shop" />
-                        <button class="button button--ghost" type="submit">Tìm kiếm</button>
+                        <button class="button button--ghost shop-toolbar__search-btn" type="submit">Tìm kiếm</button>
                         <c:if test="${not empty keyword}">
-                            <a class="button button--ghost button--subtle" href="${cPath}/seller/shops">Xóa lọc</a>
+                            <a class="button button--ghost button--subtle shop-toolbar__reset" href="${cPath}/seller/shops">Xóa lọc</a>
                         </c:if>
                     </div>
-                    <label class="shop-toolbar__label" for="sortBy">Sắp xếp</label>
-                    <select class="form-input shop-toolbar__select" id="sortBy" name="sortBy" onchange="this.form.submit()">
-                        <option value="sales_desc" ${sortBy == 'sales_desc' ? 'selected' : ''}>Lượng bán (cao → thấp)</option>
-                        <option value="created_desc" ${sortBy == 'created_desc' ? 'selected' : ''}>Mới cập nhật</option>
-                        <option value="name_asc" ${sortBy == 'name_asc' ? 'selected' : ''}>Tên (A → Z)</option>
-                    </select>
+                    <div class="shop-toolbar__sort">
+                        <label class="shop-toolbar__label" for="sortBy">Sắp xếp</label>
+                        <select class="form-input shop-toolbar__select" id="sortBy" name="sortBy" onchange="this.form.submit()">
+                            <option value="sales_desc" ${sortBy == 'sales_desc' ? 'selected' : ''}>Lượng bán (cao → thấp)</option>
+                            <option value="created_desc" ${sortBy == 'created_desc' ? 'selected' : ''}>Mới cập nhật</option>
+                            <option value="name_asc" ${sortBy == 'name_asc' ? 'selected' : ''}>Tên (A → Z)</option>
+                        </select>
+                    </div>
                 </form>
-                <a class="button button--primary" href="${cPath}/seller/shops/create">Tạo shop mới</a>
+                <a class="button button--primary shop-toolbar__create" href="${cPath}/seller/shops/create">Tạo shop mới</a>
             </div>
         </div>
         <div class="panel__body">
