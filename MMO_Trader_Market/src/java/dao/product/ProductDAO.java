@@ -4,7 +4,9 @@ import dao.BaseDAO;
 import model.Products;
 import model.product.ProductDetail;
 import model.product.ProductListRow;
+import model.product.ProductVariantOption;
 import model.product.ShopOption;
+import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
 
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * DAO tương tác với bảng {@code products} để phục vụ tra cứu, thống kê và cập
@@ -883,6 +886,54 @@ public class ProductDAO extends BaseDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, productId);
             statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Tăng số lượng tồn kho của sản phẩm và cập nhật inventory_count trong variants_json nếu có variant.
+     * 
+     * @param connection database connection
+     * @param productId ID sản phẩm
+     * @param variantCode mã biến thể (có thể null nếu không có variant)
+     * @throws SQLException nếu có lỗi database
+     */
+    public void incrementInventoryWithVariant(Connection connection, int productId, String variantCode) throws SQLException {
+        // 1. Khóa và lấy thông tin sản phẩm mới nhất từ database
+        ProductInventoryLock lock = lockProductForUpdate(connection, productId);
+        
+        // 2. Tăng inventory_count trong bảng products
+        incrementInventoryCount(connection, productId);
+        
+        // 3. Nếu có variant, cập nhật inventory_count trong variants_json
+        if (variantCode != null && !variantCode.trim().isEmpty() && 
+            ProductVariantUtils.hasVariants(lock.variantSchema()) && 
+            lock.variantsJson() != null && !lock.variantsJson().trim().isEmpty()) {
+            
+            // Parse variants từ JSON mới nhất từ database
+            List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
+                lock.variantSchema(), 
+                lock.variantsJson()
+            );
+            
+            // Tìm variant tương ứng và tăng inventory_count
+            String normalizedCode = ProductVariantUtils.normalizeCode(variantCode);
+            Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedCode);
+            
+            if (variantOpt.isPresent()) {
+                ProductVariantOption variant = variantOpt.get();
+                Integer currentInventory = variant.getInventoryCount();
+                variant.setInventoryCount((currentInventory == null ? 0 : currentInventory) + 1);
+                
+                // Cập nhật lại variants_json
+                String updatedVariantsJson = ProductVariantUtils.toJson(variants);
+                updateVariantsJson(connection, productId, updatedVariantsJson);
+            } else {
+                // Log warning nếu không tìm thấy variant
+                LOGGER.log(Level.WARNING, "Không tìm thấy variant với code '{0}' cho product_id={1}. Variants có sẵn: {2}", 
+                    new Object[]{normalizedCode, productId, variants.stream()
+                        .map(ProductVariantOption::getVariantCode)
+                        .collect(Collectors.joining(", "))});
+            }
         }
     }
 
