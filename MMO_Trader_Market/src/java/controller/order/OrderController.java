@@ -2,16 +2,22 @@ package controller.order;
 
 import controller.BaseController;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
+import model.DisputeAttachment;
+import model.Disputes;
 import model.Orders;
 import model.Products;
 import model.WalletTransactions;
 import model.view.OrderDetailView;
 import model.view.OrderWalletEvent;
+import service.DisputeService;
 import service.OrderService;
+import units.FileUploadUtil;
 import units.IdObfuscator;
 
 import java.io.IOException;
@@ -21,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,12 +51,18 @@ import java.util.UUID;
  *
  * @author longpdhe171902
  */
+@MultipartConfig(
+        fileSizeThreshold = 1 * 1024 * 1024,
+        maxFileSize = 5 * 1024 * 1024,
+        maxRequestSize = 20 * 1024 * 1024
+)
 @WebServlet(name = "OrderController", urlPatterns = {
     "/order/buy-now",
     "/orders",
     "/orders/my",
     "/orders/detail/*",
-    "/orders/unlock"
+    "/orders/unlock",
+    "/orders/report"
 })
 public class OrderController extends BaseController {
 
@@ -58,8 +71,11 @@ public class OrderController extends BaseController {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int ROLE_SELLER = 2;
     private static final int ROLE_BUYER = 3;
+    private static final String DISPUTE_UPLOAD_DIR = "assets/uploads/disputes";
+    private static final int MAX_EVIDENCE_FILES = 5;
 
     private final OrderService orderService = new OrderService();
+    private final DisputeService disputeService = new DisputeService();
 
     /**
      * Xử lý các yêu cầu POST. Ở thời điểm hiện tại chỉ có một entry point duy
@@ -82,6 +98,9 @@ public class OrderController extends BaseController {
             return;
         } else if ("/orders/unlock".equals(path)) {
             handleUnlockCredentials(request, response);
+            return;
+        } else if ("/orders/report".equals(path)) {
+            handleReportOrder(request, response);
             return;
         }
         response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -315,12 +334,29 @@ public class OrderController extends BaseController {
         }
         String unlockSuccess = null;
         String unlockError = null;
+        List<String> reportErrors = List.of();
+        Map<String, String> reportFormValues = Map.of();
+        String reportSuccessMessage = null;
         if (session != null) {
             // Lấy flash message sau khi người dùng mở khóa credential.
             unlockSuccess = (String) session.getAttribute("orderUnlockSuccess");
             unlockError = (String) session.getAttribute("orderUnlockError");
             session.removeAttribute("orderUnlockSuccess");
             session.removeAttribute("orderUnlockError");
+            @SuppressWarnings("unchecked")
+            List<String> storedErrors = (List<String>) session.getAttribute("orderReportErrors");
+            if (storedErrors != null) {
+                reportErrors = storedErrors;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, String> storedForm = (Map<String, String>) session.getAttribute("orderReportFormValues");
+            if (storedForm != null) {
+                reportFormValues = storedForm;
+            }
+            reportSuccessMessage = (String) session.getAttribute("orderReportSuccess");
+            session.removeAttribute("orderReportErrors");
+            session.removeAttribute("orderReportFormValues");
+            session.removeAttribute("orderReportSuccess");
         }
         boolean unlocked = orderService.hasUnlockedCredentials(orderId, userId);
         boolean includeCredentials = unlocked || unlockSuccess != null;
@@ -354,6 +390,19 @@ public class OrderController extends BaseController {
         request.setAttribute("unlockErrorMessage", unlockError);
         request.setAttribute("unlockJustConfirmed", unlockSuccess != null);
         request.setAttribute("orderToken", IdObfuscator.encode(orderId));
+        request.setAttribute("orderReportErrors", reportErrors);
+        request.setAttribute("orderReportFormValues", reportFormValues);
+        request.setAttribute("orderReportSuccess", reportSuccessMessage);
+
+        Optional<Disputes> disputeOpt = disputeService.findByOrderId(order.getId());
+        List<DisputeAttachment> disputeAttachments = disputeOpt.map(dispute -> disputeService.getAttachments(dispute.getId()))
+                .orElse(List.of());
+        request.setAttribute("existingDispute", disputeOpt.orElse(null));
+        request.setAttribute("existingDisputeAttachments", disputeAttachments);
+        request.setAttribute("reportIssueOptions", disputeService.getIssueTypeLabels());
+        boolean canReport = disputeOpt.isEmpty() && orderService.canReportOrder(order);
+        request.setAttribute("canReportOrder", canReport);
+        request.setAttribute("maxEvidenceFiles", MAX_EVIDENCE_FILES);
 
         forward(request, response, "order/detail");
     }
@@ -528,6 +577,121 @@ public class OrderController extends BaseController {
             String redirectUrl = request.getContextPath() + "/orders/detail/" + canonicalToken;
             response.sendRedirect(redirectUrl);
         }
+    }
+
+    /**
+     * Xử lý form báo cáo đơn hàng và lưu dispute mới.
+     */
+    private void handleReportOrder(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        Integer userId = session == null ? null : (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        String token = normalize(request.getParameter("orderToken"));
+        int orderId = decodeIdentifier(token);
+        if (orderId <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
+        if (detailOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Orders order = detailOpt.get().order();
+        List<String> errors = new ArrayList<>();
+        Map<String, String> formValues = new HashMap<>();
+
+        String issueType = normalize(request.getParameter("issueType"));
+        if (!disputeService.isValidIssueType(issueType)) {
+            errors.add("Vui lòng chọn loại vấn đề cần báo cáo.");
+        }
+        String customIssueTitle = normalize(request.getParameter("customIssueTitle"));
+        if ("OTHER".equals(issueType) && (customIssueTitle == null || customIssueTitle.isBlank())) {
+            errors.add("Vui lòng mô tả ngắn gọn tiêu đề khi chọn loại Khác.");
+        }
+        String descriptionRaw = request.getParameter("description");
+        String description = descriptionRaw == null ? null : descriptionRaw.trim();
+        if (description == null || description.length() < 20) {
+            errors.add("Nội dung báo cáo cần tối thiểu 20 ký tự để mô tả vấn đề rõ ràng.");
+        }
+
+        if (!orderService.canReportOrder(order)) {
+            errors.add("Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.");
+        }
+        Optional<Disputes> existingDispute = disputeService.findByOrderId(orderId);
+        if (existingDispute.isPresent()) {
+            errors.add("Đơn hàng này đã có báo cáo đang xử lý.");
+        }
+
+        List<Part> evidenceParts = new ArrayList<>();
+        for (Part part : request.getParts()) {
+            if (part != null && "evidenceImages".equals(part.getName()) && part.getSize() > 0) {
+                evidenceParts.add(part);
+            }
+        }
+        if (evidenceParts.isEmpty()) {
+            errors.add("Vui lòng đính kèm ít nhất một ảnh bằng chứng chụp trước khi mở khóa tài khoản.");
+        }
+        if (evidenceParts.size() > MAX_EVIDENCE_FILES) {
+            errors.add("Chỉ được phép tải lên tối đa " + MAX_EVIDENCE_FILES + " ảnh bằng chứng.");
+        }
+
+        formValues.put("issueType", issueType == null ? "" : issueType);
+        formValues.put("customIssueTitle", customIssueTitle == null ? "" : customIssueTitle);
+        formValues.put("description", description == null ? "" : description);
+
+        String redirectUrl = request.getContextPath() + "/orders/detail/" + IdObfuscator.encode(orderId) + "#order-report";
+        if (!errors.isEmpty()) {
+            session.setAttribute("orderReportErrors", errors);
+            session.setAttribute("orderReportFormValues", formValues);
+            response.sendRedirect(redirectUrl);
+            return;
+        }
+
+        String applicationPath = request.getServletContext().getRealPath("");
+        List<String> savedFiles = new ArrayList<>();
+        List<DisputeAttachment> attachments = new ArrayList<>();
+        try {
+            for (Part part : evidenceParts) {
+                String storedPath = FileUploadUtil.saveFile(part, applicationPath, DISPUTE_UPLOAD_DIR);
+                if (storedPath != null) {
+                    savedFiles.add(storedPath);
+                    attachments.add(new DisputeAttachment(null, storedPath));
+                }
+            }
+        } catch (IOException ex) {
+            for (String saved : savedFiles) {
+                FileUploadUtil.deleteFile(saved, applicationPath);
+            }
+            errors.add("Không thể lưu ảnh bằng chứng: " + ex.getMessage());
+            session.setAttribute("orderReportErrors", errors);
+            session.setAttribute("orderReportFormValues", formValues);
+            response.sendRedirect(redirectUrl);
+            return;
+        }
+
+        try {
+            disputeService.reportOrder(order, userId, issueType,
+                    "OTHER".equals(issueType) ? customIssueTitle : null, description, attachments);
+            session.setAttribute("orderReportSuccess", "Đã gửi báo cáo tới đội ngũ hỗ trợ. Chúng tôi sẽ liên hệ trong thời gian sớm nhất.");
+        } catch (IllegalStateException ex) {
+            for (String saved : savedFiles) {
+                FileUploadUtil.deleteFile(saved, applicationPath);
+            }
+            errors.add(ex.getMessage());
+            session.setAttribute("orderReportErrors", errors);
+            session.setAttribute("orderReportFormValues", formValues);
+        }
+
+        response.sendRedirect(redirectUrl);
     }
 
     /**

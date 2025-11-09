@@ -197,8 +197,49 @@ CREATE TABLE `orders` (
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
   `variant_code` varchar(100) DEFAULT NULL,
   `hold_until` timestamp NULL DEFAULT NULL,
+  `escrow_hold_seconds` int DEFAULT NULL COMMENT 'Ảnh chụp thời lượng giữ tiền (tính bằng giây) theo cấu hình tại thời điểm tạo đơn',
+  `escrow_original_release_at` timestamp NULL DEFAULT NULL COMMENT 'Mốc giải ngân escrow ban đầu trước khi phát sinh khiếu nại',
+  `escrow_release_at` timestamp NULL DEFAULT NULL COMMENT 'Thời điểm dự kiến giải ngân tự động cho seller khi không có khiếu nại',
+  `escrow_status` enum('Scheduled','Paused','Released','Cancelled') NOT NULL DEFAULT 'Scheduled' COMMENT 'Trạng thái giữ tiền escrow của đơn',
+  `escrow_paused_at` timestamp NULL DEFAULT NULL COMMENT 'Mốc thời gian hệ thống dừng đếm escrow do khiếu nại/report',
+  `escrow_remaining_seconds` int DEFAULT NULL COMMENT 'Số giây escrow còn lại tại thời điểm tạm dừng để hoàn trả khi tiếp tục',
+  `escrow_resumed_at` timestamp NULL DEFAULT NULL COMMENT 'Thời điểm hệ thống tiếp tục đếm escrow sau khi mở khóa report',
+  `escrow_released_at_actual` timestamp NULL DEFAULT NULL COMMENT 'Mốc escrow thực sự giải ngân cho seller sau khi kết thúc xử lý',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+-- Nhật ký chi tiết từng lần thay đổi trạng thái escrow của đơn hàng.
+DROP TABLE IF EXISTS `order_escrow_events`;
+CREATE TABLE `order_escrow_events` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
+  `event_type` enum('CREATED','PAUSED','RESUMED','ADJUSTED','RELEASED','CANCELLED') NOT NULL,
+  `actor_type` enum('SYSTEM','ADMIN','BUYER') NOT NULL,
+  `actor_admin_id` int DEFAULT NULL,
+  `related_dispute_id` int DEFAULT NULL,
+  `release_at_snapshot` timestamp NULL DEFAULT NULL,
+  `remaining_seconds_snapshot` int DEFAULT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+-- Bảng lưu lịch sử admin điều chỉnh thời gian giữ tiền escrow.
+DROP TABLE IF EXISTS `order_escrow_adjustments`;
+CREATE TABLE `order_escrow_adjustments` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
+  `event_id` bigint NOT NULL,
+  `admin_id` int NOT NULL,
+  `related_dispute_id` int DEFAULT NULL,
+  `previous_release_at` timestamp NULL DEFAULT NULL,
+  `previous_remaining_seconds` int DEFAULT NULL,
+  `new_release_at` timestamp NULL DEFAULT NULL,
+  `new_remaining_seconds` int DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
@@ -258,16 +299,35 @@ CREATE TABLE `withdrawal_request_reasons_map` (
 -- =================================================================
 -- Section 4: Support & Communication
 -- =================================================================
+-- Bảng dispute mở rộng để lưu report đơn hàng (kèm phân loại, ảnh bằng chứng, thông tin escrow).
 DROP TABLE IF EXISTS `disputes`;
 CREATE TABLE `disputes` (
     `id` int NOT NULL AUTO_INCREMENT,
-    `order_id` int NOT NULL UNIQUE,
+    `order_id` int NOT NULL,
+    `order_reference_code` varchar(50) NOT NULL,
     `reporter_id` int NOT NULL,
     `resolved_by_admin_id` int DEFAULT NULL,
+    `issue_type` enum('ACCOUNT_NOT_WORKING','ACCOUNT_DUPLICATED','ACCOUNT_EXPIRED','ACCOUNT_MISSING','OTHER') NOT NULL,
+    `custom_issue_title` varchar(255) DEFAULT NULL,
     `reason` text NOT NULL,
-    `status` enum('Open','ResolvedWithRefund','ResolvedWithoutRefund','Closed') NOT NULL DEFAULT 'Open',
+    `status` enum('Open','Resolved','Cancelled') NOT NULL DEFAULT 'Open',
+    `escrow_paused_at` timestamp NULL DEFAULT NULL,
+    `escrow_remaining_seconds` int DEFAULT NULL,
+    `resolved_at` timestamp NULL DEFAULT NULL,
+    `resolution_note` text DEFAULT NULL,
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_disputes_order_reference_code` (`order_reference_code`),
+    UNIQUE KEY `uk_disputes_order_id` (`order_id`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `dispute_attachments`;
+CREATE TABLE `dispute_attachments` (
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `dispute_id` int NOT NULL,
+    `file_path` varchar(512) NOT NULL,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
@@ -347,15 +407,26 @@ ALTER TABLE `orders` ADD CONSTRAINT `fk_orders_buyer_id` FOREIGN KEY (`buyer_id`
 ALTER TABLE `orders` ADD CONSTRAINT `fk_orders_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 ALTER TABLE `orders` ADD CONSTRAINT `fk_orders_payment_transaction_id` FOREIGN KEY (`payment_transaction_id`) REFERENCES `wallet_transactions` (`id`);
 
+ALTER TABLE `order_escrow_events` ADD CONSTRAINT `fk_escrow_events_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
+ALTER TABLE `order_escrow_events` ADD CONSTRAINT `fk_escrow_events_admin_id` FOREIGN KEY (`actor_admin_id`) REFERENCES `users` (`id`);
+ALTER TABLE `order_escrow_events` ADD CONSTRAINT `fk_escrow_events_dispute_id` FOREIGN KEY (`related_dispute_id`) REFERENCES `disputes` (`id`);
+
+ALTER TABLE `order_escrow_adjustments` ADD CONSTRAINT `fk_escrow_adjustments_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
+ALTER TABLE `order_escrow_adjustments` ADD CONSTRAINT `fk_escrow_adjustments_event_id` FOREIGN KEY (`event_id`) REFERENCES `order_escrow_events` (`id`) ON DELETE CASCADE;
+ALTER TABLE `order_escrow_adjustments` ADD CONSTRAINT `fk_escrow_adjustments_admin_id` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`);
+ALTER TABLE `order_escrow_adjustments` ADD CONSTRAINT `fk_escrow_adjustments_dispute_id` FOREIGN KEY (`related_dispute_id`) REFERENCES `disputes` (`id`);
+
+
+ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_reporter_id` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`);
+ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_admin_id` FOREIGN KEY (`resolved_by_admin_id`) REFERENCES `users` (`id`);
+ALTER TABLE `dispute_attachments` ADD CONSTRAINT `fk_dispute_attachments_dispute_id` FOREIGN KEY (`dispute_id`) REFERENCES `disputes` (`id`) ON DELETE CASCADE;
+
 ALTER TABLE `deposit_requests` ADD CONSTRAINT `fk_deposits_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `withdrawal_requests` ADD CONSTRAINT `fk_withdrawals_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_request_id` FOREIGN KEY (`request_id`) REFERENCES `withdrawal_requests` (`id`);
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_reason_id` FOREIGN KEY (`reason_id`) REFERENCES `withdrawal_rejection_reasons` (`id`);
-
-ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
-ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_reporter_id` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`);
-ALTER TABLE `disputes` ADD CONSTRAINT `fk_disputes_admin_id` FOREIGN KEY (`resolved_by_admin_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`);
 ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`);
@@ -377,6 +448,14 @@ CREATE INDEX `idx_products_type_subtype` ON `products`(`product_type`,`product_s
 CREATE INDEX `idx_products_status_created` ON `products`(`status`,`created_at`);
 CREATE INDEX `idx_orders_buyer_id` ON `orders`(`buyer_id`);
 CREATE INDEX `idx_orders_status` ON `orders`(`status`);
+CREATE INDEX `idx_orders_escrow_status` ON `orders`(`escrow_status`);
+CREATE INDEX `idx_escrow_events_order_id` ON `order_escrow_events`(`order_id`,`created_at`);
+CREATE INDEX `idx_escrow_events_dispute` ON `order_escrow_events`(`related_dispute_id`);
+CREATE INDEX `idx_escrow_adjustments_order` ON `order_escrow_adjustments`(`order_id`);
+CREATE INDEX `idx_escrow_adjustments_admin` ON `order_escrow_adjustments`(`admin_id`);
+CREATE INDEX `idx_disputes_status` ON `disputes`(`status`);
+CREATE INDEX `idx_disputes_issue_type` ON `disputes`(`issue_type`);
+CREATE INDEX `idx_dispute_attachments_dispute_id` ON `dispute_attachments`(`dispute_id`);
 CREATE INDEX `idx_wallet_transactions_wallet_id` ON `wallet_transactions`(`wallet_id`);
 CREATE INDEX `idx_wallet_transactions_type` ON `wallet_transactions`(`transaction_type`);
 CREATE INDEX `idx_deposit_requests_status` ON `deposit_requests`(`status`);
@@ -617,7 +696,8 @@ VALUES
 INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
  (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
  (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
- (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00');
+ (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00'),
+ (4,1002,5003,'ENCRYPTED-CODE-202','sp-12m',1,'2024-01-31 09:10:00');
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
@@ -627,18 +707,23 @@ INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_a
 
 INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
  (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
- (2,3,150000.0000,'VietQR|MMO|INV-20240127','DEPOSIT-UUID-2','Pending','2024-01-27 12:00:00',NULL,'2024-01-27 09:00:00');
+ (2,3,150000.0000,'VietQR|MMO|INV-20240127','DEPOSIT-UUID-2','Pending','2024-01-27 12:00:00',NULL,'2024-01-27 09:00:00'),
+ (3,3,200000.0000,'VietQR|MMO|INV-20240131','DEPOSIT-UUID-3','Completed','2024-01-31 12:00:00','Bổ sung số dư chuẩn bị mua gói mới','2024-01-31 08:55:00');
 
 INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transaction_type`,`amount`,`balance_before`,`balance_after`,`note`,`created_at`) VALUES
  (1,3,1,'Deposit',300000.0000,0.0000,300000.0000,'Nạp tiền qua VietQR','2024-01-20 10:16:00'),
  (2,3,5001,'Purchase',-250000.0000,300000.0000,50000.0000,'Thanh toán đơn hàng #5001','2024-01-20 12:00:00'),
  (3,2,5001,'Payout',250000.0000,200000.0000,450000.0000,'Doanh thu đơn #5001','2024-01-20 12:01:00'),
- (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00');
+ (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00'),
+ (5,3,3,'Deposit',200000.0000,50000.0000,250000.0000,'Nạp tiền chuẩn bị mua gói Spotify khác','2024-01-31 09:00:00'),
+ (6,3,5003,'Purchase',-185000.0000,250000.0000,65000.0000,'Thanh toán đơn hàng #5003','2024-01-31 09:05:00'),
+ (7,2,5003,'Payout',185000.0000,330000.0000,515000.0000,'Giải ngân đơn #5003 sau khi đóng report','2024-02-02 10:00:00');
 
 -- Đơn hàng mẫu minh họa trạng thái Completed và Disputed
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`created_at`,`updated_at`) VALUES
- (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
- (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00','2024-01-26 09:00:00','2024-01-27 08:10:00');
+INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`escrow_hold_seconds`,`escrow_original_release_at`,`escrow_release_at`,`escrow_status`,`escrow_paused_at`,`escrow_remaining_seconds`,`escrow_resumed_at`,`escrow_released_at_actual`,`created_at`,`updated_at`) VALUES
+(5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00',259200,'2024-01-23 12:00:00','2024-01-23 12:00:00','Released',NULL,NULL,NULL,'2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+(5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00',432000,'2024-02-01 00:00:00','2024-02-01 00:00:00','Paused','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-26 09:00:00','2024-01-27 08:10:00'),
+(5003,3,1002,1,185000.0000,6,185000.0000,'Completed','sp-12m','ORDER-5003-KEY','2024-02-02 10:00:00',176400,'2024-02-02 10:00:00','2024-02-02 10:00:00','Released','2024-02-02 09:30:00',1800,'2024-02-02 09:45:00','2024-02-02 10:00:00','2024-01-31 09:00:00','2024-02-02 10:00:00');
 
 -- Withdrawals
 INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES
@@ -652,28 +737,53 @@ INSERT INTO `withdrawal_requests` (`id`,`user_id`,`amount`,`bank_account_info`,`
 INSERT INTO `withdrawal_request_reasons_map` (`request_id`,`reason_id`) VALUES (2,2);
 
 -- Support / Chat
-INSERT INTO `disputes` (`id`,`order_id`,`reporter_id`,`resolved_by_admin_id`,`reason`,`status`,`created_at`,`updated_at`) VALUES
- (1,5002,3,NULL,'Tài khoản Spotify không hoạt động','Open','2024-01-27 08:10:00','2024-01-27 08:10:00');
+INSERT INTO `disputes` (`id`,`order_id`,`order_reference_code`,`reporter_id`,`resolved_by_admin_id`,`issue_type`,`custom_issue_title`,`reason`,`status`,`escrow_paused_at`,`escrow_remaining_seconds`,`resolved_at`,`resolution_note`,`created_at`,`updated_at`) VALUES
+ (1,5002,'ORD-5002',3,NULL,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify không hoạt động','Open','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-27 08:10:00','2024-01-27 08:10:00'),
+ (2,5003,'ORD-5003',3,1,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify báo lỗi nhưng đã hoạt động lại sau khi xác minh','Resolved','2024-02-02 09:30:00',1200,'2024-02-02 09:45:00','Admin xác nhận tài khoản hoạt động bình thường, mở lại escrow','2024-02-02 09:30:00','2024-02-02 09:45:00');
+
+INSERT INTO `dispute_attachments` (`id`,`dispute_id`,`file_path`,`created_at`) VALUES
+ (1,1,'https://cdn.mmo.local/disputes/5002/proof-1.png','2024-01-27 08:11:00'),
+ (2,1,'https://cdn.mmo.local/disputes/5002/proof-2.png','2024-01-27 08:11:30'),
+ (3,2,'https://cdn.mmo.local/disputes/5003/proof-1.png','2024-02-02 09:32:00');
+
+INSERT INTO `order_escrow_events` (`id`,`order_id`,`event_type`,`actor_type`,`actor_admin_id`,`related_dispute_id`,`release_at_snapshot`,`remaining_seconds_snapshot`,`metadata`,`created_at`) VALUES
+ (1,5002,'CREATED','SYSTEM',NULL,NULL,'2024-02-01 00:00:00',432000,JSON_OBJECT('source','checkout'),'2024-01-26 09:00:00'),
+ (2,5002,'PAUSED','SYSTEM',NULL,1,'2024-02-01 00:00:00',402600,JSON_OBJECT('dispute_id',1,'reason','Buyer report mở khi escrow còn 4d16h'),'2024-01-27 08:10:00'),
+ (3,5002,'ADJUSTED','ADMIN',1,1,'2024-02-03 12:00:00',432000,JSON_OBJECT('change','extend','delta_seconds',172800),'2024-01-27 08:12:00'),
+ (4,5003,'CREATED','SYSTEM',NULL,NULL,'2024-02-02 10:00:00',176400,JSON_OBJECT('source','checkout'),'2024-01-31 09:00:00'),
+ (5,5003,'PAUSED','SYSTEM',NULL,2,'2024-02-02 10:00:00',1800,JSON_OBJECT('dispute_id',2,'reason','Buyer báo lỗi trước khi hết escrow'),'2024-02-02 09:30:00'),
+ (6,5003,'RESUMED','ADMIN',1,2,'2024-02-02 10:00:00',900,JSON_OBJECT('action','resume_after_validation'),'2024-02-02 09:45:00'),
+ (7,5003,'RELEASED','SYSTEM',NULL,2,'2024-02-02 10:00:00',0,JSON_OBJECT('action','auto_release_after_resume'),'2024-02-02 10:00:00');
+
+INSERT INTO `order_escrow_adjustments` (`id`,`order_id`,`event_id`,`admin_id`,`related_dispute_id`,`previous_release_at`,`previous_remaining_seconds`,`new_release_at`,`new_remaining_seconds`,`note`,`created_at`) VALUES
+ (1,5002,3,1,1,'2024-02-01 00:00:00',259200,'2024-02-03 12:00:00',432000,'Gia hạn thêm 2 ngày để xử lý khiếu nại','2024-01-27 08:12:00');
 
 INSERT INTO `conversations` (`id`,`related_order_id`,`related_product_id`,`created_at`) VALUES
- (1,5002,1002,'2024-01-27 08:00:00');
+ (1,5002,1002,'2024-01-27 08:00:00'),
+ (2,5003,1002,'2024-02-02 09:28:00');
 
-INSERT INTO `conversation_participants` (`conversation_id`,`user_id`) VALUES (1,2),(1,3);
+INSERT INTO `conversation_participants` (`conversation_id`,`user_id`) VALUES (1,2),(1,3),(2,2),(2,3);
 
 INSERT INTO `messages` (`id`,`conversation_id`,`sender_id`,`content`,`created_at`) VALUES
  (1,1,3,'Shop ơi, tài khoản Spotify không hoạt động.','2024-01-27 08:05:00'),
- (2,1,2,'Bên mình đang kiểm tra lại thông tin giúp bạn.','2024-01-27 08:07:00');
+ (2,1,2,'Bên mình đang kiểm tra lại thông tin giúp bạn.','2024-01-27 08:07:00'),
+ (3,2,3,'Mình không đăng nhập được, shop hỗ trợ giúp với!','2024-02-02 09:29:00'),
+ (4,2,2,'Shop đã reset lại mật khẩu, bạn thử lại xem nhé.','2024-02-02 09:40:00'),
+ (5,2,3,'Đã đăng nhập lại được rồi cảm ơn shop.','2024-02-02 09:44:00');
 
 -- Inventory logs
 INSERT INTO `inventory_logs` (`id`,`product_id`,`related_order_id`,`change_amount`,`reason`,`created_at`) VALUES
  (1,1001,5001,-1,'Sale','2024-01-20 12:00:00'),
  (2,1002,5002,-1,'Sale','2024-01-26 09:05:00'),
- (3,1002,NULL,5,'ManualRestock','2024-01-29 10:00:00');
+ (3,1002,NULL,5,'ManualRestock','2024-01-29 10:00:00'),
+ (4,1002,5003,-1,'Sale','2024-01-31 09:05:00');
 
 -- System configs
 INSERT INTO `system_configs` (`id`,`config_key`,`config_value`,`description`,`created_at`,`updated_at`) VALUES
- (1,'escrow.release.hours','72','Thời gian giữ tiền trước khi tự động giải ngân','2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,'support.email','support@mmo.local','Email bộ phận hỗ trợ khách hàng','2024-01-10 09:00:00','2024-01-10 09:00:00');
+ (1,'escrow.hold.default.seconds','259200','Thời lượng giữ tiền mặc định (giây) trước khi giải ngân auto','2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (2,'escrow.hold.admin.max.seconds','604800','Giới hạn tối đa admin có thể gia hạn (giây)','2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (3,'escrow.hold.admin.min.seconds','86400','Giới hạn tối thiểu admin có thể rút ngắn (giây)','2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (4,'support.email','support@mmo.local','Email bộ phận hỗ trợ khách hàng','2024-01-10 09:00:00','2024-01-10 09:00:00');
 
 -- =================================================================
 SET FOREIGN_KEY_CHECKS = 1;
