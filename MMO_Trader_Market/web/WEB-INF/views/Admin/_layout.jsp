@@ -34,25 +34,26 @@
             </h4>
         </div>
 
-        <a href="${pageContext.request.contextPath}/admin" class="${active=='dashboard'?'active':''}">
-            <i class="bi bi-speedometer2"></i><span>Tổng quan</span>
         </a>
-        <a href="${pageContext.request.contextPath}/admin/users" class="${active=='users'?'active':''}">
-            <i class="bi bi-people"></i><span>Người dùng</span>
-        </a>
-        <a href="${pageContext.request.contextPath}/admin/shops" class="${active=='shops'?'active':''}">
-            <i class="bi bi-shop"></i><span>Cửa hàng</span>
-        </a>
-        <a href="${pageContext.request.contextPath}/admin/kycs" class="${active=='kycs'?'active':''}">
-            <i class="bi bi-shield-check"></i><span>Duyệt KYC</span>
-        </a>
-        <a href="${pageContext.request.contextPath}/admin/cashs" class="${active=='cashs'?'active':''}">
-            <i class="bi bi-cash-stack"></i><span>Nạp / Rút</span>
-        </a>
-        <a href="${pageContext.request.contextPath}/admin/systems" class="${active=='systems'?'active':''}">
-            <i class="bi bi-gear"></i><span>Cấu hình hệ thống</span>
-        </a>
-    </div>
+                <a href="${pageContext.request.contextPath}/admin/dashboard" class="${active=='dashboard'?'active':''}">
+                    <i class="bi bi-speedometer2"></i><span>Tổng quan</span>
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/users" class="${active=='users'?'active':''}">
+                    <i class="bi bi-people"></i><span>Người dùng</span>
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/shops" class="${active=='shops'?'active':''}">
+                    <i class="bi bi-shop"></i><span>Cửa hàng</span>
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/kycs" class="${active=='kycs'?'active':''}">
+                    <i class="bi bi-shield-check"></i><span>Duyệt KYC</span>
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/cashs" class="${active=='cashs'?'active':''}">
+                    <i class="bi bi-cash-stack"></i><span>Nạp / Rút</span>
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/systems" class="${active=='systems'?'active':''}">
+                    <i class="bi bi-gear"></i><span>Cấu hình hệ thống</span>
+                </a>
+            </div>
 
     <!-- Logout -->
     <div class="logout-section">
