@@ -606,6 +606,28 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Đếm số đơn hàng đã hoàn thành của shop.
+     *
+     * @param shopId mã shop
+     * @return số đơn đã bán (Completed)
+     */
+    public int countCompletedOrdersByShop(int shopId) {
+        final String sql = "SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed'";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn đã bán theo shop", ex);
+        }
+        return 0;
+    }
+
+    /**
      * Lấy danh sách đơn hàng của shop để hiển thị trong bảng thu nhập.
      *
      * @param shopId mã shop

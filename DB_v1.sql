@@ -77,7 +77,7 @@ CREATE TABLE `products` (
 
   -- Loại & Subtype cố định (ENUM)
   `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME', 'OTHER'),
-  `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
+  `product_subtype` ENUM('GMAIL','YAHOO','OUTLOOK','FACEBOOK','TIKTOK','X','CANVA','OFFICE','WINDOWS','CHATGPT','VALORANT','LEAGUE_OF_LEGENDS','CS2','OTHER') NOT NULL DEFAULT 'OTHER',
 
   `name` varchar(255) NOT NULL,
   `short_description` varchar(300) DEFAULT NULL,

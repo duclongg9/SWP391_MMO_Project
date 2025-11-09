@@ -512,6 +512,64 @@ public class CredentialDAO extends BaseDAO {
         return PASSWORD_SYMBOLS[RANDOM.nextInt(PASSWORD_SYMBOLS.length)];
     }
 
+    /**
+     * Thêm một credential thực (tài khoản) vào sản phẩm.
+     * 
+     * @param productId mã sản phẩm
+     * @param username tên đăng nhập
+     * @param password mật khẩu
+     * @param variantCode mã biến thể (có thể null)
+     * @return true nếu thêm thành công
+     */
+    public boolean addRealCredential(int productId, String username, String password, String variantCode) {
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                addRealCredential(connection, productId, username, password, variantCode);
+                connection.commit();
+                return true;
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể thêm credential thực", ex);
+                return false;
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể thêm credential thực", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Thêm một credential thực vào sản phẩm trong transaction.
+     */
+    public void addRealCredential(Connection connection, int productId, String username, String password, String variantCode) throws SQLException {
+        String normalized = normalizeVariantCode(variantCode);
+        String credentialJson = String.format(Locale.ROOT, "{\"username\":\"%s\",\"password\":\"%s\"}", 
+                username != null ? username.replace("\"", "\\\"") : "", 
+                password != null ? password.replace("\"", "\\\"") : "");
+        
+        final String sql = "INSERT INTO product_credentials (product_id, encrypted_value, variant_code, is_sold) "
+                + "VALUES (?, ?, ?, 0)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            statement.setString(2, credentialJson);
+            if (normalized == null) {
+                statement.setNull(3, Types.VARCHAR);
+            } else {
+                statement.setString(3, normalized);
+            }
+            statement.executeUpdate();
+        }
+        LOGGER.log(Level.INFO, "Đã thêm credential thực cho sản phẩm {0}", productId);
+    }
+
     public record BulkGenerationSummary(int generatedCredentials, int skuTouched) {
 
     }

@@ -46,8 +46,17 @@
     </section>
     <section class="panel">
         <div class="panel__header">
-            <h2 class="panel__title">Tồn kho tổng quan</h2>
-            <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <h2 class="panel__title">Tồn kho tổng quan</h2>
+                    <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
+                </div>
+                <a href="${pageContext.request.contextPath}/seller/products/create" 
+                   class="button button--primary" 
+                   style="text-decoration: none; white-space: nowrap;">
+                    ➕ Tạo sản phẩm mới
+                </a>
+            </div>
         </div>
         <div class="panel__body">
             <c:choose>
@@ -99,10 +108,14 @@
                                         </c:choose>
                                     </td>
                                     <td style="text-align: center;">
-                                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
                                             <a href="${pageContext.request.contextPath}/seller/products/edit?id=${product.id}" 
                                                style="padding: 0.25rem 0.75rem; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
                                                 Sửa
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/seller/products/add-credential?productId=${product.id}" 
+                                               style="padding: 0.25rem 0.75rem; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
+                                                ➕ Thêm sản phẩm
                                             </a>
                                             <c:choose>
                                                 <c:when test="${product.status == 'Available'}">

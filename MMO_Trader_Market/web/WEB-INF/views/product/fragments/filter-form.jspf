@@ -78,20 +78,28 @@
             DEFAULT: [{code: '', label: 'Tất cả'}],
             EMAIL: [
                 {code: '', label: 'Tất cả'},
-                {code: 'GMAIL', label: 'Gmail'}
+                {code: 'GMAIL', label: 'Gmail'},
+                {code: 'YAHOO', label: 'Yahoo'},
+                {code: 'OUTLOOK', label: 'Outlook'}
             ],
             SOCIAL: [
                 {code: '', label: 'Tất cả'},
                 {code: 'FACEBOOK', label: 'Facebook'},
-                {code: 'TIKTOK', label: 'TikTok'}
+                {code: 'TIKTOK', label: 'TikTok'},
+                {code: 'X', label: 'X (Twitter)'}
             ],
             SOFTWARE: [
                 {code: '', label: 'Tất cả'},
-                {code: 'CANVA', label: 'Canva'}
+                {code: 'CANVA', label: 'Canva'},
+                {code: 'OFFICE', label: 'Office'},
+                {code: 'WINDOWS', label: 'Windows'},
+                {code: 'CHATGPT', label: 'ChatGPT'}
             ],
             GAME: [
                 {code: '', label: 'Tất cả'},
-                {code: 'VALORANT', label: 'Valorant'}
+                {code: 'VALORANT', label: 'Valorant'},
+                {code: 'LEAGUE_OF_LEGENDS', label: 'League of Legends'},
+                {code: 'CS2', label: 'CS2'}
             ]
         };
 
