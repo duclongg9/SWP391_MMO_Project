@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -14,13 +15,18 @@ public class ProductVariantOption {
     @SerializedName("variant_code")
     private String variantCode;
 
+    private String name; // Tên variant (ví dụ: "Email 3 tháng")
+    
     private Map<String, String> attributes;
     private BigDecimal price;
     @SerializedName("inventory_count")
     private Integer inventoryCount;
 
     @SerializedName("image_url")
-    private String imageUrl;
+    private String imageUrl; // Giữ lại để backward compatibility
+
+    @SerializedName("images")
+    private List<String> images; // Danh sách ảnh (1-3 ảnh)
 
     private String status;
 
@@ -54,12 +60,32 @@ public class ProductVariantOption {
     public void setStatus(String status) {
         this.status = status;
     }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getImageUrl() {
         return imageUrl;
     }
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public List<String> getImages() {
+        return images != null ? images : Collections.emptyList();
+    }
+
+    public void setImages(List<String> images) {
+        this.images = images;
+        // Tự động set imageUrl là ảnh đầu tiên nếu có
+        if (images != null && !images.isEmpty()) {
+            this.imageUrl = images.get(0);
+        }
     }
 
 
