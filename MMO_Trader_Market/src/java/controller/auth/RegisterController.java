@@ -62,9 +62,7 @@ public class RegisterController extends BaseController {
             session.setAttribute("pendingVerificationEmail", createdUser.getEmail());
             session.setAttribute("verificationNotice",
                     "Chúng tôi đã gửi mã xác thực đến " + createdUser.getEmail() + ". Vui lòng kiểm tra hộp thư.");
-            session.setAttribute("showVerificationModal", true);
-            session.setAttribute("newUserEmail", createdUser.getEmail());
-            response.sendRedirect(request.getContextPath() + "/auth");
+            response.sendRedirect(request.getContextPath() + "/verify-email");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
