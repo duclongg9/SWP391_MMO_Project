@@ -7,7 +7,7 @@
     <h4 class="mb-4">Tổng quan hệ thống</h4>
 
     <div class="card mt-4 p-4">
-        <h5 class="mb-3"><i class="bi bi-bar-chart"></i>Doanh thu tháng hiện tại</h5>
+        <h5 class="mb-0"><i class="bi bi-bar-chart"></i>Doanh thu tháng hiện tại</h5>
     <div class="row g-3">
         <div class="col-md-3">
             <div class="card shadow-sm text-center p-3">
@@ -48,10 +48,10 @@
                 <h3 class="fw-bold text-dark"><fmt:formatNumber value="${totalWithdraw}" type="currency" currencySymbol="VND" groupingUsed="true"/></h3>
                 <c:choose>
                     <c:when test="${persentWithdrawChanged > 0}">
-                        <div class="insight-chip up">${persentWithdrawChanged}% so với tháng trước</div>
+                        <div class="insight-chip up">↑ ${persentWithdrawChanged}% so với tháng trước</div>
                     </c:when>
                     <c:when test="${persentWithdrawChanged < 0}">
-                        <div class="insight-chip down">${persentWithdrawChanged}% so với tháng trước</div>
+                        <div class="insight-chip down">↓ ${persentWithdrawChanged}% so với tháng trước</div>
                     </c:when>
                     <c:otherwise>
                         <div class="insight-chip neutral">0% so với tháng trước</div>
@@ -80,12 +80,6 @@
                  <canvas id="chartRevenue" height="120"></canvas>
             </div>    
 </div>
-            <style>
-                .shadow-sm{
-                    height: 190px;
-                }
-            </style>    
-            
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
    <script>
