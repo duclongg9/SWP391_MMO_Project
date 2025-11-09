@@ -1,4 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<fmt:setLocale value="vi_VN" />
 <div class="container-fluid">
     <h4 class="mb-4">Tổng quan hệ thống</h4>
 
@@ -7,28 +10,28 @@
             <div class="card shadow-sm text-center p-3">
                 <i class="bi bi-cart-check display-6 text-primary"></i>
                 <h6 class="mt-2">Đơn hàng hôm nay</h6>
-                <h3 class="fw-bold text-dark">128</h3>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm text-center p-3">
-                <i class="bi bi-people-fill display-6 text-success"></i>
-                <h6 class="mt-2">Người dùng mới</h6>
-                <h3 class="fw-bold text-dark">35</h3>
+                <h3 class="fw-bold text-dark">${orderByMonth}</h3>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow-sm text-center p-3">
                 <i class="bi bi-shop display-6 text-warning"></i>
                 <h6 class="mt-2">Cửa hàng hoạt động</h6>
-                <h3 class="fw-bold text-dark">67</h3>
+                <h3 class="fw-bold text-dark">${shopByMonth}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center p-3">
+                <i class="bi bi-cash-coin display-6 text-primary"></i>
+                <h6 class="mt-2">Tổng tiền nạp</h6>
+                <h3 class="fw-bold text-dark"><fmt:formatNumber value="${totalDeposit}" type="currency" currencySymbol="VND" groupingUsed="true"/></h3>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow-sm text-center p-3">
                 <i class="bi bi-cash-coin display-6 text-danger"></i>
-                <h6 class="mt-2">Doanh thu hôm nay</h6>
-                <h3 class="fw-bold text-dark">42.5M₫</h3>
+                <h6 class="mt-2">Tổng tiền rút</h6>
+                <h3 class="fw-bold text-dark"><fmt:formatNumber value="${totalWithdraw}" type="currency" currencySymbol="VND" groupingUsed="true"/></h3>
             </div>
         </div>
     </div>
