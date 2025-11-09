@@ -43,7 +43,7 @@
                 <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
             </c:if>
             <c:if test="${not empty emg}">
-                <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
+                <div class="alert alert--error" role="alert" aria-live="assertive">${emg}</div>
             </c:if>
         </div>
 
@@ -129,8 +129,8 @@
                         <th scope="row"><label for="newPass">Mật khẩu mới</label></th>
                         <td><input id="newPass" name="newPass" type="password" required
                                    autocomplete="new-password" minlength="8"
-                                   pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp"><br>
-                            <label>Tối thiểu 8 ký tự, có chữ và số.</label>
+                                   pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp" placeholder = "Tối thiểu 8 ký tự, có chữ và số."><br>
+                     
                         </td>
 
                     </tr>
@@ -138,7 +138,8 @@
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
                                    autocomplete="new-password" oninput="validatePass()"><br>
-                        <label id="errMsg" style="color:red;display:none;">Mật khẩu mới không được trùng mật khẩu cũ!</label>
+                        <label id="errMsg" style="color:red;display:none;"></label>
+                        <label id="msg" style="color:green;display:none;"></label>
                         </td>
                 
 
@@ -158,15 +159,21 @@ function validatePass() {
     const newPass = document.getElementById("newPass").value.trim();
     const confirmPass = document.getElementById("confirmPass").value.trim();
     const errMsg = document.getElementById("errMsg");
+    const msg = document.getElementById("msg");
 
     // Mật khẩu nhập lại sai
     if (newPass && confirmPass && newPass !== confirmPass) {
         errMsg.textContent = "Nhập lại mật khẩu không khớp!";
         errMsg.style.display = "inline";
         return false;
+    }else if(newPass && confirmPass && newPass == confirmPass){
+        msg.textContent = "Khớp";
+        msg.style.display = "inline";
+        errMsg.style.display = "none";
+        return true;
     }
 
-    errMsg.style.display = "none";
+    errMsg.style.display = "inline";
     return true;
 }
 </script>
