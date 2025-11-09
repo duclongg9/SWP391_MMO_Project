@@ -150,6 +150,10 @@ public class SellerInventoryController extends SellerBaseController {
         int productId = Integer.parseInt(productIdStr);
         HttpSession session = request.getSession();
         
+        // Lấy tham số page và keyword để giữ lại vị trí hiện tại
+        String pageParam = request.getParameter("page");
+        String keywordParam = request.getParameter("keyword");
+        
         if ("stop".equals(action)) {
             // Ngừng bán - chuyển sang Unlisted
             boolean success = productDAO.updateStatus(productId, "Unlisted");
@@ -168,6 +172,29 @@ public class SellerInventoryController extends SellerBaseController {
             }
         }
         
-        response.sendRedirect(request.getContextPath() + "/seller/inventory");
+        // Xây dựng URL redirect với tham số page và keyword
+        StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/seller/inventory");
+        boolean hasParams = false;
+        
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            redirectUrl.append("?page=").append(pageParam);
+            hasParams = true;
+        }
+        
+        if (keywordParam != null && !keywordParam.trim().isEmpty()) {
+            if (hasParams) {
+                redirectUrl.append("&keyword=");
+            } else {
+                redirectUrl.append("?keyword=");
+                hasParams = true;
+            }
+            try {
+                redirectUrl.append(java.net.URLEncoder.encode(keywordParam, "UTF-8"));
+            } catch (java.io.UnsupportedEncodingException e) {
+                redirectUrl.append(keywordParam);
+            }
+        }
+        
+        response.sendRedirect(redirectUrl.toString());
     }
 }

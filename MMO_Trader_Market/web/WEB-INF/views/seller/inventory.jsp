@@ -136,6 +136,10 @@
                                                     <form action="${pageContext.request.contextPath}/seller/inventory" method="post" style="display: inline; margin: 0;">
                                                         <input type="hidden" name="action" value="stop"/>
                                                         <input type="hidden" name="productId" value="${product.id}"/>
+                                                        <input type="hidden" name="page" value="${page}"/>
+                                                        <c:if test="${not empty keyword}">
+                                                            <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"/>
+                                                        </c:if>
                                                         <button type="submit" 
                                                                 style="padding: 0.25rem 0.75rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;"
                                                                 onclick="return confirm('Bạn có chắc muốn ngừng bán sản phẩm này?')">
@@ -147,6 +151,10 @@
                                                     <form action="${pageContext.request.contextPath}/seller/inventory" method="post" style="display: inline; margin: 0;">
                                                         <input type="hidden" name="action" value="resume"/>
                                                         <input type="hidden" name="productId" value="${product.id}"/>
+                                                        <input type="hidden" name="page" value="${page}"/>
+                                                        <c:if test="${not empty keyword}">
+                                                            <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"/>
+                                                        </c:if>
                                                         <button type="submit" 
                                                                 style="padding: 0.25rem 0.75rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">
                                                             Mở bán lại
