@@ -39,9 +39,13 @@
                 </div>
                 
                 <div style="margin-bottom: 1.25rem;">
+                    <c:set var="isEmailType" value="${product.productType == 'EMAIL' || (product.productType == 'SOCIAL' && product.productSubtype == 'FACEBOOK')}" />
+                    <c:set var="inputType" value="${isEmailType ? 'email' : 'text'}" />
+                    <c:set var="inputPlaceholder" value="${isEmailType ? 'example@gmail.com hoặc user@yahoo.com' : 'username123 hoặc thông tin tài khoản'}" />
+                    
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;" for="username">
                         <c:choose>
-                            <c:when test="${product.productType == 'EMAIL' || (product.productType == 'SOCIAL' && product.productSubtype == 'FACEBOOK')}">
+                            <c:when test="${isEmailType}">
                                 Email <span style="color: red;">*</span>
                             </c:when>
                             <c:otherwise>
@@ -50,14 +54,14 @@
                         </c:choose>
                     </label>
                     <input class="form-input" 
-                           type="<c:choose><c:when test='${product.productType == \"EMAIL\" || (product.productType == \"SOCIAL\" && product.productSubtype == \"FACEBOOK\")}'>email</c:when><c:otherwise>text</c:otherwise></c:choose>" 
+                           type="${inputType}" 
                            id="username" name="username" 
-                           placeholder="<c:choose><c:when test='${product.productType == \"EMAIL\" || (product.productType == \"SOCIAL\" && product.productSubtype == \"FACEBOOK\")}'>example@gmail.com hoặc user@yahoo.com</c:when><c:otherwise>username123 hoặc thông tin tài khoản</c:otherwise></c:choose>" 
+                           placeholder="${inputPlaceholder}" 
                            value="${username}" required maxlength="255"
                            style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                     <small style="color: #666; font-size: 0.875rem;">
                         <c:choose>
-                            <c:when test="${product.productType == 'EMAIL' || (product.productType == 'SOCIAL' && product.productSubtype == 'FACEBOOK')}">
+                            <c:when test="${isEmailType}">
                                 <span style="color: #d9534f;">⚠️</span> Vui lòng nhập địa chỉ email hợp lệ (ví dụ: example@gmail.com, user@yahoo.com, name@outlook.com, v.v.)
                             </c:when>
                             <c:otherwise>

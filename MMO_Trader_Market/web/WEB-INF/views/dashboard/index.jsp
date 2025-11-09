@@ -62,14 +62,26 @@
                 <p class="stat-card__value"><%= completedOrders %></p>
             </div>
         </article>
+        <article class="stat-card">
+            <div class="icon icon--primary">📊</div>
+            <div>
+                <p class="stat-card__label">Tổng tồn kho</p>
+                <p class="stat-card__value"><%= request.getAttribute("totalInventory") != null ? request.getAttribute("totalInventory") : 0 %></p>
+            </div>
+        </article>
     </section>
     <section class="panel">
         <div class="panel__header">
-            <h2 class="panel__title">Sản phẩm nổi bật</h2>
-            <form class="search-bar" method="get" action="<%= request.getContextPath() %>/products">
+            <h2 class="panel__title">Sản phẩm của shop</h2>
+            <form class="search-bar" method="get" action="<%= request.getContextPath() %>/dashboard">
                 <label class="search-bar__icon" for="keyword">🔍</label>
-                <input class="search-bar__input" type="text" id="keyword" name="keyword" placeholder="Tìm sản phẩm...">
+                <input class="search-bar__input" type="text" id="keyword" name="keyword" 
+                       placeholder="Tìm sản phẩm..." 
+                       value="<%= request.getAttribute("keyword") != null ? request.getAttribute("keyword") : "" %>">
                 <button class="button button--primary" type="submit">Tìm kiếm</button>
+                <% if (request.getAttribute("keyword") != null && !((String) request.getAttribute("keyword")).isEmpty()) { %>
+                    <a href="<%= request.getContextPath() %>/dashboard" class="button" style="margin-left: 0.5rem;">Xóa</a>
+                <% } %>
             </form>
         </div>
         <ul class="product-grid">
@@ -101,13 +113,50 @@
                 <h3><%= product.getName() %></h3>
                 <p><%= product.getShortDescription() != null ? product.getShortDescription() : (product.getDescription() != null && product.getDescription().length() > 100 ? product.getDescription().substring(0, 100) + "..." : product.getDescription()) %></p>
                 <span class="product-card__price"><%= formattedPrice %> ₫</span>
-                <span class="badge"><%= product.getStatus() != null ? product.getStatus() : "" %></span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="color: #666; font-size: 0.875rem;">
+                        📦 Tồn kho: <strong><%= product.getInventoryCount() != null ? product.getInventoryCount() : 0 %></strong>
+                    </span>
+                    <span class="badge"><%= product.getStatus() != null ? product.getStatus() : "" %></span>
+                </div>
             </li>
             <%
                     }
                 }
             %>
         </ul>
+        <% 
+            Integer currentPage = (Integer) request.getAttribute("page");
+            Integer totalPages = (Integer) request.getAttribute("totalPages");
+            String currentKeyword = (String) request.getAttribute("keyword");
+            if (currentPage == null) currentPage = 1;
+            if (totalPages == null) totalPages = 1;
+            if (currentKeyword == null) currentKeyword = "";
+        %>
+        <% if (totalPages > 1) { %>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; padding: 1rem;">
+                <% if (currentPage > 1) { %>
+                    <a href="<%= request.getContextPath() %>/dashboard?page=<%= currentPage - 1 %><%= currentKeyword.isEmpty() ? "" : "&keyword=" + java.net.URLEncoder.encode(currentKeyword, "UTF-8") %>" 
+                       class="button">‹ Trước</a>
+                <% } %>
+                <% 
+                    int startPage = Math.max(1, currentPage - 2);
+                    int endPage = Math.min(totalPages, currentPage + 2);
+                    for (int i = startPage; i <= endPage; i++) {
+                %>
+                    <% if (i == currentPage) { %>
+                        <span class="button button--primary" style="pointer-events: none;"><%= i %></span>
+                    <% } else { %>
+                        <a href="<%= request.getContextPath() %>/dashboard?page=<%= i %><%= currentKeyword.isEmpty() ? "" : "&keyword=" + java.net.URLEncoder.encode(currentKeyword, "UTF-8") %>" 
+                           class="button"><%= i %></a>
+                    <% } %>
+                <% } %>
+                <% if (currentPage < totalPages) { %>
+                    <a href="<%= request.getContextPath() %>/dashboard?page=<%= currentPage + 1 %><%= currentKeyword.isEmpty() ? "" : "&keyword=" + java.net.URLEncoder.encode(currentKeyword, "UTF-8") %>" 
+                       class="button">Sau ›</a>
+                <% } %>
+            </div>
+        <% } %>
     </section>
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>

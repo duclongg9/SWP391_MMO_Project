@@ -23,6 +23,9 @@ public class SellerInventoryController extends SellerBaseController {
     
     private final ProductDAO productDAO = new ProductDAO();
     private final ShopDAO shopDAO = new ShopDAO();
+    
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 20;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -46,6 +49,16 @@ public class SellerInventoryController extends SellerBaseController {
                 request.setAttribute("flashError", error);
                 session.removeAttribute("sellerInventoryFlashError");
             }
+            Object successMsg = session.getAttribute("successMessage");
+            if (successMsg instanceof String) {
+                request.setAttribute("successMessage", successMsg);
+                session.removeAttribute("successMessage");
+            }
+            Object errorMsg = session.getAttribute("errorMessage");
+            if (errorMsg instanceof String) {
+                request.setAttribute("errorMessage", errorMsg);
+                session.removeAttribute("errorMessage");
+            }
         }
         
         // Lấy shop của seller
@@ -56,18 +69,67 @@ public class SellerInventoryController extends SellerBaseController {
             return;
         }
         
-        // Lấy danh sách sản phẩm
-        List<Products> products = productDAO.findByShopId(shop.getId());
+        // Lấy tham số tìm kiếm và phân trang
+        String keyword = request.getParameter("keyword");
+        if (keyword != null) {
+            keyword = keyword.trim();
+            if (keyword.isEmpty()) {
+                keyword = null;
+            }
+        }
         
-        // Log để debug
-        System.out.println("DEBUG - SellerInventory: userId=" + userId + ", shopId=" + shop.getId() + ", products found=" + products.size());
+        int page = parsePage(request.getParameter("page"));
+        int pageSize = parsePageSize(request.getParameter("size"));
+        
+        // Đếm tổng sản phẩm (có hoặc không có keyword)
+        int totalProducts = productDAO.countByShopId(shop.getId(), keyword);
+        
+        // Tính tổng số trang
+        int totalPages = (int) Math.ceil((double) totalProducts / pageSize);
+        if (totalPages == 0) totalPages = 1;
+        if (page > totalPages) page = totalPages;
+        
+        // Tính offset
+        int offset = (page - 1) * pageSize;
+        
+        // Lấy danh sách sản phẩm (có phân trang và tìm kiếm)
+        List<Products> products = productDAO.findByShopId(shop.getId(), keyword, pageSize, offset);
         
         request.setAttribute("shop", shop);
         request.setAttribute("products", products);
+        request.setAttribute("keyword", keyword != null ? keyword : "");
+        request.setAttribute("page", page);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalProducts", totalProducts);
         request.setAttribute("pageTitle", "Quản lý kho hàng - " + shop.getName());
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
         forward(request, response, "seller/inventory");
+    }
+    
+    private int parsePage(String pageStr) {
+        if (pageStr == null || pageStr.trim().isEmpty()) {
+            return DEFAULT_PAGE;
+        }
+        try {
+            int page = Integer.parseInt(pageStr.trim());
+            return page < 1 ? DEFAULT_PAGE : page;
+        } catch (NumberFormatException e) {
+            return DEFAULT_PAGE;
+        }
+    }
+    
+    private int parsePageSize(String sizeStr) {
+        if (sizeStr == null || sizeStr.trim().isEmpty()) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        try {
+            int size = Integer.parseInt(sizeStr.trim());
+            return size < 1 ? DEFAULT_PAGE_SIZE : size;
+        } catch (NumberFormatException e) {
+            return DEFAULT_PAGE_SIZE;
+        }
     }
     
     @Override

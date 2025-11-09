@@ -106,11 +106,114 @@ public class SellerIncomeController extends SellerBaseController {
             }
         }
         
+        // Lấy tham số period (day, week, month, year) - mặc định là month
+        String period = request.getParameter("period");
+        if (period == null || period.trim().isEmpty()) {
+            period = "month";
+        }
+        if (!period.matches("day|week|month|year")) {
+            period = "month";
+        }
+        
+        // Tính toán khoảng thời gian dựa trên period
+        Timestamp statsStartDate = null;
+        Timestamp statsEndDate = null;
+        Calendar statsCal = Calendar.getInstance();
+        
+        switch (period) {
+            case "day":
+                // 30 ngày gần nhất
+                statsCal.add(Calendar.DAY_OF_MONTH, -30);
+                statsStartDate = new Timestamp(statsCal.getTimeInMillis());
+                statsCal = Calendar.getInstance();
+                statsCal.add(Calendar.DAY_OF_MONTH, 1);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsEndDate = new Timestamp(statsCal.getTimeInMillis());
+                break;
+            case "week":
+                // 12 tuần gần nhất
+                statsCal.add(Calendar.WEEK_OF_YEAR, -12);
+                statsStartDate = new Timestamp(statsCal.getTimeInMillis());
+                statsCal = Calendar.getInstance();
+                statsCal.add(Calendar.WEEK_OF_YEAR, 1);
+                statsCal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsEndDate = new Timestamp(statsCal.getTimeInMillis());
+                break;
+            case "month":
+                // 12 tháng gần nhất
+                statsCal.add(Calendar.MONTH, -12);
+                statsCal.set(Calendar.DAY_OF_MONTH, 1);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsStartDate = new Timestamp(statsCal.getTimeInMillis());
+                statsCal = Calendar.getInstance();
+                statsCal.add(Calendar.MONTH, 1);
+                statsCal.set(Calendar.DAY_OF_MONTH, 1);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsEndDate = new Timestamp(statsCal.getTimeInMillis());
+                break;
+            case "year":
+                // 5 năm gần nhất
+                statsCal.add(Calendar.YEAR, -5);
+                statsCal.set(Calendar.MONTH, 0);
+                statsCal.set(Calendar.DAY_OF_MONTH, 1);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsStartDate = new Timestamp(statsCal.getTimeInMillis());
+                statsCal = Calendar.getInstance();
+                statsCal.add(Calendar.YEAR, 1);
+                statsCal.set(Calendar.MONTH, 0);
+                statsCal.set(Calendar.DAY_OF_MONTH, 1);
+                statsCal.set(Calendar.HOUR_OF_DAY, 0);
+                statsCal.set(Calendar.MINUTE, 0);
+                statsCal.set(Calendar.SECOND, 0);
+                statsCal.set(Calendar.MILLISECOND, 0);
+                statsEndDate = new Timestamp(statsCal.getTimeInMillis());
+                break;
+        }
+        
+        // Lấy thống kê theo sản phẩm
+        java.util.List<model.statistics.ProductStatistics> productStats = new java.util.ArrayList<>();
+        try {
+            productStats = orderDAO.getProductStatistics(
+                    shop.getId(), statsStartDate, statsEndDate);
+        } catch (Exception e) {
+            System.err.println("Error getting product statistics: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // Lấy thống kê theo thời gian
+        java.util.List<model.statistics.TimeStatistics> timeStats = new java.util.ArrayList<>();
+        try {
+            timeStats = orderDAO.getTimeStatistics(
+                    shop.getId(), period, statsStartDate, statsEndDate);
+        } catch (Exception e) {
+            System.err.println("Error getting time statistics: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
         // Pass dữ liệu vào request
         request.setAttribute("thisMonthRevenue", thisMonthRevenue);
         request.setAttribute("growthText", growthText);
         request.setAttribute("pendingDisbursementCount", pendingDisbursementCount);
         request.setAttribute("cashFlowTransactions", cashFlowTransactions);
+        request.setAttribute("period", period);
+        request.setAttribute("productStats", productStats);
+        request.setAttribute("timeStats", timeStats);
         request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");

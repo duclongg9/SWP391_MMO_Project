@@ -1,11 +1,21 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" errorPage="" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="page" />
 <%
-    request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
-    request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerModifier", "layout__header--split");
+    try {
+        String period = (String) request.getAttribute("period");
+        if (period == null || period.trim().isEmpty()) {
+            period = "month";
+        }
+        request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
+        request.setAttribute("bodyClass", "layout");
+        request.setAttribute("headerModifier", "layout__header--split");
+    } catch (Exception e) {
+        System.err.println("Error in income.jsp: " + e.getMessage());
+        e.printStackTrace();
+    }
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
@@ -132,6 +142,69 @@
                 </c:when>
                 <c:otherwise>
                     <p class="empty">Chưa có giao dịch nào.</p>
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="panel__header">
+            <h2 class="panel__title">Thống kê sản phẩm đã bán</h2>
+        </div>
+        <div class="panel__body">
+            <c:choose>
+                <c:when test="${not empty productStats && !empty productStats}">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Trạng thái</th>
+                                <th>Doanh thu</th>
+                                <th>Số đơn</th>
+                                <th>Số lượng bán</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="stat" items="${productStats}" varStatus="loop">
+                                <tr>
+                                    <td>${loop.index + 1}</td>
+                                    <td><strong><c:out value="${stat.productName}" /></strong></td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${stat.status == 'Pending'}">
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.875rem;">
+                                                    Đơn đang chờ
+                                                </span>
+                                            </c:when>
+                                            <c:when test="${stat.status == 'Completed'}">
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.875rem;">
+                                                    Hoàn thành
+                                                </span>
+                                            </c:when>
+                                            <c:when test="${stat.status == 'Failed'}">
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.875rem;">
+                                                    Thất bại
+                                                </span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #e2e3e5; color: #383d41; border-radius: 4px; font-size: 0.875rem;">
+                                                    <c:out value="${stat.status}" />
+                                                </span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>
+                                        <fmt:formatNumber value="${stat.revenue != null ? stat.revenue : 0}" type="number" minFractionDigits="0" maxFractionDigits="0" groupingUsed="true" /> đ
+                                    </td>
+                                    <td>${stat.orderCount != null ? stat.orderCount : 0}</td>
+                                    <td>${stat.quantitySold != null ? stat.quantitySold : 0}</td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:when>
+                <c:otherwise>
+                    <p class="empty">Chưa có dữ liệu thống kê.</p>
                 </c:otherwise>
             </c:choose>
         </div>

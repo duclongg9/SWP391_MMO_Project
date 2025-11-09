@@ -4,6 +4,8 @@ import dao.BaseDAO;
 import model.OrderStatus;
 import model.Orders;
 import model.Products;
+import model.statistics.ProductStatistics;
+import model.statistics.TimeStatistics;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
 
@@ -659,6 +661,154 @@ public class OrderDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải đơn hàng theo shop", ex);
         }
         return rows;
+    }
+    
+    /**
+     * Lấy thống kê doanh thu và số lượng bán theo sản phẩm của shop, phân loại theo trạng thái đơn hàng.
+     * Chỉ lấy các đơn có trạng thái: Pending (đang chờ), Completed (hoàn thành), Failed (thất bại).
+     *
+     * @param shopId mã shop
+     * @param startDate ngày bắt đầu (có thể null)
+     * @param endDate ngày kết thúc (có thể null)
+     * @return danh sách thống kê theo sản phẩm và trạng thái
+     */
+    public List<ProductStatistics> getProductStatistics(int shopId, Timestamp startDate, Timestamp endDate) {
+        StringBuilder sql = new StringBuilder("SELECT p.id, p.name, o.status, ");
+        sql.append("COALESCE(SUM(o.total_amount), 0) AS revenue, ");
+        sql.append("COUNT(o.id) AS order_count, ");
+        sql.append("COALESCE(SUM(o.quantity), 0) AS quantity_sold ");
+        sql.append("FROM products p ");
+        sql.append("INNER JOIN orders o ON o.product_id = p.id ");
+        sql.append("WHERE p.shop_id = ? ");
+        sql.append("AND o.status IN ('Pending', 'Completed', 'Failed') ");
+        if (startDate != null) {
+            sql.append("AND o.created_at >= ? ");
+        }
+        if (endDate != null) {
+            sql.append("AND o.created_at < ? ");
+        }
+        sql.append("GROUP BY p.id, p.name, o.status ");
+        sql.append("ORDER BY p.name ASC, o.status ASC, revenue DESC");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (startDate != null) {
+            params.add(startDate);
+        }
+        if (endDate != null) {
+            params.add(endDate);
+        }
+        
+        List<ProductStatistics> stats = new ArrayList<>();
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    statement.setInt(i + 1, (Integer) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(i + 1, (Timestamp) param);
+                }
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    ProductStatistics stat = new ProductStatistics();
+                    stat.setProductId(rs.getInt("id"));
+                    stat.setProductName(rs.getString("name"));
+                    stat.setStatus(rs.getString("status"));
+                    stat.setRevenue(rs.getBigDecimal("revenue"));
+                    stat.setOrderCount(rs.getInt("order_count"));
+                    stat.setQuantitySold(rs.getInt("quantity_sold"));
+                    stats.add(stat);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy thống kê theo sản phẩm", ex);
+        }
+        return stats;
+    }
+    
+    /**
+     * Lấy thống kê doanh thu theo thời gian (ngày, tuần, tháng, năm).
+     *
+     * @param shopId mã shop
+     * @param period loại period: "day", "week", "month", "year"
+     * @param startDate ngày bắt đầu
+     * @param endDate ngày kết thúc
+     * @return danh sách thống kê theo thời gian
+     */
+    public List<TimeStatistics> getTimeStatistics(int shopId, String period, Timestamp startDate, Timestamp endDate) {
+        String dateFormat;
+        switch (period.toLowerCase()) {
+            case "day":
+                dateFormat = "%Y-%m-%d";
+                break;
+            case "week":
+                dateFormat = "%Y-%u"; // Year-Week
+                break;
+            case "month":
+                dateFormat = "%Y-%m";
+                break;
+            case "year":
+                dateFormat = "%Y";
+                break;
+            default:
+                dateFormat = "%Y-%m-%d";
+        }
+        
+        StringBuilder sql = new StringBuilder("SELECT ");
+        sql.append("DATE_FORMAT(o.created_at, ?) AS period_label, ");
+        sql.append("COALESCE(SUM(o.total_amount), 0) AS revenue, ");
+        sql.append("COUNT(o.id) AS order_count ");
+        sql.append("FROM orders o ");
+        sql.append("JOIN products p ON p.id = o.product_id ");
+        sql.append("WHERE p.shop_id = ? AND o.status = 'Completed' ");
+        if (startDate != null) {
+            sql.append("AND o.created_at >= ? ");
+        }
+        if (endDate != null) {
+            sql.append("AND o.created_at < ? ");
+        }
+        sql.append("GROUP BY DATE_FORMAT(o.created_at, ?) ");
+        sql.append("ORDER BY period_label ASC");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(dateFormat);
+        params.add(shopId);
+        if (startDate != null) {
+            params.add(startDate);
+        }
+        if (endDate != null) {
+            params.add(endDate);
+        }
+        params.add(dateFormat); // Thêm lại dateFormat cho GROUP BY
+        
+        List<TimeStatistics> stats = new ArrayList<>();
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    statement.setInt(i + 1, (Integer) param);
+                } else if (param instanceof String) {
+                    statement.setString(i + 1, (String) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(i + 1, (Timestamp) param);
+                }
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    TimeStatistics stat = new TimeStatistics();
+                    stat.setPeriodLabel(rs.getString("period_label"));
+                    stat.setRevenue(rs.getBigDecimal("revenue"));
+                    stat.setOrderCount(rs.getInt("order_count"));
+                    stats.add(stat);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy thống kê theo thời gian", ex);
+        }
+        return stats;
     }
 
 }

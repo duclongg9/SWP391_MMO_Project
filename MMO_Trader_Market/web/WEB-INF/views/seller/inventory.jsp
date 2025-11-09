@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerModifier", "layout__header--split");
@@ -46,7 +47,7 @@
     </section>
     <section class="panel">
         <div class="panel__header">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <h2 class="panel__title">Tồn kho tổng quan</h2>
                     <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
@@ -59,6 +60,19 @@
             </div>
         </div>
         <div class="panel__body">
+            <div style="margin-bottom: 1rem;">
+                <form method="get" action="${pageContext.request.contextPath}/seller/inventory" 
+                      style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" name="keyword" 
+                           placeholder="Tìm kiếm sản phẩm..." 
+                           value="${keyword != null ? keyword : ''}"
+                           style="flex: 1; min-width: 200px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <button type="submit" class="button button--primary">🔍 Tìm kiếm</button>
+                    <c:if test="${not empty keyword}">
+                        <a href="${pageContext.request.contextPath}/seller/inventory" class="button">Xóa</a>
+                    </c:if>
+                </form>
+            </div>
             <c:choose>
                 <c:when test="${empty products}">
                     <p style="text-align: center; padding: 2rem; color: #666;">
@@ -146,6 +160,36 @@
                             </c:forEach>
                 </tbody>
             </table>
+            <c:if test="${totalPages > 1}">
+                <c:set var="keywordEncoded" value="${not empty keyword ? java.net.URLEncoder.encode(keyword, 'UTF-8') : ''}" />
+                <c:set var="keywordParam" value="${not empty keyword ? '&keyword=' : ''}${keywordEncoded}" />
+                <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; padding: 1rem;">
+                    <c:if test="${page > 1}">
+                        <a href="${pageContext.request.contextPath}/seller/inventory?page=${page - 1}${keywordParam}" 
+                           class="button">‹ Trước</a>
+                    </c:if>
+                    <c:forEach var="i" begin="${page > 2 ? page - 2 : 1}" end="${page + 2 < totalPages ? page + 2 : totalPages}">
+                        <c:choose>
+                            <c:when test="${i == page}">
+                                <span class="button button--primary" style="pointer-events: none;">${i}</span>
+                            </c:when>
+                            <c:otherwise>
+                                <a href="${pageContext.request.contextPath}/seller/inventory?page=${i}${keywordParam}" 
+                                   class="button">${i}</a>
+                            </c:otherwise>
+                        </c:choose>
+                    </c:forEach>
+                    <c:if test="${page < totalPages}">
+                        <a href="${pageContext.request.contextPath}/seller/inventory?page=${page + 1}${keywordParam}" 
+                           class="button">Sau ›</a>
+                    </c:if>
+                </div>
+            </c:if>
+            <c:if test="${not empty totalProducts}">
+                <p style="text-align: center; color: #666; margin-top: 1rem;">
+                    Hiển thị ${(page - 1) * pageSize + 1} - ${page * pageSize > totalProducts ? totalProducts : page * pageSize} trong tổng số ${totalProducts} sản phẩm
+                </p>
+            </c:if>
                 </c:otherwise>
             </c:choose>
         </div>
