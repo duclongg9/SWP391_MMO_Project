@@ -1,7 +1,6 @@
 package dao.shop;
 
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Shops;
 
 import java.sql.Connection;
@@ -59,6 +58,23 @@ public class ShopDAO extends BaseDAO {
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             if (rs.next()) {
                 return rs.getLong(1);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop đang hoạt động", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Đếm tổng số shop đang ở trạng thái Active (trả về int).
+     *
+     * @return số lượng shop hoạt động
+     */
+    public int getTotalActiveShops() {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Active'";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop đang hoạt động", ex);

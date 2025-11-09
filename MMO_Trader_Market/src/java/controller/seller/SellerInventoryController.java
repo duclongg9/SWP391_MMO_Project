@@ -12,6 +12,7 @@ import model.Shops;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Trang cập nhật kho hàng dành cho người bán.
@@ -37,28 +38,32 @@ public class SellerInventoryController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
+        // Kiểm tra userId
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        
         // Xử lý flash messages
-        if (session != null) {
-            Object success = session.getAttribute("sellerInventoryFlashSuccess");
-            if (success instanceof String) {
-                request.setAttribute("flashSuccess", success);
-                session.removeAttribute("sellerInventoryFlashSuccess");
-            }
-            Object error = session.getAttribute("sellerInventoryFlashError");
-            if (error instanceof String) {
-                request.setAttribute("flashError", error);
-                session.removeAttribute("sellerInventoryFlashError");
-            }
-            Object successMsg = session.getAttribute("successMessage");
-            if (successMsg instanceof String) {
-                request.setAttribute("successMessage", successMsg);
-                session.removeAttribute("successMessage");
-            }
-            Object errorMsg = session.getAttribute("errorMessage");
-            if (errorMsg instanceof String) {
-                request.setAttribute("errorMessage", errorMsg);
-                session.removeAttribute("errorMessage");
-            }
+        Object success = session.getAttribute("sellerInventoryFlashSuccess");
+        if (success instanceof String) {
+            request.setAttribute("flashSuccess", success);
+            session.removeAttribute("sellerInventoryFlashSuccess");
+        }
+        Object error = session.getAttribute("sellerInventoryFlashError");
+        if (error instanceof String) {
+            request.setAttribute("flashError", error);
+            session.removeAttribute("sellerInventoryFlashError");
+        }
+        Object successMsg = session.getAttribute("successMessage");
+        if (successMsg instanceof String) {
+            request.setAttribute("successMessage", successMsg);
+            session.removeAttribute("successMessage");
+        }
+        Object errorMsg = session.getAttribute("errorMessage");
+        if (errorMsg instanceof String) {
+            request.setAttribute("errorMessage", errorMsg);
+            session.removeAttribute("errorMessage");
         }
         
         // Lấy shop của seller
@@ -142,35 +147,78 @@ public class SellerInventoryController extends SellerBaseController {
         String action = request.getParameter("action");
         String productIdStr = request.getParameter("productId");
         
+        // Kiểm tra action hợp lệ
+        if (action == null || (!"stop".equals(action) && !"resume".equals(action))) {
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        // Kiểm tra productId
         if (productIdStr == null || productIdStr.trim().isEmpty()) {
             response.sendRedirect(request.getContextPath() + "/seller/inventory");
             return;
         }
         
-        int productId = Integer.parseInt(productIdStr);
+        // Parse productId với xử lý lỗi
+        int productId;
+        try {
+            productId = Integer.parseInt(productIdStr.trim());
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
         HttpSession session = request.getSession();
+        Integer userId = (Integer) session.getAttribute("userId");
+        
+        // Kiểm tra userId
+        if (userId == null) {
+            response.sendRedirect(request.getContextPath() + "/auth");
+            return;
+        }
+        
+        // Lấy shop của seller
+        Shops shop = shopDAO.findByOwnerId(userId);
+        if (shop == null) {
+            session.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            return;
+        }
+        
+        // Kiểm tra quyền sở hữu sản phẩm (bảo mật)
+        Optional<Products> productOpt = productDAO.findById(productId);
+        if (productOpt.isEmpty()) {
+            session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
+        } else {
+            Products product = productOpt.get();
+            if (!product.getShopId().equals(shop.getId())) {
+                session.setAttribute("errorMessage", "Bạn không có quyền thay đổi trạng thái sản phẩm này.");
+            } else {
+                // Thực hiện cập nhật trạng thái
+                boolean success = false;
+                if ("stop".equals(action)) {
+                    // Ngừng bán - chuyển sang Unlisted
+                    success = productDAO.updateStatus(productId, "Unlisted");
+                    if (success) {
+                        session.setAttribute("successMessage", "Đã ngừng bán sản phẩm");
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể ngừng bán sản phẩm");
+                    }
+                } else if ("resume".equals(action)) {
+                    // Mở bán lại - chuyển sang Available
+                    success = productDAO.updateStatus(productId, "Available");
+                    if (success) {
+                        session.setAttribute("successMessage", "Đã mở bán lại sản phẩm");
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể mở bán lại sản phẩm");
+                    }
+                }
+            }
+        }
         
         // Lấy tham số page và keyword để giữ lại vị trí hiện tại
         String pageParam = request.getParameter("page");
         String keywordParam = request.getParameter("keyword");
-        
-        if ("stop".equals(action)) {
-            // Ngừng bán - chuyển sang Unlisted
-            boolean success = productDAO.updateStatus(productId, "Unlisted");
-            if (success) {
-                session.setAttribute("successMessage", "Đã ngừng bán sản phẩm");
-            } else {
-                session.setAttribute("errorMessage", "Không thể ngừng bán sản phẩm");
-            }
-        } else if ("resume".equals(action)) {
-            // Mở bán lại - chuyển sang Available
-            boolean success = productDAO.updateStatus(productId, "Available");
-            if (success) {
-                session.setAttribute("successMessage", "Đã mở bán lại sản phẩm");
-            } else {
-                session.setAttribute("errorMessage", "Không thể mở bán lại sản phẩm");
-            }
-        }
         
         // Xây dựng URL redirect với tham số page và keyword
         StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/seller/inventory");
