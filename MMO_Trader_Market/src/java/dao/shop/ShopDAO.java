@@ -298,53 +298,43 @@ public class ShopDAO extends BaseDAO {
 			}
 			return list;
 		}
-	}
-    //Lấy tổng số shop đang hoạt động
-    public int getTotalActiveShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Active'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt("total_active_shops");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0; // Nếu có lỗi hoặc không có kết quả
     }
-    
+
+    /**
+     * Đếm tổng số shop đang ở trạng thái Pending.
+     *
+     * @return số lượng shop đang chờ duyệt
+     */
     public int getTotalPendingShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Pending'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Pending'";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql); 
+             ResultSet rs = statement.executeQuery()) {
             if (rs.next()) {
-                return rs.getInt("total_active_shops");
+                return rs.getInt(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop đang chờ duyệt", ex);
         }
-        return 0; // Nếu có lỗi hoặc không có kết quả
+        return 0;
     }
-    
+
+    /**
+     * Đếm tổng số shop đang ở trạng thái Suspended.
+     *
+     * @return số lượng shop bị tạm ngưng
+     */
     public int getTotalSuspendedShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Suspended'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Suspended'";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql); 
+             ResultSet rs = statement.executeQuery()) {
             if (rs.next()) {
-                return rs.getInt("total_active_shops");
+                return rs.getInt(1);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop bị tạm ngưng", ex);
         }
-        return 0; // Nếu có lỗi hoặc không có kết quả
+        return 0;
     }
 }
