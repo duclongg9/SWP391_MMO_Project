@@ -162,12 +162,7 @@
                 <input class="form-card__input" id="password" name="password" type="password" placeholder="••••••••" required>
             </div>
             <div class="form-card__options-row">
-                <label class="form-card__option form-card__option--inline" for="rememberMe">
-                    <input class="form-card__checkbox" id="rememberMe" name="rememberMe" type="checkbox"
-                           <c:if test="${rememberMeChecked}">checked</c:if>>
-                           <span class="form-card__option-text">Ghi nhớ tài khoản</span>
-                    </label>
-                    <a class="form-card__link" href="<c:url value='/forgot-password' />">Quên mật khẩu?</a>
+                <a class="form-card__link" href="<c:url value='/forgot-password' />">Quên mật khẩu?</a>
             </div>
 
             <button class="button button--primary" type="submit">Đăng nhập</button>
