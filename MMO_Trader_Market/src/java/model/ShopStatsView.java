@@ -12,7 +12,8 @@ public class ShopStatsView {
 	private String name;
 	private String description;
 	private String status;
-	private Timestamp createdAt;
+        private Timestamp createdAt;
+        private Timestamp updatedAt;
 	private int productCount;
 	private int totalSold;
 	private int totalInventory;
@@ -32,14 +33,17 @@ public class ShopStatsView {
 	public Timestamp getCreatedAt() { return createdAt; }
 	public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
 
-	public int getProductCount() { return productCount; }
-	public void setProductCount(int productCount) { this.productCount = productCount; }
+        public int getProductCount() { return productCount; }
+        public void setProductCount(int productCount) { this.productCount = productCount; }
 
-	public int getTotalSold() { return totalSold; }
-	public void setTotalSold(int totalSold) { this.totalSold = totalSold; }
+        public int getTotalSold() { return totalSold; }
+        public void setTotalSold(int totalSold) { this.totalSold = totalSold; }
 
-	public int getTotalInventory() { return totalInventory; }
-	public void setTotalInventory(int totalInventory) { this.totalInventory = totalInventory; }
+        public int getTotalInventory() { return totalInventory; }
+        public void setTotalInventory(int totalInventory) { this.totalInventory = totalInventory; }
+
+        public Timestamp getUpdatedAt() { return updatedAt; }
+        public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
 }
 
 

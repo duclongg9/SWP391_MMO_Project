@@ -24,11 +24,19 @@
     </c:if>
 
     <form action="${pageContext.request.contextPath}/seller/products/create" method="post" enctype="multipart/form-data">
+        <c:if test="${not empty selectedShopId}">
+            <input type="hidden" name="shopId" value="${selectedShopId}" />
+        </c:if>
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Thông tin sản phẩm</h2>
             <p class="panel__subtitle">Bổ sung mô tả chi tiết, giá bán và ảnh minh hoạ trước khi đăng bán.</p>
         </div>
+            <c:if test="${not empty shop}">
+                <div style="padding: 1rem 1.5rem 0; font-weight: 600; color: #005b96;">
+                    Đăng bán tại shop: <span><c:out value="${shop.name}"/></span>
+                </div>
+            </c:if>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem;">
                 <!-- Cột trái -->
                 <div>

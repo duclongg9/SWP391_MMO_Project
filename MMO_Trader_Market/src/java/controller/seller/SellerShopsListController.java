@@ -34,17 +34,20 @@ public class SellerShopsListController extends SellerBaseController {
 		}
 		// Lấy thông tin user từ session
 		Users currentUser = (Users) request.getSession().getAttribute("currentUser");
-		// Lấy tham số sắp xếp từ query string
-		String sortBy = request.getParameter("sortBy");
-		try {
-			// Lấy danh sách shop kèm thống kê (tránh N+1 query)
-			List<ShopStatsView> shops = shopService.listMyShops(currentUser.getId(), sortBy);
-			// Set các attribute cho JSP
-			request.setAttribute("shops", shops);
-			request.setAttribute("sortBy", sortBy == null ? "sales_desc" : sortBy);
-			request.setAttribute("pageTitle", "Danh sách shop - Quản lý cửa hàng");
-			request.setAttribute("bodyClass", "layout");
-			request.setAttribute("headerModifier", "layout__header--split");
+                // Lấy tham số sắp xếp và từ khóa tìm kiếm từ query string
+                String sortBy = request.getParameter("sortBy");
+                String keyword = request.getParameter("q");
+                String normalizedKeyword = keyword == null ? null : keyword.trim();
+                try {
+                        // Lấy danh sách shop kèm thống kê (tránh N+1 query)
+                        List<ShopStatsView> shops = shopService.listMyShops(currentUser.getId(), sortBy, normalizedKeyword);
+                        // Set các attribute cho JSP
+                        request.setAttribute("shops", shops);
+                        request.setAttribute("sortBy", sortBy == null ? "sales_desc" : sortBy);
+                        request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
+                        request.setAttribute("pageTitle", "Danh sách shop - Quản lý cửa hàng");
+                        request.setAttribute("bodyClass", "layout");
+                        request.setAttribute("headerModifier", "layout__header--split");
 			// Forward đến trang list JSP
 			forward(request, response, "seller/shops/list");
 		} catch (SQLException e) {
