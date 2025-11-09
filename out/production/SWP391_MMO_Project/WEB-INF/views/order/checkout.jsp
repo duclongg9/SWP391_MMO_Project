@@ -4,6 +4,11 @@
 <fmt:setLocale value="vi_VN" scope="request" />
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+<%--
+    Bước checkout đầu tiên: OrderController truyền attribute "product" (model.Products) để preview thông tin,
+    đồng thời có thể gửi "error" nếu tham số không hợp lệ. Khi người dùng submit form, dữ liệu được POST
+    lên controller/phần xử lý tiếp theo để tạo đơn và gọi OrderService.placeOrderPending.
+--%>
 <main class="layout__content">
     <section class="panel">
         <div class="panel__header">
@@ -25,7 +30,7 @@
                                 Giá bán:
                                 <strong>
                                     <fmt:formatNumber value="${product.price}" type="number" minFractionDigits="0"
-                                                     maxFractionDigits="0" /> đ
+                                                      maxFractionDigits="0" /> đ
                                 </strong>
                             </p>
                         </div>
@@ -36,7 +41,7 @@
                         <li>Hoàn tất thanh toán để nhận key/đường dẫn ngay lập tức.</li>
                     </ol>
                     <form class="form" method="post" action="${pageContext.request.contextPath}/orders/buy">
-                        <input type="hidden" name="productId" value="${product.id}">
+                        <input type="hidden" name="productId" value="${product.encodedId}">
                         <div class="form__group" style="margin-bottom: 1rem;">
                             <label class="form__label" for="buyerEmail">Email nhận sản phẩm</label>
                             <input class="form__input" type="email" id="buyerEmail" name="buyerEmail"

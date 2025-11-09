@@ -6,6 +6,139 @@
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content auth-page">
+    <style>
+        .verification-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 999;
+        }
+
+        .verification-modal.is-visible {
+            display: flex;
+        }
+
+        .verification-modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+        }
+
+        .verification-modal__dialog {
+            position: relative;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px;
+            width: min(420px, 100%);
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
+            z-index: 1;
+        }
+
+        .verification-modal__close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border: none;
+            background: transparent;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            color: #475569;
+        }
+
+        .verification-modal__title {
+            margin: 0 0 12px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .verification-modal__description {
+            margin: 0 0 16px;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        .verification-modal__notice {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.95rem;
+        }
+
+        .verification-modal__error {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #fee2e2;
+            color: #b91c1c;
+            font-size: 0.95rem;
+        }
+
+        .verification-modal__email {
+            margin: 0 0 8px;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .verification-modal__form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .verification-modal__field label {
+            display: block;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .verification-modal__input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #cbd5f5;
+            font-size: 1rem;
+            color: #0f172a;
+        }
+
+        .verification-modal__input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .verification-modal__actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        .verification-modal__actions .button {
+            flex: 1;
+        }
+
+        @media (max-width: 480px) {
+            .verification-modal__dialog {
+                padding: 24px;
+            }
+
+            .verification-modal__actions {
+                flex-direction: column;
+            }
+
+            .verification-modal__actions .button {
+                width: 100%;
+            }
+        }
+    </style>
     <div class="auth-page__inner">
         <header class="auth-page__header">
             <h1>Đăng nhập</h1>
@@ -39,7 +172,49 @@
             </div>
         </form>
     </div>
+    <div class="verification-modal${showVerificationModal ? ' is-visible' : ''}" id="emailVerificationModal">
+        <div class="verification-modal__backdrop" data-modal-close></div>
+        <div class="verification-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="verificationModalTitle">
+            <button type="button" class="verification-modal__close" data-modal-close aria-label="Đóng">&times;</button>
+            <h2 class="verification-modal__title" id="verificationModalTitle">Xác thực email</h2>
+            <p class="verification-modal__description">Nhập mã xác thực đã được gửi đến hộp thư của bạn để kích hoạt tài khoản.</p>
+            <c:if test="${not empty verificationNotice}">
+                <div class="verification-modal__notice"><c:out value="${verificationNotice}" /></div>
+            </c:if>
+            <c:if test="${not empty verificationError}">
+                <div class="verification-modal__error"><c:out value="${verificationError}" /></div>
+            </c:if>
+            <p class="verification-modal__email">Email: <strong><c:out value="${verificationEmail}" /></strong></p>
+            <form method="post" action="<c:url value='/verify-email' />" class="verification-modal__form">
+                <input type="hidden" name="email" value="<c:out value='${verificationEmail}' />">
+                <div class="verification-modal__field">
+                    <label for="verificationCode">Mã xác thực</label>
+                    <input class="verification-modal__input" id="verificationCode" name="verificationCode" type="text"
+                           value="<c:out value='${enteredVerificationCode}' />"
+                           placeholder="Nhập mã 6 chữ số" required>
+                </div>
+                <div class="verification-modal__actions">
+                    <button class="button button--ghost" type="button" data-modal-close>Để sau</button>
+                    <button class="button button--primary" type="submit">Xác thực</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<script>
+    (function () {
+        const modal = document.getElementById('emailVerificationModal');
+        if (!modal) {
+            return;
+        }
+        const closeButtons = modal.querySelectorAll('[data-modal-close]');
+        closeButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                modal.classList.remove('is-visible');
+            });
+        });
+    })();
+</script>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

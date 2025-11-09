@@ -1,6 +1,7 @@
 package dao.shop;
 
 import dao.BaseDAO;
+import dao.connect.DBConnect;
 import model.Shops;
 
 import java.sql.Connection;
