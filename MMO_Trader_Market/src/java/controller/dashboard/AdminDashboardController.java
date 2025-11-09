@@ -19,12 +19,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import service.AdnimDashboardService;
+import com.google.gson.Gson;
+import java.math.RoundingMode;
 
 /**
  *
  * @author D E L L
  */
-@WebServlet(name = "AdminDashboardController", urlPatterns = {"/admin/dashboard"})
+@WebServlet(name = "AdminDashboardController", urlPatterns = {"/admin/dashboards"})
 public class AdminDashboardController extends HttpServlet {
 
     AdnimDashboardService adminDashboard = new AdnimDashboardService();
@@ -50,12 +52,58 @@ public class AdminDashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        //Phần chọn năm
+        String yearParam = request.getParameter("year");
+        int selectedYear;
 
-        //Lấy ngày tháng hiện tại
+        if (yearParam != null && !yearParam.isEmpty()) {
+            selectedYear = Integer.parseInt(yearParam);
+        } else {
+            // Mặc định năm hiện tại nếu không có param
+            selectedYear = LocalDate.now().getYear();
+        }
+
+        //Lấy toàn bộ thông tin của năm đó
+        BigDecimal[] listDeposit = new BigDecimal[12];
+        BigDecimal[] listWithdraw = new BigDecimal[12];
+        try {
+            listDeposit = adminDashboard.arrayDepositByMonth(selectedYear);
+            listWithdraw = adminDashboard.arrayWithdrawByMonth(selectedYear);
+        } catch (SQLException ex) {
+            Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        // Chuyển sang JSON
+        Gson gson = new Gson();
+        String depositJson = gson.toJson(listDeposit);
+        String withdrawJson = gson.toJson(listWithdraw);
+
+        //Lấy tháng năm hiện tại
         LocalDate now = LocalDate.now();
-        int presentYear = now.getYear();
         int presentMonth = now.getMonthValue();
-        
+        int presentYear = now.getYear();
+
+        //Lấy tháng trước
+        int lastMonth;
+        int lastYear = 0;
+        if (presentMonth == 1) {
+            lastMonth = 12;
+            lastYear = presentYear - 1;
+        } else {
+            lastMonth = presentMonth - 1;
+            lastYear = presentYear;
+        }
+
+        //Lấy tổng tiền tháng trước
+        BigDecimal totalDepositLastMonth = BigDecimal.ZERO;
+        BigDecimal totalWithdrawLastMonth = BigDecimal.ZERO;
+        try {
+            totalDepositLastMonth = adminDashboard.totalDeposite(lastMonth, lastYear);
+            totalWithdrawLastMonth = adminDashboard.totalWithdraw(lastMonth, lastYear);
+        } catch (SQLException ex) {
+            Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         List<Integer> avaliableYear = new ArrayList<>();
         try {
             //Lấy những năm có thông tin
@@ -63,7 +111,7 @@ public class AdminDashboardController extends HttpServlet {
         } catch (SQLException ex) {
             Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         //Lấy thông tin theo ngày hiện tại
         BigDecimal totalDeposit = BigDecimal.ZERO;
         BigDecimal totalWithdraw = BigDecimal.ZERO;
@@ -74,18 +122,29 @@ public class AdminDashboardController extends HttpServlet {
             Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
         }
         int orderByMonth = adminDashboard.totalOrder(presentMonth, presentYear);
-        int shopByMonth = adminDashboard.totalShop();
-        
-        //Gửi thông tin lên frontend
-            //Thông tin năm có dữ liệu
-            request.setAttribute("years", avaliableYear);
-            //thông tin về finance theo tháng
-            request.setAttribute("orderByMonth", orderByMonth);
-            request.setAttribute("shopByMonth", shopByMonth);
-            request.setAttribute("totalDeposit", totalDeposit);
-            request.setAttribute("totalWithdraw", totalWithdraw);
+        int shopByMonth = adminDashboard.totalActiveShop();
 
-        request.getRequestDispatcher("WEB-INF/views/Admin/dashboard.jsp").forward(request, response);
+        //Tính toán % thay đổi
+        BigDecimal persentDepositChanged = units.PercentChange.calculatePercentChange(totalDeposit, totalDepositLastMonth);
+        BigDecimal persentWithdrawChanged = units.PercentChange.calculatePercentChange(totalWithdraw, totalWithdrawLastMonth);
+
+        //Gửi thông tin lên frontend
+        //Thông tin năm có dữ liệu
+        request.setAttribute("years", avaliableYear);
+        //thông tin về finance theo tháng
+        request.setAttribute("orderByMonth", orderByMonth);
+        request.setAttribute("shopByMonth", shopByMonth);
+        request.setAttribute("totalDeposit", totalDeposit);
+        request.setAttribute("totalWithdraw", totalWithdraw);
+
+        request.setAttribute("persentDepositChanged", persentDepositChanged);
+        request.setAttribute("persentWithdrawChanged", persentWithdrawChanged);
+
+        request.setAttribute("selectedYear", selectedYear);
+        request.setAttribute("depositByMonth", depositJson);
+        request.setAttribute("withdrawByMonth", withdrawJson);
+
+        request.getRequestDispatcher("WEB-INF/views/Admin/pages/dashboard.jsp").forward(request, response);
     }
 
     @Override

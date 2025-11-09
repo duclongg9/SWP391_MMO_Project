@@ -283,4 +283,52 @@ public class ShopDAO extends BaseDAO {
 			return list;
 		}
 	}
+    //Lấy tổng số shop đang hoạt động
+    public int getTotalActiveShops() {
+        String sql = """
+        SELECT COUNT(*) AS total_active_shops
+        FROM mmo_schema.shops
+        WHERE status = 'Active'
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total_active_shops");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0; // Nếu có lỗi hoặc không có kết quả
+    }
+    
+    public int getTotalPendingShops() {
+        String sql = """
+        SELECT COUNT(*) AS total_active_shops
+        FROM mmo_schema.shops
+        WHERE status = 'Pending'
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total_active_shops");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0; // Nếu có lỗi hoặc không có kết quả
+    }
+    
+    public int getTotalSuspendedShops() {
+        String sql = """
+        SELECT COUNT(*) AS total_active_shops
+        FROM mmo_schema.shops
+        WHERE status = 'Suspended'
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total_active_shops");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0; // Nếu có lỗi hoặc không có kết quả
+    }
 }
