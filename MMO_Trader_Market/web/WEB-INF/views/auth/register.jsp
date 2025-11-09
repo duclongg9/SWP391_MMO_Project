@@ -48,6 +48,7 @@
             </div>
         </form>
     </div>
+    <%@ include file="/WEB-INF/views/shared/email-verification-modal.jspf" %>
 </main>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
