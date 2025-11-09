@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Ket qua kiem tra nhanh truoc khi tao don hang de giao dien quyet dinh co cho phep
- * nguoi mua tiep tuc quy trinh thanh toan hay khong.
+ * Kết quả kiểm tra nhanh trước khi tạo đơn hàng để giao diện quyết định có cho phép
+ * người mua tiếp tục quy trình thanh toán hay không.
  */
 public record PurchasePreviewResult(
         boolean ok,

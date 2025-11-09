@@ -732,161 +732,6 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Đếm tổng số sản phẩm của một shop.
-     *
-     * @param shopId mã shop
-     * @return tổng số sản phẩm
-     */
-    public int countByShopId(int shopId) {
-        final String sql = "SELECT COUNT(*) FROM products WHERE shop_id = ?";
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, shopId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo shop_id=" + shopId, ex);
-        }
-        return 0;
-    }
-    
-    /**
-     * Đếm tổng số sản phẩm của một shop với tìm kiếm.
-     *
-     * @param shopId mã shop
-     * @param keyword từ khóa tìm kiếm (có thể null)
-     * @return tổng số sản phẩm
-     */
-    public int countByShopId(int shopId, String keyword) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products WHERE shop_id = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(shopId);
-        
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            String pattern = buildLikePattern(keyword);
-            sql.append(" AND (LOWER(name) LIKE ? OR LOWER(short_description) LIKE ? OR LOWER(description) LIKE ?)");
-            params.add(pattern);
-            params.add(pattern);
-            params.add(pattern);
-        }
-        
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            setParameters(statement, params);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo shop_id=" + shopId + " với keyword=" + keyword, ex);
-        }
-        return 0;
-    }
-    
-    /**
-     * Lấy danh sách sản phẩm của một shop với tìm kiếm và phân trang.
-     *
-     * @param shopId mã shop
-     * @param keyword từ khóa tìm kiếm (có thể null)
-     * @param limit số bản ghi mỗi trang
-     * @param offset vị trí bắt đầu
-     * @return danh sách sản phẩm
-     */
-    public List<Products> findByShopId(int shopId, String keyword, int limit, int offset) {
-        StringBuilder sql = new StringBuilder("SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, ");
-        sql.append("p.short_description, p.description, p.price, p.primary_image_url, ");
-        sql.append("p.gallery_json, p.inventory_count, COALESCE(p.sold_count, 0) AS sold_count, p.status, ");
-        sql.append("p.variant_schema, p.variants_json, p.created_at, p.updated_at ");
-        sql.append("FROM products p ");
-        sql.append("WHERE p.shop_id = ?");
-        
-        List<Object> params = new ArrayList<>();
-        params.add(shopId);
-        
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            String pattern = buildLikePattern(keyword);
-            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(p.description) LIKE ?)");
-            params.add(pattern);
-            params.add(pattern);
-            params.add(pattern);
-        }
-        
-        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
-        params.add(limit);
-        params.add(offset);
-        
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            setParameters(statement, params);
-            List<Products> products = new ArrayList<>();
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    products.add(mapRow(rs));
-                }
-            }
-            return products;
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo shop_id=" + shopId + " với keyword=" + keyword, ex);
-            return List.of();
-        }
-    }
-    
-    /**
-     * Tính tổng số lượng tồn kho của tất cả sản phẩm trong một shop.
-     *
-     * @param shopId mã shop
-     * @return tổng số lượng tồn kho
-     */
-    public int getTotalInventoryByShopId(int shopId) {
-        final String sql = "SELECT COALESCE(SUM(inventory_count), 0) FROM products WHERE shop_id = ?";
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, shopId);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tính tổng tồn kho theo shop_id=" + shopId, ex);
-        }
-        return 0;
-    }
-
-    /**
-     * Tăng số lượng tồn kho của sản phẩm lên 1.
-     *
-     * @param productId mã sản phẩm
-     * @return true nếu cập nhật thành công
-     */
-    public boolean incrementInventoryCount(int productId) {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
-            return statement.executeUpdate() > 0;
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể tăng số lượng tồn kho cho product_id=" + productId, ex);
-            return false;
-        }
-    }
-
-    /**
-     * Tăng số lượng tồn kho của sản phẩm trong transaction.
-     */
-    public void incrementInventoryCount(Connection connection, int productId) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
-            statement.executeUpdate();
-        }
-    }
-
-    /**
      * Cập nhật thông tin sản phẩm.
      *
      * @param product đối tượng sản phẩm cần cập nhật
@@ -895,8 +740,7 @@ public class ProductDAO extends BaseDAO {
     public boolean updateProduct(Products product) {
         final String sql = "UPDATE products SET product_type = ?, product_subtype = ?, name = ?, "
                 + "short_description = ?, description = ?, price = ?, primary_image_url = ?, "
-                + "gallery_json = ?, inventory_count = ?, status = ?, variant_schema = ?, variants_json = ?, "
-                + "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                + "inventory_count = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         
         try (Connection connection = getConnection(); 
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -908,33 +752,9 @@ public class ProductDAO extends BaseDAO {
             statement.setString(5, product.getDescription());
             statement.setBigDecimal(6, product.getPrice());
             statement.setString(7, product.getPrimaryImageUrl());
-            
-            // Set gallery_json
-            String galleryJson = product.getGalleryJson();
-            if (galleryJson == null || galleryJson.trim().isEmpty()) {
-                statement.setNull(8, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(8, galleryJson);
-            }
-            
-            statement.setInt(9, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
-            statement.setString(10, product.getStatus());
-            
-            // Set variant_schema và variants_json
-            String variantSchema = product.getVariantSchema();
-            if (variantSchema == null || variantSchema.trim().isEmpty()) {
-                variantSchema = "none";
-            }
-            statement.setString(11, variantSchema);
-            
-            String variantsJson = product.getVariantsJson();
-            if (variantsJson == null || variantsJson.trim().isEmpty()) {
-                statement.setNull(12, java.sql.Types.VARCHAR);
-            } else {
-                statement.setString(12, variantsJson);
-            }
-            
-            statement.setInt(13, product.getId());
+            statement.setInt(8, product.getInventoryCount() != null ? product.getInventoryCount() : 0);
+            statement.setString(9, product.getStatus());
+            statement.setInt(10, product.getId());
             
             return statement.executeUpdate() > 0;
             
