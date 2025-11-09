@@ -57,13 +57,13 @@ public class RegisterController extends BaseController {
         try {
             Users createdUser = userService.registerNewUser(email, name, password, confirmPassword);
             HttpSession session = request.getSession();
-            session.setAttribute("registerSuccess",
-                    "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."); //flash scope để mang thông điệp qua redirect
-            session.setAttribute("newUserEmail", createdUser.getEmail());
+            session.setAttribute("verificationSuccess",
+                    "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.");
             session.setAttribute("pendingVerificationEmail", createdUser.getEmail());
-            session.setAttribute("showVerificationModal", Boolean.TRUE);
             session.setAttribute("verificationNotice",
                     "Chúng tôi đã gửi mã xác thực đến " + createdUser.getEmail() + ". Vui lòng kiểm tra hộp thư.");
+            session.setAttribute("showVerificationModal", true);
+            session.setAttribute("newUserEmail", createdUser.getEmail());
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {

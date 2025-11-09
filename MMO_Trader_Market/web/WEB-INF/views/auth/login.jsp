@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="MMO Trader Market - Đăng nhập" />
 <c:set var="bodyClass" value="layout layout--auth" />
@@ -32,7 +32,7 @@
             background: #ffffff;
             border-radius: 16px;
             padding: 32px;
-            width: min(420px, 100%);
+            width: min(440px, 100%);
             box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
             z-index: 1;
         }
@@ -62,22 +62,28 @@
             line-height: 1.5;
         }
 
-        .verification-modal__notice {
+        .verification-modal__notice,
+        .verification-modal__error,
+        .verification-modal__success {
             margin-bottom: 16px;
             padding: 12px 14px;
             border-radius: 10px;
-            background: #eff6ff;
-            color: #1d4ed8;
             font-size: 0.95rem;
         }
 
+        .verification-modal__notice {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
         .verification-modal__error {
-            margin-bottom: 16px;
-            padding: 12px 14px;
-            border-radius: 10px;
             background: #fee2e2;
             color: #b91c1c;
-            font-size: 0.95rem;
+        }
+
+        .verification-modal__success {
+            background: #dcfce7;
+            color: #15803d;
         }
 
         .verification-modal__email {
@@ -119,10 +125,12 @@
             gap: 12px;
             justify-content: flex-end;
             margin-top: 8px;
+            flex-wrap: wrap;
         }
 
         .verification-modal__actions .button {
             flex: 1;
+            min-width: 140px;
         }
 
         @media (max-width: 480px) {
@@ -189,6 +197,9 @@
             <c:if test="${not empty verificationError}">
                 <div class="verification-modal__error"><c:out value="${verificationError}" /></div>
             </c:if>
+            <c:if test="${not empty verificationSuccessMessage}">
+                <div class="verification-modal__success"><c:out value="${verificationSuccessMessage}" /></div>
+            </c:if>
             <p class="verification-modal__email">Email: <strong><c:out value="${verificationEmail}" /></strong></p>
             <form method="post" action="<c:url value='/verify-email' />" class="verification-modal__form">
                 <input type="hidden" name="email" value="<c:out value='${verificationEmail}' />">
@@ -199,7 +210,7 @@
                            placeholder="Nhập mã 6 chữ số" required>
                 </div>
                 <div class="verification-modal__actions">
-                    <button class="button button--ghost" type="button" data-modal-close>Để sau</button>
+                    <button class="button button--ghost" type="submit" name="action" value="resend" formnovalidate>Gửi lại mã</button>
                     <button class="button button--primary" type="submit">Xác thực</button>
                 </div>
             </form>
@@ -220,6 +231,16 @@
                 modal.classList.remove('is-visible');
             });
         });
+
+        if (modal.classList.contains('is-visible')) {
+            const codeInput = modal.querySelector('#verificationCode');
+            if (codeInput) {
+                window.requestAnimationFrame(function () {
+                    codeInput.focus();
+                    codeInput.select();
+                });
+            }
+        }
     })();
 </script>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

@@ -40,8 +40,10 @@ public class AuthController extends BaseController {
     private static final String FLASH_EMAIL = "newUserEmail";
     private static final String FLASH_ERROR = "oauthError";
     private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
-    private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
     private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
+    private static final String FLASH_VERIFICATION_ERROR = "verificationError";
+    private static final String FLASH_VERIFICATION_CODE = "enteredVerificationCode";
+    private static final String FLASH_SHOW_VERIFICATION_MODAL = "showVerificationModal";
 
     private final UserDAO userDAO = new UserDAO();
     private final UserService userService = new UserService(userDAO);
@@ -72,8 +74,14 @@ public class AuthController extends BaseController {
             moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_EMAIL, "verificationEmail");
-            moveFlash(session, request, FLASH_PENDING_VERIFICATION_MODAL, "showVerificationModal");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_NOTICE, "verificationNotice");
+            moveFlash(session, request, FLASH_VERIFICATION_ERROR, "verificationError");
+            moveFlash(session, request, FLASH_VERIFICATION_CODE, "enteredVerificationCode");
+            Object showModal = moveFlash(session, request, FLASH_SHOW_VERIFICATION_MODAL, "showVerificationModal");
+            if (Boolean.TRUE.equals(showModal) || request.getAttribute("verificationEmail") != null) {
+                request.setAttribute("showVerificationModal", true);
+                ensureDefaultVerificationNotice(request);
+            }
         }
 
         Cookie[] cookies = request.getCookies();
@@ -124,23 +132,12 @@ public class AuthController extends BaseController {
             }
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
         } catch (InactiveAccountException e) { // tài khoản chưa kích hoạt
-            request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail);
             request.setAttribute("rememberMeChecked", rememberMe);
-            request.setAttribute("showVerificationModal", true);
+            request.setAttribute("verificationError", e.getMessage());
             request.setAttribute("verificationEmail", normalizedEmail);
-            request.setAttribute("verificationNotice",
-                    "Vui lòng nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
-            try {
-                userService.resendVerificationCode(normalizedEmail);
-                request.setAttribute("verificationNotice", "Chúng tôi đã gửi lại mã xác thực đến " + normalizedEmail + ".");
-            } catch (IllegalArgumentException | IllegalStateException resendEx) {
-                request.setAttribute("verificationError", resendEx.getMessage()); //  lỗi nghiệp vụ
-            } catch (RuntimeException resendEx) {
-                LOGGER.log(Level.SEVERE, "Unable to resend verification code", resendEx); 
-                request.setAttribute("verificationError",
-                        "Hệ thống không thể gửi lại mã xác thực lúc này. Vui lòng thử lại sau.");
-            }
+            request.setAttribute("showVerificationModal", true);
+            ensureDefaultVerificationNotice(request);
             forward(request, response, "auth/login");
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
@@ -172,13 +169,22 @@ public class AuthController extends BaseController {
         }
     }
 
-    // Di chuyển dữ liệu dạng flash từ session xuống request và xóa khỏi session.
-    private void moveFlash(HttpSession session, HttpServletRequest request, String sessionKey, String requestKey) {
+    /**
+     * Di chuyển dữ liệu dạng flash từ session xuống request và xóa khỏi session.
+     *
+     * @param session   phiên hiện tại nếu tồn tại.
+     * @param request   request cần gắn thuộc tính.
+     * @param sessionKey tên khóa trên session.
+     * @param requestKey tên khóa mục tiêu trên request.
+     * @return giá trị vừa chuyển hoặc {@code null} nếu không có.
+     */
+    private Object moveFlash(HttpSession session, HttpServletRequest request, String sessionKey, String requestKey) {
         Object value = session.getAttribute(sessionKey);
         if (value != null) {
             request.setAttribute(requestKey, value);
             session.removeAttribute(sessionKey);
         }
+        return value;
     }
 
     // quản lý cookie, điền sẵn email cho lần sau
@@ -195,5 +201,27 @@ public class AuthController extends BaseController {
         cookie.setPath(contextPath); 
         cookie.setMaxAge(rememberMe ? 60 * 60 * 24 * 30 : 0);
         response.addCookie(cookie);
+    }
+
+    /**
+     * Đảm bảo luôn có thông điệp hướng dẫn trong modal xác thực email.
+     *
+     * @param request {@link HttpServletRequest} hiện tại.
+     */
+    private void ensureDefaultVerificationNotice(HttpServletRequest request) {
+        Object notice = request.getAttribute("verificationNotice");
+        Object email = request.getAttribute("verificationEmail");
+        if (notice == null) {
+            if (email instanceof String) {
+                String emailStr = ((String) email).trim();
+                if (!emailStr.isEmpty()) {
+                    request.setAttribute("verificationNotice",
+                            "Nhập mã xác thực đã gửi tới " + emailStr + ".");
+                    return;
+                }
+            }
+            request.setAttribute("verificationNotice",
+                    "Vui lòng nhập mã xác thực đã được gửi tới email của bạn.");
+        }
     }
 }
