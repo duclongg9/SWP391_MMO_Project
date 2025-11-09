@@ -267,6 +267,23 @@ CREATE TABLE `deposit_requests` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
+-- =================================================================
+-- VNPAY audit trail for wallet deposits (linked via deposit_request)
+-- =================================================================
+DROP TABLE IF EXISTS `vnpay_transaction`;
+CREATE TABLE `vnpay_transaction` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `deposit_request_id` int NOT NULL,
+  `link_data` json NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `vnpay_status` varchar(16) NOT NULL DEFAULT 'pending',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_vnpay_tx_deposit` (`deposit_request_id`),
+  CONSTRAINT `fk_vnpay_tx_deposit` FOREIGN KEY (`deposit_request_id`)
+    REFERENCES `deposit_requests`(`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `withdrawal_requests`;
 CREATE TABLE `withdrawal_requests` (
   `id` int NOT NULL AUTO_INCREMENT,
