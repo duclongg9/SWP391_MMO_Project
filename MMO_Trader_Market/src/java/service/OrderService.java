@@ -353,6 +353,33 @@ public class OrderService {
     }
 
     /**
+     * Kiểm tra đơn hàng có đủ điều kiện mở form báo cáo hay không.
+     */
+    public boolean canReportOrder(Orders order) {
+        if (order == null) {
+            return false;
+        }
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return false;
+        }
+        String escrowStatus = order.getEscrowStatus();
+        if (escrowStatus == null || !"Scheduled".equalsIgnoreCase(escrowStatus)) {
+            return false;
+        }
+        Date now = new Date();
+        Date releaseAt = order.getEscrowReleaseAt();
+        if (releaseAt != null) {
+            return releaseAt.after(now);
+        }
+        Integer remainingSeconds = order.getEscrowRemainingSeconds();
+        if (remainingSeconds != null && remainingSeconds > 0) {
+            return true;
+        }
+        Integer holdSeconds = order.getEscrowHoldSeconds();
+        return holdSeconds != null && holdSeconds > 0;
+    }
+
+    /**
      * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext
      * khi đơn đã hoàn thành.
      * <p>
