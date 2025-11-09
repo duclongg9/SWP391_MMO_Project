@@ -49,7 +49,7 @@ public class AdnimDashboardService {
     }
 
     //hàm lấy tổng số cửa hàng đang hoạt động
-    public int totalShop() {
+    public int totalActiveShop() {
         return sdao.getTotalActiveShops();
     }
 
@@ -87,5 +87,14 @@ public class AdnimDashboardService {
             arr[i] = drdao.getTotalDepositByMonth(i + 1, year);
         }
         return arr;
+    }
+    
+    //Hàm lấy tổng số các cửa hàng theo trạng thái
+    public int totalPendingShop(){
+        return sdao.getTotalPendingShops();
+    }
+    
+    public int totalSuspendedShop(){
+        return sdao.getTotalSuspendedShops();
     }
 }

@@ -26,7 +26,7 @@ import java.math.RoundingMode;
  *
  * @author D E L L
  */
-@WebServlet(name = "AdminDashboardController", urlPatterns = {"/admin/dashboard"})
+@WebServlet(name = "AdminDashboardController", urlPatterns = {"/admin/dashboards"})
 public class AdminDashboardController extends HttpServlet {
 
     AdnimDashboardService adminDashboard = new AdnimDashboardService();
@@ -122,7 +122,7 @@ public class AdminDashboardController extends HttpServlet {
             Logger.getLogger(AdminDashboardController.class.getName()).log(Level.SEVERE, null, ex);
         }
         int orderByMonth = adminDashboard.totalOrder(presentMonth, presentYear);
-        int shopByMonth = adminDashboard.totalShop();
+        int shopByMonth = adminDashboard.totalActiveShop();
 
         //Tính toán % thay đổi
         BigDecimal persentDepositChanged = units.PercentChange.calculatePercentChange(totalDeposit, totalDepositLastMonth);
