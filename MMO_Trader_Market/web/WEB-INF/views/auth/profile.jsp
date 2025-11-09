@@ -67,12 +67,12 @@
                     </tr>
 
                     <tr>
-                        <th scope="row"><label for="uid">ID người dùng</label></th>
-                        <td><input id="uid" name="userId" type="text" value="${myProfile.id}" readonly></td>
+                        <th scope="row"><label for="uid">Vai trò:</label></th>
+                        <td><label for="uid">${role}</label></td>
                     </tr>
 
                     <tr>
-                        <th scope="row"><label for="fullName">Họ và tên</label></th>
+                        <th scope="row"><label for="fullName">Họ và tên:</label></th>
                         <td>
                             <input id="fullName" name="fullName" type="text" maxlength="100"
                                    autocomplete="name" placeholder="${myProfile.name}">
@@ -80,10 +80,9 @@
                     </tr>
 
                     <tr>
-                        <th scope="row"><label for="email">Email</label></th>
+                        <th scope="row"><label for="email">Email:</label></th>
                         <td>
-                            <input id="email" name="email" type="email" autocomplete="email"
-                                   placeholder="${myProfile.email}"readonly>
+                            <label>${myProfile.email}</label>
                         </td>
                     </tr>
                     <tr>
@@ -107,7 +106,7 @@
 
         <!-- ========== Form đổi mật khẩu ========== -->
         <form id="passwordForm" class="card" method="post"
-              action="${pageContext.request.contextPath}/profile" novalidate>
+              action="${pageContext.request.contextPath}/profile" onsubmit="return validatePass()" novalidate>
             <input type="hidden" name="action" value="updatePassword">
             <div class="panel__header">
                 <h2 class="panel__title">Đổi mật khẩu</h2>
@@ -117,7 +116,7 @@
                 <tbody>
                     <tr>
                         <th scope="row"><label for="accEmail">Tài khoản </label></th>
-                        <td><input id="accEmail" name="email" type="email" value="${myProfile.email}" readonly></td>
+                        <td><label>${myProfile.name}</label></td>
                     </tr>
 
                     <tr>
@@ -131,14 +130,18 @@
                         <td><input id="newPass" name="newPass" type="password" required
                                    autocomplete="new-password" minlength="8"
                                    pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp"><br>
-                            <a style="color: red">Tối thiểu 8 ký tự, có chữ và số.</a>
+                            <label>Tối thiểu 8 ký tự, có chữ và số.</label>
                         </td>
 
                     </tr>
                     <tr>
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
-                                   autocomplete="new-password"></td>
+                                   autocomplete="new-password" oninput="validatePass()"><br>
+                        <label id="errMsg" style="color:red;display:none;">Mật khẩu mới không được trùng mật khẩu cũ!</label>
+                        </td>
+                
+
                     </tr>
                     <tr>
                         <td colspan="2" class="actions">
@@ -149,7 +152,24 @@
                 </tbody>
             </table>
         </form>
+<script>
+function validatePass() {
+    const oldPass = document.getElementById("oldPass").value.trim();
+    const newPass = document.getElementById("newPass").value.trim();
+    const confirmPass = document.getElementById("confirmPass").value.trim();
+    const errMsg = document.getElementById("errMsg");
 
+    // Mật khẩu nhập lại sai
+    if (newPass && confirmPass && newPass !== confirmPass) {
+        errMsg.textContent = "Nhập lại mật khẩu không khớp!";
+        errMsg.style.display = "inline";
+        return false;
+    }
+
+    errMsg.style.display = "none";
+    return true;
+}
+</script>
 
     </section>
 
