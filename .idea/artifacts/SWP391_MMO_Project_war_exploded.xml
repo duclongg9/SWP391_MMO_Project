@@ -1,0 +1,24 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="SWP391_MMO_Project:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/SWP391_MMO_Project_war_exploded</output-path>
+    <root id="root">
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="SWP391_MMO_Project" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="file-copy" path="$USER_HOME$/Downloads/mybatis-3.5.15.jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/mybatis-generator-core-1.4.2.jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/gson-2.13.1 (1).jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/jakarta.mail-2.0.1.jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/jbcrypt-0.4.jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/jakarta.servlet.jsp.jstl-api-2.0.0.jar" />
+          <element id="file-copy" path="$USER_HOME$/Downloads/jakarta.servlet.jsp.jstl-2.0.0.jar" />
+        </element>
+      </element>
+      <element id="javaee-facet-resources" facet="SWP391_MMO_Project/web/Web" />
+      <element id="javaee-facet-resources" facet="SWP391_MMO_Project/web/Web3" />
+      <element id="javaee-facet-resources" facet="SWP391_MMO_Project/web/Web2" />
+    </root>
+  </artifact>
+</component>

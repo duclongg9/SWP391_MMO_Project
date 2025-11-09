@@ -77,7 +77,7 @@
          Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
     -->
         
-    <Connector connectionTimeout="20000" maxParameterCount="1000" port="8080" protocol="HTTP/1.1"/>
+    <Connector connectionTimeout="20000" maxParameterCount="1000" port="9999" protocol="HTTP/1.1"/>
         
     <!-- A "Connector" using the shared thread pool-->
         
