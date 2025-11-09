@@ -1,10 +1,12 @@
 package service;
 
+import dao.product.ProductDAO;
 import dao.shop.ShopDAO;
 import java.sql.SQLException;
 import java.util.List;
 import model.ShopStatsView;
 import model.Shops;
+import java.util.regex.Pattern;
 
 /**
  * Service xử lý logic nghiệp vụ liên quan đến quản lý shop cho seller.
@@ -12,7 +14,14 @@ import model.Shops;
  */
 public class ShopService {
 
-	private final ShopDAO shopDAO = new ShopDAO();
+        private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\p{N}\\s.,-]+$");
+        private static final int NAME_MIN_LENGTH = 20;
+        private static final int NAME_MAX_LENGTH = 255;
+        private static final int DESCRIPTION_MIN_LENGTH = 20;
+        private static final int DESCRIPTION_MAX_LENGTH = 2000;
+
+        private final ShopDAO shopDAO = new ShopDAO();
+        private final ProductDAO productDAO = new ProductDAO();
 
 	/**
 	 * Tạo shop mới cho seller.
@@ -31,15 +40,13 @@ public class ShopService {
 			throw new BusinessException("Bạn chỉ được tạo tối đa 5 shop.");
 		}
 		// Chuẩn hóa và validate tên shop
-		String normalizedName = name == null ? "" : name.trim();
-		if (normalizedName.isEmpty() || normalizedName.length() < 3 || normalizedName.length() > 255) {
-			throw new BusinessException("Tên shop phải từ 3 đến 255 ký tự và không được chỉ chứa khoảng trắng.");
-		}
-		// Chuẩn hóa mô tả (trim nếu không null)
-		String desc = description == null ? null : description.trim();
-		// Gọi DAO để tạo shop (status = 'Active', created_at = NOW())
-		shopDAO.create(ownerId, normalizedName, desc);
-	}
+                String normalizedName = normalize(name);
+                ensureValidText(normalizedName, "Tên shop", NAME_MIN_LENGTH, NAME_MAX_LENGTH);
+                String desc = normalize(description);
+                ensureValidText(desc, "Mô tả shop", DESCRIPTION_MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+                // Gọi DAO để tạo shop (status = 'Active', created_at = NOW())
+                shopDAO.create(ownerId, normalizedName, desc);
+        }
 
 	/**
 	 * Cập nhật tên và mô tả của shop.
@@ -54,16 +61,15 @@ public class ShopService {
 	 */
 	public void updateShop(int id, int ownerId, String name, String description) throws BusinessException, SQLException {
 		// Chuẩn hóa và validate tên shop (giống như tạo mới)
-		String normalizedName = name == null ? "" : name.trim();
-		if (normalizedName.isEmpty() || normalizedName.length() < 3 || normalizedName.length() > 255) {
-			throw new BusinessException("Tên shop phải từ 3 đến 255 ký tự và không được chỉ chứa khoảng trắng.");
-		}
-		String desc = description == null ? null : description.trim();
-		// Cập nhật shop (DAO sẽ kiểm tra owner_id trong WHERE clause)
-		boolean ok = shopDAO.update(id, ownerId, normalizedName, desc);
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
+                String normalizedName = normalize(name);
+                ensureValidText(normalizedName, "Tên shop", NAME_MIN_LENGTH, NAME_MAX_LENGTH);
+                String desc = normalize(description);
+                ensureValidText(desc, "Mô tả shop", DESCRIPTION_MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+                // Cập nhật shop (DAO sẽ kiểm tra owner_id trong WHERE clause)
+                boolean ok = shopDAO.update(id, ownerId, normalizedName, desc);
+                if (!ok) {
+                        throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
+                }
 	}
 
 	/**
@@ -77,11 +83,12 @@ public class ShopService {
 	 */
 	public void hideShop(int id, int ownerId) throws BusinessException, SQLException {
 		// Đổi trạng thái sang 'Suspended' (ngừng hoạt động)
-		boolean ok = shopDAO.setStatus(id, ownerId, "Suspended");
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
-	}
+                boolean ok = shopDAO.setStatus(id, ownerId, "Suspended");
+                if (!ok) {
+                        throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
+                }
+                productDAO.updateStatusByShop(id, "Unlisted", null);
+        }
 
 	/**
 	 * Khôi phục shop bằng cách đổi trạng thái sang 'Active'.
@@ -94,11 +101,12 @@ public class ShopService {
 	 */
 	public void restoreShop(int id, int ownerId) throws BusinessException, SQLException {
 		// Đổi trạng thái sang 'Active' (hoạt động trở lại)
-		boolean ok = shopDAO.setStatus(id, ownerId, "Active");
-		if (!ok) {
-			throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
-		}
-	}
+                boolean ok = shopDAO.setStatus(id, ownerId, "Active");
+                if (!ok) {
+                        throw new BusinessException("Không tìm thấy shop hoặc bạn không có quyền.");
+                }
+                productDAO.updateStatusByShop(id, "Available", "Unlisted");
+        }
 
 	/**
 	 * Lấy danh sách shop của seller kèm thống kê (số sản phẩm, lượng bán, tồn kho).
@@ -109,9 +117,10 @@ public class ShopService {
 	 * @return Danh sách ShopStatsView chứa thông tin shop và thống kê
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public List<ShopStatsView> listMyShops(int ownerId, String sortBy) throws SQLException {
-		return shopDAO.findByOwnerWithStats(ownerId, sortBy);
-	}
+        public List<ShopStatsView> listMyShops(int ownerId, String sortBy, String keyword) throws SQLException {
+                String sanitizedKeyword = keyword == null ? null : keyword.trim();
+                return shopDAO.findByOwnerWithStats(ownerId, sortBy, sanitizedKeyword);
+        }
 
 	/**
 	 * Tìm shop theo ID và owner, dùng để kiểm tra quyền trước khi cho phép chỉnh sửa.
@@ -121,9 +130,48 @@ public class ShopService {
 	 * @return Optional chứa Shops nếu tìm thấy và thuộc về owner, Optional.empty() nếu không
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-		return shopDAO.findByIdAndOwner(id, ownerId);
-	}
+        public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
+                return shopDAO.findByIdAndOwner(id, ownerId);
+        }
+
+        /**
+         * Chuẩn hoá chuỗi đầu vào bằng cách trim và thay thế nhiều khoảng trắng liên tiếp bằng một khoảng trắng đơn.
+         *
+         * @param value giá trị cần chuẩn hoá
+         * @return chuỗi đã được chuẩn hoá (không null)
+         */
+        private String normalize(String value) {
+                if (value == null) {
+                        return "";
+                }
+                return value.trim().replaceAll("\\s+", " ");
+        }
+
+        /**
+         * Kiểm tra chuỗi nhập liệu của shop theo yêu cầu nghiệp vụ của seller.
+         * Ràng buộc: không rỗng, độ dài trong khoảng cho phép, không chứa ký tự đặc biệt.
+         *
+         * @param value chuỗi cần kiểm tra (đã normalize)
+         * @param fieldLabel tên trường để hiển thị lỗi cho người dùng
+         * @param minLength độ dài tối thiểu
+         * @param maxLength độ dài tối đa
+         * @throws BusinessException nếu dữ liệu không hợp lệ
+         */
+        private void ensureValidText(String value, String fieldLabel, int minLength, int maxLength) throws BusinessException {
+                if (value == null || value.isBlank()) {
+                        throw new BusinessException(fieldLabel + " không được để trống.");
+                }
+                int length = value.length();
+                if (length < minLength) {
+                        throw new BusinessException(fieldLabel + " phải có tối thiểu " + minLength + " ký tự.");
+                }
+                if (length > maxLength) {
+                        throw new BusinessException(fieldLabel + " không được vượt quá " + maxLength + " ký tự.");
+                }
+                if (!BASIC_TEXT_PATTERN.matcher(value).matches()) {
+                        throw new BusinessException(fieldLabel + " chỉ được chứa chữ cái, chữ số, khoảng trắng và các ký tự . , -.");
+                }
+        }
 }
 
 

@@ -14,6 +14,8 @@ public class Shops {
 
     private Date createdAt;
 
+    private Date updatedAt;
+
     private String description;
     private String ownerName;
 
@@ -55,6 +57,24 @@ public class Shops {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    /**
+     * Lấy thời điểm cập nhật gần nhất của shop.
+     *
+     * @return {@link Date} đại diện cho cột {@code updated_at}
+     */
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    /**
+     * Ghi nhận thời điểm cập nhật gần nhất của shop.
+     *
+     * @param updatedAt {@link Date} tương ứng với cột {@code updated_at}
+     */
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public String getDescription() {

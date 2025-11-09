@@ -207,6 +207,32 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
+     * Cập nhật trạng thái cho toàn bộ sản phẩm của một shop nhất định.
+     * Cho phép truyền thêm trạng thái hiện tại để giới hạn phạm vi cập nhật (ví dụ: chỉ đổi từ Unlisted sang Available).
+     *
+     * @param shopId           mã shop cần cập nhật sản phẩm
+     * @param newStatus        trạng thái đích cần áp dụng
+     * @param onlyWhenStatus   nếu khác null và không rỗng thì chỉ cập nhật các bản ghi có status hiện tại trùng khớp
+     * @throws SQLException    nếu xảy ra lỗi khi thao tác với cơ sở dữ liệu
+     */
+    public void updateStatusByShop(int shopId, String newStatus, String onlyWhenStatus) throws SQLException {
+        StringBuilder sql = new StringBuilder("UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?");
+        boolean filterByCurrentStatus = onlyWhenStatus != null && !onlyWhenStatus.isBlank();
+        if (filterByCurrentStatus) {
+            sql.append(" AND status = ?");
+        }
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            statement.setString(1, newStatus);
+            statement.setInt(2, shopId);
+            if (filterByCurrentStatus) {
+                statement.setString(3, onlyWhenStatus);
+            }
+            statement.executeUpdate();
+        }
+    }
+
+    /**
      * Lấy danh sách sản phẩm bán chạy nhất trong trạng thái khả dụng.
      *
      * @param limit giới hạn số sản phẩm trả về
