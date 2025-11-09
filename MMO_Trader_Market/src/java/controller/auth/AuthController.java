@@ -40,7 +40,6 @@ public class AuthController extends BaseController {
     private static final String FLASH_EMAIL = "newUserEmail";
     private static final String FLASH_ERROR = "oauthError";
     private static final String FLASH_PENDING_VERIFICATION_EMAIL = "pendingVerificationEmail";
-    private static final String FLASH_PENDING_VERIFICATION_MODAL = "showVerificationModal";
     private static final String FLASH_PENDING_VERIFICATION_NOTICE = "verificationNotice";
 
     private final UserDAO userDAO = new UserDAO();
@@ -72,7 +71,6 @@ public class AuthController extends BaseController {
             moveFlash(session, request, FLASH_EMAIL, "prefillEmail");
             moveFlash(session, request, FLASH_ERROR, "error");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_EMAIL, "verificationEmail");
-            moveFlash(session, request, FLASH_PENDING_VERIFICATION_MODAL, "showVerificationModal");
             moveFlash(session, request, FLASH_PENDING_VERIFICATION_NOTICE, "verificationNotice");
         }
 
@@ -124,24 +122,12 @@ public class AuthController extends BaseController {
             }
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
         } catch (InactiveAccountException e) { // tài khoản chưa kích hoạt
-            request.setAttribute("error", e.getMessage());
-            request.setAttribute("prefillEmail", normalizedEmail);
-            request.setAttribute("rememberMeChecked", rememberMe);
-            request.setAttribute("showVerificationModal", true);
-            request.setAttribute("verificationEmail", normalizedEmail);
-            request.setAttribute("verificationNotice",
-                    "Vui lòng nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
-            try {
-                userService.resendVerificationCode(normalizedEmail);
-                request.setAttribute("verificationNotice", "Chúng tôi đã gửi lại mã xác thực đến " + normalizedEmail + ".");
-            } catch (IllegalArgumentException | IllegalStateException resendEx) {
-                request.setAttribute("verificationError", resendEx.getMessage()); //  lỗi nghiệp vụ
-            } catch (RuntimeException resendEx) {
-                LOGGER.log(Level.SEVERE, "Unable to resend verification code", resendEx); 
-                request.setAttribute("verificationError",
-                        "Hệ thống không thể gửi lại mã xác thực lúc này. Vui lòng thử lại sau.");
-            }
-            forward(request, response, "auth/login");
+            HttpSession session = request.getSession();
+            session.setAttribute(FLASH_PENDING_VERIFICATION_EMAIL, normalizedEmail);
+            session.setAttribute(FLASH_PENDING_VERIFICATION_NOTICE,
+                    e.getMessage() + " Nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
+            session.setAttribute(FLASH_EMAIL, normalizedEmail);
+            response.sendRedirect(request.getContextPath() + "/verify-email");
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail); 

@@ -30,10 +30,18 @@ public class ForgotPasswordController extends BaseController {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String email = request.getParameter("email");
+        String action = request.getParameter("action"); // xác định gửi mới hay gửi lại
+        String normalizedEmail = email == null ? null : email.trim(); // chuẩn hóa email trước khi xử lý
+        boolean allowResend = false;
         try {
             String resetBaseUrl = buildResetBaseUrl(request); // tạo dd
-            userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
-            request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            userService.requestPasswordReset(normalizedEmail, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
+            allowResend = true;
+            if ("resend".equals(action)) {
+                request.setAttribute("success", "Đã gửi lại email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            } else {
+                request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            }
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
         } catch (RuntimeException e) {
@@ -41,7 +49,8 @@ public class ForgotPasswordController extends BaseController {
             LOGGER.log(Level.SEVERE, "Unexpected error when requesting password reset, errorId=" + errorId, e);
             request.setAttribute("error", "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId);
         }
-        request.setAttribute("email", email);
+        request.setAttribute("allowResend", allowResend);
+        request.setAttribute("email", normalizedEmail);
         forward(request, response, "auth/forgot-password");
     }
 
