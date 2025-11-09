@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import model.PasswordResetToken;
 import model.Users;
 import units.HashPassword;
+import units.AsyncEmailSender;
 import units.SendMail;
 
 import java.security.SecureRandom;
@@ -419,11 +420,7 @@ public class UserService {
                 + " 24 giờ:\n" + resetLink + "\n\n"
                 + "Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.\n\n"
                 + "Trân trọng,\nĐội ngũ MMO Trader Market";
-        try {
-            SendMail.sendMail(email, subject, body);
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.", e);
-        }
+        AsyncEmailSender.send(email, subject, body);
     }
 
     private void sendVerificationEmail(String email, String name, String code) {
@@ -436,11 +433,7 @@ public class UserService {
                 + "Mã sẽ không thay đổi cho tới khi bạn kích hoạt thành công.\n\n"
                 + "Nếu bạn không yêu cầu tạo tài khoản, hãy bỏ qua email này.\n\n"
                 + "Trân trọng,\nĐội ngũ MMO Trader Market";
-        try {
-            SendMail.sendMail(email, subject, body);
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể gửi email xác thực", e);
-        }
+        AsyncEmailSender.send(email, subject, body);
     }
 
     private String resolveDisplayName(String email, String name) {
