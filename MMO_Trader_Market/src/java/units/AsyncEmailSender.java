@@ -8,37 +8,39 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Dispatches transactional emails in the background so HTTP requests can return immediately.
+ * Gửi email giao dịch ở chế độ nền để các request HTTP có thể trả về ngay.
  */
 public final class AsyncEmailSender {
 
     private static final Logger LOGGER = Logger.getLogger(AsyncEmailSender.class.getName());
-    private static final ExecutorService EMAIL_EXECUTOR = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+    private static final ExecutorService EMAIL_EXECUTOR =
+            Executors.newFixedThreadPool(2, new DaemonThreadFactory());
 
     private AsyncEmailSender() {
-        // Utility class
+        // Lớp tiện ích (utility) — không cho tạo instance
     }
 
     /**
-     * Submit an email-sending task to the background executor.
+     * Đưa tác vụ gửi email vào thread pool nền.
      *
-     * @param toEmail recipient email address
-     * @param subject email subject line
-     * @param body    email body content
+     * @param toEmail địa chỉ email người nhận
+     * @param subject tiêu đề email
+     * @param body    nội dung email
      */
     public static void send(String toEmail, String subject, String body) {
-        String normalizedRecipient = Objects.requireNonNull(toEmail, "Recipient email is required").trim();
+        String normalizedRecipient = Objects.requireNonNull(toEmail, "Cần truyền email người nhận").trim();
         EMAIL_EXECUTOR.submit(() -> {
             try {
                 SendMail.sendMail(normalizedRecipient, subject, body);
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Failed to send email asynchronously to " + normalizedRecipient, e);
+                LOGGER.log(Level.SEVERE,
+                        "Gửi email bất đồng bộ tới " + normalizedRecipient + " thất bại", e);
             }
         });
     }
 
     /**
-     * Custom thread factory to ensure background threads do not block application shutdown.
+     * ThreadFactory tuỳ biến để các luồng nền không chặn việc tắt ứng dụng.
      */
     private static final class DaemonThreadFactory implements ThreadFactory {
 
