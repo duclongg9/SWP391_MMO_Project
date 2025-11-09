@@ -11,6 +11,7 @@ import dao.user.WithdrawRequestDAO;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,7 +49,7 @@ public class AdnimDashboardService {
     }
 
     //hàm lấy tổng số cửa hàng đang hoạt động
-    public int totalShop() {
+    public int totalActiveShop() {
         return sdao.getTotalActiveShops();
     }
 
@@ -61,12 +62,39 @@ public class AdnimDashboardService {
         if (year < 2000 || year > LocalDate.now().getYear()) {
             throw new IllegalArgumentException("Năm không hợp lệ hoặc vượt quá hiện tại");
         }
-        
+
         return odao.gettotalOrderByMonth(month, year);
     }
-    
+
     //Hàm lấy năm có chứa dữ liệu
-    public List<Integer> getAvailableYears() throws SQLException{
+    public List<Integer> getAvailableYears() throws SQLException {
         return drdao.getAvailableYears();
+    }
+
+    // Hàm lấy tổng số tiền rút mỗi tháng
+    public BigDecimal[] arrayWithdrawByMonth(int year) throws SQLException {
+        BigDecimal[] arr = new BigDecimal[12];
+        for (int i = 0; i < 12; i++) {
+            arr[i] = wddao.getTotalWithdrawByMonth(i + 1, year); // Lưu ý tháng bắt đầu từ 1
+        }
+        return arr;
+    }
+
+// Hàm lấy tổng tiền nạp mỗi tháng
+    public BigDecimal[] arrayDepositByMonth(int year) throws SQLException {
+        BigDecimal[] arr = new BigDecimal[12];
+        for (int i = 0; i < 12; i++) {
+            arr[i] = drdao.getTotalDepositByMonth(i + 1, year);
+        }
+        return arr;
+    }
+    
+    //Hàm lấy tổng số các cửa hàng theo trạng thái
+    public int totalPendingShop(){
+        return sdao.getTotalPendingShops();
+    }
+    
+    public int totalSuspendedShop(){
+        return sdao.getTotalSuspendedShops();
     }
 }
