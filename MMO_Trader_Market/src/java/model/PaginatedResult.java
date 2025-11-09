@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Immutable container for paginated results.
- *
- * @param <T> element type
+truyền 
  */
 public class PaginatedResult<T> {
 

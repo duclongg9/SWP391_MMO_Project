@@ -3,13 +3,7 @@ package units;
 import java.util.Locale;
 
 /**
- * Utility class that obfuscates numeric identifiers before exposing them to
- * clients.
- * <p>
- * The implementation performs a reversible transformation consisting of bit
- * shifting and XOR with a private mask, then converts the result to a base36
- * string. The transformation is deterministic so the same identifier always
- * yields the same token while keeping the raw value hidden from the URL.</p>
+mã hoá ID
  */
 public final class IdObfuscator {
 
@@ -22,11 +16,13 @@ public final class IdObfuscator {
     }
 
     /**
-     * Encode a positive identifier to a non-guessable token safe for URLs.
-     *
-     * @param id numeric identifier, must be positive
-     * @return obfuscated token using base36 alphabet in upper case
-     * @throws IllegalArgumentException if {@code id} is not positive
+     Ép id (int dương) sang long.
+
+Dịch trái SHIFT_BITS=17 bit (tức nhân 2^17).
+
+XOR với SECRET_MASK (một hằng bí mật trong code).
+
+Chuyển kết quả sang base36 (0-9 + a-z) và viết hoa → ra TOKEN.
      */
     public static String encode(int id) {
         if (id <= 0) {
@@ -37,12 +33,15 @@ public final class IdObfuscator {
     }
 
     /**
-     * Decode an obfuscated token back to its numeric identifier.
-     *
-     * @param token encoded representation returned by {@link #encode(int)}
-     * @return the original positive identifier
-     * @throws IllegalArgumentException if the token is null, malformed or
-     * cannot be decoded
+     Chuẩn hoá chuỗi, parse base36 về long.
+
+XOR ngược với SECRET_MASK.
+
+Kiểm tra phần LOWER_MASK (17 bit thấp) phải bằng 0 (đảm bảo đúng định dạng).
+
+Dịch phải 17 bit để lấy lại id.
+
+Kiểm tra id dương và trong khoảng int.
      */
     public static int decode(String token) {
         if (token == null) {

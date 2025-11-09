@@ -32,7 +32,6 @@ import java.util.List;
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail/*"})
 public class ProductDetailController extends BaseController {
     private static final long serialVersionUID = 1L;
-    // Dịch vụ sản phẩm giúp truy vấn chi tiết và tìm kiếm sản phẩm liên quan.
     private final ProductService productService = new ProductService();
     private final OrderService orderService = new OrderService();
     // Xử lý yêu cầu hiển thị chi tiết sản phẩm bằng token mã hóa hoặc ID cũ.
@@ -102,7 +101,6 @@ public class ProductDetailController extends BaseController {
             request.setAttribute("productToken", IdObfuscator.encode(product.getId()));
             forward(request, response, "product/detail");
         } catch (IllegalArgumentException ex) {
-            // Không tìm thấy sản phẩm hoặc sản phẩm bị ẩn => trả 404.
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
