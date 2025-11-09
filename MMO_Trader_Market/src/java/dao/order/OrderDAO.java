@@ -611,6 +611,9 @@ public class OrderDAO extends BaseDAO {
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể đếm đơn chờ giải ngân", ex);
+        }
+        return 0;
+    }
 
     //Tính tổng số đơn hàng theo tháng
     public int gettotalOrderByMonth(int month, int year) {

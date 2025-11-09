@@ -3,20 +3,6 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="page" />
-<%
-    try {
-        String period = (String) request.getAttribute("period");
-        if (period == null || period.trim().isEmpty()) {
-            period = "month";
-        }
-        request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
-        request.setAttribute("bodyClass", "layout");
-        request.setAttribute("headerModifier", "layout__header--split");
-    } catch (Exception e) {
-        System.err.println("Error in income.jsp: " + e.getMessage());
-        e.printStackTrace();
-    }
-%>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content seller-page">

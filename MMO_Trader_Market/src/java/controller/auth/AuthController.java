@@ -123,7 +123,7 @@ public class AuthController extends BaseController {
                 rememberMeService.clearRememberMe(request, response);
             }
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
-        } catch (InactiveAccountException e) { // tài khoản chưa kích hoạt
+        } catch (InactiveAccountException e) { // tai khoan chua kich hoat
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail);
             request.setAttribute("rememberMeChecked", rememberMe);
