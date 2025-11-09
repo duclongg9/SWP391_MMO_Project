@@ -26,6 +26,26 @@ public class EmailVerificationController extends BaseController {
     private final UserService userService = new UserService(new UserDAO());
 
     @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            moveFlash(session, request, "pendingVerificationEmail", "verificationEmail");
+            moveFlash(session, request, "verificationNotice", "verificationNotice");
+            moveFlash(session, request, "verificationError", "verificationError");
+            moveFlash(session, request, "verificationSuccess", "success");
+        }
+
+        String emailParam = request.getParameter("email");
+        if (emailParam != null && !emailParam.trim().isEmpty()) {
+            request.setAttribute("verificationEmail", emailParam.trim().toLowerCase());
+        }
+
+        ensureDefaultNotice(request);
+        forward(request, response, "auth/verify-email");
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
@@ -49,14 +69,14 @@ public class EmailVerificationController extends BaseController {
             response.sendRedirect(request.getContextPath() + "/auth");
         } catch (IllegalArgumentException | IllegalStateException e) {
             prepareErrorState(request, normalizedEmail, e.getMessage(), null);
-            forward(request, response, "auth/login");
+            forward(request, response, "auth/verify-email");
         } catch (RuntimeException e) {
             String errorId = UUID.randomUUID().toString();
             LOGGER.log(Level.SEVERE, "Unexpected error during email verification, errorId=" + errorId, e);
             prepareErrorState(request, normalizedEmail,
                     "Hệ thống đang gặp sự cố. Mã lỗi: " + errorId,
                     "verificationError");
-            forward(request, response, "auth/login");
+            forward(request, response, "auth/verify-email");
         }
     }
 
