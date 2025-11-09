@@ -20,6 +20,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import utils.ImageUtils;
 
@@ -32,6 +35,7 @@ public class UserService {
     private static final int DEFAULT_ROLE_ID = 3;
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 1440;
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Logger LOGGER = Logger.getLogger(UserService.class.getName());
     private final UserDAO userDAO;
     private final PasswordResetTokenDAO passwordResetTokenDAO;
     private final EmailVerificationTokenDAO emailVerificationTokenDAO;
@@ -74,7 +78,8 @@ public class UserService {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
             String verificationCode = createAndStoreVerificationCode(created.getId()); //Tạo mã xác thực email duy nhất
-            sendVerificationEmail(created.getEmail(), created.getName(), verificationCode); // gửi mail kèm code 
+            dispatchMailAsync(() -> sendVerificationEmail(created.getEmail(), created.getName(), verificationCode),
+                    "gửi mã xác thực cho " + created.getEmail());
             return created;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi tạo tài khoản mới", e);
@@ -148,7 +153,8 @@ public class UserService {
             Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L)); //hời điểm hết hạn
             passwordResetTokenDAO.createToken(user.getId(), token, expiresAt);
             String resetLink = resetBaseUrl + "?token=" + token; //Tạo URL đầy đủ, bấm trong email.
-            sendResetMail(user.getEmail(), user.getName(), resetLink); 
+            dispatchMailAsync(() -> sendResetMail(user.getEmail(), user.getName(), resetLink),
+                    "gửi email đặt lại mật khẩu cho " + user.getEmail());
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
@@ -169,7 +175,8 @@ public class UserService {
             if (code == null || code.isBlank()) {
                 throw new IllegalStateException("Không tìm thấy mã xác thực cho tài khoản này");
             }
-            sendVerificationEmail(user.getEmail(), user.getName(), code);
+            dispatchMailAsync(() -> sendVerificationEmail(user.getEmail(), user.getName(), code),
+                    "gửi lại mã xác thực cho " + user.getEmail());
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi gửi lại mã xác thực", e);
         }
@@ -424,6 +431,22 @@ public class UserService {
         } catch (Exception e) {
             throw new IllegalStateException("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
+    }
+
+    /**
+     * Chạy tác vụ gửi email trên luồng nền để người dùng không phải chờ đợi.
+     *
+     * @param task    công việc gửi email cần thực thi.
+     * @param context mô tả ngắn gọn để hỗ trợ ghi log khi lỗi.
+     */
+    private void dispatchMailAsync(Runnable task, String context) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                task.run();
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.SEVERE, "Không thể " + context, ex);
+            }
+        });
     }
 
     private void sendVerificationEmail(String email, String name, String code) {
