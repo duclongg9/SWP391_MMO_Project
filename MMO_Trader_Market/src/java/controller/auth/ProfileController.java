@@ -1,9 +1,10 @@
-/*
+ /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
 package controller.auth;
 
+import dao.user.RoleDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
@@ -39,6 +40,7 @@ public class ProfileController extends HttpServlet {
 
     // Dịch vụ người dùng phục vụ các thao tác xem và cập nhật hồ sơ.
     private final UserService viewProfileService = new UserService(new dao.user.UserDAO());
+    RoleDAO rdao = new RoleDAO();
 
     // Phương thức khung do NetBeans sinh, không dùng tới trong luồng thực tế.
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -83,6 +85,8 @@ public class ProfileController extends HttpServlet {
         try {
             // Lấy thông tin hồ sơ của chính người dùng và đẩy xuống view.
             Users myProfile = viewProfileService.viewMyProfile(user);
+            String UserRole = rdao.getRoleById(myProfile.getRoleId()).getName();
+            request.setAttribute("role",UserRole);
             request.setAttribute("myProfile", myProfile);
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
         } catch (IllegalArgumentException e) {
@@ -93,6 +97,8 @@ public class ProfileController extends HttpServlet {
             // Thông báo lỗi hệ thống chung nếu truy vấn thất bại bất ngờ.
             request.setAttribute("emg", "Có lỗi hệ thống xảy ra.Vui lòng thử lại.");
             request.getRequestDispatcher("/WEB-INF/views/auth/profile.jsp").forward(request, response);
+        } catch (SQLException ex) {
+            Logger.getLogger(ProfileController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
@@ -124,7 +130,14 @@ public class ProfileController extends HttpServlet {
                     String name = request.getParameter("fullName");
                     Part avatar = request.getPart("avatar");
                     // Cập nhật tên hiển thị của người dùng hiện tại.
-                    viewProfileService.updateMyProfile(user, name, avatar);
+                    try{
+                        viewProfileService.updateMyProfile(user, name, avatar);
+                    } catch (IOException e) {
+                        session.setAttribute("emg", e);
+                        response.sendRedirect(request.getContextPath() + "/profile");
+                        return;
+                    }
+                    
                     session.setAttribute("msg", "Thông tin đã được cập nhật.");
                     response.sendRedirect(request.getContextPath() + "/profile");
                     break;

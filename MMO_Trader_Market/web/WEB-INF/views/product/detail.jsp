@@ -234,7 +234,7 @@
                 </div>
                 <c:choose>
                     <c:when test="${canBuy}">
-                        <button class="button button--primary" id="buyButton" type="submit">Mua ngay</button>
+                        <button class="button button--primary" id="buyButton" type="submit" >Mua ngay</button>
                     </c:when>
                     <c:when test="${not isAuthenticated}">
                         <!--<a class="button button--primary" href="${cPath}/login.jsp">Đăng nhập để mua hàng</a>-->

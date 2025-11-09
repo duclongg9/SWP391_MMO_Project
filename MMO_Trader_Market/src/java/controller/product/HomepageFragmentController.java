@@ -65,7 +65,7 @@ public class HomepageFragmentController extends HttpServlet {
     private void handleSystemNotes(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setAttribute("systemNotes", homepageService.loadSystemNotes());
-        response.setContentType("text/html;charset=UTF-8");
+response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "public, max-age=300");
         renderFragment(request, response, "product/fragments/home/system-notes");
     }

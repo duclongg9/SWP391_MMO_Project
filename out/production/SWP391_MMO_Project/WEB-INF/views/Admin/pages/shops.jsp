@@ -5,32 +5,34 @@
 
 <c:set var="base" value="${pageContext.request.contextPath}" />
 
+<!-- Biến phân trang & sort -->
+<c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
+<c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
+<c:set var="total"    value="${pg_total != null ? pg_total : (shopList != null ? fn:length(shopList) : 0)}" />
+<c:set var="pages"    value="${(total + pageSize - 1) / pageSize}" />
+<c:set var="sort"     value="${empty requestScope.sort ? 'date_desc' : requestScope.sort}" />
+
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shop me-2"></i>Quản lý cửa hàng</h4>
-
-    <c:if test="${not empty flash}">
-        <div class="alert alert-success shadow-sm">${flash}</div>
-        <%
-            // Chỉ hiển thị 1 lần
-            session.removeAttribute("flash");
-        %>
-    </c:if>
     <c:if test="${not empty error}">
         <div class="alert alert-danger shadow-sm">${error}</div>
     </c:if>
 
-    <!-- Filter -->
+    <!-- ===== Bộ lọc (giống UX của KYC) ===== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <form id="shopFilter" class="row g-2 align-items-end" action="${base}/admin/shops" method="get">
+                <input type="hidden" name="page" id="pageInput" value="${pageNow}">
+                <input type="hidden" name="size" value="${pageSize}">
+                <input type="hidden" name="sort" id="sort" value="${sort}"/>
+
                 <!-- Từ khóa -->
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-4">
                     <label for="q" class="form-label mb-1">Từ khóa</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input id="q" name="q" type="text" class="form-control"
-                               placeholder="Tên cửa hàng..."
-                               value="${fn:escapeXml(q)}">
+                        <input id="q" name="q" type="search" class="form-control"
+                               placeholder="Tên cửa hàng…" value="${fn:escapeXml(q)}">
                     </div>
                 </div>
 
@@ -39,9 +41,7 @@
                     <label for="from" class="form-label mb-1">Từ ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <!-- LƯU Ý: value phải là yyyy-MM-dd (đã chuẩn hóa ở servlet) -->
-                        <input id="from" name="from" type="date" class="form-control"
-                               value="${from}">
+                        <input id="from" name="from" type="date" class="form-control" value="${from}">
                     </div>
                 </div>
 
@@ -50,34 +50,31 @@
                     <label for="to" class="form-label mb-1">Đến ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="to" name="to" type="date" class="form-control"
-                               value="${to}">
+                        <input id="to" name="to" type="date" class="form-control" value="${to}">
                     </div>
                 </div>
 
-                <!-- Trạng thái (String) -->
-                <div class="col-6 col-md-2">
+                <!-- Trạng thái -->
+                <div class="col-12 col-md-2">
                     <label for="status" class="form-label mb-1">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
                         <option value="all"      ${status == 'all'      ? 'selected' : ''}>Tất cả</option>
                         <option value="Active"   ${status == 'Active'   ? 'selected' : ''}>Active</option>
-                        <option value="Pending"   ${status == 'Pending'   ? 'selected' : ''}>Pending</option>
+                        <option value="Pending"  ${status == 'Pending'  ? 'selected' : ''}>Pending</option>
                         <option value="Rejected" ${status == 'Rejected' ? 'selected' : ''}>Rejected</option>
                     </select>
                 </div>
 
-                <!-- Nút -->
-                <div class="col-12 col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark flex-fill">
-                        <i class="bi bi-funnel"></i> Lọc
-                    </button>
+                <!-- Xóa lọc -->
+                <div class="col-12 col-md-2 d-grid">
                     <a class="btn btn-outline-secondary" href="${base}/admin/shops">Xóa lọc</a>
                 </div>
             </form>
+            <div id="toastBox"></div>
         </div>
     </div>
 
-    <!-- Table -->
+    <!-- ===== Bảng danh sách ===== -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -88,17 +85,45 @@
                         <th>Chủ sở hữu</th>
                         <th>Tên cửa hàng</th>
                         <th>Nội dung</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
+
+                        <!-- Toggle sort theo trạng thái -->
+                        <th>
+                            <c:url var="uStatusSort" value="/admin/shops">
+                                <c:param name="q"      value="${q}" />
+                                <c:param name="from"   value="${from}" />
+                                <c:param name="to"     value="${to}" />
+                                <c:param name="status" value="${status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'status_asc' ? 'status_desc' : 'status_asc'}" />
+                            </c:url>
+                            <a href="${uStatusSort}" class="text-decoration-none">Trạng thái</a>
+                        </th>
+
+                        <!-- Toggle sort theo ngày tạo -->
+                        <th>
+                            <c:url var="uDateSort" value="/admin/shops">
+                                <c:param name="q"      value="${q}" />
+                                <c:param name="from"   value="${from}" />
+                                <c:param name="to"     value="${to}" />
+                                <c:param name="status" value="${status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'date_asc' ? 'date_desc' : 'date_asc'}" />
+                            </c:url>
+                            <a href="${uDateSort}" class="text-decoration-none">Ngày tạo</a>
+                        </th>
+
                         <th class="text-center">Hành động</th>
                     </tr>
                     </thead>
+
                     <tbody>
                     <c:choose>
                         <c:when test="${not empty shopList}">
                             <c:forEach var="s" items="${shopList}" varStatus="st">
                                 <tr>
-                                    <td>${st.index + 1}</td>
+                                    <td>${(pageNow-1)*pageSize + st.index + 1}</td>
                                     <td>${fn:escapeXml(s.ownerName)}</td>
                                     <td class="fw-semibold">${fn:escapeXml(s.name)}</td>
                                     <td class="text-muted">
@@ -107,18 +132,21 @@
                                             <c:otherwise>${fn:escapeXml(s.description)}</c:otherwise>
                                         </c:choose>
                                     </td>
+
                                     <td>
-                                        <span class="badge
-                                          <c:choose>
-                                            <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                                            <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                                            <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                                            <c:otherwise>bg-secondary</c:otherwise>
-                                          </c:choose>">
-                                            ${fn:escapeXml(s.status)}
-                                        </span>
+                    <span class="badge
+                      <c:choose>
+                        <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                        <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
+                        <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
+                        <c:otherwise>bg-secondary</c:otherwise>
+                      </c:choose>">
+                            ${fn:escapeXml(s.status)}
+                    </span>
                                     </td>
+
                                     <td><fmt:formatDate value="${s.createdAt}" pattern="dd-MM-yyyy"/></td>
+
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-primary"
                                                 data-bs-toggle="modal"
@@ -165,13 +193,13 @@
                                                     <div class="col-12">
                                                         <div class="small text-muted mb-1">Trạng thái hiện tại</div>
                                                         <span class="badge
-                                                          <c:choose>
-                                                            <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                                                            <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                                                            <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                                                            <c:otherwise>bg-secondary</c:otherwise>
-                                                          </c:choose> ">
-                                                            ${fn:escapeXml(s.status)}
+                              <c:choose>
+                                <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                                <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
+                                <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
+                                <c:otherwise>bg-secondary</c:otherwise>
+                              </c:choose> ">
+                                                                ${fn:escapeXml(s.status)}
                                                         </span>
                                                     </div>
 
@@ -217,15 +245,139 @@
             </div>
         </div>
     </div>
+
+    <!-- ===== Phân trang (cửa sổ) ===== -->
+
+
+    <nav aria-label="Pagination">
+        <ul class="pagination justify-content-center mt-3">
+
+            <!-- Prev -->
+            <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
+                <c:url var="uPrev" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow-1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
+            </li>
+
+            <!-- Page numbers: 1..pages -->
+            <c:forEach var="i" begin="1" end="${pages}">
+                <c:url var="uI" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${i}" />
+                </c:url>
+                <li class="page-item ${i == pageNow ? 'active' : ''}">
+                    <a class="page-link" href="${uI}">${i}</a>
+                </li>
+            </c:forEach>
+
+            <!-- Next -->
+            <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
+                <c:url var="uNext" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow+1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
+            </li>
+
+        </ul>
+    </nav>
 </div>
 
 <style>
     .card{border-radius:12px}
     .table td,.table th{vertical-align:middle}
     .table thead th{white-space:nowrap}
+
+    #toastBox{
+        position: fixed;
+        bottom: 30px; right: 30px;
+        display: flex; align-items: flex-end; flex-direction: column;
+        overflow: hidden; padding: 20px; z-index: 9999;
+    }
+
+    .mm-toast{
+        width: 400px; height: 80px; background: #fff;
+        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center; padding: 20px; position: relative;
+        transform: translateX(100%);
+        animation: moveleft 0.5s linear forwards;
+    }
+
+    .mm-toast i{
+        margin: 0 20px;
+        font-size: 35px;
+        color: green;
+    }
+    .mm-toast::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: green;
+        animation: anim 5s linear forwards;
+    }
+    .mm-toast.error i{
+        color: red;
+    }
+    .mm-toast.error{
+        color: red;
+    }
+    .mm-toast.error::after{
+        background: red;
+    }
+    @keyframes anim {
+        100%{ width: 0; }
+    }
+    @keyframes moveleft {
+        100%{ transform: translateX(0); }
+    }
+
+
+
+
+
 </style>
 
 <script>
+
+    const toastBox = document.getElementById('toastBox');
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.classList.add('mm-toast');
+
+        if (type === 'error') {
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            toast.classList.add('warning');
+        }
+
+        toast.innerHTML = msg;
+        toastBox.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+
+
     window.addEventListener('DOMContentLoaded', () => {
         // Tự ẩn flash
         document.querySelectorAll('.alert').forEach(a => {
@@ -233,23 +385,87 @@
             setTimeout(() => a.remove(), 2600);
         });
 
-        const form     = document.getElementById('shopFilter');
-        const ipQ      = document.getElementById('q');
-        const ipFrom   = document.getElementById('from');
-        const ipTo     = document.getElementById('to');
-        const ipStatus = document.getElementById('status');
-
+        const form      = document.getElementById('shopFilter');
         if (!form) return;
 
-        // Không submit khi nhấn Enter trong các ô filter (chỉ submit khi bấm Lọc)
-        [ipQ, ipFrom, ipTo].forEach(el => {
-            if (!el) return;
-            el.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+        const ipQ       = document.getElementById('q');
+        const fromEl   = document.getElementById('from');
+        const toEl      = document.getElementById('to');
+        const ipStatus  = document.getElementById('status');
+        const pageInput = document.getElementById('pageInput');
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+
+        // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn (giống KYC)
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target !== ipQ) {
+                e.preventDefault();
+            }
         });
 
-        // Đổi trạng thái -> tự submit
+        // Enter trong ô q -> reset trang 1 rồi submit
+        if (ipQ) {
+            ipQ.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (pageInput) pageInput.value = '1';
+                    form.submit();
+                }
+            });
+        }
+
+        // Đổi trạng thái -> reset trang 1 & submit
         if (ipStatus) {
-            ipStatus.addEventListener('change', () => form.submit());
+            ipStatus.addEventListener('change', () => {
+                if (pageInput) pageInput.value = '1';
+                form.submit();
+            });
+        }
+
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!','error');
+                    this.value = "";
+                }
+            });
+        }
+        function resetPageToFirst() {
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden) {
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }else{
+                    resetPageToFirst();
+                    form.submit();
+                }
+            });
         }
     });
 </script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

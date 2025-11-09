@@ -58,10 +58,13 @@ public class CredentialDAO extends BaseDAO {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
+            // Khóa cứng product_id để tránh lấy nhầm credential của sản phẩm khác.
             statement.setInt(index++, productId);
             if (normalized != null) {
+                // Biến thể được chuẩn hóa về chữ thường để khớp với dữ liệu đã lưu.
                 statement.setString(index++, normalized);
             }
+            // LIMIT = số lượng người mua đặt -> đảm bảo lấy đúng số credential cần.
             statement.setInt(index, qty);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -74,6 +77,7 @@ public class CredentialDAO extends BaseDAO {
 
     public CredentialAvailability fetchAvailability(int productId) {
         try (Connection connection = getConnection()) {
+            // Mở kết nối riêng mỗi lần gọi để tái sử dụng được ở cả controller và worker.
             return fetchAvailability(connection, productId);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể thống kê credential khả dụng", ex);
@@ -129,6 +133,7 @@ public class CredentialDAO extends BaseDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
             statement.setInt(1, productId);
             if (!filterDefaultVariant) {
+                // Nếu có mã biến thể cụ thể thì bind vào vị trí thứ 2 của câu lệnh.
                 statement.setString(2, normalized);
             }
             try (ResultSet rs = statement.executeQuery()) {
@@ -151,6 +156,10 @@ public class CredentialDAO extends BaseDAO {
      * 
      * Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và
      * trả về số liệu mới nhất.
+     * @param productId
+     * @param variantCode
+     * @param requiredQuantity
+     * @return 
      */
     public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
         String normalized = normalizeVariantCode(variantCode);
@@ -166,6 +175,7 @@ public class CredentialDAO extends BaseDAO {
                         : fetchAvailabilityForVariant(connection, productId, normalized);
                 int missing = requiredQuantity - availability.available();
                 if (missing > 0) {
+                    // Không đủ credential -> sinh thêm credential ảo để worker có dữ liệu bàn giao.
                     generateFakeCredentials(connection, productId, normalized, missing);
                     availability = normalized == null
                             ? fetchAvailability(connection, productId)
@@ -175,6 +185,7 @@ public class CredentialDAO extends BaseDAO {
                 return availability;
             } catch (SQLException ex) {
                 try {
+                    // Thất bại ở giữa transaction -> rollback để tránh dữ liệu dở dang.
                     connection.rollback();
                 } catch (SQLException rollbackEx) {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
@@ -197,11 +208,13 @@ public class CredentialDAO extends BaseDAO {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                // Phân nhánh xuống hàm dùng chung để tái sử dụng logic insert/rollback.
                 generateFakeCredentials(connection, productId, variantCode, quantity);
                 connection.commit();
                 return quantity;
             } catch (SQLException ex) {
                 try {
+                    // Gặp lỗi insert -> hoàn tác để không ghi ra credential rác.
                     connection.rollback();
                 } catch (SQLException rollbackEx) {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
@@ -336,6 +349,9 @@ public class CredentialDAO extends BaseDAO {
      * Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa
      * vào đây để quyết định có tải plaintext cho người dùng hay yêu cầu xác
      * nhận lại.
+     * @param orderId
+     * @param buyerId
+     * @return 
      */
     public boolean hasViewLog(int orderId, int buyerId) {
         final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
@@ -357,6 +373,11 @@ public class CredentialDAO extends BaseDAO {
      * Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm
      * bảo vệ dữ liệu: nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để
      * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.
+     * @param orderId
+     * @param productId
+     * @param buyerId
+     * @param variantCode
+     * @param viewerIp
      */
     public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
         final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
@@ -389,6 +410,8 @@ public class CredentialDAO extends BaseDAO {
      * Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời
      * điểm, IP) để admin có thể rà soát khi phát sinh tranh chấp về việc đã xem
      * dữ liệu hay chưa.
+     * @param orderId
+     * @return 
      */
     public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
         final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
@@ -425,6 +448,11 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Sinh thêm credential ảo cho sản phẩm/biến thể để bảo đảm mỗi đơn vị hàng
      * hóa đều có dữ liệu bàn giao riêng biệt.
+     * @param connection
+     * @param productId
+     * @param variantCode
+     * @param quantity
+     * @throws java.sql.SQLException
      */
     public void generateFakeCredentials(Connection connection, int productId, String variantCode, int quantity)
             throws SQLException {

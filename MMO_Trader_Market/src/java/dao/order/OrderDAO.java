@@ -1,6 +1,7 @@
 package dao.order;
 
 import dao.BaseDAO;
+import dao.connect.DBConnect;
 import model.OrderStatus;
 import model.Orders;
 import model.Products;
@@ -71,12 +72,14 @@ public class OrderDAO extends BaseDAO {
             if (variantCode == null || variantCode.isBlank()) {
                 statement.setNull(6, java.sql.Types.VARCHAR);
             } else {
+                // Lưu lại mã biến thể để worker xác định đúng SKU khi trừ tồn kho.
                 statement.setString(6, variantCode);
             }
             statement.setString(7, idemKey);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
+                    // Trả về khóa chính của bản ghi vừa insert để controller redirect chi tiết.
                     return keys.getInt(1);
                 }
             }
@@ -113,6 +116,7 @@ public class OrderDAO extends BaseDAO {
             statement.setInt(2, userId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
+                    // Ánh xạ cả Order lẫn Product để trả ra view model phục vụ JSP chi tiết.
                     Orders order = mapOrder(rs);
                     Products product = mapProduct(rs);
                     return Optional.of(new OrderDetailView(order, product, List.of()));
@@ -139,6 +143,7 @@ public class OrderDAO extends BaseDAO {
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, status);
             statement.setInt(2, orderId);
+            // Hàm trả về >0 nếu có bản ghi nào được cập nhật.
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái đơn hàng", ex);
@@ -163,6 +168,7 @@ public class OrderDAO extends BaseDAO {
             if (paymentTxId == null) {
                 statement.setNull(1, java.sql.Types.INTEGER);
             } else {
+                // Khi đã có mã giao dịch ví, gắn trực tiếp để trang chi tiết truy vết số tiền.
                 statement.setInt(1, paymentTxId);
             }
             statement.setInt(2, orderId);
@@ -189,6 +195,7 @@ public class OrderDAO extends BaseDAO {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
+                    // Chỉ map và trả về khi tìm thấy bản ghi hợp lệ.
                     return Optional.of(mapOrder(rs));
                 }
             }
@@ -535,6 +542,7 @@ public class OrderDAO extends BaseDAO {
         return product;
     }
 
+
     /**
      * Tính tổng doanh thu từ các đơn hàng đã hoàn thành của shop trong khoảng thời gian.
      *
@@ -603,9 +611,29 @@ public class OrderDAO extends BaseDAO {
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể đếm đơn chờ giải ngân", ex);
+
+    //Tính tổng số đơn hàng theo tháng
+    public int gettotalOrderByMonth(int month, int year) {
+        String sql = """
+        SELECT COUNT(*) AS total_orders
+        FROM mmo_schema.orders
+        WHERE YEAR(created_at) = ?
+          AND MONTH(created_at) = ?
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total_orders");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+
         }
         return 0;
     }
+
 
     /**
      * Đếm số đơn hàng đã hoàn thành của shop.
@@ -810,5 +838,6 @@ public class OrderDAO extends BaseDAO {
         }
         return stats;
     }
+
 
 }

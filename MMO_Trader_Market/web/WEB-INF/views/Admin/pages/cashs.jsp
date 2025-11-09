@@ -7,6 +7,7 @@
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
 <c:set var="total"    value="${pg_total != null ? pg_total : (txList != null ? fn:length(txList) : 0)}" />
 <c:set var="pages"    value="${(total + pageSize - 1) / pageSize}" />
+<c:set var="sort"     value="${empty requestScope.sort ? 'date_desc' : requestScope.sort}" />
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-cash-coin me-2"></i>Nạp / Rút</h4>
@@ -14,18 +15,19 @@
     <div class="card shadow-sm">
         <div class="card-body">
 
-            <!-- FILTER -->
+            <!-- ===== FILTER (giống UX KYC) ===== -->
             <form id="cashFilter"
                   action="${pageContext.request.contextPath}/admin/cashs"
                   method="get"
                   class="row g-2 align-items-end mb-3">
 
-                <!-- hidden để giữ page/size khi phân trang & reset về 1 khi đổi filter -->
+                <!-- giữ page/size/sort; reset page=1 khi đổi filter -->
                 <input type="hidden" name="page" id="pageInput" value="${pageNow}">
                 <input type="hidden" name="size" value="${pageSize}">
+                <input type="hidden" name="sort" id="sort" value="${sort}"/>
 
                 <div class="col-sm-2">
-                    <label class="form-label mb-1">Loại</label>
+                    <label class="form-label mb-1" for="typeSelect">Loại</label>
                     <select class="form-select" name="type" id="typeSelect">
                         <option value="all"        ${f_type=='all'?'selected':''}>Tất cả</option>
                         <option value="Deposit"    ${f_type=='Deposit'?'selected':''}>Nạp tiền</option>
@@ -34,15 +36,15 @@
                 </div>
 
                 <div class="col-sm-3">
-                    <label class="form-label mb-1">Tên người dùng</label>
+                    <label class="form-label mb-1" for="q">Tên người dùng</label>
                     <div class="input-group">
-                        <input type="text" class="form-control" name="q" value="${f_q}" placeholder="Nhập tên…">
+                        <input id="q" type="search" class="form-control" name="q" value="${f_q}" placeholder="Nhập tên…">
                         <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
 
                 <div class="col-sm-2">
-                    <label class="form-label mb-1">Trạng thái</label>
+                    <label class="form-label mb-1" for="statusSelect">Trạng thái</label>
                     <select class="form-select" name="status" id="statusSelect">
                         <option value="all"       ${f_status=='all'?'selected':''}>Tất cả</option>
                         <option value="Pending"   ${f_status=='Pending'?'selected':''}>Pending</option>
@@ -51,15 +53,7 @@
                     </select>
                 </div>
 
-                <div class="col-sm-2">
-                    <label class="form-label mb-1">Sắp xếp theo ngày</label>
-                    <select class="form-select" name="order" id="orderSelect">
-                        <option value="newest" ${f_order=='newest'?'selected':''}>Mới nhất → cũ</option>
-                        <option value="oldest" ${f_order=='oldest'?'selected':''}>Cũ nhất → mới</option>
-                    </select>
-                </div>
-
-                <div class="col-12 col-md-3 d-flex gap-2">
+                <div class="col-12 col-md-5 d-flex gap-2">
                     <button class="btn btn-dark flex-fill" type="submit">
                         <i class="bi bi-funnel"></i> Lọc / Tìm
                     </button>
@@ -67,80 +61,105 @@
                 </div>
             </form>
 
-            <!-- TABLE -->
+            <!-- ===== TABLE ===== -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Loại</th>
-                            <th>User</th>
-                            <th>Số tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Tạo lúc</th>
-                            <th>Xử lý lúc</th>
-                            <th class="text-center">Hành động</th>
-                        </tr>
+                    <tr>
+                        <th>#</th>
+                        <th>Loại</th>
+                        <th>User</th>
+                        <th>Số tiền</th>
+
+                        <!-- Toggle sort theo Trạng thái -->
+                        <th>
+                            <c:url var="uStatusSort" value="/admin/cashs">
+                                <c:param name="type"   value="${f_type}" />
+                                <c:param name="q"      value="${f_q}" />
+                                <c:param name="status" value="${f_status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'status_asc' ? 'status_desc' : 'status_asc'}" />
+                            </c:url>
+                            <a href="${uStatusSort}" class="text-decoration-none">Trạng thái</a>
+                        </th>
+
+                        <!-- Toggle sort theo Ngày tạo -->
+                        <th>
+                            <c:url var="uDateSort" value="/admin/cashs">
+                                <c:param name="type"   value="${f_type}" />
+                                <c:param name="q"      value="${f_q}" />
+                                <c:param name="status" value="${f_status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'date_asc' ? 'date_desc' : 'date_asc'}" />
+                            </c:url>
+                            <a href="${uDateSort}" class="text-decoration-none">Tạo lúc</a>
+                        </th>
+
+                        <th>Xử lý lúc</th>
+                        <th class="text-center">Hành động</th>
+                    </tr>
                     </thead>
 
                     <tbody>
-                        <c:forEach var="t" items="${txList}" varStatus="st">
-                            <tr>
-                                <td>${(pageNow-1)*pageSize + st.index + 1}</td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${t.type eq 'Deposit'}"><span class="badge bg-primary">Nạp tiền</span></c:when>
-                                        <c:otherwise><span class="badge bg-warning text-dark">Rút tiền</span></c:otherwise>
-                                    </c:choose>
-                                </td>
-                                <td class="fw-semibold">${fn:escapeXml(t.userName)}</td>
-                                <td><fmt:formatNumber value="${t.amount}" type="number"/></td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${t.status eq 'Completed'}"><span class="badge bg-success">Completed</span></c:when>
-                                        <c:when test="${t.status eq 'Pending'}"><span class="badge bg-secondary">Pending</span></c:when>
-                                        <c:otherwise><span class="badge bg-danger">${fn:escapeXml(t.status)}</span></c:otherwise>
-                                    </c:choose>
-                                </td>
-                                <td><fmt:formatDate value="${t.createdAt}" pattern="dd-MM-yyyy HH:mm"/></td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${t.processedAt != null}">
-                                            <fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/>
-                                        </c:when>
-                                        <c:otherwise>—</c:otherwise>
-                                    </c:choose>
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#txModal_${t.type}_${t.id}">
-                                        <i class="bi bi-eye"></i> Xem chi tiết
-                                    </button>
-                                </td>
-                            </tr>
+                    <c:forEach var="t" items="${txList}" varStatus="st">
+                        <tr>
+                            <td>${(pageNow-1)*pageSize + st.index + 1}</td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${t.type eq 'Deposit'}"><span class="badge bg-primary">Nạp tiền</span></c:when>
+                                    <c:otherwise><span class="badge bg-warning text-dark">Rút tiền</span></c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td class="fw-semibold">${fn:escapeXml(t.userName)}</td>
+                            <td><fmt:formatNumber value="${t.amount}" type="number"/></td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${t.status eq 'Completed'}"><span class="badge bg-success">Completed</span></c:when>
+                                    <c:when test="${t.status eq 'Pending'}"><span class="badge bg-secondary">Pending</span></c:when>
+                                    <c:otherwise><span class="badge bg-danger">${fn:escapeXml(t.status)}</span></c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td><fmt:formatDate value="${t.createdAt}" pattern="dd-MM-yyyy HH:mm"/></td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${t.processedAt != null}">
+                                        <fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/>
+                                    </c:when>
+                                    <c:otherwise>—</c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#txModal_${t.type}_${t.id}">
+                                    <i class="bi bi-eye"></i> Xem chi tiết
+                                </button>
+                            </td>
+                        </tr>
 
-                            <!-- ===== Modal cho từng giao dịch ===== -->
+                        <!-- ===== Modal theo item (giữ nguyên) ===== -->
                         <div class="modal fade" id="txModal_${t.type}_${t.id}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
                                 <div class="modal-content">
                                     <div class="modal-header bg-dark text-white">
                                         <h5 class="modal-title">
                                             Chi tiết <c:choose><c:when test="${t.type eq 'Deposit'}">nạp tiền</c:when><c:otherwise>rút tiền</c:otherwise></c:choose> #${t.id}
-                                                </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
 
-                                            <div class="modal-body">
-                                                <!-- info chung -->
-                                                <div class="row g-3 mb-3">
-                                                    <div class="col-md-4">
-                                                        <div class="text-muted small">Loại</div>
-                                                            <div class="fw-semibold"><c:choose><c:when test="${t.type eq 'Deposit'}">Nạp tiền</c:when><c:otherwise>Rút tiền</c:otherwise></c:choose></div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="text-muted small">User</div>
-                                                            <div class="fw-semibold">${fn:escapeXml(t.userName)} <span class="text-muted">(#${t.userId})</span></div>
+                                    <div class="modal-body">
+                                        <!-- info chung -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <div class="text-muted small">Loại</div>
+                                                <div class="fw-semibold"><c:choose><c:when test="${t.type eq 'Deposit'}">Nạp tiền</c:when><c:otherwise>Rút tiền</c:otherwise></c:choose></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-muted small">User</div>
+                                                <div class="fw-semibold">${fn:escapeXml(t.userName)} <span class="text-muted">(#${t.userId})</span></div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Số tiền</div>
@@ -150,11 +169,11 @@
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Trạng thái</div>
                                                 <span class="badge
-                                                      <c:choose>
-                                                          <c:when test="${t.status eq 'Completed'}">bg-success</c:when>
-                                                          <c:when test="${t.status eq 'Pending'}">bg-warning text-dark</c:when>
-                                                          <c:otherwise>bg-danger</c:otherwise>
-                                                      </c:choose>">${t.status}</span>
+                          <c:choose>
+                            <c:when test="${t.status eq 'Completed'}">bg-success</c:when>
+                            <c:when test="${t.status eq 'Pending'}">bg-warning text-dark</c:when>
+                            <c:otherwise>bg-danger</c:otherwise>
+                          </c:choose>">${t.status}</span>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="text-muted small">Tạo lúc</div>
@@ -240,7 +259,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- ===== /Modal ===== -->
+                        <!-- /Modal -->
                     </c:forEach>
 
                     <c:if test="${empty txList}">
@@ -250,9 +269,8 @@
                 </table>
             </div>
 
-            <!-- PAGINATION -->
+            <!-- ===== PAGINATION (mang theo sort) ===== -->
             <c:url var="cashsPath" value="/admin/cashs"/>
-
             <c:if test="${pages > 1}">
                 <nav aria-label="Pagination">
                     <ul class="pagination justify-content-center mt-3">
@@ -263,7 +281,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${pageNow-1}" />
                             </c:url>
@@ -279,20 +297,20 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="1" />
                             </c:url>
                             <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
                             <li class="page-item disabled"><span class="page-link">…</span></li>
-                            </c:if>
+                        </c:if>
 
                         <c:forEach var="i" begin="${start}" end="${end}">
                             <c:url var="ui" value="${cashsPath}">
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${i}" />
                             </c:url>
@@ -303,16 +321,16 @@
 
                         <c:if test="${end < pages}">
                             <li class="page-item disabled"><span class="page-link">…</span></li>
-                                <c:url var="uLast" value="${cashsPath}">
-                                    <c:param name="type"   value="${f_type}" />
-                                    <c:param name="q"      value="${f_q}" />
-                                    <c:param name="status" value="${f_status}" />
-                                    <c:param name="order"  value="${f_order}" />
-                                    <c:param name="size"   value="${pageSize}" />
-                                    <c:param name="page"   value="${pages}" />
-                                </c:url>
+                            <c:url var="uLast" value="${cashsPath}">
+                                <c:param name="type"   value="${f_type}" />
+                                <c:param name="q"      value="${f_q}" />
+                                <c:param name="status" value="${f_status}" />
+                                <c:param name="sort"   value="${sort}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="${pages}" />
+                            </c:url>
                             <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                            </c:if>
+                        </c:if>
 
                         <!-- Next -->
                         <li class="page-item ${pageNow>=pages?'disabled':''}">
@@ -320,7 +338,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${pageNow+1}" />
                             </c:url>
@@ -335,19 +353,18 @@
     </div>
 </div>
 
-<!-- JS: render bank info + auto-submit filter -->
+<!-- ===== JS: render bank info + auto-submit filter kiểu KYC ===== -->
 <script>
     (function () {
         function htmlUnescape(s) {
             return s.replace(/&quot;|&#34;/g, '"')
-                    .replace(/&apos;|&#39;/g, "'")
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/&amp;/g, '&');
+                .replace(/&apos;|&#39;/g, "'")
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&');
         }
         function renderBankInfo(el) {
-            if (!el)
-                return;
+            if (!el) return;
             var rawAttr = el.getAttribute('data-json') || '';
             var raw = htmlUnescape(rawAttr).trim();
             if (!raw) {
@@ -360,13 +377,13 @@
                     var key = String(k).replace(/_/g, ' ');
                     var val = (obj[k] == null ? '' : obj[k]);
                     html += '<dt class="col-sm-4 text-capitalize">' + key + '</dt>' +
-                            '<dd class="col-sm-8 fw-semibold">' + val + '</dd>';
+                        '<dd class="col-sm-8 fw-semibold">' + val + '</dd>';
                 });
                 el.innerHTML = html;
             } catch (e) {
                 el.innerHTML =
-                        '<dt class="col-sm-4">Raw</dt>' +
-                        '<dd class="col-sm-8"><code class="text-break">' + rawAttr + '</code></dd>';
+                    '<dt class="col-sm-4">Raw</dt>' +
+                    '<dd class="col-sm-8"><code class="text-break">' + rawAttr + '</code></dd>';
             }
         }
         document.addEventListener('DOMContentLoaded', function () {
@@ -377,25 +394,35 @@
         });
     })();
 
-    // Auto-submit + reset page về 1 khi đổi filter
+    // Auto-submit & chặn Enter ngoài ô q (giống KYC)
     (function () {
         const form = document.getElementById('cashFilter');
         const pageInput = document.getElementById('pageInput');
-        ['typeSelect', 'statusSelect', 'orderSelect'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el)
-                el.addEventListener('change', () => {
-                    pageInput.value = 1;
-                    form.submit();
-                });
+        const q = document.getElementById('q');
+        const typeSelect = document.getElementById('typeSelect');
+        const statusSelect = document.getElementById('statusSelect');
+
+        if (!form) return;
+
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target !== q) e.preventDefault();
         });
-        const q = form.querySelector('input[name="q"]');
-        if (q)
-            q.addEventListener('keydown', e => {
+
+        if (q) {
+            q.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    pageInput.value = 1;
+                    pageInput.value = '1';
                     form.submit();
                 }
             });
+        }
+
+        [typeSelect, statusSelect].forEach(el => {
+            if (!el) return;
+            el.addEventListener('change', () => {
+                pageInput.value = '1';
+                form.submit();
+            });
+        });
     })();
 </script>

@@ -365,14 +365,14 @@ public class ProductService {
 
     /**
      * Đánh giá khả năng bàn giao credential cho sản phẩm hoặc từng biến thể.
-     * <ol>
-     * <li>Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả
-     * dụng và tồn kho.</li>
-     * <li>Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số
-     * lượng credential còn lại.</li>
-     * <li>Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ
-     * liệu.</li>
-     * </ol>
+     *
+     * Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả
+     * dụng và tồn kho.
+     * Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số
+     * lượng credential còn lại.
+     * Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ
+     * liệu.
+     * 
      */
     public boolean hasDeliverableCredentials(int productId, List<ProductVariantOption> variants) {
         boolean hasVariantData = variants != null && !variants.isEmpty();

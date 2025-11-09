@@ -1,7 +1,13 @@
+<%@page import="java.util.HashMap"%>
+<%@page import="java.util.Map"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="java.util.List"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <fmt:setLocale value="vi_VN" scope="page" />
+
+
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content wallet">
@@ -70,22 +76,22 @@
                 <c:otherwise>
                     <table class="table table--interactive">
                         <thead>
-                        <tr>
-                            <th>Nội dung</th>
-                            <th>Số tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Thời gian</th>
-                        </tr>
+                            <tr>
+                                <th>Nội dung</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Thời gian</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <c:forEach var="transaction" items="${transactions}">
-                            <tr>
-                                <td><c:out value="${transaction.title}" /></td>
-                                <td><strong><c:out value="${transaction.amount}" /></strong></td>
-                                <td><span class="badge"><c:out value="${transaction.status}" /></span></td>
-                                <td><c:out value="${transaction.time}" /></td>
-                            </tr>
-                        </c:forEach>
+                            <c:forEach var="transaction" items="${transactions}">
+                                <tr>
+                                    <td><c:out value="${transaction.title}" /></td>
+                                    <td><strong><c:out value="${transaction.amount}" /></strong></td>
+                                    <td><span class="badge"><c:out value="${transaction.status}" /></span></td>
+                                    <td><c:out value="${transaction.time}" /></td>
+                                </tr>
+                            </c:forEach>
                         </tbody>
                     </table>
                 </c:otherwise>
