@@ -14,6 +14,8 @@ import model.product.ProductVariantOption;
 import service.util.ProductVariantUtils;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -86,8 +88,15 @@ public class SellerAddCredentialController extends SellerBaseController {
             product.getVariantsJson()
         );
         
+        // Nếu chỉ có 1 variant, tự động chọn variant đó
+        String autoSelectedVariantCode = null;
+        if (variants != null && variants.size() == 1) {
+            autoSelectedVariantCode = variants.get(0).getVariantCode();
+        }
+        
         request.setAttribute("product", product);
         request.setAttribute("variants", variants);
+        request.setAttribute("variantCode", autoSelectedVariantCode); // Auto-select nếu chỉ có 1 variant
         request.setAttribute("pageTitle", "Thêm sản phẩm - " + product.getName());
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
@@ -187,25 +196,50 @@ public class SellerAddCredentialController extends SellerBaseController {
             return;
         }
         
-        // Thêm credential và tăng inventory
-        // Sử dụng transaction từ CredentialDAO vì nó đã có sẵn transaction handling
-        // Sau đó tăng inventory riêng
-        boolean credentialAdded = credentialDAO.addRealCredential(productId, username.trim(), password.trim(), variantCode);
-        
-        if (credentialAdded) {
-            // Tăng inventory_count sau khi thêm credential thành công
-            boolean inventoryUpdated = productDAO.incrementInventoryCount(productId);
+        // Thêm credential và tăng inventory trong transaction
+        // Cần cập nhật cả inventory_count trong bảng products và trong variants_json
+
+        // Sử dụng connection từ CredentialDAO vì nó cũng extends BaseDAO
+        try (Connection connection = credentialDAO.createConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
             
-            if (inventoryUpdated) {
+            try {
+                // 1. Thêm credential
+                credentialDAO.addRealCredential(connection, productId, username.trim(), password.trim(), variantCode);
+                
+                // 2. Tăng inventory_count trong bảng products và cập nhật variants_json nếu có
+                // Lấy variants_json mới nhất từ database trong transaction
+                productDAO.incrementInventoryWithVariant(
+                    connection, 
+                    productId, 
+                    variantCode
+                );
+                
+                // Commit transaction
+                connection.commit();
+                
                 session.setAttribute("successMessage", "Đã thêm sản phẩm thành công! Số lượng tồn kho đã tăng lên 1.");
                 response.sendRedirect(request.getContextPath() + "/seller/inventory");
-            } else {
-                // Nếu không tăng được inventory, credential đã được thêm nhưng inventory không tăng
-                // Có thể log lỗi này để xử lý sau
-                session.setAttribute("errorMessage", "Đã thêm sản phẩm nhưng không thể cập nhật số lượng tồn kho. Vui lòng liên hệ admin.");
-                response.sendRedirect(request.getContextPath() + "/seller/inventory");
+                
+            } catch (SQLException e) {
+                // Rollback nếu có lỗi
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    // Log rollback error
+                }
+                session.setAttribute("errorMessage", "Không thể thêm sản phẩm. Vui lòng thử lại.");
+                request.setAttribute("product", product);
+                request.setAttribute("username", username);
+                request.setAttribute("password", password);
+                request.setAttribute("variantCode", variantCode);
+                doGet(request, response);
+            } finally {
+                // Restore auto-commit
+                connection.setAutoCommit(previousAutoCommit);
             }
-        } else {
+        } catch (SQLException e) {
             session.setAttribute("errorMessage", "Không thể thêm sản phẩm. Vui lòng thử lại.");
             request.setAttribute("product", product);
             request.setAttribute("username", username);

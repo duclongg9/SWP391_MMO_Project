@@ -90,10 +90,13 @@
                     </label>
                     <c:choose>
                         <c:when test="${not empty variants}">
+                            <c:set var="hasSingleVariant" value="${variants.size() == 1}" />
                             <select class="form-input" id="variantCode" name="variantCode" 
                                     required
                                     style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="">-- Chọn biến thể --</option>
+                                <c:if test="${!hasSingleVariant}">
+                                    <option value="">-- Chọn biến thể --</option>
+                                </c:if>
                                 <c:forEach var="variant" items="${variants}">
                                     <option value="${variant.variantCode}" ${variantCode == variant.variantCode ? 'selected' : ''}>
                                         ${variant.name != null && !variant.name.isEmpty() ? variant.name : variant.variantCode} 
@@ -102,7 +105,14 @@
                                 </c:forEach>
                             </select>
                             <small style="color: #666; font-size: 0.875rem;">
-                                Vui lòng chọn biến thể sản phẩm để thêm sản phẩm vào đúng loại
+                                <c:choose>
+                                    <c:when test="${hasSingleVariant}">
+                                        Sản phẩm này chỉ có 1 biến thể, đã được tự động chọn.
+                                    </c:when>
+                                    <c:otherwise>
+                                        Vui lòng chọn biến thể sản phẩm để thêm sản phẩm vào đúng loại
+                                    </c:otherwise>
+                                </c:choose>
                             </small>
                         </c:when>
                         <c:otherwise>

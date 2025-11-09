@@ -149,7 +149,7 @@
                 </strong>
             </div>
             <ul class="product-detail__stats">
-                <li>Tồn kho: <strong id="inventoryDisplay"><c:out value="${product.inventoryCount}" default="0" /></strong></li>
+                <li>Tồn kho: <strong id="inventoryDisplay"><c:out value="${product.inventoryCount}" default="0" /></strong><span id="variantInventoryInfo" style="display: none; color: #666; font-size: 0.875rem; margin-left: 0.5rem;"></span></li>
                 <li>Đã bán: <strong><c:out value="${product.soldCount}" default="0" /></strong></li>
             </ul>
             <c:if test="${not empty product.shortDescription}">
@@ -334,6 +334,7 @@
     (function () {
         const priceDisplay = document.getElementById('priceDisplay');
         const inventoryDisplay = document.getElementById('inventoryDisplay');
+        const variantInventoryInfo = document.getElementById('variantInventoryInfo');
         const qtyInput = document.getElementById('qty');
         const buyButton = document.getElementById('buyButton');
         const purchaseForm = document.querySelector('.product-detail__form');
@@ -350,6 +351,7 @@
         const variantInputs = document.querySelectorAll('input[name="variantCode"]');
         const thumbnails = document.querySelectorAll('.product-detail__thumbnail');
         const mainImage = document.getElementById('mainImage');
+        const totalInventory = inventoryDisplay ? parseInt(inventoryDisplay.textContent || '0', 10) : 0;
         let inventoryAllowsPurchase = true;
         let walletAllowsPurchase = true;
 
@@ -420,7 +422,25 @@
             if (!radio) {
                 updatePriceRange(minPrice, maxPrice);
                 setActiveThumbnail(mainImage ? mainImage.src : '');
-                inventoryAllowsPurchase = true;
+                // Khôi phục hiển thị tổng tồn kho
+                if (inventoryDisplay) {
+                    inventoryDisplay.textContent = String(totalInventory);
+                }
+                if (variantInventoryInfo) {
+                    variantInventoryInfo.style.display = 'none';
+                    variantInventoryInfo.textContent = '';
+                }
+                inventoryAllowsPurchase = totalInventory > 0;
+                if (qtyInput) {
+                    qtyInput.max = totalInventory > 0 ? totalInventory : 1;
+                    qtyInput.disabled = totalInventory <= 0;
+                    if (totalInventory > 0) {
+                        const currentValue = parseInt(qtyInput.value || '1', 10);
+                        if (!currentValue || currentValue > totalInventory) {
+                            qtyInput.value = Math.min(currentValue || 1, totalInventory);
+                        }
+                    }
+                }
                 requestPurchasePreview(null);
                 updateBuyButton();
                 return;
@@ -430,8 +450,13 @@
             if (isFinite(variantPrice)) {
                 updatePriceRange(variantPrice, variantPrice);
             }
+            // Giữ nguyên hiển thị tổng tồn kho, chỉ hiển thị thêm tồn kho variant nếu có
             if (inventoryDisplay) {
-                inventoryDisplay.textContent = String(Math.max(variantInventory, 0));
+                inventoryDisplay.textContent = String(totalInventory);
+            }
+            if (variantInventoryInfo && variantInputs.length > 0) {
+                variantInventoryInfo.style.display = 'inline';
+                variantInventoryInfo.textContent = '(Biến thể: ' + Math.max(variantInventory, 0) + ')';
             }
             if (qtyInput) {
                 const safeInventory = Math.max(variantInventory, 0);
