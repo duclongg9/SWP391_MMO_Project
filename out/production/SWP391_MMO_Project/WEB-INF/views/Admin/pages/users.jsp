@@ -3,121 +3,74 @@
 <%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-<%
-    // đọc lại params để set mặc định vào input (fallback nếu servlet chưa set EL)
-    String q      = request.getParameter("q")    != null ? request.getParameter("q")    : "";
-    String role   = request.getParameter("role") != null ? request.getParameter("role") : "";
-    String fromD  = request.getParameter("from") != null ? request.getParameter("from") : "";
-    String toD    = request.getParameter("to")   != null ? request.getParameter("to")   : "";
-%>
+<c:set var="base" value="${pageContext.request.contextPath}" />
 
-<!-- Biến phân trang (ưu tiên pg_* từ servlet; fallback chiều dài list) -->
+<!-- ===== Biến phân trang nhận từ servlet ===== -->
 <c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
 <c:set var="total"    value="${pg_total != null ? pg_total : (userList != null ? fn:length(userList) : 0)}" />
-<c:set var="pages"    value="${(total + pageSize - 1) / pageSize}" />
+<c:set var="pages"    value="${pg_pages != null ? pg_pages : ((total + pageSize - 1) / pageSize)}" />
+
+
+<c:set var="openCreate" value="${openCreateModal or param.openCreate == '1'}" />
 
 <div class="container-fluid">
-    <!-- Bộ lọc -->
+    <h4 class="mb-4"><i class="bi bi-people me-2"></i>Quản lý người dùng</h4>
+    <!-- ===== Bộ lọc (GET, không auto-submit) ===== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form id="userFilter" class="row g-2 align-items-end" action="${pageContext.request.contextPath}/admin/users" method="get">
-                <!-- giữ page/size + reset page=1 khi đổi filter -->
-                <input type="hidden" name="page" id="pageInput" value="${pageNow}">
+            <form id="userFilterForm" class="row g-2 align-items-end"
+                  action="${base}/admin/users" method="get" novalidate>
                 <input type="hidden" name="size" value="${pageSize}">
+                <input type="hidden" name="page" value="1">
 
-                <!-- Từ khóa -->
                 <div class="col-12 col-md-3">
-                    <label class="form-label mb-1">Từ khóa</label>
+                    <label class="form-label mb-1" for="q">Từ khóa</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input id="keyword" name="q" type="text" class="form-control" placeholder="Tên hoặc email..." value="<%= q %>">
+                        <input id="q" name="q" type="text" class="form-control"
+                               placeholder="Tên hoặc email..." value="${param.q}">
                     </div>
                 </div>
 
-                <!-- Vai trò -->
                 <div class="col-12 col-md-2">
-                    <label class="form-label mb-1">Vai trò</label>
+                    <label class="form-label mb-1" for="role">Vai trò</label>
                     <select id="role" name="role" class="form-select">
-                        <option value=""        <%= role.equals("")? "selected":"" %>>Tất cả</option>
-                        <option value="buyer"   <%= role.equals("buyer")? "selected":"" %>>Buyer</option>
-                        <option value="seller"  <%= role.equals("seller")? "selected":"" %>>Seller</option>
-                        <option value="admin"   <%= role.equals("admin")? "selected":"" %>>Admin</option>
+                        <c:set var="r" value="${empty param.role ? '' : param.role}"/>
+                        <option value=""        ${r==''? 'selected' : ''}>Tất cả</option>
+                        <option value="buyer"   ${r=='buyer'? 'selected' : ''}>Buyer</option>
+                        <option value="seller"  ${r=='seller'? 'selected' : ''}>Seller</option>
                     </select>
                 </div>
 
-                <!-- Từ ngày -->
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1">Từ ngày</label>
+                    <label class="form-label mb-1" for="from">Từ ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input id="fromDate" name="from" type="text" class="form-control" placeholder="DD-MM-YYYY" value="<%= fromD %>">
+                        <input id="from" name="from" type="date" lang="vi" class="form-control"
+                               placeholder="DD-MM-YYYY" value="${param.from}">
                     </div>
                 </div>
 
-                <!-- Đến ngày -->
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1">Đến ngày</label>
+                    <label class="form-label mb-1" for="to">Đến ngày</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="toDate" name="to" type="text" class="form-control" placeholder="DD-MM-YYYY" value="<%= toD %>">
+                        <input id="to" name="to" type="date" lang="vi" class="form-control"
+                               placeholder="DD-MM-YYYY" value="${param.to}">
                     </div>
                 </div>
 
-                <!-- Nút -->
                 <div class="col-12 col-md-3 d-flex gap-2">
-                    <button id="btnSearch" class="btn btn-dark flex-fill" type="submit">
-                        <i class="bi bi-funnel"></i> Tìm kiếm
-                    </button>
-                    <button
-                            class="btn btn-primary flex-fill"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#userCreateModal">
-                        <i class="bi bi-plus-circle"></i> Thêm người dùng
-                    </button>
+                    <a class="btn btn-outline-secondary" href="${base}/admin/users">Xóa lọc</a>
+                </div>
 
-                    <!-- POPUP tạo người dùng (form POST thuần) -->
-                    <div class="modal fade" id="userCreateModal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header bg-dark text-white">
-                                    <h5 class="modal-title">Thêm người dùng mới</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                                </div>
-
-                                <form action="${pageContext.request.contextPath}/admin/users" method="post" novalidate>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Họ tên</label>
-                                            <input name="name" type="text" class="form-control" required minlength="2" maxlength="120">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Email</label>
-                                            <input name="email" type="email" class="form-control" required maxlength="160">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Mật khẩu</label>
-                                            <input name="password" type="password" class="form-control" required minlength="6" maxlength="100">
-                                        </div>
-                                        <%-- <input type="hidden" name="_csrf" value="${_csrfToken}"> --%>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-check-circle"></i> Lưu
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div> <!-- /col buttons -->
             </form>
+            <div id="toastBox"></div>
         </div>
     </div>
 
-    <!-- Bảng -->
+    <!-- ===== Bảng danh sách ===== -->
     <div class="table-responsive shadow-sm rounded-3">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-dark">
@@ -126,9 +79,10 @@
                 <th>Họ tên</th>
                 <th>Email</th>
                 <th>Ngày tạo</th>
-                <th>Ngày cập nhập</th>
+                <th>Ngày cập nhật</th>
                 <th style="width:140px">Vai trò</th>
                 <th style="width:140px">Trạng thái</th>
+                <th style="width:140px">Avatar</th>
                 <th class="text-center" style="width:170px">Hành động</th>
             </tr>
             </thead>
@@ -142,9 +96,11 @@
                         <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
                         <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
                         <td>${u.roleName}</td>
+                        <td><img src="${u.avatarUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
+                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${u.avatarUrl}'"></td>
                         <td>
                             <c:choose>
-                                <c:when test="${u.status == true}">
+                                <c:when test="${u.status eq 1}">
                                     <span class="badge bg-success">Hoạt động</span>
                                 </c:when>
                                 <c:otherwise>
@@ -153,21 +109,33 @@
                             </c:choose>
                         </td>
                         <td class="text-center">
-                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+                            <!-- Nút Ban -->
+                            <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="ban">
-                                <button class="btn btn-sm btn-outline-danger" <c:if test="${u.status != true}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Bạn có chắc muốn BAN người dùng này?')"
+                                        <c:if test="${u.status == 0}">style="
+                                                display: none;"</c:if>
+
+                                >
                                     <i class="bi bi-flag"></i> Ban
                                 </button>
                             </form>
-                            <form action="${pageContext.request.contextPath}/admin/users/status" method="post" class="d-inline">
+
+                            <!-- Nút Unban -->
+                            <form action="${base}/admin/users/status" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="${u.id}">
                                 <input type="hidden" name="action" value="unban">
-                                <button class="btn btn-sm btn-outline-secondary" <c:if test="${u.status == true}">disabled</c:if>>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="return confirm('Bạn có chắc muốn UNBAN người dùng này?')"
+                                        <c:if test="${u.status == 1}">style="
+                                                display: none;"</c:if>>
                                     <i class="bi bi-flag"></i> Unban
                                 </button>
                             </form>
                         </td>
+
                     </tr>
                 </c:if>
             </c:forEach>
@@ -179,44 +147,26 @@
         </table>
     </div>
 
-    <!-- Pagination -->
-    <c:url var="usersPath" value="/admin/users"/>
-    <c:if test="${pages > 1}">
-        <nav aria-label="Pagination">
+    <nav aria-label="Pagination">
             <ul class="pagination justify-content-center mt-3">
 
                 <!-- Prev -->
-                <li class="page-item ${pageNow<=1?'disabled':''}">
+                <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
                     <c:url var="uPrev" value="${usersPath}">
                         <c:param name="q"    value="${param.q}" />
                         <c:param name="role" value="${param.role}" />
+
                         <c:param name="from" value="${param.from}" />
                         <c:param name="to"   value="${param.to}" />
                         <c:param name="size" value="${pageSize}" />
                         <c:param name="page" value="${pageNow-1}" />
                     </c:url>
-                    <a class="page-link" href="${uPrev}" aria-label="Previous">&laquo;</a>
+                    <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
                 </li>
 
-                <!-- window -->
-                <c:set var="start" value="${pageNow-2 < 1 ? 1 : pageNow-2}" />
-                <c:set var="end"   value="${pageNow+2 > pages ? pages : pageNow+2}" />
-
-                <c:if test="${start > 1}">
-                    <c:url var="u1" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="1" />
-                    </c:url>
-                    <li class="page-item"><a class="page-link" href="${u1}">1</a></li>
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                </c:if>
-
-                <c:forEach var="i" begin="${start}" end="${end}">
-                    <c:url var="ui" value="${usersPath}">
+                <!-- Page numbers: 1..pages -->
+                <c:forEach var="i" begin="1" end="${pages}">
+                    <c:url var="uI" value="${usersPath}">
                         <c:param name="q"    value="${param.q}" />
                         <c:param name="role" value="${param.role}" />
                         <c:param name="from" value="${param.from}" />
@@ -224,26 +174,13 @@
                         <c:param name="size" value="${pageSize}" />
                         <c:param name="page" value="${i}" />
                     </c:url>
-                    <li class="page-item ${i==pageNow?'active':''}">
-                        <a class="page-link" href="${ui}">${i}</a>
+                    <li class="page-item ${i == pageNow ? 'active' : ''}">
+                        <a class="page-link" href="${uI}">${i}</a>
                     </li>
                 </c:forEach>
 
-                <c:if test="${end < pages}">
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                    <c:url var="uLast" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="${pages}" />
-                    </c:url>
-                    <li class="page-item"><a class="page-link" href="${uLast}">${pages}</a></li>
-                </c:if>
-
                 <!-- Next -->
-                <li class="page-item ${pageNow>=pages?'disabled':''}">
+                <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
                     <c:url var="uNext" value="${usersPath}">
                         <c:param name="q"    value="${param.q}" />
                         <c:param name="role" value="${param.role}" />
@@ -252,45 +189,224 @@
                         <c:param name="size" value="${pageSize}" />
                         <c:param name="page" value="${pageNow+1}" />
                     </c:url>
-                    <a class="page-link" href="${uNext}" aria-label="Next">&raquo;</a>
+                    <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
                 </li>
+
             </ul>
         </nav>
-    </c:if>
+
+
+    <!-- Debug nhỏ (tuỳ thích) -->
+    <div style="position:fixed;bottom:6px;left:6px;font:12px/1 monospace;background:#f6f8fa;border:1px solid #ddd;padding:6px 8px;border-radius:6px;z-index:9999">
+        pageNow=${pageNow}, pages=${pages}, total=${total}, size=${pageSize}
+    </div>
 </div>
 
-<script>
-    // Auto-submit + reset page về 1 khi đổi filter
-    (function () {
-        const form = document.getElementById('userFilter');
-        const pageInput = document.getElementById('pageInput');
+<div class="modal fade ${openCreate ? 'show' : ''}"
+     id="userCreateModal"
+     tabindex="-1"
+     aria-hidden="${!openCreate}"
+     style="${openCreate ? 'display:block' : ''}">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Thêm người dùng mới</h5>
+                <a  class="btn-close btn-close-white" href="${base}/admin/users" aria-label="Đóng"></a>
+            </div>
 
-        ['role'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
-        });
+            <form action="${base}/admin/users" method="post" novalidate>
+                <div class="modal-body">
+                    <c:if test="${not empty form_errs['form']}">
+                        <div class="alert alert-danger">${form_errs['form']}</div>
+                    </c:if>
 
-        const q = document.getElementById('keyword');
-        if (q) q.addEventListener('keydown', e => {
-            if (e.key === 'Enter') { pageInput.value = 1; /* form.submit(); */ }
-        });
+                    <div class="mb-3">
+                        <label class="form-label">Họ tên</label>
+                        <input name="name" type="text"
+                               class="form-control ${not empty form_errs['name'] ? 'is-invalid' : ''}"
+                               required minlength="2" maxlength="120"
+                               value="${fn:escapeXml(form_name)}">
+                        <div class="invalid-feedback">${form_errs['name']}</div>
+                    </div>
 
-        const from = document.getElementById('fromDate');
-        const to   = document.getElementById('toDate');
-        [from, to].forEach(el => {
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
-        });
-    })();
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input name="email" type="email"
+                               class="form-control ${not empty form_errs['email'] ? 'is-invalid' : ''}"
+                               required maxlength="160"
+                               value="${fn:escapeXml(form_email)}">
+                        <div class="invalid-feedback">${form_errs['email']}</div>
+                    </div>
 
-    // ====== BAN / UNBAN (giữ nguyên nếu bạn đang dùng) ======
-    const base = '<c:out value="${pageContext.request.contextPath}"/>';
-    async function delUser(id) {
-        if (!Number.isInteger(id)) { alert('ID không hợp lệ'); return; }
-        if (!confirm('Xóa người dùng này?')) return;
-        const url = base + '/admin/users/' + id;
-        const res  = await fetch(url, { method: 'DELETE' });
-        const text = await res.text();
-        if (res.ok) location.reload();
-        else alert(`Xóa thất bại (HTTP ${res.status}): ${text}`);
+                    <div class="mb-3">
+                        <label class="form-label">Mật khẩu</label>
+                        <input name="password" type="password"
+                               class="form-control ${not empty form_errs['password'] ? 'is-invalid' : ''}"
+                               required minlength="6" maxlength="100">
+                        <div class="invalid-feedback">${form_errs['password']}</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <!-- Đóng modal không cần JS: quay về trang users -->
+                    <a class="btn btn-secondary" href="${base}/admin/users">Đóng</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<c:if test="${openCreate}">
+    <style>body{overflow:hidden}</style>
+    <div class="modal-backdrop fade show"></div>
+</c:if>
+
+<style>
+    #toastBox{
+        position: fixed;
+        bottom: 30px; right: 30px;
+        display: flex; align-items: flex-end; flex-direction: column;
+        overflow: hidden; padding: 20px; z-index: 9999;
     }
+
+    .mm-toast{
+        width: 400px; height: 80px; background: #fff;
+        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center; padding: 20px; position: relative;
+        transform: translateX(100%);
+        animation: moveleft 0.5s linear forwards;
+    }
+
+    .mm-toast i{
+        margin: 0 20px;
+        font-size: 35px;
+        color: green;
+    }
+    .mm-toast::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: green;
+        animation: anim 5s linear forwards;
+    }
+    .mm-toast.error i{
+        color: red;
+    }
+    .mm-toast.error{
+        color: red;
+    }
+    .mm-toast.error::after{
+        background: red;
+    }
+    @keyframes anim {
+        100%{ width: 0; }
+    }
+    @keyframes moveleft {
+        100%{ transform: translateX(0); }
+    }
+
+
+
+</style>
+
+
+<script>
+
+    const toastBox = document.getElementById('toastBox');
+
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.classList.add('mm-toast');
+
+        if (type === 'error') {
+            toast.classList.add('error');
+        } else if (type === 'warning') {
+            toast.classList.add('warning');
+        }
+
+        toast.innerHTML = msg;
+        toastBox.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+    // Phần filter form: vì script ở cuối trang, gọi trực tiếp thay vì DOMContentLoaded
+    (function initFilter(){
+        const form = document.getElementById('userFilterForm');
+        if (!form) return;
+        const roleEl = document.getElementById('role');
+        const toEl   = document.getElementById('to');
+        const fromEl = document.getElementById("from");
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        function resetPageToFirst(){
+            let pageHidden = form.querySelector('input[name="page"]');
+            if (!pageHidden){
+                pageHidden = document.createElement('input');
+                pageHidden.type = 'hidden';
+                pageHidden.name = 'page';
+                form.appendChild(pageHidden);
+            }
+            pageHidden.value = '1';
+        }
+
+        if (roleEl) {
+            roleEl.addEventListener('change', () => {
+                resetPageToFirst();
+                form.submit();
+            });
+        }
+
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.id !== 'q') e.preventDefault();
+        });
+
+        if(fromEl){
+            fromEl.addEventListener("change",function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }
+            })
+        }
+
+
+        // ✅ End date -> submit ngay
+        if (toEl) {
+            toEl.addEventListener('change', function (){
+                const selected = new Date(this.value);
+                if(selected > today){
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = "";
+                }else{
+                    resetPageToFirst();
+                    form.submit();
+                }
+            });
+        }
+    })();
 </script>
+
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

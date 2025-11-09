@@ -17,7 +17,6 @@ public class ManageUserDAO {
 
     public ManageUserDAO() {
     }
-
     public int createUser(String name, String email, String rawPassword, Integer roleId, Integer status01) throws SQLException {
         if (name == null || name.isBlank() || email == null || email.isBlank() || rawPassword == null || rawPassword.isBlank()) {
             throw new SQLException("Thiếu dữ liệu bắt buộc");
@@ -27,12 +26,9 @@ public class ManageUserDAO {
         // String passHash = BCrypt.hashpw(rawPassword, BCrypt.gensalt(10));
         String passHash = rawPassword; // TODO: thay bằng hash thật trong môi trường production
 
-        if (roleId == null) {
-            roleId = 3;   // mặc định BUYER
-        }
-        if (status01 == null) {
-            status01 = 1; // mặc định active
-        }
+        if (roleId == null) roleId = 3;   // mặc định BUYER
+        if (status01 == null) status01 = 1; // mặc định active
+
         String sql = """
             INSERT INTO users (name, email, password_hash, role_id, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -48,41 +44,13 @@ public class ManageUserDAO {
         }
     }
 
-    /**
-     * 🔹 Lấy toàn bộ user
-     */
-    public List<Users> getAllUsers() {
-        List<Users> list = new ArrayList<>();
-        String sql = """
-                SELECT 
-                    u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
-                    r.name AS role_name
-                FROM users u
-                LEFT JOIN roles r ON u.role_id = r.id
-                ORDER BY u.created_at DESC
-        """;
-
-        try (Connection c = (this.con != null ? this.con : DBConnect.getConnection()); PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapRow(rs));
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    /**
-     * 🔹 Hàm tìm kiếm có lọc
-     */
+    /** 🔹 Hàm tìm kiếm có lọc */
     public List<Users> searchUsers(String keyword, String role, Timestamp fromAt, Timestamp toAt) throws SQLException {
         List<Users> list = new ArrayList<>();
 
         StringBuilder sb = new StringBuilder("""
             SELECT 
-                u.id, u.name, u.email, u.status, u.created_at, u.updated_at,
+                u.id, u.name, u.email, u.status, u.avatar_url, u.created_at, u.updated_at,
                 r.name AS role_name
             FROM users u
             LEFT JOIN roles r ON u.role_id = r.id
@@ -96,7 +64,7 @@ public class ManageUserDAO {
             sb.append(" AND (LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ?) ");
             String like = "%" + keyword.toLowerCase() + "%";
             params.add(like);
-            params.add(like);
+
         }
 
         // 🔸 Lọc theo role
@@ -123,26 +91,21 @@ public class ManageUserDAO {
         try (PreparedStatement ps = con.prepareStatement(sb.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object p = params.get(i);
-                if (p instanceof Timestamp ts) {
+                if (p instanceof Timestamp ts)
                     ps.setTimestamp(i + 1, ts);
-                } else {
+                else
                     ps.setString(i + 1, p.toString());
-                }
             }
 
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
+                while (rs.next()) list.add(mapRow(rs));
             }
         }
 
         return list;
     }
 
-    /**
-     * 🔹 Xóa user theo ID
-     */
+    /** 🔹 Xóa user theo ID */
     public int deleteUser(int id) {
         String sql = "DELETE FROM users WHERE id = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -155,7 +118,6 @@ public class ManageUserDAO {
             return 0;
         }
     }
-
     // Chỉ đổi trạng thái nếu user thuộc role BUYER hoặc SELLER
     public int updateStatus(int userId, int status01) throws SQLException {
         String sql = """
@@ -171,21 +133,26 @@ public class ManageUserDAO {
         }
     }
 
-    /**
-     * 🔹 Map từ ResultSet sang model
-     */
+
+
+    /** 🔹 Map từ ResultSet sang model */
     private Users mapRow(ResultSet rs) throws SQLException {
         Users u = new Users();
         u.setId(rs.getInt("id"));
         u.setName(rs.getString("name"));
         u.setEmail(rs.getString("email"));
-        Object statusObj = rs.getObject("status");
-        Boolean active = null;
-        if (statusObj != null) {
-            int val = (statusObj instanceof Boolean) ? ((Boolean) statusObj ? 1 : 0) : ((Number) statusObj).intValue();
-            active = val == 1;
+        u.setAvatarUrl(rs.getString("avatar_url"));
+
+        // status INT (0/1) từ DB
+        int status = 0;
+        Object obj = rs.getObject("status");
+        if (obj != null) {
+            if (obj instanceof Number n) status = n.intValue();
+            else if (obj instanceof Boolean b) status = b ? 1 : 0; // phòng trường hợp driver trả boolean
+            else status = Integer.parseInt(obj.toString());
         }
-        u.setStatus(1);
+        u.setStatus(status); // <- model là int
+
         u.setRoleName(rs.getString("role_name"));
         Timestamp cAt = rs.getTimestamp("created_at");
         Timestamp uAt = rs.getTimestamp("updated_at");
@@ -193,4 +160,5 @@ public class ManageUserDAO {
         u.setUpdatedAt(uAt != null ? new java.util.Date(uAt.getTime()) : null);
         return u;
     }
+
 }

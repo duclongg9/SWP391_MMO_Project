@@ -1,6 +1,7 @@
 package dao.order;
 
 import dao.BaseDAO;
+import dao.connect.DBConnect;
 import model.OrderStatus;
 import model.Orders;
 import model.Products;
@@ -607,6 +608,27 @@ public class OrderDAO extends BaseDAO {
             product.setUpdatedAt(new java.util.Date(updated.getTime()));
         }
         return product;
+    }
+
+    //Tính tổng số đơn hàng theo tháng
+    public int gettotalOrderByMonth(int month, int year) {
+        String sql = """
+        SELECT COUNT(*) AS total_orders
+        FROM mmo_schema.orders
+        WHERE YEAR(created_at) = ?
+          AND MONTH(created_at) = ?
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total_orders");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
 }

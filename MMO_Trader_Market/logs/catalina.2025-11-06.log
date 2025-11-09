@@ -1,0 +1,530 @@
+06-Nov-2025 00:26:02.278 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 00:26:02.440 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 00:26:02.448 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 00:26:02.453 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:25:07.996 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 01:25:08.004 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 01:25:08.013 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 01:25:08.014 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 01:25:08.015 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 01:25:08.015 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=50061
+06-Nov-2025 01:25:08.015 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 01:25:08.019 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 01:25:08.024 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 01:25:08.508 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:25:08.540 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [768] milliseconds
+06-Nov-2025 01:25:08.608 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 01:25:08.609 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 01:25:08.622 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml]
+06-Nov-2025 01:25:08.642 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml] has been ignored
+06-Nov-2025 01:25:10.314 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 01:25:10.462 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml] has finished in [1,839] ms
+06-Nov-2025 01:25:10.465 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:25:10.512 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1971] milliseconds
+06-Nov-2025 01:25:42.665 SEVERE [http-nio-9999-exec-6] controller.auth.AuthController.doPost Unexpected error during login, errorId=a5d95a04-a80b-4709-ba5c-83dcfafa75f5
+	java.lang.NullPointerException: Cannot invoke "java.sql.Connection.prepareStatement(String)" because "conn" is null
+		at dao.user.UserDAO.getUserByEmailAnyStatus(UserDAO.java:184)
+		at service.UserService.authenticate(UserService.java:89)
+		at controller.auth.AuthController.doPost(AuthController.java:113)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at filter.RememberMeFilter.doFilter(RememberMeFilter.java:53)
+		at jakarta.servlet.http.HttpFilter.doFilter(HttpFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:90)
+		at org.apache.catalina.valves.AbstractAccessLogValve.invoke(AbstractAccessLogValve.java:664)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1776)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:975)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:493)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+06-Nov-2025 01:25:59.170 SEVERE [http-nio-9999-exec-7] controller.auth.AuthController.doPost Unexpected error during login, errorId=44778674-ef04-4189-80c3-0b9151c817cb
+	java.lang.NullPointerException: Cannot invoke "java.sql.Connection.prepareStatement(String)" because "conn" is null
+		at dao.user.UserDAO.getUserByEmailAnyStatus(UserDAO.java:184)
+		at service.UserService.authenticate(UserService.java:89)
+		at controller.auth.AuthController.doPost(AuthController.java:113)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at filter.RememberMeFilter.doFilter(RememberMeFilter.java:53)
+		at jakarta.servlet.http.HttpFilter.doFilter(HttpFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:90)
+		at org.apache.catalina.valves.AbstractAccessLogValve.invoke(AbstractAccessLogValve.java:664)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1776)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:975)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:493)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+06-Nov-2025 01:26:02.711 SEVERE [http-nio-9999-exec-10] controller.auth.AuthController.doPost Unexpected error during login, errorId=9befa32d-5815-446f-97a4-eb2d748e63b4
+	java.lang.NullPointerException: Cannot invoke "java.sql.Connection.prepareStatement(String)" because "conn" is null
+		at dao.user.UserDAO.getUserByEmailAnyStatus(UserDAO.java:184)
+		at service.UserService.authenticate(UserService.java:89)
+		at controller.auth.AuthController.doPost(AuthController.java:113)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at filter.RememberMeFilter.doFilter(RememberMeFilter.java:53)
+		at jakarta.servlet.http.HttpFilter.doFilter(HttpFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:90)
+		at org.apache.catalina.valves.AbstractAccessLogValve.invoke(AbstractAccessLogValve.java:664)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1776)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:975)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:493)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+06-Nov-2025 01:26:06.248 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:26:06.419 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 01:26:06.466 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:26:06.479 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:26:09.850 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 01:26:09.855 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 01:26:09.856 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 01:26:09.857 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 01:26:09.857 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 01:26:09.866 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 01:26:09.867 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 01:26:09.867 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 01:26:09.867 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 01:26:09.867 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 01:26:09.867 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 01:26:09.868 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 01:26:09.868 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 01:26:09.868 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 01:26:09.868 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 01:26:09.868 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=60794
+06-Nov-2025 01:26:09.870 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 01:26:09.872 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 01:26:09.876 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 01:26:10.375 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:26:10.396 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [738] milliseconds
+06-Nov-2025 01:26:10.444 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 01:26:10.444 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 01:26:10.460 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml]
+06-Nov-2025 01:26:10.481 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml] has been ignored
+06-Nov-2025 01:26:12.323 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 01:26:12.464 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\MMO_Trader_Market.xml] has finished in [2,003] ms
+06-Nov-2025 01:26:12.466 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 01:26:12.518 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2120] milliseconds
+06-Nov-2025 01:26:25.458 SEVERE [http-nio-9999-exec-8] dao.product.ProductDAO.findTopAvailable Không thể tải sản phẩm nổi bật
+	java.sql.SQLSyntaxErrorException: Table 'mmo_schema.product_sales_view' doesn't exist
+		at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+		at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+		at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:990)
+		at com.mysql.cj.jdbc.ClientPreparedStatement.executeQuery(ClientPreparedStatement.java:1058)
+		at dao.product.ProductDAO.findTopAvailable(ProductDAO.java:223)
+		at service.ProductService.getHomepageHighlights(ProductService.java:111)
+		at service.ProductService.getHomepageHighlights(ProductService.java:102)
+		at service.HomepageService.loadFeaturedProducts(HomepageService.java:63)
+		at controller.product.HomepageFragmentController.handleFeatured(HomepageFragmentController.java:58)
+		at controller.product.HomepageFragmentController.doGet(HomepageFragmentController.java:38)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at filter.RememberMeFilter.doFilter(RememberMeFilter.java:53)
+		at jakarta.servlet.http.HttpFilter.doFilter(HttpFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:90)
+		at org.apache.catalina.valves.AbstractAccessLogValve.invoke(AbstractAccessLogValve.java:664)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1776)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:975)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:493)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+06-Nov-2025 01:26:25.530 SEVERE [http-nio-9999-exec-5] dao.product.ProductDAO.countAvailableByType Không thể đếm sản phẩm theo loại
+	java.sql.SQLSyntaxErrorException: Unknown column 'p.product_type' in 'field list'
+		at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:112)
+		at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:114)
+		at com.mysql.cj.jdbc.ClientPreparedStatement.executeInternal(ClientPreparedStatement.java:990)
+		at com.mysql.cj.jdbc.ClientPreparedStatement.executeQuery(ClientPreparedStatement.java:1058)
+		at dao.product.ProductDAO.countAvailableByType(ProductDAO.java:245)
+		at service.ProductService.getHomepageCategories(ProductService.java:128)
+		at service.HomepageService.loadProductCategories(HomepageService.java:92)
+		at controller.product.HomepageFragmentController.handleSummary(HomepageFragmentController.java:47)
+		at controller.product.HomepageFragmentController.doGet(HomepageFragmentController.java:37)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564)
+		at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at filter.RememberMeFilter.doFilter(RememberMeFilter.java:53)
+		at jakarta.servlet.http.HttpFilter.doFilter(HttpFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:90)
+		at org.apache.catalina.valves.AbstractAccessLogValve.invoke(AbstractAccessLogValve.java:664)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1776)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:975)
+		at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:493)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+06-Nov-2025 02:02:11.612 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 02:02:11.765 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 02:02:11.775 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 02:02:11.796 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 02:02:15.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 02:02:15.569 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 02:02:15.571 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 02:02:15.572 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 02:02:15.572 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 02:02:15.582 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 02:02:15.582 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 02:02:15.583 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 02:02:15.583 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 02:02:15.583 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 02:02:15.583 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 02:02:15.583 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 02:02:15.584 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 02:02:15.584 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 02:02:15.584 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 02:02:15.584 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=57487
+06-Nov-2025 02:02:15.584 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 02:02:15.588 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 02:02:15.595 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 02:02:15.958 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 02:02:15.978 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [627] milliseconds
+06-Nov-2025 02:02:16.026 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 02:02:16.026 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 02:02:16.038 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 02:02:16.064 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 02:02:17.883 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 02:02:18.035 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,996] ms
+06-Nov-2025 02:02:18.039 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 02:02:18.106 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2128] milliseconds
+06-Nov-2025 13:46:36.161 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 13:46:36.350 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 13:46:36.363 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 13:46:36.381 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 13:46:39.244 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 13:46:39.250 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 13:46:39.250 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 13:46:39.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 13:46:39.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 13:46:39.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 13:46:39.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 13:46:39.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 13:46:39.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=57418
+06-Nov-2025 13:46:39.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 13:46:39.265 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 13:46:39.270 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 13:46:39.670 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 13:46:39.691 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [643] milliseconds
+06-Nov-2025 13:46:39.753 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 13:46:39.753 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 13:46:39.762 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 13:46:39.786 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 13:46:41.552 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 13:46:41.711 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,948] ms
+06-Nov-2025 13:46:41.714 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 13:46:41.780 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2088] milliseconds
+06-Nov-2025 14:50:46.113 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 14:50:46.478 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 14:50:46.491 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 14:50:46.516 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 14:50:49.073 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 14:50:49.083 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 14:50:49.084 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 14:50:49.084 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 14:50:49.085 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 14:50:49.085 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 14:50:49.085 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 14:50:49.086 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 14:50:49.086 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 14:50:49.086 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 14:50:49.086 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 14:50:49.099 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 14:50:49.099 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 14:50:49.099 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 14:50:49.099 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 14:50:49.099 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 14:50:49.100 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 14:50:49.100 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 14:50:49.101 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 14:50:49.101 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 14:50:49.102 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 14:50:49.102 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=62700
+06-Nov-2025 14:50:49.102 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 14:50:49.107 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 14:50:49.113 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 14:50:49.703 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 14:50:49.729 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [1056] milliseconds
+06-Nov-2025 14:50:49.798 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 14:50:49.798 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 14:50:49.817 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 14:50:49.850 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 14:50:52.334 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 14:50:52.610 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [2,792] ms
+06-Nov-2025 14:50:52.617 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 14:50:52.697 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2967] milliseconds
+06-Nov-2025 15:03:41.841 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:03:42.093 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 15:03:42.109 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:03:42.122 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:03:46.380 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 15:03:46.390 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 15:03:46.391 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 15:03:46.391 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 15:03:46.391 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 15:03:46.391 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 15:03:46.391 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 15:03:46.392 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 15:03:46.392 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 15:03:46.392 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:03:46.393 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:03:46.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 15:03:46.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 15:03:46.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 15:03:46.405 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 15:03:46.405 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 15:03:46.405 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:03:46.405 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:03:46.405 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 15:03:46.406 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 15:03:46.406 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 15:03:46.406 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=64199
+06-Nov-2025 15:03:46.407 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 15:03:46.411 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 15:03:46.419 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 15:03:46.968 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:03:46.997 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [947] milliseconds
+06-Nov-2025 15:03:47.070 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 15:03:47.070 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 15:03:47.093 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 15:03:47.135 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 15:03:49.652 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 15:03:49.883 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [2,791] ms
+06-Nov-2025 15:03:49.888 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:03:49.975 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2976] milliseconds
+06-Nov-2025 15:06:11.467 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:06:11.767 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 15:06:11.788 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+06-Nov-2025 15:06:11.797 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:06:11.806 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:06:14.281 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 15:06:14.290 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 15:06:14.291 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 15:06:14.291 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 15:06:14.291 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 15:06:14.291 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 15:06:14.292 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 15:06:14.292 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 15:06:14.292 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 15:06:14.293 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:06:14.293 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:06:14.308 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 15:06:14.308 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 15:06:14.308 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 15:06:14.308 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 15:06:14.309 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 15:06:14.309 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:06:14.309 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:06:14.310 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 15:06:14.310 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 15:06:14.310 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 15:06:14.312 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=62283
+06-Nov-2025 15:06:14.312 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 15:06:14.316 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 15:06:14.323 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 15:06:14.922 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:06:14.956 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [988] milliseconds
+06-Nov-2025 15:06:15.052 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 15:06:15.053 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 15:06:15.075 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 15:06:15.129 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 15:06:17.906 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 15:06:18.140 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [3,064] ms
+06-Nov-2025 15:06:18.144 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:06:18.239 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [3282] milliseconds
+06-Nov-2025 15:09:45.467 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:09:45.738 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 15:09:45.751 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:09:45.765 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:09:49.599 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 15:09:49.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 15:09:49.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 15:09:49.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 15:09:49.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 15:09:49.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 15:09:49.610 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 15:09:49.610 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 15:09:49.610 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 15:09:49.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:09:49.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:09:49.625 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 15:09:49.626 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 15:09:49.626 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 15:09:49.626 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 15:09:49.627 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 15:09:49.627 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 15:09:49.627 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 15:09:49.627 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 15:09:49.628 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 15:09:49.628 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 15:09:49.629 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=57499
+06-Nov-2025 15:09:49.629 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 15:09:49.633 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 15:09:49.639 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 15:09:50.185 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:09:50.216 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [946] milliseconds
+06-Nov-2025 15:09:50.288 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 15:09:50.288 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 15:09:50.307 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 15:09:50.344 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 15:09:53.101 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 15:09:53.356 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [3,049] ms
+06-Nov-2025 15:09:53.362 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 15:09:53.453 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [3237] milliseconds
+06-Nov-2025 17:40:45.600 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 17:40:45.748 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+06-Nov-2025 17:40:45.756 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 17:40:45.760 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 17:40:48.789 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+06-Nov-2025 17:40:48.808 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+06-Nov-2025 17:40:48.809 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 17:40:48.810 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 17:40:48.821 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+06-Nov-2025 17:40:48.821 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+06-Nov-2025 17:40:48.822 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+06-Nov-2025 17:40:48.823 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+06-Nov-2025 17:40:48.823 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=61699
+06-Nov-2025 17:40:48.823 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+06-Nov-2025 17:40:48.827 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+06-Nov-2025 17:40:48.833 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+06-Nov-2025 17:40:49.243 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 17:40:49.264 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [768] milliseconds
+06-Nov-2025 17:40:49.313 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+06-Nov-2025 17:40:49.313 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+06-Nov-2025 17:40:49.323 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+06-Nov-2025 17:40:49.350 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+06-Nov-2025 17:40:51.193 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+06-Nov-2025 17:40:51.312 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,988] ms
+06-Nov-2025 17:40:51.315 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+06-Nov-2025 17:40:51.360 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [2096] milliseconds

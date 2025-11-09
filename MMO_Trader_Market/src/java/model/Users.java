@@ -115,8 +115,6 @@ public class Users {
         this.status = status;
     }
 
- 
-
     public Date getCreatedAt() {
         return createdAt;
     }
@@ -140,4 +138,6 @@ public class Users {
     public void setRoleName(String roleName) {
         this.roleName = roleName;
     }
+    
+    public boolean isActive() { return status == 1; }
 }
