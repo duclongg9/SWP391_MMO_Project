@@ -2406,37 +2406,273 @@ code {
 }
 /*ghi đè css shop*/
 
-/* ---- FIX: nút Sửa / Ẩn luôn cùng một hàng ---- */
-.seller-page td.table__actions{
-  display: block;          /* trả td về block/table-cell behavior */
-  white-space: nowrap;     /* không xuống dòng */
-  vertical-align: middle;
+.badge--success {
+    background: rgba(46, 204, 113, 0.18);
+    color: #2ecc71;
 }
 
-.seller-page td.table__actions .actions{
-  display: inline-flex;    /* nhóm nút nằm cùng hàng */
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 8px;
+.shop-toolbar {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-.seller-page td.table__actions form{
-  display: inline-block;   /* form không tạo dòng mới */
-  margin: 0;
+.shop-toolbar__form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
 }
 
-.seller-page td.table__actions .button{
-  line-height: 1;
-  padding: 8px 12px;
+.shop-toolbar__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-/* chặn rule mobile trước đó đổi thành cột */
-@media (max-width: 768px){
-  .seller-page td.table__actions .actions{
+.shop-toolbar__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-color);
+}
+
+.shop-toolbar__input {
+    min-width: 200px;
+}
+
+.shop-toolbar__submit {
+    align-self: center;
+}
+
+.shop-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.shop-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    background: #fff;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shop-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+.shop-card--inactive {
+    opacity: 0.92;
+    border-style: dashed;
+}
+
+.shop-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.shop-card__title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.shop-card__description {
+    margin: 0 0 1rem;
+    color: #4b5563;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.shop-card__description--placeholder {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.shop-card__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.shop-card__stat {
+    background: rgba(15, 23, 42, 0.04);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.shop-card__stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--muted-color);
+    letter-spacing: 0.03em;
+}
+
+.shop-card__stat-value {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.shop-card__meta {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.shop-card__meta-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.shop-card__meta-label {
+    font-weight: 600;
+}
+
+.shop-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: auto;
+}
+
+.shop-card__actions .button {
+    flex: 1 1 120px;
+    margin-top: 0;
+}
+
+.shop-card__action-form {
+    display: inline;
+}
+
+.shop-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #64748b;
+    font-size: 1rem;
+}
+
+.seller-shop-form {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+}
+
+.seller-shop-form__panel {
+    width: min(560px, 100%);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+
+.shop-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.shop-form__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shop-form__label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.shop-form__input {
+    font-size: 1rem;
+}
+
+.shop-form__note {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.shop-form__actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.shop-target {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(59, 130, 246, 0.08);
     display: inline-flex;
-    flex-direction: column;     /* nếu muốn mobile xếp dọc thì để dòng này, */
-    align-items: stretch;       /* hoặc xóa 2 dòng này để vẫn nằm ngang */
-  }
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.shop-target__label {
+    font-size: 0.85rem;
+    color: var(--muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.shop-target__name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .shop-toolbar {
+        justify-content: stretch;
+    }
+
+    .shop-toolbar__input {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .shop-toolbar__form {
+        width: 100%;
+    }
+
+    .shop-card__stats {
+        grid-template-columns: 1fr;
+    }
+
+    .shop-card__actions {
+        flex-direction: column;
+    }
+
+    .shop-card__actions .button {
+        width: 100%;
+    }
+
+    .shop-form__actions {
+        flex-direction: column;
+    }
+
+    .shop-form__actions .button {
+        width: 100%;
+    }
 }
 
 

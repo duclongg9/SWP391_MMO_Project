@@ -15,6 +15,7 @@ public class Shops {
     private Date createdAt;
 
     private String description;
+    private Date updatedAt;
     private String ownerName;
 
     public Integer getId() {
@@ -63,6 +64,14 @@ public class Shops {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public String getOwnerName() {

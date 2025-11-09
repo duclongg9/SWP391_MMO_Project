@@ -66,6 +66,7 @@ CREATE TABLE `shops` (
   `description` text,
   `status` enum('Pending','Active','Suspended') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 

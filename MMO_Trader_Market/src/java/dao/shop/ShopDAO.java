@@ -1,7 +1,6 @@
 package dao.shop;
 
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Shops;
 
 import java.sql.Connection;
@@ -11,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +32,7 @@ public class ShopDAO extends BaseDAO {
      * @return danh sách shop hoạt động
      */
     public List<Shops> findActive(int limit) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
@@ -73,7 +73,7 @@ public class ShopDAO extends BaseDAO {
      * @return shop nếu tìm thấy, null nếu không tìm thấy
      */
     public Shops findByOwnerId(int ownerId) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE owner_id = ? LIMIT 1";
         try (Connection connection = getConnection(); 
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -102,6 +102,10 @@ public class ShopDAO extends BaseDAO {
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
+        }
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (updatedAt != null) {
+            shop.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
         }
         return shop;
     }
@@ -137,8 +141,8 @@ public class ShopDAO extends BaseDAO {
 	 * @return Đối tượng Shops vừa được tạo (bao gồm ID đã được generate)
 	 * @throws SQLException nếu có lỗi khi insert hoặc không lấy được generated key
 	 */
-	public Shops create(int ownerId, String name, String description) throws SQLException {
-		final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at) VALUES (?, ?, ?, 'Active', NOW())";
+        public Shops create(int ownerId, String name, String description) throws SQLException {
+                final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, 'Active', NOW(), NOW())";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 			stmt.setInt(1, ownerId);
 			stmt.setString(2, name);
@@ -159,10 +163,11 @@ public class ShopDAO extends BaseDAO {
 			s.setName(name);
 			s.setDescription(description);
 			s.setStatus("Active");
-			s.setCreatedAt(new java.util.Date());
-			return s;
-		}
-	}
+                        s.setCreatedAt(new java.util.Date());
+                        s.setUpdatedAt(new java.util.Date());
+                        return s;
+                }
+        }
 
 	/**
 	 * Cập nhật tên và mô tả của shop, chỉ cho phép nếu shop thuộc về owner.
@@ -175,8 +180,8 @@ public class ShopDAO extends BaseDAO {
 	 * @return true nếu cập nhật thành công (shop tồn tại và thuộc về owner), false nếu không tìm thấy hoặc không có quyền
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public boolean update(int id, int ownerId, String name, String description) throws SQLException {
-		final String sql = "UPDATE shops SET name = ?, description = ? WHERE id = ? AND owner_id = ?";
+        public boolean update(int id, int ownerId, String name, String description) throws SQLException {
+                final String sql = "UPDATE shops SET name = ?, description = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, name);
 			stmt.setString(2, description);
@@ -196,8 +201,8 @@ public class ShopDAO extends BaseDAO {
 	 * @return true nếu cập nhật thành công, false nếu không tìm thấy hoặc không có quyền
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public boolean setStatus(int id, int ownerId, String status) throws SQLException {
-		final String sql = "UPDATE shops SET status = ? WHERE id = ? AND owner_id = ?";
+        public boolean setStatus(int id, int ownerId, String status) throws SQLException {
+                final String sql = "UPDATE shops SET status = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, status);
 			stmt.setInt(2, id);
@@ -215,8 +220,8 @@ public class ShopDAO extends BaseDAO {
 	 * @return Optional chứa Shops nếu tìm thấy và thuộc về owner, Optional.empty() nếu không
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-		final String sql = "SELECT id, owner_id, name, description, status, created_at FROM shops WHERE id = ? AND owner_id = ?";
+        public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
+                final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at FROM shops WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setInt(1, id);
 			stmt.setInt(2, ownerId);
@@ -239,48 +244,68 @@ public class ShopDAO extends BaseDAO {
 	 * @return Danh sách ShopStatsView chứa thông tin shop và các thống kê đã được aggregate
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy) throws SQLException {
-		final String sql = "SELECT\n"
-				+ "  s.id, s.name, s.description, s.status, s.created_at,\n"
-				+ "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
-				+ "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
-				+ "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
-				+ "FROM shops s\n"
-				+ "LEFT JOIN (SELECT p.shop_id, COUNT(*) AS product_count FROM products p GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id\n"
-				+ "LEFT JOIN (SELECT p.shop_id, SUM(p.sold_count) AS total_sold FROM products p GROUP BY p.shop_id) sales ON sales.shop_id = s.id\n"
-				+ "LEFT JOIN (SELECT p.shop_id, SUM(p.inventory_count) AS total_inventory FROM products p GROUP BY p.shop_id) inven ON inven.shop_id = s.id\n"
-				+ "WHERE s.owner_id = ?\n"
-				+ "ORDER BY\n"
-				+ "  CASE WHEN ? = 'sales_desc'   THEN sales.total_sold END DESC,\n"
-				+ "  CASE WHEN ? = 'created_desc' THEN s.created_at     END DESC,\n"
-				+ "  CASE WHEN ? = 'name_asc'     THEN s.name           END ASC,\n"
-				+ "  s.created_at DESC, s.id DESC";
-		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
-			stmt.setInt(1, ownerId);
-			// Chuẩn hóa sortBy: mặc định là 'sales_desc' nếu null hoặc rỗng
-			String order = (sortBy == null || sortBy.isBlank()) ? "sales_desc" : sortBy;
-			// Set 3 tham số cho 3 CASE trong ORDER BY
-			stmt.setString(2, order);
-			stmt.setString(3, order);
-			stmt.setString(4, order);
-			List<model.ShopStatsView> list = new ArrayList<>();
-			try (ResultSet rs = stmt.executeQuery()) {
-				// Map từng dòng kết quả sang đối tượng ShopStatsView
-				while (rs.next()) {
-					model.ShopStatsView v = new model.ShopStatsView();
-					v.setId(rs.getInt("id"));
-					v.setName(rs.getString("name"));
-					v.setDescription(rs.getString("description"));
-					v.setStatus(rs.getString("status"));
-					v.setCreatedAt(rs.getTimestamp("created_at"));
-					// Các thống kê đã được aggregate từ bảng products
-					v.setProductCount(rs.getInt("product_count"));
-					v.setTotalSold(rs.getInt("total_sold"));
-					v.setTotalInventory(rs.getInt("total_inventory"));
-					list.add(v);
-				}
-			}
-			return list;
-		}
-	}
+        public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy, String searchKeyword) throws SQLException {
+                StringBuilder sql = new StringBuilder()
+                                .append("SELECT \n")
+                                .append("  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n")
+                                .append("  COALESCE(pcnt.product_count, 0) AS product_count,\n")
+                                .append("  COALESCE(sales.total_sold, 0)   AS total_sold,\n")
+                                .append("  COALESCE(inven.total_inventory, 0) AS total_inventory\n")
+                                .append("FROM shops s\n")
+                                .append("LEFT JOIN (SELECT p.shop_id, COUNT(*) AS product_count FROM products p GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id\n")
+                                .append("LEFT JOIN (SELECT p.shop_id, SUM(p.sold_count) AS total_sold FROM products p GROUP BY p.shop_id) sales ON sales.shop_id = s.id\n")
+                                .append("LEFT JOIN (SELECT p.shop_id, SUM(p.inventory_count) AS total_inventory FROM products p GROUP BY p.shop_id) inven ON inven.shop_id = s.id\n")
+                                .append("WHERE s.owner_id = ?");
+
+                List<Object> params = new ArrayList<>();
+                params.add(ownerId);
+
+                if (searchKeyword != null && !searchKeyword.isBlank()) {
+                        String keyword = searchKeyword.trim().toLowerCase(Locale.ROOT);
+                        sql.append(" AND LOWER(s.name) LIKE ?");
+                        params.add('%' + keyword + '%');
+                }
+
+                sql.append(" ORDER BY ").append(resolveOrderClause(sortBy));
+
+                try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+                        for (int i = 0; i < params.size(); i++) {
+                                Object param = params.get(i);
+                                if (param instanceof String) {
+                                        stmt.setString(i + 1, (String) param);
+                                } else if (param instanceof Integer) {
+                                        stmt.setInt(i + 1, (Integer) param);
+                                } else {
+                                        stmt.setObject(i + 1, param);
+                                }
+                        }
+
+                        List<model.ShopStatsView> list = new ArrayList<>();
+                        try (ResultSet rs = stmt.executeQuery()) {
+                                while (rs.next()) {
+                                        model.ShopStatsView v = new model.ShopStatsView();
+                                        v.setId(rs.getInt("id"));
+                                        v.setName(rs.getString("name"));
+                                        v.setDescription(rs.getString("description"));
+                                        v.setStatus(rs.getString("status"));
+                                        v.setCreatedAt(rs.getTimestamp("created_at"));
+                                        v.setUpdatedAt(rs.getTimestamp("updated_at"));
+                                        v.setProductCount(rs.getInt("product_count"));
+                                        v.setTotalSold(rs.getInt("total_sold"));
+                                        v.setTotalInventory(rs.getInt("total_inventory"));
+                                        list.add(v);
+                                }
+                        }
+                        return list;
+                }
+        }
+
+        private String resolveOrderClause(String sortBy) {
+                String normalized = (sortBy == null || sortBy.isBlank()) ? "sales_desc" : sortBy;
+                return switch (normalized) {
+                        case "created_desc" -> "s.created_at DESC, s.id DESC";
+                        case "name_asc" -> "s.name ASC";
+                        default -> "COALESCE(sales.total_sold, 0) DESC, s.created_at DESC, s.id DESC";
+                };
+        }
 }

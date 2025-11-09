@@ -50,8 +50,8 @@ public class SellerShopStatusController extends SellerBaseController {
 			String path = request.getServletPath();
 			if ("/seller/shops/hide".equals(path)) {
 				// Ẩn shop: đổi trạng thái sang 'Suspended'
-				shopService.hideShop(id, currentUser.getId());
-				setFlash(request, "Ẩn shop thành công.", "success");
+                                shopService.hideShop(id, currentUser.getId());
+                                setFlash(request, "Ẩn shop thành công. Tất cả sản phẩm đã tạm ngừng bán.", "success");
 			} else if ("/seller/shops/restore".equals(path)) {
 				// Khôi phục shop: đổi trạng thái sang 'Active'
 				shopService.restoreShop(id, currentUser.getId());

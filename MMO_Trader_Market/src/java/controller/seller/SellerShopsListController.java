@@ -35,13 +35,18 @@ public class SellerShopsListController extends SellerBaseController {
 		// Lấy thông tin user từ session
 		Users currentUser = (Users) request.getSession().getAttribute("currentUser");
 		// Lấy tham số sắp xếp từ query string
-		String sortBy = request.getParameter("sortBy");
-		try {
-			// Lấy danh sách shop kèm thống kê (tránh N+1 query)
-			List<ShopStatsView> shops = shopService.listMyShops(currentUser.getId(), sortBy);
-			// Set các attribute cho JSP
-			request.setAttribute("shops", shops);
-			request.setAttribute("sortBy", sortBy == null ? "sales_desc" : sortBy);
+                String sortBy = request.getParameter("sortBy");
+                String search = request.getParameter("search");
+                if (search != null) {
+                        search = search.trim();
+                }
+                try {
+                        // Lấy danh sách shop kèm thống kê (tránh N+1 query)
+                        List<ShopStatsView> shops = shopService.listMyShops(currentUser.getId(), sortBy, search);
+                        // Set các attribute cho JSP
+                        request.setAttribute("shops", shops);
+                        request.setAttribute("sortBy", sortBy == null ? "sales_desc" : sortBy);
+                        request.setAttribute("search", search);
 			request.setAttribute("pageTitle", "Danh sách shop - Quản lý cửa hàng");
 			request.setAttribute("bodyClass", "layout");
 			request.setAttribute("headerModifier", "layout__header--split");

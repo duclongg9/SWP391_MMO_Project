@@ -15,8 +15,10 @@ import units.FileUploadUtil;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Trang tạo sản phẩm mới cho người bán.
@@ -45,20 +47,26 @@ public class SellerCreateProductController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
-        Shops shop = shopDAO.findByOwnerId(userId);
+        Shops shop;
+        try {
+            shop = resolveShop(request.getParameter("shopId"), userId);
+        } catch (SQLException e) {
+            throw new ServletException(e);
+        }
         if (shop == null) {
             request.setAttribute("errorMessage", "Bạn chưa có cửa hàng. Vui lòng tạo cửa hàng trước.");
             forward(request, response, "seller/create-product");
             return;
         }
-        
+
         if (!"Active".equals(shop.getStatus())) {
             request.setAttribute("errorMessage", "Cửa hàng của bạn chưa được kích hoạt.");
             forward(request, response, "seller/create-product");
             return;
         }
-        
+
         request.setAttribute("shop", shop);
+        request.setAttribute("selectedShopId", shop.getId());
         request.setAttribute("pageTitle", "Đăng sản phẩm mới - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
         request.setAttribute("headerModifier", "layout__header--split");
@@ -76,7 +84,12 @@ public class SellerCreateProductController extends SellerBaseController {
         Integer userId = (Integer) session.getAttribute("userId");
         
         // Kiểm tra shop
-        Shops shop = shopDAO.findByOwnerId(userId);
+        Shops shop;
+        try {
+            shop = resolveShop(request.getParameter("shopId"), userId);
+        } catch (SQLException e) {
+            throw new ServletException(e);
+        }
         if (shop == null || !"Active".equals(shop.getStatus())) {
             request.setAttribute("errorMessage", "Cửa hàng không hợp lệ.");
             doGet(request, response);
@@ -168,16 +181,38 @@ public class SellerCreateProductController extends SellerBaseController {
         product.setInventoryCount(inventory);
         product.setPrimaryImageUrl(primaryImageUrl);
         product.setStatus("Available"); // Đăng thẳng lên shop
-        
+
         boolean success = productDAO.createProduct(product);
-        
+
         if (success) {
             session.setAttribute("successMessage", "Đã đăng sản phẩm thành công!");
             response.sendRedirect(request.getContextPath() + "/seller/inventory");
         } else {
             request.setAttribute("errorMessage", "Không thể đăng sản phẩm. Vui lòng thử lại.");
             request.setAttribute("shop", shop);
+            request.setAttribute("selectedShopId", shop.getId());
             doGet(request, response);
         }
+    }
+
+    private Shops resolveShop(String shopIdParam, Integer ownerId) throws SQLException {
+        Shops shop = null;
+        if (shopIdParam != null && !shopIdParam.isBlank()) {
+            try {
+                int shopId = Integer.parseInt(shopIdParam);
+                Optional<Shops> optionalShop = shopDAO.findByIdAndOwner(shopId, ownerId);
+                if (optionalShop.isPresent()) {
+                    shop = optionalShop.get();
+                }
+            } catch (NumberFormatException ignored) {
+                // fallback sẽ xử lý bên dưới
+            }
+        }
+
+        if (shop == null) {
+            shop = shopDAO.findByOwnerId(ownerId);
+        }
+
+        return shop;
     }
 }
