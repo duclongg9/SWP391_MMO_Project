@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Điều phối luồng "Chi tiết sản phẩm" cho từng sản phẩm cụ thể.
+ * Dieu phoi luong "Chi tiet san pham" cho tung san pham cu the.
  * <p>
- * - Tải đầy đủ thông tin, hình ảnh, mô tả, giá và chi tiết người bán. - Gợi ý
- * sản phẩm tương tự để người dùng tham khảo thêm. - Xác định quyền mua dựa trên
- * trạng thái đăng nhập và tình trạng hàng hóa.
+ * - Tai day du thong tin, hinh anh, mo ta, gia va chi tiet nguoi ban. - Goi y
+ * san pham tuong tu de nguoi dung tham khao them. - Xac dinh quyen mua dua tren
+ * trang thai dang nhap va tinh trang hang hoa.
  *
  * @version 1.0 27/05/2024
  * @author hoaltthe176867
@@ -32,6 +32,8 @@ import java.util.List;
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/product/detail/*"})
 public class ProductDetailController extends BaseController {
     private static final long serialVersionUID = 1L;
+    // Dich vu san pham giup truy van chi tiet va tim kiem san pham lien quan.
+
     private final ProductService productService = new ProductService();
     private final OrderService orderService = new OrderService();
     // Xử lý yêu cầu hiển thị chi tiết sản phẩm bằng token mã hóa hoặc ID cũ.
