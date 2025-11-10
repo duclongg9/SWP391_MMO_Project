@@ -20,7 +20,7 @@
                     </c:choose>
                 </h2>
                 <p class="shop-form__subtitle">
-                    Hoàn thiện thông tin rõ ràng, chuyên nghiệp để tăng uy tín và tỷ lệ chuyển đổi đơn hàng.
+                    Hoàn thiện thông tin rõ ràng, chuyên nghiệp để tăng uy tín và tỷ lệ chuyển đổi đơn hàng ( Tối đa 5 shop).
                 </p>
             </header>
 
