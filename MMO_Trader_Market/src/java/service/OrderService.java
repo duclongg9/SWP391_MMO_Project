@@ -241,10 +241,11 @@ public class OrderService {
                 resolvedVariantCode = null;
             }
         }
+        String normalizedVariantForStorage = ProductVariantUtils.normalizeCode(resolvedVariantCode);
 
         // 3. Kiểm tra tồn kho credential trước khi cho phép đặt mua.
-        CredentialDAO.CredentialAvailability credentialAvailability = resolvedVariantCode != null
-                ? credentialDAO.fetchAvailability(productId, resolvedVariantCode)
+        CredentialDAO.CredentialAvailability credentialAvailability = normalizedVariantForStorage != null
+                ? credentialDAO.fetchAvailability(productId, normalizedVariantForStorage)
                 : credentialDAO.fetchAvailability(productId);
         if (credentialAvailability.available() < quantity) {
             if (resolvedVariantCode != null) {
@@ -267,8 +268,9 @@ public class OrderService {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
         // 5. Tạo bản ghi đơn hàng Pending và đẩy vào hàng đợi bất đồng bộ.
-        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, resolvedVariantCode, trimmedKey);
-        queueProducer.publish(orderId, trimmedKey, productId, quantity, resolvedVariantCode);
+        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total,
+                normalizedVariantForStorage, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity, normalizedVariantForStorage);
         return orderId;
     }
 
