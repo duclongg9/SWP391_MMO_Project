@@ -10,6 +10,7 @@ import model.ShopStatsView;
 import model.Shops;
 import model.statistics.BestSellerProduct;
 import model.statistics.QuarterRevenue;
+import model.view.shop.ShopPublicSummary;
 import java.util.regex.Pattern;
 
 /**
@@ -27,6 +28,19 @@ public class ShopService {
         private final ShopDAO shopDAO = new ShopDAO();
         private final ProductDAO productDAO = new ProductDAO();
         private final OrderDAO orderDAO = new OrderDAO();
+
+        /**
+         * Lấy thông tin công khai của shop dành cho người mua.
+         *
+         * @param shopId ID shop cần tra cứu
+         * @return {@link Optional} chứa {@link ShopPublicSummary} nếu shop hoạt động
+         */
+        public Optional<ShopPublicSummary> findPublicSummary(int shopId) {
+                if (shopId <= 0) {
+                        return Optional.empty();
+                }
+                return shopDAO.findPublicSummaryById(shopId);
+        }
 
 	/**
 	 * Tạo shop mới cho seller.

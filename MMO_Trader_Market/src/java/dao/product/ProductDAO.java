@@ -73,7 +73,7 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm kèm thông tin shop
      */
     public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
-            String keyword, int limit, int offset) {
+            String keyword, String sortOrder, int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
@@ -96,7 +96,13 @@ public class ProductDAO extends BaseDAO {
             params.add(pattern);
             params.add(pattern);
         }
-        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
+        sql.append(" ORDER BY ");
+        if ("best_seller".equals(sortOrder)) {
+            sql.append("COALESCE(ps.sold_count, 0) DESC, p.created_at DESC");
+        } else {
+            sql.append("p.created_at DESC");
+        }
+        sql.append(" LIMIT ? OFFSET ?");
         params.add(limit);
         params.add(offset);
 
@@ -159,6 +165,186 @@ public class ProductDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm khả dụng", ex);
         }
         return 0;
+    }
+
+    /**
+     * Đếm số sản phẩm đang mở bán của một shop với các bộ lọc tùy chọn.
+     *
+     * @param shopId        mã shop
+     * @param productType   mã loại sản phẩm cần lọc (có thể null)
+     * @param productSubtypes danh sách phân loại con (có thể rỗng)
+     * @param keyword       từ khóa tìm kiếm (có thể null)
+     * @return tổng số sản phẩm thỏa điều kiện
+     */
+    public long countAvailableByShop(int shopId, String productType, List<String> productSubtypes, String keyword) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
+                .append(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        sql.append(") AS shop_available_products");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo shop", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách sản phẩm khả dụng của shop theo trang và bộ lọc.
+     *
+     * @param shopId          mã shop
+     * @param productType     mã loại sản phẩm (có thể null)
+     * @param productSubtypes danh sách phân loại con (có thể rỗng)
+     * @param keyword         từ khóa tìm kiếm (có thể null)
+     * @param sortOrder       cách sắp xếp ("best_seller" hoặc mặc định mới nhất)
+     * @param limit           số bản ghi mỗi trang
+     * @param offset          vị trí bắt đầu lấy dữ liệu
+     * @return danh sách sản phẩm kèm thông tin shop
+     */
+    public List<ProductListRow> findAvailableByShop(int shopId, String productType, List<String> productSubtypes,
+            String keyword, String sortOrder, int limit, int offset) {
+        StringBuilder sql = new StringBuilder(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        sql.append(" ORDER BY ");
+        if ("best_seller".equals(sortOrder)) {
+            sql.append("COALESCE(ps.sold_count, 0) DESC, p.created_at DESC");
+        } else {
+            sql.append("p.created_at DESC");
+        }
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<ProductListRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(mapListRow(rs));
+                }
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm khả dụng theo shop", ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Truy vấn danh sách mã loại sản phẩm mà shop đang bán (trạng thái khả dụng).
+     *
+     * @param shopId mã shop
+     * @return danh sách mã loại sắp xếp theo alphabet
+     */
+    public List<String> findAvailableTypeCodesByShop(int shopId) {
+        final String sql = "SELECT DISTINCT p.product_type FROM products p "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ? ORDER BY p.product_type";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_type");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code.trim().toUpperCase(Locale.ROOT));
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải loại sản phẩm theo shop", ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Truy vấn danh sách mã phân loại con mà shop đang bán (theo loại).
+     *
+     * @param shopId      mã shop
+     * @param productType mã loại sản phẩm
+     * @return danh sách mã phân loại con
+     */
+    public List<String> findAvailableSubtypeCodesByShop(int shopId, String productType) {
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.product_subtype FROM products p "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        sql.append(" ORDER BY p.product_subtype");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_subtype");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code);
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải phân loại sản phẩm theo shop", ex);
+            return List.of();
+        }
     }
 
     public List<String> findAvailableSubtypeCodes(String productType) {
