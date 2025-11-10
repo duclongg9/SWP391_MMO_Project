@@ -49,16 +49,23 @@
                     <div class="shop-grid">
                         <c:forEach var="shop" items="${shops}">
                             <article class="shop-card ${shop.status == 'Active' ? '' : 'shop-card--inactive'}">
+                                <!-- Tái cấu trúc header nhằm cân chỉnh lại trạng thái và tiêu đề thẻ shop -->
                                 <header class="shop-card__header">
-                                    <h3 class="shop-card__title"><c:out value="${shop.name}"/></h3>
                                     <c:choose>
                                         <c:when test="${shop.status == 'Active'}">
-                                            <span class="badge">Hoạt động</span>
+                                            <span class="shop-card__status">
+                                                <i class="bi bi-lightning-charge-fill"></i>
+                                                Hoạt động
+                                            </span>
                                         </c:when>
                                         <c:otherwise>
-                                            <span class="badge badge--warning">Ngừng hoạt động</span>
+                                            <span class="shop-card__status">
+                                                <i class="bi bi-pause-circle-fill"></i>
+                                                Ngừng hoạt động
+                                            </span>
                                         </c:otherwise>
                                     </c:choose>
+                                    <h3 class="shop-card__title"><c:out value="${shop.name}"/></h3>
                                 </header>
                                 <p class="shop-card__description">
                                     <c:choose>
@@ -80,6 +87,7 @@
                                         <span class="shop-card__stat-value"><c:out value="${shop.totalSold}"/></span>
                                     </div>
                                 </div>
+                                <div class="shop-card__divider" aria-hidden="true"></div>
                                 <div class="shop-card__dates">
                                     <div class="shop-card__date">
                                         <span class="shop-card__date-label">Ngày tạo</span>
