@@ -32,7 +32,7 @@ public class ShopDAO extends BaseDAO {
      * @return danh sách shop hoạt động
      */
     public List<Shops> findActive(int limit) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
@@ -123,7 +123,7 @@ public class ShopDAO extends BaseDAO {
      * @return shop nếu tìm thấy, null nếu không tìm thấy
      */
     public Shops findByOwnerId(int ownerId) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at "
                 + "FROM shops WHERE owner_id = ? LIMIT 1";
         try (Connection connection = getConnection(); 
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -153,10 +153,7 @@ public class ShopDAO extends BaseDAO {
         if (createdAt != null) {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
         }
-        Timestamp updatedAt = rs.getTimestamp("updated_at");
-        if (updatedAt != null) {
-            shop.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
-        }
+        // Cột updated_at không tồn tại trong database
         return shop;
     }
 
@@ -192,7 +189,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi insert hoặc không lấy được generated key
 	 */
 	public Shops create(int ownerId, String name, String description) throws SQLException {
-                final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, 'Active', NOW(), NOW())";
+                final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at) VALUES (?, ?, ?, 'Active', NOW())";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 			stmt.setInt(1, ownerId);
 			stmt.setString(2, name);
@@ -215,7 +212,6 @@ public class ShopDAO extends BaseDAO {
 			s.setStatus("Active");
                         java.util.Date now = new java.util.Date();
                         s.setCreatedAt(now);
-                        s.setUpdatedAt(now);
 			return s;
 		}
 	}
@@ -232,7 +228,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public boolean update(int id, int ownerId, String name, String description) throws SQLException {
-                final String sql = "UPDATE shops SET name = ?, description = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
+                final String sql = "UPDATE shops SET name = ?, description = ? WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, name);
 			stmt.setString(2, description);
@@ -253,7 +249,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public boolean setStatus(int id, int ownerId, String status) throws SQLException {
-                final String sql = "UPDATE shops SET status = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
+                final String sql = "UPDATE shops SET status = ? WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, status);
 			stmt.setInt(2, id);
@@ -272,7 +268,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-                final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at FROM shops WHERE id = ? AND owner_id = ?";
+                final String sql = "SELECT id, owner_id, name, description, status, created_at FROM shops WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setInt(1, id);
 			stmt.setInt(2, ownerId);
@@ -297,7 +293,7 @@ public class ShopDAO extends BaseDAO {
 	 */
         public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy, String searchKeyword) throws SQLException {
                 StringBuilder sql = new StringBuilder("SELECT\n"
-                                + "  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n"
+                                + "  s.id, s.name, s.description, s.status, s.created_at,\n"
                                 + "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
                                 + "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
                                 + "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
@@ -340,7 +336,7 @@ public class ShopDAO extends BaseDAO {
                                         v.setDescription(rs.getString("description"));
                                         v.setStatus(rs.getString("status"));
                                         v.setCreatedAt(rs.getTimestamp("created_at"));
-                                        v.setUpdatedAt(rs.getTimestamp("updated_at"));
+                                        // Cột updated_at không tồn tại trong database
                                         v.setProductCount(rs.getInt("product_count"));
                                         v.setTotalSold(rs.getInt("total_sold"));
                                         v.setTotalInventory(rs.getInt("total_inventory"));
