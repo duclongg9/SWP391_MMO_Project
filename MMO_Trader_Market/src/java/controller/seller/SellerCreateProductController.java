@@ -12,6 +12,7 @@ import jakarta.servlet.http.Part;
 import model.Products;
 import model.Shops;
 import units.FileUploadUtil;
+import java.sql.SQLException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
