@@ -11,6 +11,8 @@
     <div class="shop-form">
         <section class="form-card shop-form__card">
             <header class="shop-form__header">
+                <!-- Nhãn phụ giúp làm nổi bật bước tạo shop -->
+                <span class="shop-form__badge"><i class="bi bi-shop"></i> Thiết lập shop</span>
                 <h2 class="shop-form__title">
                     <c:choose>
                         <c:when test="${not empty shopId}">Chỉnh sửa shop</c:when>
