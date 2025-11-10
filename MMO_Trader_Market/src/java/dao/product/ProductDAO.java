@@ -427,8 +427,10 @@ public class ProductDAO extends BaseDAO {
      * @throws SQLException khi câu lệnh SQL lỗi
      */
     public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
-                + "WHERE id = ? AND inventory_count >= ?";
+        final String sql = "UPDATE products SET inventory_count = CASE "
+                + "WHEN inventory_count IS NULL THEN inventory_count "
+                + "ELSE inventory_count - ? END, updated_at = CURRENT_TIMESTAMP "
+                + "WHERE id = ? AND (inventory_count IS NULL OR inventory_count >= ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, qty);
             statement.setInt(2, productId);

@@ -531,12 +531,28 @@ public class OrderService {
         if (order == null) {
             return Optional.empty();
         }
-        Integer txId = order.getPaymentTransactionId();
+        
         Integer buyerId = order.getBuyerId();
-        if (txId == null || buyerId == null) {
+        if (buyerId == null) {
             return Optional.empty();
         }
-        return walletTransactionDAO.findByIdForUser(txId, buyerId);
+        Integer txId = order.getPaymentTransactionId();
+        if (txId != null) {
+            return walletTransactionDAO.findByIdForUser(txId, buyerId);
+        }
+        Integer orderId = order.getId();
+        if (orderId == null) {
+            return Optional.empty();
+        }
+        Optional<WalletTransactions> fallback = walletTransactionDAO.findPurchaseByOrderForUser(orderId, buyerId);
+        if (fallback.isPresent()) {
+            WalletTransactions transaction = fallback.get();
+            Integer resolvedId = transaction.getId();
+            if (resolvedId != null && orderDAO.assignPaymentTransaction(orderId, resolvedId)) {
+                order.setPaymentTransactionId(resolvedId);
+            }
+        }
+        return fallback;
     }
 
     /**
