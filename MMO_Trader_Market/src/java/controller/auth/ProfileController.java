@@ -133,7 +133,7 @@ public class ProfileController extends HttpServlet {
                     try{
                         viewProfileService.updateMyProfile(user, name, avatar);
                     } catch (IOException e) {
-                        session.setAttribute("emg", e);
+                        session.setAttribute("emg", e.getMessage());
                         response.sendRedirect(request.getContextPath() + "/profile");
                         return;
                     }

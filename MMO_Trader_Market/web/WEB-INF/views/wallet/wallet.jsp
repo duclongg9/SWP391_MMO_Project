@@ -77,6 +77,18 @@
                         <fmt:formatNumber value="${wallet.balance}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
                     </td>
                 </tr>
+                        <!-- Nút rút tiền -->
+        <tr>
+            <td></td>
+            <td colspan="1" style="text-align:right; padding-top: 1rem;">
+                <a href="${pageContext.request.contextPath}/withdraw" 
+                   class="button button--primary" 
+                   style="padding: 0.6rem 1.2rem; font-size: 1rem;">
+                   Rút tiền
+                </a>
+            </td>
+        </tr>
+                
             </tbody>
         </table>
 

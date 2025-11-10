@@ -1,7 +1,6 @@
 package dao.shop;
 
 import dao.BaseDAO;
-import dao.connect.DBConnect;
 import model.Shops;
 
 import java.sql.Connection;
@@ -11,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +32,7 @@ public class ShopDAO extends BaseDAO {
      * @return danh sách shop hoạt động
      */
     public List<Shops> findActive(int limit) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
@@ -67,13 +67,30 @@ public class ShopDAO extends BaseDAO {
     }
 
     /**
+     * Đếm tổng số shop đang ở trạng thái Active (trả về int).
+     *
+     * @return số lượng shop hoạt động
+     */
+    public int getTotalActiveShops() {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Active'";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop đang hoạt động", ex);
+        }
+        return 0;
+    }
+
+    /**
      * Tìm shop theo owner_id.
      *
      * @param ownerId mã người dùng sở hữu shop
      * @return shop nếu tìm thấy, null nếu không tìm thấy
      */
     public Shops findByOwnerId(int ownerId) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE owner_id = ? LIMIT 1";
         try (Connection connection = getConnection(); 
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -102,6 +119,10 @@ public class ShopDAO extends BaseDAO {
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
+        }
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (updatedAt != null) {
+            shop.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
         }
         return shop;
     }
@@ -138,7 +159,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi insert hoặc không lấy được generated key
 	 */
 	public Shops create(int ownerId, String name, String description) throws SQLException {
-		final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at) VALUES (?, ?, ?, 'Active', NOW())";
+                final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, 'Active', NOW(), NOW())";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 			stmt.setInt(1, ownerId);
 			stmt.setString(2, name);
@@ -159,7 +180,9 @@ public class ShopDAO extends BaseDAO {
 			s.setName(name);
 			s.setDescription(description);
 			s.setStatus("Active");
-			s.setCreatedAt(new java.util.Date());
+                        java.util.Date now = new java.util.Date();
+                        s.setCreatedAt(now);
+                        s.setUpdatedAt(now);
 			return s;
 		}
 	}
@@ -176,7 +199,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public boolean update(int id, int ownerId, String name, String description) throws SQLException {
-		final String sql = "UPDATE shops SET name = ?, description = ? WHERE id = ? AND owner_id = ?";
+                final String sql = "UPDATE shops SET name = ?, description = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, name);
 			stmt.setString(2, description);
@@ -197,7 +220,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public boolean setStatus(int id, int ownerId, String status) throws SQLException {
-		final String sql = "UPDATE shops SET status = ? WHERE id = ? AND owner_id = ?";
+                final String sql = "UPDATE shops SET status = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setString(1, status);
 			stmt.setInt(2, id);
@@ -216,7 +239,7 @@ public class ShopDAO extends BaseDAO {
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
 	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-		final String sql = "SELECT id, owner_id, name, description, status, created_at FROM shops WHERE id = ? AND owner_id = ?";
+                final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at FROM shops WHERE id = ? AND owner_id = ?";
 		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.setInt(1, id);
 			stmt.setInt(2, ownerId);
@@ -239,96 +262,59 @@ public class ShopDAO extends BaseDAO {
 	 * @return Danh sách ShopStatsView chứa thông tin shop và các thống kê đã được aggregate
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy) throws SQLException {
-		final String sql = "SELECT\n"
-				+ "  s.id, s.name, s.description, s.status, s.created_at,\n"
-				+ "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
-				+ "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
-				+ "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
-				+ "FROM shops s\n"
-				+ "LEFT JOIN (SELECT p.shop_id, COUNT(*) AS product_count FROM products p GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id\n"
-				+ "LEFT JOIN (SELECT p.shop_id, SUM(p.sold_count) AS total_sold FROM products p GROUP BY p.shop_id) sales ON sales.shop_id = s.id\n"
-				+ "LEFT JOIN (SELECT p.shop_id, SUM(p.inventory_count) AS total_inventory FROM products p GROUP BY p.shop_id) inven ON inven.shop_id = s.id\n"
-				+ "WHERE s.owner_id = ?\n"
-				+ "ORDER BY\n"
-				+ "  CASE WHEN ? = 'sales_desc'   THEN sales.total_sold END DESC,\n"
-				+ "  CASE WHEN ? = 'created_desc' THEN s.created_at     END DESC,\n"
-				+ "  CASE WHEN ? = 'name_asc'     THEN s.name           END ASC,\n"
-				+ "  s.created_at DESC, s.id DESC";
-		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
-			stmt.setInt(1, ownerId);
-			// Chuẩn hóa sortBy: mặc định là 'sales_desc' nếu null hoặc rỗng
-			String order = (sortBy == null || sortBy.isBlank()) ? "sales_desc" : sortBy;
-			// Set 3 tham số cho 3 CASE trong ORDER BY
-			stmt.setString(2, order);
-			stmt.setString(3, order);
-			stmt.setString(4, order);
-			List<model.ShopStatsView> list = new ArrayList<>();
-			try (ResultSet rs = stmt.executeQuery()) {
-				// Map từng dòng kết quả sang đối tượng ShopStatsView
-				while (rs.next()) {
-					model.ShopStatsView v = new model.ShopStatsView();
-					v.setId(rs.getInt("id"));
-					v.setName(rs.getString("name"));
-					v.setDescription(rs.getString("description"));
-					v.setStatus(rs.getString("status"));
-					v.setCreatedAt(rs.getTimestamp("created_at"));
-					// Các thống kê đã được aggregate từ bảng products
-					v.setProductCount(rs.getInt("product_count"));
-					v.setTotalSold(rs.getInt("total_sold"));
-					v.setTotalInventory(rs.getInt("total_inventory"));
-					list.add(v);
-				}
-			}
-			return list;
-		}
-	}
-    //Lấy tổng số shop đang hoạt động
-    public int getTotalActiveShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Active'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt("total_active_shops");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy, String searchKeyword) throws SQLException {
+                StringBuilder sql = new StringBuilder("SELECT\n"
+                                + "  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n"
+                                + "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
+                                + "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
+                                + "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
+                                + "FROM shops s\n"
+                                + "LEFT JOIN (SELECT p.shop_id, COUNT(*) AS product_count FROM products p GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id\n"
+                                + "LEFT JOIN (SELECT p.shop_id, SUM(p.sold_count) AS total_sold FROM products p GROUP BY p.shop_id) sales ON sales.shop_id = s.id\n"
+                                + "LEFT JOIN (SELECT p.shop_id, SUM(p.inventory_count) AS total_inventory FROM products p GROUP BY p.shop_id) inven ON inven.shop_id = s.id\n"
+                                + "WHERE s.owner_id = ?");
+
+                boolean hasKeyword = searchKeyword != null && !searchKeyword.isBlank();
+                if (hasKeyword) {
+                        sql.append(" AND LOWER(s.name) LIKE ?");
+                }
+
+                sql.append("\nORDER BY\n")
+                   .append("  CASE WHEN ? = 'sales_desc'   THEN sales.total_sold END DESC,\n")
+                   .append("  CASE WHEN ? = 'created_desc' THEN s.created_at     END DESC,\n")
+                   .append("  CASE WHEN ? = 'name_asc'     THEN s.name           END ASC,\n")
+                   .append("  s.created_at DESC, s.id DESC");
+
+                try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+                        int paramIndex = 1;
+                        stmt.setInt(paramIndex++, ownerId);
+
+                        if (hasKeyword) {
+                                stmt.setString(paramIndex++, "%" + searchKeyword.trim().toLowerCase(Locale.ROOT) + "%");
+                        }
+
+                        String order = (sortBy == null || sortBy.isBlank()) ? "sales_desc" : sortBy;
+                        stmt.setString(paramIndex++, order);
+                        stmt.setString(paramIndex++, order);
+                        stmt.setString(paramIndex++, order);
+
+                        List<model.ShopStatsView> list = new ArrayList<>();
+                        try (ResultSet rs = stmt.executeQuery()) {
+                                while (rs.next()) {
+                                        model.ShopStatsView v = new model.ShopStatsView();
+                                        v.setId(rs.getInt("id"));
+                                        v.setName(rs.getString("name"));
+                                        v.setDescription(rs.getString("description"));
+                                        v.setStatus(rs.getString("status"));
+                                        v.setCreatedAt(rs.getTimestamp("created_at"));
+                                        v.setUpdatedAt(rs.getTimestamp("updated_at"));
+                                        v.setProductCount(rs.getInt("product_count"));
+                                        v.setTotalSold(rs.getInt("total_sold"));
+                                        v.setTotalInventory(rs.getInt("total_inventory"));
+                                        list.add(v);
+                                }
+                        }
+                        return list;
+                }
         }
-        return 0; // Nếu có lỗi hoặc không có kết quả
-    }
-    
-    public int getTotalPendingShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Pending'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt("total_active_shops");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0; // Nếu có lỗi hoặc không có kết quả
-    }
-    
-    public int getTotalSuspendedShops() {
-        String sql = """
-        SELECT COUNT(*) AS total_active_shops
-        FROM mmo_schema.shops
-        WHERE status = 'Suspended'
-    """;
-        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt("total_active_shops");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0; // Nếu có lỗi hoặc không có kết quả
-    }
 }

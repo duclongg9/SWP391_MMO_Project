@@ -21,11 +21,11 @@ public class ManageShopDAO {
         List<Shops> list = new ArrayList<>();
 
         String sql = """
-            SELECT s.id, s.owner_id, s.name, s.status, s.description, s.created_at,
+            SELECT s.id, s.owner_id, s.name, s.status, s.description, s.created_at, s.updated_at,
                    u.name AS owner_name
             FROM shops s
             LEFT JOIN users u ON s.owner_id = u.id
-        
+
             ORDER BY s.created_at DESC
         """;
 
@@ -40,6 +40,8 @@ public class ManageShopDAO {
                 s.setDescription(rs.getString("description"));
                 Timestamp cAt = rs.getTimestamp("created_at");
                 s.setCreatedAt(cAt != null ? new java.util.Date(cAt.getTime()) : null);
+                Timestamp uAt = rs.getTimestamp("updated_at");
+                s.setUpdatedAt(uAt != null ? new java.util.Date(uAt.getTime()) : null);
                 s.setOwnerName(rs.getString("owner_name"));
                 list.add(s);
             }
@@ -51,7 +53,7 @@ public class ManageShopDAO {
      * Cập nhật trạng thái Ban / Unban
      */
     public boolean updateStatus(int id, String newStatus) throws SQLException {
-        String sql = "UPDATE shops SET status=? WHERE id=?";
+        String sql = "UPDATE shops SET status=?, updated_at = NOW() WHERE id=?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, newStatus);
             ps.setInt(2, id);

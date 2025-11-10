@@ -58,6 +58,23 @@ CREATE TABLE `password_reset_tokens` (
   KEY `idx_password_reset_user` (`user_id`)
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `remember_me_tokens`;
+CREATE TABLE `remember_me_tokens` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `selector` varchar(255) NOT NULL UNIQUE,
+  `hashed_validator` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_remember_me_selector` (`selector`),
+  KEY `idx_remember_me_user_id` (`user_id`),
+  KEY `idx_remember_me_expires_at` (`expires_at`),
+  CONSTRAINT `fk_remember_me_tokens_user_id`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `shops`;
 CREATE TABLE `shops` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -66,6 +83,7 @@ CREATE TABLE `shops` (
   `description` text,
   `status` enum('Pending','Active','Suspended') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
@@ -76,8 +94,9 @@ CREATE TABLE `products` (
   `shop_id` int NOT NULL,
 
   -- Loại & Subtype cố định (ENUM)
-  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME'),
-  `product_subtype` ENUM('GMAIL','FACEBOOK','TIKTOK','CANVA','VALORANT','OTHER') NOT NULL DEFAULT 'OTHER',
+  `product_type` ENUM('EMAIL','SOCIAL','SOFTWARE','GAME','OTHER') NOT NULL,
+  `product_subtype` ENUM('GMAIL','YAHOO','OUTLOOK','FACEBOOK','TIKTOK','X','CANVA','OFFICE','WINDOWS','CHATGPT','VALORANT','LEAGUE_OF_LEGENDS','CS2','OTHER') NOT NULL DEFAULT 'OTHER',
+
 
   `name` varchar(255) NOT NULL,
   `short_description` varchar(300) DEFAULT NULL,
@@ -502,8 +521,8 @@ INSERT INTO `kyc_requests` (`id`,`user_id`,`status_id`,`front_image_url`,`back_i
  (2,3,1,'https://cdn.mmo.local/kyc/buyer_front.jpg','https://cdn.mmo.local/kyc/buyer_back.jpg','https://cdn.mmo.local/kyc/buyer_selfie.jpg','092987654321',NULL,'2024-01-25 09:10:00',NULL);
 
 -- Shop
-INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`status`,`created_at`) VALUES
- (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền','Active','2024-01-12 08:30:00');
+INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`status`,`created_at`,`updated_at`) VALUES
+ (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền','Active','2024-01-12 08:30:00','2024-01-20 09:30:00');
 
 -- Products (6 sản phẩm mẫu, đủ loại/subtype; tiếng Việt, có biến thể JSON)
 INSERT INTO `products`

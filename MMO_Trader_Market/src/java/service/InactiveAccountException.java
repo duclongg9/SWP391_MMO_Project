@@ -3,7 +3,7 @@ package service;
 import model.Users;
 
 /**
- * Ngoại lệ biểu thị tài khoản tồn tại nhưng đang ở trạng thái chưa kích hoạt.
+ * Ngoai le bieu thi tai khoan ton tai nhung dang o trang thai chua kich hoat.
  */
 public class InactiveAccountException extends IllegalStateException {
 
