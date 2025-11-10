@@ -487,6 +487,9 @@
                     <div class="order-report__meta">
                         <div class="order-report__meta-item"><strong>Mã dispute:</strong> <c:out value="${existingDispute.orderReferenceCode}" /></div>
                         <div class="order-report__meta-item"><strong>Loại vấn đề:</strong> <c:out value="${reportIssueOptions[existingDispute.issueType]}" /></div>
+                        <c:if test="${not empty existingDispute.customIssueTitle}">
+                            <div class="order-report__meta-item"><strong>Tiêu đề tùy chỉnh:</strong> <c:out value="${existingDispute.customIssueTitle}" /></div>
+                        </c:if>
                         <div class="order-report__meta-item"><strong>Trạng thái:</strong> <c:out value="${existingDispute.status}" /></div>
                         <c:if test="${not empty existingDispute.escrowPausedAt}">
                             <div class="order-report__meta-item"><strong>Đã tạm dừng escrow:</strong> <fmt:formatDate value="${existingDispute.escrowPausedAt}" pattern="dd/MM/yyyy HH:mm" /></div>
@@ -764,7 +767,7 @@
             <div class="order-report-modal__form-group">
                 <label for="reportEvidence">Ảnh bằng chứng (tối đa <c:out value="${maxEvidenceFiles}" /> ảnh)</label>
                 <input id="reportEvidence" type="file" name="evidenceImages" accept="image/*" multiple required />
-                <p class="order-report-modal__hint">Hỗ trợ định dạng JPG, PNG, GIF, WEBP. Dung lượng tối đa 5MB mỗi ảnh.</p>
+                <p class="order-report-modal__hint">Hỗ trợ định dạng JPG, PNG, GIF, WEBP. Dung lượng tối đa <c:out value="${maxEvidenceFileSizeMb}" />MB mỗi ảnh, tổng cộng <c:out value="${maxEvidenceTotalSizeMb}" />MB cho toàn bộ yêu cầu.</p>
             </div>
             <div class="order-report-modal__actions">
                 <button type="button" class="button button--ghost" data-close-modal>Hủy</button>

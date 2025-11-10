@@ -54,7 +54,7 @@ import java.util.UUID;
 @MultipartConfig(
         fileSizeThreshold = 1 * 1024 * 1024,
         maxFileSize = 5 * 1024 * 1024,
-        maxRequestSize = 20 * 1024 * 1024
+        maxRequestSize = 30 * 1024 * 1024
 )
 @WebServlet(name = "OrderController", urlPatterns = {
     "/order/buy-now",
@@ -73,6 +73,14 @@ public class OrderController extends BaseController {
     private static final int ROLE_BUYER = 3;
     private static final String DISPUTE_UPLOAD_DIR = "assets/uploads/disputes";
     private static final int MAX_EVIDENCE_FILES = 5;
+    /**
+     * Dung lượng tối đa cho mỗi file ảnh bằng chứng (đơn vị MB).
+     */
+    private static final int MAX_EVIDENCE_FILE_SIZE_MB = 5;
+    /**
+     * Tổng dung lượng tối đa của toàn bộ minh chứng trong một lần gửi (đơn vị MB).
+     */
+    private static final int MAX_EVIDENCE_TOTAL_SIZE_MB = 30;
 
     private final OrderService orderService = new OrderService();
     private final DisputeService disputeService = new DisputeService();
@@ -367,6 +375,7 @@ public class OrderController extends BaseController {
         Orders order = detail.order();
         Products product = detail.product();
         List<String> credentials = detail.credentials();
+        Optional<OrderService.EscrowReleaseResult> escrowReleaseResult = orderService.releaseEscrowIfExpired(order);
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
         if (paymentTxOpt.isPresent()) {
             WalletTransactions paymentTx = paymentTxOpt.get();
@@ -393,6 +402,7 @@ public class OrderController extends BaseController {
         request.setAttribute("orderReportErrors", reportErrors);
         request.setAttribute("orderReportFormValues", reportFormValues);
         request.setAttribute("orderReportSuccess", reportSuccessMessage);
+        request.setAttribute("escrowAutoRelease", escrowReleaseResult.orElse(null));
 
         Optional<Disputes> disputeOpt = disputeService.findByOrderId(order.getId());
         List<DisputeAttachment> disputeAttachments = disputeOpt.map(dispute -> disputeService.getAttachments(dispute.getId()))
@@ -403,6 +413,8 @@ public class OrderController extends BaseController {
         boolean canReport = disputeOpt.isEmpty() && orderService.canReportOrder(order);
         request.setAttribute("canReportOrder", canReport);
         request.setAttribute("maxEvidenceFiles", MAX_EVIDENCE_FILES);
+        request.setAttribute("maxEvidenceFileSizeMb", MAX_EVIDENCE_FILE_SIZE_MB);
+        request.setAttribute("maxEvidenceTotalSizeMb", MAX_EVIDENCE_TOTAL_SIZE_MB);
 
         forward(request, response, "order/detail");
     }
@@ -445,6 +457,7 @@ public class OrderController extends BaseController {
             return;
         }
         Orders order = detailOpt.get().order();
+        orderService.releaseEscrowIfExpired(order);
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
         // Xây dựng danh sách sự kiện ví và trả về JSON để front-end polling.
         List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
@@ -632,12 +645,19 @@ public class OrderController extends BaseController {
         }
 
         List<Part> evidenceParts = new ArrayList<>();
-        for (Part part : request.getParts()) {
-            if (part != null && "evidenceImages".equals(part.getName()) && part.getSize() > 0) {
-                evidenceParts.add(part);
+        boolean uploadLimitExceeded = false;
+        try {
+            for (Part part : request.getParts()) {
+                if (part != null && "evidenceImages".equals(part.getName()) && part.getSize() > 0) {
+                    evidenceParts.add(part);
+                }
             }
+        } catch (IllegalStateException ex) {
+            uploadLimitExceeded = true;
+            errors.add(String.format("Dung lượng upload vượt giới hạn (tối đa %dMB mỗi ảnh, tổng cộng %dMB cho toàn bộ yêu cầu).",
+                    MAX_EVIDENCE_FILE_SIZE_MB, MAX_EVIDENCE_TOTAL_SIZE_MB));
         }
-        if (evidenceParts.isEmpty()) {
+        if (evidenceParts.isEmpty() && !uploadLimitExceeded) {
             errors.add("Vui lòng đính kèm ít nhất một ảnh bằng chứng chụp trước khi mở khóa tài khoản.");
         }
         if (evidenceParts.size() > MAX_EVIDENCE_FILES) {

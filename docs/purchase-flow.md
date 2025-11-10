@@ -29,6 +29,8 @@ Tài liệu này mô tả chi tiết các bước từ khi người dùng bấm 
 5. `chargeWallet`: trừ tiền ví, ghi log bằng `dao.user.WalletTransactionDAO#insertTransaction` và gắn `payment_transaction_id` cho đơn.
 6. `finalizeFulfillment`: trừ tồn kho, đánh dấu credential đã bán, ghi log tồn kho.
 7. Cập nhật trạng thái đơn sang `Completed` và commit transaction.
+8. Worker đọc cấu hình `escrow.hold.default.seconds` từ bảng `system_configs` để đặt `orders.escrow_release_at`, ghi log sự kiện
+   vào `order_escrow_events` và chuẩn bị cho việc giải ngân tự động khi không có khiếu nại.
 
 Nếu có lỗi nghiệp vụ/SQL, worker rollback và đánh dấu đơn `Failed` thông qua `OrderDAO#setStatus`.
 

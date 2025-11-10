@@ -242,7 +242,19 @@
                         <a class="button button--primary" href="${loginUrl}">Đăng nhập để mua hàng</a>
                     </c:when>
                     <c:otherwise>
-                        <div class="product-detail__soldout">Sản phẩm tạm hết hàng</div>
+                        <div class="product-detail__soldout">
+                            <c:choose>
+                                <c:when test="${isProductOwner}">
+                                    Bạn không thể mua sản phẩm từ gian hàng của mình.
+                                </c:when>
+                                <c:when test="${not empty purchaseDisabledReason}">
+                                    <c:out value="${purchaseDisabledReason}" />
+                                </c:when>
+                                <c:otherwise>
+                                    Sản phẩm tạm hết hàng
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
                     </c:otherwise>
                 </c:choose>
             </form>
