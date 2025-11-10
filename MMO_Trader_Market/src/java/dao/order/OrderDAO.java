@@ -272,6 +272,120 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Lên lịch giải ngân escrow tự động cho đơn hàng vừa hoàn tất.
+     *
+     * @param connection kết nối giao dịch hiện tại
+     * @param orderId mã đơn hàng
+     * @param releaseAt thời điểm dự kiến giải ngân
+     * @param holdSeconds tổng thời gian giữ tiền theo cấu hình (giây)
+     * @return {@code true} nếu cập nhật thành công
+     * @throws SQLException khi truy vấn lỗi
+     */
+    public boolean scheduleEscrowRelease(Connection connection, int orderId, Timestamp releaseAt, int holdSeconds)
+            throws SQLException {
+        final String sql = "UPDATE orders SET escrow_hold_seconds = ?, "
+                + "escrow_original_release_at = COALESCE(escrow_original_release_at, ?), "
+                + "escrow_release_at = ?, escrow_status = 'Scheduled', escrow_paused_at = NULL, "
+                + "escrow_remaining_seconds = NULL, escrow_resumed_at = NULL, updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int normalizedHold = Math.max(holdSeconds, 0);
+            statement.setInt(1, normalizedHold);
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+                statement.setNull(3, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+                statement.setTimestamp(3, releaseAt);
+            }
+            statement.setInt(4, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện lên lịch escrow nhằm phục vụ truy vết thay đổi tự động.
+     *
+     * @param connection kết nối giao dịch
+     * @param orderId mã đơn hàng
+     * @param releaseAt thời điểm dự kiến giải ngân
+     * @param holdSeconds tổng thời gian giữ tiền (giây)
+     * @throws SQLException khi thao tác ghi log thất bại
+     */
+    public void insertEscrowScheduledEvent(Connection connection, int orderId, Timestamp releaseAt, int holdSeconds)
+            throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, release_at_snapshot, "
+                + "remaining_seconds_snapshot, metadata, created_at) VALUES (?, 'SCHEDULED', 'SYSTEM', ?, ?, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+            }
+            if (holdSeconds <= 0) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, holdSeconds);
+            }
+            String metadata = String.format("{\"holdSeconds\":%d}", Math.max(holdSeconds, 0));
+            statement.setString(4, metadata);
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Đánh dấu đơn hàng đã giải ngân escrow về phía người bán.
+     *
+     * @param connection kết nối đang mở transaction
+     * @param orderId mã đơn hàng
+     * @param releasedAt mốc thời gian thực tế hệ thống giải ngân
+     * @return {@code true} nếu có bản ghi được cập nhật
+     * @throws SQLException nếu câu lệnh SQL gặp lỗi
+     */
+    public boolean markEscrowReleased(Connection connection, int orderId, Timestamp releasedAt) throws SQLException {
+        final String sql = "UPDATE orders SET escrow_status = 'Released', escrow_remaining_seconds = 0, "
+                + "escrow_released_at_actual = ?, updated_at = ? "
+                + "WHERE id = ? AND status = 'Completed' AND escrow_status = 'Scheduled'";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setTimestamp(1, releasedAt);
+            statement.setTimestamp(2, releasedAt);
+            statement.setInt(3, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện escrow được giải ngân để tiện truy vết.
+     *
+     * @param connection kết nối transaction
+     * @param orderId mã đơn hàng
+     * @param scheduledRelease mốc giải ngân dự kiến chụp lại tại thời điểm xử lý
+     * @param releasedAt mốc thực tế đã giải ngân
+     * @param metadataJson chuỗi JSON mô tả ngữ cảnh (có thể null)
+     * @throws SQLException nếu thao tác ghi log thất bại
+     */
+    public void insertEscrowReleasedEvent(Connection connection, int orderId, Timestamp scheduledRelease,
+            Timestamp releasedAt, String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, release_at_snapshot, "
+                + "remaining_seconds_snapshot, metadata, created_at) VALUES (?, 'RELEASED', 'SYSTEM', ?, 0, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (scheduledRelease == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, scheduledRelease);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(3, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(3, metadataJson);
+            }
+            statement.setTimestamp(4, releasedAt);
+            statement.executeUpdate();
+        }
+    }
+
+    /**
      * Lấy danh sách đơn hàng của người mua có phân trang.
      * 
      * Câu truy vấn join sang bảng sản phẩm để lấy tên hiển thị trong bảng lịch

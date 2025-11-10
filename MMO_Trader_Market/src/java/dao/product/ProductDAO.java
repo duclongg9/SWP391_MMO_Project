@@ -210,29 +210,25 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Cập nhật trạng thái cho toàn bộ sản phẩm của một shop nhất định.
-     * Cho phép truyền thêm trạng thái hiện tại để giới hạn phạm vi cập nhật (ví dụ: chỉ đổi từ Unlisted sang Available).
+     * Tra cứu nhanh chủ sở hữu shop dựa trên mã sản phẩm.
      *
-     * @param shopId           mã shop cần cập nhật sản phẩm
-     * @param newStatus        trạng thái đích cần áp dụng
-     * @param onlyWhenStatus   nếu khác null và không rỗng thì chỉ cập nhật các bản ghi có status hiện tại trùng khớp
-     * @throws SQLException    nếu xảy ra lỗi khi thao tác với cơ sở dữ liệu
+     * @param productId mã sản phẩm cần tra cứu
+     * @return {@link Optional} chứa {@code owner_id} nếu tìm thấy
      */
-    public void updateStatusByShop(int shopId, String newStatus, String onlyWhenStatus) throws SQLException {
-        StringBuilder sql = new StringBuilder("UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?");
-        boolean filterByCurrentStatus = onlyWhenStatus != null && !onlyWhenStatus.isBlank();
-        if (filterByCurrentStatus) {
-            sql.append(" AND status = ?");
-        }
-
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            statement.setString(1, newStatus);
-            statement.setInt(2, shopId);
-            if (filterByCurrentStatus) {
-                statement.setString(3, onlyWhenStatus);
+    public Optional<Integer> findShopOwnerIdByProductId(int productId) {
+        final String sql = "SELECT s.owner_id FROM products p JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.id = ? LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getInt("owner_id"));
+                }
             }
-            statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể truy vấn owner của sản phẩm", ex);
         }
+        return Optional.empty();
     }
 
     /**

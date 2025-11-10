@@ -13,6 +13,12 @@ import model.KycRequests;
 import model.Shops;
 import model.Users;
 
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import dao.admin.ManageUserDAO;
+import dao.system.SystemConfigDAO;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -45,6 +51,10 @@ public class AdminViewServlet extends HttpServlet {
             .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
             .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
             .toFormatter();
+
+    private static final long DEFAULT_ESCROW_HOLD_SECONDS = 72L * 3600L;
+
+    private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
 
     private static LocalDate tryParseDate(String s) {
         if (s == null) {
@@ -554,12 +564,49 @@ public class AdminViewServlet extends HttpServlet {
             }
             // total = 20, size = 8, pages = 3; page = (1,3), fromIdx =(0,
 
-            int total = list.size();
-            int pages = ceilDiv(total, size);
-            page = clampPage(page, pages);
-            int fromIdx = Math.max(0, (page - 1) * size);
-            int toIdx = Math.min(total, fromIdx + size);
-            List<Users> pageList = list.subList(fromIdx, toIdx);
+            case "/systems": {
+                HttpSession session = req.getSession(false);
+                if (session != null) {
+                    Object flash = session.getAttribute("flash");
+                    if (flash != null) {
+                        req.setAttribute("flash", flash);
+                        session.removeAttribute("flash");
+                    }
+                    Object flashError = session.getAttribute("flashError");
+                    if (flashError != null) {
+                        req.setAttribute("flashError", flashError);
+                        session.removeAttribute("flashError");
+                    }
+                }
+                long escrowHoldSeconds = DEFAULT_ESCROW_HOLD_SECONDS;
+                int escrowHoldHours = (int) (DEFAULT_ESCROW_HOLD_SECONDS / 3600L);
+                String configValue = systemConfigDAO.findValueByKey("escrow.hold.default.seconds").orElse(null);
+                if (configValue != null) {
+                    String trimmed = configValue.trim();
+                    if (!trimmed.isEmpty()) {
+                        try {
+                            long parsedSeconds = Long.parseLong(trimmed);
+                            if (parsedSeconds > 0) {
+                                escrowHoldSeconds = parsedSeconds;
+                                long hoursCeil = (parsedSeconds + 3599L) / 3600L;
+                                if (hoursCeil > Integer.MAX_VALUE) {
+                                    escrowHoldHours = Integer.MAX_VALUE;
+                                } else {
+                                    escrowHoldHours = (int) Math.max(hoursCeil, 1L);
+                                }
+                            }
+                        } catch (NumberFormatException ignore) {
+                            // fallback về mặc định khi cấu hình không hợp lệ
+                        }
+                    }
+                }
+                req.setAttribute("escrowHoldHours", escrowHoldHours);
+                req.setAttribute("escrowHoldSeconds", escrowHoldSeconds);
+                content = "/WEB-INF/views/Admin/pages/systems.jsp";
+                title = "Cấu hình hệ thống";
+                active = "systems";
+                break;
+            }
 
             req.setAttribute("userList", pageList);
             // set paging attrs (để JSP chỉ hiển thị)
@@ -682,10 +729,47 @@ public class AdminViewServlet extends HttpServlet {
             size = DEFAULT_SIZE;
         }
 
-        LocalDate fromD = tryParseDate(from);
-        LocalDate toD = tryParseDate(to);
-        Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
-        Timestamp toAt = (toD == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+        if ("/systems/escrow".equalsIgnoreCase(path)) {
+            req.setCharacterEncoding("UTF-8");
+            String hoursParam = safe(req.getParameter("escrowHoldHours"));
+            HttpSession session = req.getSession();
+            if (hoursParam == null) {
+                session.setAttribute("flashError", "Vui lòng nhập thời gian escrow mong muốn (giờ).");
+                resp.sendRedirect(req.getContextPath() + "/admin/systems");
+                return;
+            }
+            try {
+                int hours = Integer.parseInt(hoursParam);
+                if (hours < 1 || hours > 720) {
+                    session.setAttribute("flashError", "Thời gian escrow phải nằm trong khoảng 1 - 720 giờ.");
+                    resp.sendRedirect(req.getContextPath() + "/admin/systems");
+                    return;
+                }
+                long seconds = (long) hours * 3600L;
+                boolean updated = systemConfigDAO.upsertValueByKey("escrow.hold.default.seconds", Long.toString(seconds));
+                if (updated) {
+                    session.setAttribute("flash", "Đã cập nhật thời gian giữ tiền escrow thành " + hours + " giờ.");
+                } else {
+                    session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
+                }
+            } catch (NumberFormatException ex) {
+                session.setAttribute("flashError", "Thời gian escrow phải là số nguyên hợp lệ.");
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        // ----- 1) Cập nhật trạng thái (ban/unban) -----
+        if ("/users/status".equalsIgnoreCase(path)) {
+            req.setCharacterEncoding("UTF-8");
+            String action = safe(req.getParameter("action")); // ban | unban
+            String idStr = safe(req.getParameter("id"));
+            if (action == null || idStr == null || !idStr.matches("\\d+")) {
+                resp.sendError(400, "Thiếu hoặc sai tham số");
+                return;
+            }
+            int userId = Integer.parseInt(idStr);
+            int newStatus = "unban".equalsIgnoreCase(action) ? 1 : 0;
 
         try (Connection con = DBConnect.getConnection()) {
             ManageShopDAO dao = new ManageShopDAO(con);
