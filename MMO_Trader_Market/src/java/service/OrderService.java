@@ -322,8 +322,8 @@ public class OrderService {
      * <ol>
      * <li>{@link OrderDAO#findByIdForUser} join bảng {@code orders} +
      * {@code products} để dựng {@link OrderDetailView}.</li>
-     * <li>Nếu trạng thái đã Completed thì truy vấn credential plaintext để show
-     * cho khách.</li>
+     * <li>Nếu trạng thái đã Completed hoặc đang tranh chấp (Disputed) thì truy
+     * vấn credential plaintext để show cho khách.</li>
      * <li>Trả về Optional để controller render hoặc trả lỗi 404.</li>
      * </ol>
      *
@@ -349,7 +349,7 @@ public class OrderService {
         return orderDAO.findByIdForUser(orderId, userId)
                 .map(detail -> {
                     List<String> credentials = List.of();
-                    if (includeCredentials && "Completed".equalsIgnoreCase(detail.order().getStatus())) {
+                    if (includeCredentials && isCredentialAccessibleStatus(detail.order().getStatus())) {
                         credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
                     }
                     return new OrderDetailView(detail.order(), detail.product(), credentials);
@@ -465,14 +465,14 @@ public class OrderService {
 
     /**
      * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext
-     * khi đơn đã hoàn thành.
+     * khi đơn đã hoàn thành hoặc đang tranh chấp.
      * <p>
      * Luồng xử lý:</p>
      * <ol>
      * <li>Kiểm tra quyền sở hữu đơn hàng thông qua
      * {@link OrderDAO#findByIdForUser(int, int)}.</li>
-     * <li>Đảm bảo trạng thái đơn là Completed và đã có credential được worker
-     * gán.</li>
+     * <li>Đảm bảo trạng thái đơn là Completed/Disputed và đã có credential được
+     * worker gán.</li>
      * <li>Insert log vào bảng {@code credential_view_logs} trước khi trả về kết
      * quả.</li>
      * </ol>
@@ -483,8 +483,8 @@ public class OrderService {
     public CredentialUnlockResult unlockCredentials(int orderId, int userId, String viewerIp) {
         OrderDetailView detail = orderDAO.findByIdForUser(orderId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng hoặc không thuộc sở hữu của bạn."));
-        if (!"Completed".equalsIgnoreCase(detail.order().getStatus())) {
-            throw new IllegalStateException("Đơn hàng chưa hoàn thành, chưa thể mở khóa thông tin bàn giao.");
+        if (!isCredentialAccessibleStatus(detail.order().getStatus())) {
+            throw new IllegalStateException("Chỉ có thể mở khóa thông tin bàn giao khi đơn đã hoàn tất hoặc đang được xử lý tranh chấp.");
         }
         List<String> credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
         if (credentials.isEmpty()) {
@@ -519,6 +519,19 @@ public class OrderService {
             return "Không xác định";
         }
         return STATUS_LABELS.getOrDefault(orderStatus, "Không xác định");
+    }
+
+    /**
+     * Kiểm tra trạng thái đơn có cho phép hiển thị credential hay không.
+     *
+     * @param status trạng thái hiện tại của đơn hàng
+     * @return {@code true} nếu người mua vẫn được phép xem thông tin bàn giao
+     */
+    private boolean isCredentialAccessibleStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        return "Completed".equalsIgnoreCase(status) || "Disputed".equalsIgnoreCase(status);
     }
 
     /**
