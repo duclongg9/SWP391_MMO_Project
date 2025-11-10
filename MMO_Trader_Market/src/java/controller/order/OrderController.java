@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * 
@@ -81,6 +83,11 @@ public class OrderController extends BaseController {
      * Tổng dung lượng tối đa của toàn bộ minh chứng trong một lần gửi (đơn vị MB).
      */
     private static final int MAX_EVIDENCE_TOTAL_SIZE_MB = 30;
+
+    /**
+     * Logger trung tâm giúp truy vết các hoạt động mua hàng và lý do thất bại.
+     */
+    private static final Logger LOGGER = Logger.getLogger(OrderController.class.getName());
 
     private final OrderService orderService = new OrderService();
     private final DisputeService disputeService = new DisputeService();
@@ -183,6 +190,7 @@ public class OrderController extends BaseController {
         HttpSession session = request.getSession(false);
         // Bảo vệ route: chỉ cho phép buyer/seller đăng nhập tiếp tục.
         if (!isBuyerOrSeller(session)) {
+            LOGGER.log(Level.FINE, "Từ chối yêu cầu mua hàng do chưa đăng nhập hoặc không có quyền phù hợp.");
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
@@ -190,8 +198,13 @@ public class OrderController extends BaseController {
         int productId = decodeIdentifier(request.getParameter("productId"));
         int quantity = parsePositiveInt(request.getParameter("qty"));
         String variantCode = normalize(request.getParameter("variantCode"));
+        LOGGER.log(Level.INFO, "Buyer {0} gửi yêu cầu mua sản phẩm {1} với số lượng {2}",
+                new Object[]{userId, productId, quantity});
         // Nếu dữ liệu đầu vào thiếu -> trả lỗi cho client.
         if (userId == null || productId <= 0 || quantity <= 0) {
+            LOGGER.log(Level.WARNING,
+                    "Yêu cầu mua hàng không hợp lệ (buyer={0}, productId={1}, quantity={2})",
+                    new Object[]{userId, productId, quantity});
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -204,10 +217,17 @@ public class OrderController extends BaseController {
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
             String token = IdObfuscator.encode(orderId);
             String redirectUrl = request.getContextPath() + "/orders/detail/" + token + "?processing=1";
+            LOGGER.log(Level.INFO,
+                    "Tạo đơn hàng pending thành công (orderId={0}, buyer={1}, productId={2})",
+                    new Object[]{orderId, userId, productId});
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
+            LOGGER.log(Level.WARNING, "Không thể tạo đơn hàng cho buyer {0}: {1}",
+                    new Object[]{userId, safeMessage(ex)});
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (IllegalStateException ex) {
+            LOGGER.log(Level.WARNING, "Giao dịch mua hàng của buyer {0} thất bại: {1}",
+                    new Object[]{userId, safeMessage(ex)});
             if (!redirectBackWithError(request, response, session, productId, ex.getMessage())) {
                 response.sendError(HttpServletResponse.SC_CONFLICT, ex.getMessage());
             }
@@ -224,8 +244,24 @@ public class OrderController extends BaseController {
                 : message;
         session.setAttribute("purchaseError", resolvedMessage);
         String target = request.getContextPath() + "/product/detail/" + IdObfuscator.encode(productId);
+        LOGGER.log(Level.INFO, "Chuyển hướng buyer {0} về trang sản phẩm {1} do lỗi: {2}",
+                new Object[]{session.getAttribute("userId"), productId, resolvedMessage});
         response.sendRedirect(target);
         return true;
+    }
+
+    /**
+     * Bảo vệ logger khỏi thông báo {@code null} để log dễ đọc hơn.
+     *
+     * @param throwable ngoại lệ cần lấy thông điệp
+     * @return chuỗi mô tả an toàn, không rỗng
+     */
+    private String safeMessage(Throwable throwable) {
+        if (throwable == null) {
+            return "Không xác định";
+        }
+        String message = throwable.getMessage();
+        return (message == null || message.isBlank()) ? throwable.getClass().getSimpleName() : message;
     }
 
     /**
