@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/notification.css"/>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -16,6 +17,7 @@
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+
 <main class="layout__content grid-2">
     <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
 
@@ -97,7 +99,7 @@
                     <tr>
                         <td colspan="2" class="actions">
                             <input type="hidden" name="csrfToken" value="${csrf}">
-                            <button type="submit" class="button button--primary">Update</button>
+                            <button type="submit" class="button button--primary" >Update</button>
                         </td>
                     </tr>
                 </tbody>
@@ -155,7 +157,39 @@
                 </tbody>
             </table>
         </form>
-<script>
+                 <div id="toastBox"></div>             
+    
+
+
+    </section>
+
+</main>
+                           
+                       
+<%@ include file="/WEB-INF/views/shared/footer.jspf" %>
+<%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+ <script>
+     document.addEventListener('DOMContentLoaded', () => {
+            const toastBox = document.getElementById('toastBox');
+
+            function showToast(msg, type = 'success') {
+                if (!toastBox) return;
+                const toast = document.createElement('div');
+                toast.classList.add('mm-toast');
+                if (type === 'error') toast.classList.add('error');
+                toast.innerHTML = msg;
+                toastBox.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            }
+
+            // Lấy message từ request
+            const okMsg = "${fn:escapeXml(msg)}";
+            const errMsg = "${fn:escapeXml(emg)}";
+
+            if(errMsg) showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
+            if(okMsg) showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
+        });
+     
 function validatePass() {
     const newPass = document.getElementById("newPass").value.trim();
     const confirmPass = document.getElementById("confirmPass").value.trim();
@@ -179,10 +213,18 @@ function validatePass() {
 
     return true;
 }
+
+
 </script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
 
-    </section>
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
 
-</main>
-<%@ include file="/WEB-INF/views/shared/footer.jspf" %>
-<%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

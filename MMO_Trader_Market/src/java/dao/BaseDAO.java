@@ -11,6 +11,13 @@ import java.sql.SQLException;
 public abstract class BaseDAO {
 
     protected Connection getConnection() throws SQLException {
+        return createConnection();
+    }
+    
+    /**
+     * Tạo connection mới. Method này có thể được gọi từ bên ngoài package.
+     */
+    public Connection createConnection() throws SQLException {
         String driver = AppConfig.get("db.driver").trim();
         if (!driver.isEmpty()) {
             // Explicit driver loading remains configurable for legacy containers.

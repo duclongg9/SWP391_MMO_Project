@@ -3,31 +3,41 @@ package model;
 import java.sql.Timestamp;
 
 /**
- * Represents a persistent login token used for the "remember me" feature.
+ * Model đại diện cho token "ghi nhớ đăng nhập" của người dùng.
+ * Token được lưu trong database và sử dụng để tự động đăng nhập người dùng.
  */
 public class RememberMeToken {
 
-    private int id;
-    private int userId;
+    private Integer id;
+    private Integer userId;
     private String selector;
     private String hashedValidator;
     private Timestamp expiresAt;
-    private Timestamp createdAt;
-    private Timestamp lastUsedAt;
 
-    public int getId() {
+    public RememberMeToken() {
+    }
+
+    public RememberMeToken(Integer id, Integer userId, String selector, String hashedValidator, Timestamp expiresAt) {
+        this.id = id;
+        this.userId = userId;
+        this.selector = selector;
+        this.hashedValidator = hashedValidator;
+        this.expiresAt = expiresAt;
+    }
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
-    public int getUserId() {
+    public Integer getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
 
@@ -54,20 +64,5 @@ public class RememberMeToken {
     public void setExpiresAt(Timestamp expiresAt) {
         this.expiresAt = expiresAt;
     }
-
-    public Timestamp getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Timestamp createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Timestamp getLastUsedAt() {
-        return lastUsedAt;
-    }
-
-    public void setLastUsedAt(Timestamp lastUsedAt) {
-        this.lastUsedAt = lastUsedAt;
-    }
 }
+

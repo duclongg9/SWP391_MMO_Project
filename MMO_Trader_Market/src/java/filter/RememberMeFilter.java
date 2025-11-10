@@ -16,32 +16,32 @@ import service.RememberMeService;
 import java.io.IOException;
 
 /**
- * Bộ lọc khôi phục phiên đăng nhập dựa trên cookie "ghi nhớ tôi" nếu tồn tại.
+ * Bo loc khoi phuc phien dang nhap dua tren cookie "ghi nho toi" neu ton tai.
  */
 @WebFilter("/*")
 public class RememberMeFilter extends HttpFilter {
 
-    // Dịch vụ xử lý logic ghi nhớ đăng nhập.
+    // Dich vu xu ly logic ghi nho dang nhap.
     private RememberMeService rememberMeService;
 
-    // Khởi tạo filter và tạo instance RememberMeService.
+    // Khoi tao filter va tao instance RememberMeService.
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         super.init(filterConfig);
         this.rememberMeService = new RememberMeService(new RememberMeTokenDAO(), new UserDAO());
     }
 
-    // Trước mỗi request, thử khôi phục phiên từ cookie nếu người dùng chưa đăng nhập.
+    // Truoc moi request, thu khoi phuc phien tu cookie neu nguoi dung chua dang nhap.
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (rememberMeService == null) {
-            // Trường hợp filter được khởi tạo lại mà chưa kịp gọi init.
+            // Truong hop filter duoc khoi tao lai ma chua kip goi init.
             rememberMeService = new RememberMeService(new RememberMeTokenDAO(), new UserDAO());
         }
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("currentUser") == null) {
-            // Chưa có phiên hợp lệ nên thử tự động đăng nhập bằng token.
+            // Chua co phien hop le nen thu tu dong dang nhap bang token.
             Users user = rememberMeService.autoLogin(request, response);
             if (user != null) {
                 HttpSession newSession = request.getSession(true);

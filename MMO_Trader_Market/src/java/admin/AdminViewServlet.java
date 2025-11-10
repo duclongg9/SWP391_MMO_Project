@@ -356,23 +356,32 @@ public class AdminViewServlet extends HttpServlet {
             path = "/dashboard";
         }
 
-        switch (path.toLowerCase()) {
-            case "/dashboard" ->
-                handleDashboard(req, resp);
-            case "/users" ->
-                handleUsers(req, resp);
-            case "/cashs" ->
-                handleCashs(req, resp);
-            case "/shops" ->
-                handleShops(req, resp);
-            case "/kycs" ->
-                handleKycs(req, resp);
-            case "/systems" -> {
-                req.setAttribute("pageTitle", "Quản lí hệ thống");
-                req.setAttribute("active", "systems");
-                req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
-                req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+        try {
+            switch (path.toLowerCase()) {
+                case "/dashboard" ->
+                    handleDashboard(req, resp);
+                case "/users" ->
+                    handleUsers(req, resp);
+                case "/cashs" ->
+                    handleCashs(req, resp);
+                case "/shops" ->
+                    handleShops(req, resp);
+                case "/kycs" ->
+                    handleKycs(req, resp);
+                case "/systems" -> {
+                    req.setAttribute("pageTitle", "Quản lí hệ thống");
+                    req.setAttribute("active", "systems");
+                    req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
+                    req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+                }
+                default -> {
+                    // Nếu path không hợp lệ, redirect về dashboard
+                    resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Lỗi xử lý yêu cầu: " + e.getMessage());
         }
     }
     // ================== /admin/users ==================
@@ -380,7 +389,8 @@ public class AdminViewServlet extends HttpServlet {
     // ================== /admin/users ==================
     private void handleDashboard(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
+        LocalDate now = LocalDate.now();
+        
         // Danh sách năm có dữ liệu
         List<Integer> avaliableYear = new ArrayList<>();
         try {
@@ -409,10 +419,15 @@ public class AdminViewServlet extends HttpServlet {
         // ----- 2. Lấy dữ liệu deposit/withdraw theo tháng -----
         BigDecimal[] listDeposit = new BigDecimal[12];
         BigDecimal[] listWithdraw = new BigDecimal[12];
+        
+        int[] listOrder = new int[12];
+        int[] listUser = new int[12];
 
         try {
             listDeposit = adminDashboard.arrayDepositByMonth(selectedYear);
             listWithdraw = adminDashboard.arrayWithdrawByMonth(selectedYear);
+            listOrder = adminDashboard.arrayOrderByMonth(selectedYear);
+            listUser = adminDashboard.arrayUserByMonth(selectedYear);
         } catch (SQLException ex) {
             // log + giữ mảng default = 0
             ex.printStackTrace();
@@ -421,9 +436,11 @@ public class AdminViewServlet extends HttpServlet {
         Gson gson = new Gson();
         String depositJson = gson.toJson(listDeposit);
         String withdrawJson = gson.toJson(listWithdraw);
+        String orderJson = gson.toJson(listOrder);
+        String userJson = gson.toJson(listUser);
 
         // ----- 3. Tính tháng hiện tại & tháng trước -----
-        LocalDate now = LocalDate.now();
+        
         int presentMonth = now.getMonthValue();
         int presentYear = now.getYear();
 
@@ -456,9 +473,11 @@ public class AdminViewServlet extends HttpServlet {
         // ----- 5. Thống kê khác -----
         int orderByMonth = 0;
         int shopByMonth = 0;
+        int totalUser = 0;
         try {
             orderByMonth = adminDashboard.totalOrder(presentMonth, presentYear);
             shopByMonth = adminDashboard.totalActiveShop();
+            totalUser = adminDashboard.totalActiveUser();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -476,8 +495,9 @@ public class AdminViewServlet extends HttpServlet {
         // ----- 8. Đẩy attribute cho JSP -----
         req.setAttribute("years", avaliableYear);
 
-        req.setAttribute("orderByMonth", orderByMonth);
+        req.setAttribute("totalOrder", orderByMonth);
         req.setAttribute("shopByMonth", shopByMonth);
+        req.setAttribute("totalUser", totalUser);
         req.setAttribute("totalDeposit", totalDeposit);
         req.setAttribute("totalWithdraw", totalWithdraw);
         req.setAttribute("persentDepositChanged", persentDepositChanged);
@@ -491,6 +511,7 @@ public class AdminViewServlet extends HttpServlet {
         req.setAttribute("selectedYear", selectedYear);
         req.setAttribute("depositByMonth", depositJson);
         req.setAttribute("withdrawByMonth", withdrawJson);
+        req.setAttribute("orderByMonth", orderJson);
 
         // Layout chung
         req.setAttribute("pageTitle", "Tổng quan hệ thống");
