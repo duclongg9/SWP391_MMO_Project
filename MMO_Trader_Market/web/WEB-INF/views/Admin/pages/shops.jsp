@@ -4,7 +4,11 @@
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="base" value="${pageContext.request.contextPath}" />
-
+<%@ page import="java.time.LocalDate" %>
+<%
+    String today = LocalDate.now().toString();
+    request.setAttribute("today", today);
+%>
 <!-- Biến phân trang & sort -->
 <c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
@@ -38,20 +42,21 @@
 
                 <!-- Từ ngày -->
                 <div class="col-6 col-md-2">
-                    <label for="from" class="form-label mb-1">Từ ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input id="from" name="from" type="date" class="form-control" value="${from}">
-                    </div>
+                    <label class="form-label mb-1" for="from">Từ ngày</label>
+                    <input id="from" name="from"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(from)}"
+                           max="${today}">
                 </div>
 
-                <!-- Đến ngày -->
                 <div class="col-6 col-md-2">
-                    <label for="to" class="form-label mb-1">Đến ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="to" name="to" type="date" class="form-control" value="${to}">
-                    </div>
+                    <label class="form-label mb-1" for="to">Đến ngày</label>
+                    <input id="to" name="to"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(to)}"
+                           max="${today}">
                 </div>
 
                 <!-- Trạng thái -->
@@ -246,8 +251,6 @@
         </div>
     </div>
 
-    <!-- ===== Phân trang (cửa sổ) ===== -->
-
 
     <nav aria-label="Pagination">
         <ul class="pagination justify-content-center mt-3">
@@ -296,67 +299,9 @@
 
         </ul>
     </nav>
+
 </div>
-
-<style>
-    .card{border-radius:12px}
-    .table td,.table th{vertical-align:middle}
-    .table thead th{white-space:nowrap}
-
-    #toastBox{
-        position: fixed;
-        bottom: 30px; right: 30px;
-        display: flex; align-items: flex-end; flex-direction: column;
-        overflow: hidden; padding: 20px; z-index: 9999;
-    }
-
-    .mm-toast{
-        width: 400px; height: 80px; background: #fff;
-        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        display: flex; align-items: center; padding: 20px; position: relative;
-        transform: translateX(100%);
-        animation: moveleft 0.5s linear forwards;
-    }
-
-    .mm-toast i{
-        margin: 0 20px;
-        font-size: 35px;
-        color: green;
-    }
-    .mm-toast::after{
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        height: 5px;
-        background: green;
-        animation: anim 5s linear forwards;
-    }
-    .mm-toast.error i{
-        color: red;
-    }
-    .mm-toast.error{
-        color: red;
-    }
-    .mm-toast.error::after{
-        background: red;
-    }
-    @keyframes anim {
-        100%{ width: 0; }
-    }
-    @keyframes moveleft {
-        100%{ transform: translateX(0); }
-    }
-
-
-
-
-
-</style>
-
 <script>
-
     const toastBox = document.getElementById('toastBox');
     function showToast(msg, type = 'success') {
         const toast = document.createElement('div');
@@ -431,6 +376,7 @@
                 }
             });
         }
+
         function resetPageToFirst() {
             let pageHidden = form.querySelector('input[name="page"]');
             if (!pageHidden) {
@@ -457,6 +403,7 @@
         }
     });
 </script>
+
 <c:if test="${not empty sessionScope.flash}">
     <script>
         const msg = "${fn:escapeXml(sessionScope.flash)}";

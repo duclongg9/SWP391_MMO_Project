@@ -1,5 +1,6 @@
 package admin;
 
+import dao.admin.CashDAO;
 import dao.admin.ManageKycDAO;
 import dao.admin.ManageShopDAO;
 import dao.admin.ManageUserDAO;
@@ -7,12 +8,15 @@ import dao.connect.DBConnect;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+import model.CashTxn;
 import model.KycRequests;
 import model.Shops;
 import model.Users;
-
+import java.math.BigDecimal;
+import java.util.List;
 import java.io.IOException;
 import java.sql.*;
+import jakarta.servlet.annotation.MultipartConfig;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -24,8 +28,10 @@ import java.util.List;
 import org.mindrot.jbcrypt.BCrypt;
 
 @WebServlet(name = "AdminRouter", urlPatterns = {"/admin/*"})
+@MultipartConfig(maxFileSize = 10 * 1024 * 1024)
 public class AdminViewServlet extends HttpServlet {
     Users user;
+    private CashDAO  cashDAO;
     // ------ Date helpers ------
     // Chấp nhận: dd-MM-yyyy, yyyy-MM-dd, dd/MM/yyyy
     private static final DateTimeFormatter FLEX_DMY = new DateTimeFormatterBuilder()
@@ -89,6 +95,7 @@ public class AdminViewServlet extends HttpServlet {
             return;
         }
 
+
         switch (path.toLowerCase()) {
             case "/users":
                 handleCreateUser(req, resp);
@@ -102,12 +109,224 @@ public class AdminViewServlet extends HttpServlet {
             case "/shops/status":
                 handleShopStatus(req, resp);
                 return;
+            case "/cashs/status":
+                handleCashsStatus(req, resp);
+                return;
             default:
                 resp.sendError(404);
         }
     }
+
+    private void handleCashsStatus(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException, ServletException {
+
+        req.setCharacterEncoding("UTF-8");
+
+        String idStr   = safe(req.getParameter("id"));
+        String action  = safe(req.getParameter("action"));   // "accept" | "reject"
+        String note    = safe(req.getParameter("note"));
+        String txTypeP = safe(req.getParameter("txType"));   // "Deposit" | "Withdrawal"
+
+        // ===== Validate cơ bản =====
+        if (idStr == null || !idStr.matches("\\d+")) {
+            req.getSession().setAttribute("flash", "Lỗi: ID giao dịch không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+        if (!"accept".equalsIgnoreCase(action) && !"reject".equalsIgnoreCase(action)) {
+            req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+        if (txTypeP == null ||
+                !(txTypeP.equalsIgnoreCase("Deposit") || txTypeP.equalsIgnoreCase("Withdrawal"))) {
+            req.getSession().setAttribute("flash", "Lỗi: Loại giao dịch không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+
+        int txId = Integer.parseInt(idStr);
+
+        // ===== Validate ghi chú =====
+        // - Reject: luôn bắt buộc
+        // - Accept Deposit: bắt buộc
+        // - Accept Withdrawal: note không bắt buộc
+        boolean requireNote =
+                "reject".equalsIgnoreCase(action)
+                        || ("accept".equalsIgnoreCase(action) && "Deposit".equalsIgnoreCase(txTypeP));
+
+        if (requireNote && (note == null || note.isBlank())) {
+            req.setAttribute("cashErrorId", txId);
+            req.setAttribute("cashErrorMessage", "Vui lòng nhập ghi chú cho hành động này (bắt buộc).");
+            handleCashs(req, resp); // render lại list + modal với lỗi đỏ
+            return;
+        }
+
+        // ===== Xử lý upload ảnh (chỉ khi là multipart và form có proof_file) =====
+        String adminProofUrl = null;
+        try {
+            String ct = req.getContentType();
+            if (ct != null && ct.toLowerCase().startsWith("multipart/")) {
+                jakarta.servlet.http.Part part = req.getPart("proof_file");
+                if (part != null && part.getSize() > 0) {
+                    String original = part.getSubmittedFileName();
+                    String cleanName = java.nio.file.Paths.get(
+                            original == null ? "" : original).getFileName().toString();
+
+                    String fileName = System.currentTimeMillis() + "_" + cleanName;
+                    String uploadDir = req.getServletContext()
+                            .getRealPath("/uploads/withdrawals");
+                    java.nio.file.Files.createDirectories(java.nio.file.Path.of(uploadDir));
+
+                    java.nio.file.Path dest = java.nio.file.Path.of(uploadDir, fileName);
+                    part.write(dest.toString());
+
+                    adminProofUrl = req.getContextPath() + "/uploads/withdrawals/" + fileName;
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            // Không fail toàn bộ, chỉ log; nếu muốn thì set flash lỗi upload riêng.
+        }
+
+        try (Connection con = DBConnect.getConnection()) {
+            con.setAutoCommit(false);
+
+            CashDAO cashDAO = new CashDAO(con);
+
+            // Lấy đúng giao dịch theo loại form gửi lên
+            CashTxn tx = cashDAO.findById(txId, txTypeP);
+            if (tx == null) {
+                con.rollback();
+                req.getSession().setAttribute("flash", "Lỗi: Không tìm thấy giao dịch #" + txId);
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            String type   = tx.getType();   // Deposit | Withdrawal
+            String status = tx.getStatus(); // Pending / Completed / Rejected
+            int userId    = tx.getUserId();
+            BigDecimal amount = tx.getAmount();
+
+            // Double-check type khớp txTypeP
+            if (!txTypeP.equalsIgnoreCase(type)) {
+                con.rollback();
+                req.getSession().setAttribute(
+                        "flash",
+                        "Lỗi: Loại giao dịch không khớp dữ liệu. Vui lòng tải lại trang."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            // Chỉ xử lý khi còn Pending
+            if (!"Pending".equalsIgnoreCase(status)) {
+                con.rollback();
+                req.getSession().setAttribute(
+                        "flash",
+                        "Giao dịch #" + txId + " đã được xử lý trước đó."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            // Nếu Accept Withdrawal: bắt buộc có ảnh (mới upload hoặc đã có sẵn)
+            if ("accept".equalsIgnoreCase(action) && "Withdrawal".equalsIgnoreCase(type)) {
+                String existingProof = tx.getAdminProofUrl();
+                if (adminProofUrl == null || adminProofUrl.isBlank()) {
+                    adminProofUrl = existingProof;
+                }
+                if (adminProofUrl == null || adminProofUrl.isBlank()) {
+                    con.rollback();
+                    req.setAttribute("cashErrorId", txId);
+                    req.setAttribute("cashErrorMessage",
+                            "Vui lòng upload ảnh chuyển khoản của admin trước khi duyệt rút tiền.");
+                    handleCashs(req, resp);
+                    return;
+                }
+            }
+
+            int rowsTx  = 0;
+            int rowsWal = 0;
+
+            /* ========== ACCEPT ========== */
+            if ("accept".equalsIgnoreCase(action)) {
+
+                if ("Deposit".equalsIgnoreCase(type)) {
+                    // Accept NẠP: cộng ví + lưu note
+                    rowsWal = cashDAO.updateWalletPlus(userId, amount);
+                    rowsTx  = cashDAO.updateDepositStatus(txId, "Completed", note);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsWal > 0 && rowsTx > 0)
+                                    ? "Duyệt nạp tiền #" + txId + " thành công (đã cộng vào ví)."
+                                    : "Không có thay đổi khi duyệt nạp tiền #" + txId + "."
+                    );
+
+                } else if ("Withdrawal".equalsIgnoreCase(type)) {
+                    // Accept RÚT: cập nhật trạng thái + lưu/giữ admin_proof_url
+                    rowsTx = cashDAO.updateWithdrawalStatus(txId, "Completed", note, adminProofUrl);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsTx > 0)
+                                    ? "Duyệt rút tiền #" + txId + " thành công."
+                                    : "Không có thay đổi khi duyệt rút tiền #" + txId + "."
+                    );
+                }
+
+                /* ========== REJECT ========== */
+            } else { // "reject"
+
+                if ("Deposit".equalsIgnoreCase(type)) {
+                    // Reject NẠP
+                    rowsTx = cashDAO.updateDepositStatus(txId, "Rejected", note);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsTx > 0)
+                                    ? "Đã từ chối nạp tiền #" + txId + "."
+                                    : "Không có thay đổi khi từ chối nạp tiền #" + txId + "."
+                    );
+
+                } else if ("Withdrawal".equalsIgnoreCase(type)) {
+                    // Reject RÚT: hoàn tiền + update trạng thái + lưu ảnh nếu có
+                    rowsWal = cashDAO.updateWalletPlus(userId, amount);
+                    rowsTx  = cashDAO.updateWithdrawalStatus(txId, "Rejected", note, adminProofUrl);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsWal > 0 && rowsTx > 0)
+                                    ? "Đã từ chối rút tiền #" + txId + " và hoàn tiền vào ví."
+                                    : "Không có thay đổi khi từ chối rút tiền #" + txId + "."
+                    );
+                }
+            }
+
+            // Commit / rollback
+            if (rowsTx > 0 || rowsWal > 0) {
+                con.commit();
+            } else {
+                con.rollback();
+            }
+
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            req.getSession().setAttribute("flash", "Lỗi hệ thống: " + e.getMessage());
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+        }
+    }
+
+
+
+
+
+
     private void handleKycStatus(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
 
         req.setCharacterEncoding("UTF-8");
 
@@ -115,7 +334,7 @@ public class AdminViewServlet extends HttpServlet {
         String idStr    = safe(req.getParameter("id"));
         String feedback = safe(req.getParameter("feedback"));
 
-        // Validate cơ bản
+        // Validate ID & action: lỗi cứng -> flash + redirect
         if (idStr == null || !idStr.matches("\\d+")) {
             req.getSession().setAttribute("flash", "Lỗi: ID không hợp lệ");
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
@@ -126,15 +345,20 @@ public class AdminViewServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
             return;
         }
-        // Bắt buộc ghi chú khi từ chối
-        if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
-            req.getSession().setAttribute("flash", "Lỗi: Vui lòng nhập lý do từ chối");
-            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
-            return;
-        }
 
         int kycId = Integer.parseInt(idStr);
 
+        // Case đặc biệt: Reject nhưng thiếu feedback -> không flash, không redirect
+        if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
+            req.setAttribute("kycErrorId", kycId);
+            req.setAttribute("kycErrorMessage", "Vui lòng nhập lí do từ chối KYC.");
+
+            // render lại trang KYC với lỗi inline
+            handleKycs(req, resp);
+            return;
+        }
+
+        // Các case hợp lệ: approve hoặc reject có feedback
         try (Connection con = DBConnect.getConnection()) {
             ManageKycDAO dao = new ManageKycDAO(con);
             int rows;
@@ -145,7 +369,7 @@ public class AdminViewServlet extends HttpServlet {
                         "flash",
                         rows > 0 ? "Duyệt KYC thành công!" : "Không có thay đổi"
                 );
-            } else { // reject
+            } else { // reject (đã có feedback)
                 rows = dao.rejectKyc(kycId, feedback);
                 req.getSession().setAttribute(
                         "flash",
@@ -160,6 +384,8 @@ public class AdminViewServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
         }
     }
+
+
 
     private void handleShopStatus(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
@@ -313,7 +539,7 @@ public class AdminViewServlet extends HttpServlet {
         if (path == null || "/".equals(path)) path = "/dashboard";
 
         switch (path.toLowerCase()) {
-//            case "/dashboard" ->
+            case "/dashboard" -> handleUsers(req, resp);
             case "/users" -> handleUsers(req, resp);
             case "/cashs" -> handleCashs(req, resp);
             case "/shops" -> handleShops(req, resp);

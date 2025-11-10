@@ -11,7 +11,11 @@
 <c:set var="total"    value="${pg_total != null ? pg_total : (userList != null ? fn:length(userList) : 0)}" />
 <c:set var="pages"    value="${pg_pages != null ? pg_pages : ((total + pageSize - 1) / pageSize)}" />
 
-
+<%@ page import="java.time.LocalDate" %>
+<%
+    String today = LocalDate.now().toString();
+    request.setAttribute("today", today);
+%>
 <c:set var="openCreate" value="${openCreateModal or param.openCreate == '1'}" />
 
 <div class="container-fluid">
@@ -45,20 +49,20 @@
 
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="from">Từ ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input id="from" name="from" type="date" lang="vi" class="form-control"
-                               placeholder="DD-MM-YYYY" value="${param.from}">
-                    </div>
+                    <input id="from" name="from"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(from)}"
+                           max="${today}">
                 </div>
 
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="to">Đến ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="to" name="to" type="date" lang="vi" class="form-control"
-                               placeholder="DD-MM-YYYY" value="${param.to}">
-                    </div>
+                    <input id="to" name="to"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(to)}"
+                           max="${today}">
                 </div>
 
                 <div class="col-12 col-md-3 d-flex gap-2">
@@ -148,52 +152,52 @@
     </div>
 
     <nav aria-label="Pagination">
-            <ul class="pagination justify-content-center mt-3">
+        <ul class="pagination justify-content-center mt-3">
 
-                <!-- Prev -->
-                <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
-                    <c:url var="uPrev" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
+            <!-- Prev -->
+            <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
+                <c:url var="uPrev" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
 
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="${pageNow-1}" />
-                    </c:url>
-                    <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow-1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
+            </li>
+
+            <!-- Page numbers: 1..pages -->
+            <c:forEach var="i" begin="1" end="${pages}">
+                <c:url var="uI" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${i}" />
+                </c:url>
+                <li class="page-item ${i == pageNow ? 'active' : ''}">
+                    <a class="page-link" href="${uI}">${i}</a>
                 </li>
+            </c:forEach>
 
-                <!-- Page numbers: 1..pages -->
-                <c:forEach var="i" begin="1" end="${pages}">
-                    <c:url var="uI" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="${i}" />
-                    </c:url>
-                    <li class="page-item ${i == pageNow ? 'active' : ''}">
-                        <a class="page-link" href="${uI}">${i}</a>
-                    </li>
-                </c:forEach>
+            <!-- Next -->
+            <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
+                <c:url var="uNext" value="${usersPath}">
+                    <c:param name="q"    value="${param.q}" />
+                    <c:param name="role" value="${param.role}" />
+                    <c:param name="from" value="${param.from}" />
+                    <c:param name="to"   value="${param.to}" />
+                    <c:param name="size" value="${pageSize}" />
+                    <c:param name="page" value="${pageNow+1}" />
+                </c:url>
+                <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
+            </li>
 
-                <!-- Next -->
-                <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
-                    <c:url var="uNext" value="${usersPath}">
-                        <c:param name="q"    value="${param.q}" />
-                        <c:param name="role" value="${param.role}" />
-                        <c:param name="from" value="${param.from}" />
-                        <c:param name="to"   value="${param.to}" />
-                        <c:param name="size" value="${pageSize}" />
-                        <c:param name="page" value="${pageNow+1}" />
-                    </c:url>
-                    <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
-                </li>
-
-            </ul>
-        </nav>
+        </ul>
+    </nav>
 
 
     <!-- Debug nhỏ (tuỳ thích) -->

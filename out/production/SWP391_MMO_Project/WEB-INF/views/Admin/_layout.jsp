@@ -12,15 +12,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/Admin.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script>
         window.APP_BASE = '${pageContext.request.contextPath}';
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Nạp admin.js -->
-    <script src="${pageContext.request.contextPath}/assets/Script/admin.js" defer></script>
+
 </head>
 
 <body>
@@ -34,7 +33,7 @@
             </h4>
         </div>
 
-        <a href="${pageContext.request.contextPath}/admin" class="${active=='dashboard'?'active':''}">
+        <a href="${pageContext.request.contextPath}/admin/dashboard" class="${active=='dashboard'?'active':''}">
             <i class="bi bi-speedometer2"></i><span>Tổng quan</span>
         </a>
         <a href="${pageContext.request.contextPath}/admin/users" class="${active=='users'?'active':''}">
@@ -66,6 +65,9 @@
 <div class="main">
     <div class="header">
         <h5 class="m-0">${pageTitle != null ? pageTitle : "Bảng điều khiển"}</h5>
+        <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/home">
+            <i class="bi bi-box-arrow-up-right me-2"></i>Về trang Market
+        </a>
     </div>
 
     <div class="page-content">
@@ -73,9 +75,6 @@
         <jsp:include page="${content}" />
     </div>
 </div>
-
-
-
 </body>
 
 </html>

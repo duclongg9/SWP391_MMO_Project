@@ -48,10 +48,8 @@ public class ManageKycDAO {
                         rs.getString("back_image_url"),
                         rs.getString("selfie_image_url"),
                         rs.getString("id_number"),
-                        rs.getTimestamp("created_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("created_at").getTime()),
-                        rs.getTimestamp("reviewed_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("reviewed_at").getTime()),
+                        rs.getTimestamp("created_at") == null ? null : new java.util.Date(rs.getTimestamp("created_at").getTime()),
+                        rs.getTimestamp("reviewed_at") == null ? null : new java.util.Date(rs.getTimestamp("reviewed_at").getTime()),
                         rs.getString("admin_feedback")
                 );
                 k.setUserName(rs.getString("user_name"));

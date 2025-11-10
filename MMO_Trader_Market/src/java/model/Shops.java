@@ -13,9 +13,17 @@ public class Shops {
     private String status;
 
     private Date createdAt;
-
     private String description;
     private String ownerName;
+    private String adminNote;
+
+    public String getAdminNote() {
+        return adminNote;
+    }
+
+    public void setAdminNote(String adminNote) {
+        this.adminNote = adminNote;
+    }
 
     public Integer getId() {
         return id;
