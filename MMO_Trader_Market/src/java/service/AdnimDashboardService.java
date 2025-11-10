@@ -7,6 +7,7 @@ package service;
 import dao.order.OrderDAO;
 import dao.shop.ShopDAO;
 import dao.user.DepositeRequestDAO;
+import dao.user.UserDAO;
 import dao.user.WithdrawRequestDAO;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -19,7 +20,8 @@ import java.util.List;
  * @author D E L L
  */
 public class AdnimDashboardService {
-
+    
+    UserDAO udao = new UserDAO();
     DepositeRequestDAO drdao = new DepositeRequestDAO();
     WithdrawRequestDAO wddao = new WithdrawRequestDAO();
     ShopDAO sdao = new ShopDAO();
@@ -65,6 +67,18 @@ public class AdnimDashboardService {
 
         return odao.gettotalOrderByMonth(month, year);
     }
+    
+    public int totalUser(int month, int year) throws SQLException {
+        // Validate cơ bản
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("Tháng không hợp lệ (1–12)");
+        }
+        if (year < 2000 || year > LocalDate.now().getYear()) {
+            throw new IllegalArgumentException("Năm không hợp lệ hoặc vượt quá hiện tại");
+        }
+
+        return udao.getTotalUserByMonth(month, year);
+    }
 
     //Hàm lấy năm có chứa dữ liệu
     public List<Integer> getAvailableYears() throws SQLException {
@@ -76,6 +90,15 @@ public class AdnimDashboardService {
         BigDecimal[] arr = new BigDecimal[12];
         for (int i = 0; i < 12; i++) {
             arr[i] = wddao.getTotalWithdrawByMonth(i + 1, year); // Lưu ý tháng bắt đầu từ 1
+        }
+        return arr;
+    }
+    
+    //hàm lấy số lượng order mỗi tháng trong năm
+    public int[] arrayOrderByMonth(int year) throws SQLException {
+        int[] arr = new int[12];
+        for (int i = 0; i < 12; i++) {
+            arr[i] = odao.gettotalOrderByMonth(i + 1, year); // Lưu ý tháng bắt đầu từ 1
         }
         return arr;
     }
@@ -97,4 +120,17 @@ public class AdnimDashboardService {
     public int totalSuspendedShop(){
         return sdao.getTotalSuspendedShops();
     }
+    
+    //hàm lấy số lượng user theo tháng
+     public int[] arrayUserByMonth(int year) throws SQLException {
+        int[] arr = new int[12];
+        for (int i = 0; i < 12; i++) {
+            arr[i] = udao.getTotalUserByMonth(i + 1, year); // Lưu ý tháng bắt đầu từ 1
+        }
+        return arr;
+    }
+     
+     public int totalActiveUser() throws SQLException{
+         return udao.getTotalActive();
+     }
 }
