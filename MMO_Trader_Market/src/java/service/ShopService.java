@@ -1,11 +1,16 @@
 package service;
 
+import dao.order.OrderDAO;
 import dao.product.ProductDAO;
 import dao.shop.ShopDAO;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import model.ShopStatsView;
 import model.Shops;
+import model.statistics.BestSellerProduct;
+import model.statistics.QuarterRevenue;
+import model.view.shop.ShopPublicSummary;
 import java.util.regex.Pattern;
 
 /**
@@ -22,6 +27,20 @@ public class ShopService {
 
         private final ShopDAO shopDAO = new ShopDAO();
         private final ProductDAO productDAO = new ProductDAO();
+        private final OrderDAO orderDAO = new OrderDAO();
+
+        /**
+         * Lấy thông tin công khai của shop dành cho người mua.
+         *
+         * @param shopId ID shop cần tra cứu
+         * @return {@link Optional} chứa {@link ShopPublicSummary} nếu shop hoạt động
+         */
+        public Optional<ShopPublicSummary> findPublicSummary(int shopId) {
+                if (shopId <= 0) {
+                        return Optional.empty();
+                }
+                return shopDAO.findPublicSummaryById(shopId);
+        }
 
 	/**
 	 * Tạo shop mới cho seller.
@@ -130,8 +149,81 @@ public class ShopService {
 	 * @return Optional chứa Shops nếu tìm thấy và thuộc về owner, Optional.empty() nếu không
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-        public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
+        public Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
                 return shopDAO.findByIdAndOwner(id, ownerId);
+        }
+
+        /**
+         * Lấy chi tiết shop kèm thống kê cơ bản theo ID và owner.
+         *
+         * @param shopId  ID shop
+         * @param ownerId ID chủ sở hữu
+         * @return {@link Optional} chứa {@link ShopStatsView} nếu tìm thấy
+         * @throws SQLException nếu truy vấn lỗi
+         */
+        public Optional<ShopStatsView> findDetailWithStats(int shopId, int ownerId) throws SQLException {
+                return shopDAO.findDetailByIdAndOwner(shopId, ownerId);
+        }
+
+        /**
+         * Lấy thống kê doanh thu theo quý cho shop trong các mốc 3/6/12 tháng.
+         *
+         * @param shopId      ID shop
+         * @param rangeMonths số tháng cần thống kê (3,6,12)
+         * @return danh sách doanh thu từng quý (luôn đủ số phần tử tương ứng)
+         */
+        public List<QuarterRevenue> getQuarterlyRevenue(int shopId, int rangeMonths) {
+                int sanitizedMonths = switch (rangeMonths) {
+                        case 6 -> 6;
+                        case 12 -> 12;
+                        default -> 3;
+                };
+                int quarters = sanitizedMonths / 3;
+
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                cal.set(java.util.Calendar.MINUTE, 0);
+                cal.set(java.util.Calendar.SECOND, 0);
+                cal.set(java.util.Calendar.MILLISECOND, 0);
+                int monthInQuarter = cal.get(java.util.Calendar.MONTH) % 3;
+                cal.add(java.util.Calendar.MONTH, -monthInQuarter);
+
+                java.util.Calendar start = (java.util.Calendar) cal.clone();
+                start.add(java.util.Calendar.MONTH, -3 * (quarters - 1));
+
+                java.sql.Timestamp startTimestamp = new java.sql.Timestamp(start.getTimeInMillis());
+                List<QuarterRevenue> raw = orderDAO.getQuarterlyRevenue(shopId, startTimestamp);
+                java.util.Map<String, QuarterRevenue> mapped = new java.util.LinkedHashMap<>();
+                for (QuarterRevenue item : raw) {
+                        String key = item.getYear() + "-" + item.getQuarter();
+                        mapped.put(key, item);
+                }
+
+                List<QuarterRevenue> result = new java.util.ArrayList<>();
+                java.util.Calendar cursor = (java.util.Calendar) start.clone();
+                for (int i = 0; i < quarters; i++) {
+                        int year = cursor.get(java.util.Calendar.YEAR);
+                        int quarter = (cursor.get(java.util.Calendar.MONTH) / 3) + 1;
+                        String key = year + "-" + quarter;
+                        QuarterRevenue existing = mapped.get(key);
+                        if (existing == null) {
+                                existing = new QuarterRevenue(year, quarter, java.math.BigDecimal.ZERO);
+                        }
+                        result.add(existing);
+                        cursor.add(java.util.Calendar.MONTH, 3);
+                }
+                return result;
+        }
+
+        /**
+         * Tìm sản phẩm bán chạy nhất của shop.
+         *
+         * @param shopId ID shop
+         * @return {@link Optional} chứa {@link BestSellerProduct} nếu có
+         */
+        public Optional<BestSellerProduct> findBestSellerProduct(int shopId) {
+                return orderDAO.findBestSellingProduct(shopId);
         }
 
         /**

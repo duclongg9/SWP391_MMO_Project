@@ -1,9 +1,3 @@
-<%@page import="java.util.HashMap"%>
-<%@page import="java.util.Map"%>
-<%@page import="java.util.ArrayList"%>
-<%@page import="java.util.ArrayList"%>
-<%@page import="java.util.List"%>
-<%@page import="java.util.List"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -17,9 +11,33 @@
 <main class="layout__content">
     <section class="product-browse">
         <div class="product-browse__header">
-            <h2><c:out value="${currentTypeLabel}" /></h2>
-            <form class="product-search" method="get" action="${cPath}/products">
-                <label class="sr-only" for="product-search-keyword" id="product-search-label">Tìm sản phẩm</label>
+            <h2><c:out value="${shopSummary.name}" /></h2>
+            <p class="product-browse__subtitle"><c:out value="${shopSummary.description}" /></p>
+            <div class="product-browse__stats">
+                <span>Tổng sản phẩm: <strong>${shopSummary.productCount}</strong></span>
+                <c:if test="${not empty currentTypeLabel}">
+                    <span>Đang xem: <strong><c:out value="${currentTypeLabel}" /></strong></span>
+                </c:if>
+            </div>
+            <c:if test="${not empty typeOptions}">
+                <form class="product-type-filter" method="get" action="${cPath}/shops/${shopSummary.encodedId}">
+                    <label class="product-list__page-size-label" for="shop-type-filter">Danh mục</label>
+                    <input type="hidden" name="page" value="1" />
+                    <input type="hidden" name="pageSize" value="${pageSize}" />
+                    <input type="hidden" name="sort" value="${sortOrder}" />
+                    <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
+                    <select class="select" name="type" id="shop-type-filter" onchange="this.form.submit()">
+                        <option value="">Tất cả</option>
+                        <c:forEach var="option" items="${typeOptions}">
+                            <option value="${option.code}" <c:if test="${option.code == selectedType}">selected</c:if>>
+                                <c:out value="${option.label}" />
+                            </option>
+                        </c:forEach>
+                    </select>
+                </form>
+            </c:if>
+            <form class="product-search" method="get" action="${cPath}/shops/${shopSummary.encodedId}">
+                <label class="sr-only" for="shop-search-keyword">Tìm sản phẩm trong shop</label>
                 <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                 <input type="hidden" name="page" value="1" />
                 <input type="hidden" name="pageSize" value="${pageSize}" />
@@ -28,7 +46,7 @@
                     <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
                 </c:forEach>
                 <div class="product-search__field">
-                    <input class="product-search__input" type="search" name="keyword" id="product-search-keyword"
+                    <input class="product-search__input" type="search" name="keyword" id="shop-search-keyword"
                            placeholder="Tìm kiếm sản phẩm..." value="${fn:escapeXml(keyword)}" />
                     <button class="button button--primary product-search__submit" type="submit">Tìm</button>
                 </div>
@@ -36,13 +54,13 @@
         </div>
         <div class="product-browse__layout">
             <aside class="product-browse__sidebar">
-                <form class="product-filter-sidebar" method="get" action="${cPath}/products">
+                <form class="product-filter-sidebar" method="get" action="${cPath}/shops/${shopSummary.encodedId}">
                     <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                     <input type="hidden" name="page" value="1" />
                     <input type="hidden" name="pageSize" value="${pageSize}" />
                     <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
                     <input type="hidden" name="sort" value="${sortOrder}" />
-                    <h3 class="product-filter-sidebar__title">Bộ Lọc</h3>
+                    <h3 class="product-filter-sidebar__title">Bộ Lọc theo subtype</h3>
                     <div class="product-filter-sidebar__group">
                         <c:choose>
                             <c:when test="${not empty subtypeOptions}">
@@ -50,13 +68,13 @@
                                     <label class="product-filter-sidebar__option">
                                         <input type="checkbox" name="subtype" value="${fn:escapeXml(option.code)}"
                                                <c:if test="${not empty selectedSubtypes and selectedSubtypes.contains(option.code)}">checked</c:if>
-                                                   onchange="this.form.submit()" />
-                                               <span><c:out value="${option.label}" /></span>
+                                               onchange="this.form.submit()" />
+                                        <span><c:out value="${option.label}" /></span>
                                     </label>
                                 </c:forEach>
                             </c:when>
                             <c:otherwise>
-                                <p class="product-filter-sidebar__empty">Không có phân loại chi tiết cho danh mục này.</p>
+                                <p class="product-filter-sidebar__empty">Chưa có phân loại chi tiết cho danh mục này.</p>
                             </c:otherwise>
                         </c:choose>
                     </div>
@@ -68,10 +86,10 @@
             <div class="product-browse__results">
                 <div class="product-list__meta product-browse__meta">
                     <div class="product-list__stats">
-                        <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
+                        <span>Tổng <strong>${totalItems}</strong> sản phẩm phù hợp.</span>
                         <span>Trang ${page} / ${totalPages}</span>
                     </div>
-                    <form class="product-list__sort" method="get" action="${cPath}/products">
+                    <form class="product-list__sort" method="get" action="${cPath}/shops/${shopSummary.encodedId}">
                         <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                         <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
                         <input type="hidden" name="page" value="1" />
@@ -79,13 +97,13 @@
                         <c:forEach var="code" items="${selectedSubtypes}">
                             <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
                         </c:forEach>
-                        <label class="product-list__page-size-label" for="product-sort">Sắp xếp</label>
-                        <select class="select" name="sort" id="product-sort" onchange="this.form.submit()">
+                        <label class="product-list__page-size-label" for="shop-sort">Sắp xếp</label>
+                        <select class="select" name="sort" id="shop-sort" onchange="this.form.submit()">
                             <option value="newest" <c:if test="${sortOrder == 'newest'}">selected</c:if>>Mới nhất</option>
                             <option value="best_seller" <c:if test="${sortOrder == 'best_seller'}">selected</c:if>>Bán chạy</option>
                         </select>
                     </form>
-                    <form class="product-list__page-size" method="get" action="${cPath}/products">
+                    <form class="product-list__page-size" method="get" action="${cPath}/shops/${shopSummary.encodedId}">
                         <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                         <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
                         <input type="hidden" name="page" value="1" />
@@ -93,8 +111,8 @@
                         <c:forEach var="code" items="${selectedSubtypes}">
                             <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
                         </c:forEach>
-                        <label class="product-list__page-size-label" for="product-page-size">Hiển thị</label>
-                        <select class="select" name="pageSize" id="product-page-size" onchange="this.form.submit()">
+                        <label class="product-list__page-size-label" for="shop-page-size">Hiển thị</label>
+                        <select class="select" name="pageSize" id="shop-page-size" onchange="this.form.submit()">
                             <c:forEach var="option" items="${pageSizeOptions}">
                                 <option value="${option}" <c:if test="${option == pageSize}">selected</c:if>>${option} / trang</option>
                             </c:forEach>
@@ -133,7 +151,6 @@
                                         <h3 class="product-card__title clamp-2"><c:out value="${p.name}" /></h3>
                                         <p class="product-card__meta">
                                             <span><c:out value="${p.productTypeLabel}" /> • <c:out value="${p.productSubtypeLabel}" /></span>
-                                            <span>Shop: <strong><a class="product-card__shop" href="${cPath}/shops/${p.shopEncodedId}"><c:out value="${p.shopName}" /></a></strong></span>
                                         </p>
                                         <p class="product-card__description"><c:out value="${p.shortDescription}" /></p>
                                         <p class="product-card__price">
@@ -164,7 +181,7 @@
                     </c:when>
                     <c:otherwise>
                         <div class="product-card product-card--empty">
-                            <p>Không tìm thấy sản phẩm phù hợp.</p>
+                            <p>Shop hiện chưa có sản phẩm phù hợp.</p>
                         </div>
                     </c:otherwise>
                 </c:choose>
@@ -175,8 +192,10 @@
                                 <span class="pagination__item pagination__item--disabled" aria-disabled="true">«</span>
                             </c:when>
                             <c:otherwise>
-                                <c:url var="prevUrl" value="/products">
-                                    <c:param name="type" value="${type}" />
+                                <c:url var="prevUrl" value="/shops/${shopSummary.encodedId}">
+                                    <c:if test="${not empty type}">
+                                        <c:param name="type" value="${type}" />
+                                    </c:if>
                                     <c:if test="${not empty keyword}">
                                         <c:param name="keyword" value="${keyword}" />
                                     </c:if>
@@ -193,8 +212,10 @@
                             </c:otherwise>
                         </c:choose>
                         <c:forEach var="pageNumber" begin="1" end="${totalPages}">
-                            <c:url var="pageUrl" value="/products">
-                                <c:param name="type" value="${type}" />
+                            <c:url var="pageUrl" value="/shops/${shopSummary.encodedId}">
+                                <c:if test="${not empty type}">
+                                    <c:param name="type" value="${type}" />
+                                </c:if>
                                 <c:if test="${not empty keyword}">
                                     <c:param name="keyword" value="${keyword}" />
                                 </c:if>
@@ -221,8 +242,10 @@
                                 <span class="pagination__item pagination__item--disabled" aria-disabled="true">»</span>
                             </c:when>
                             <c:otherwise>
-                                <c:url var="nextUrl" value="/products">
-                                    <c:param name="type" value="${type}" />
+                                <c:url var="nextUrl" value="/shops/${shopSummary.encodedId}">
+                                    <c:if test="${not empty type}">
+                                        <c:param name="type" value="${type}" />
+                                    </c:if>
                                     <c:if test="${not empty keyword}">
                                         <c:param name="keyword" value="${keyword}" />
                                     </c:if>

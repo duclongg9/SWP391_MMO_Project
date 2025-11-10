@@ -1,4 +1,4 @@
-package controller.product;
+package controller.shop;
 
 import controller.BaseController;
 import jakarta.servlet.ServletException;
@@ -9,16 +9,23 @@ import model.product.PagedResult;
 import model.view.product.ProductSubtypeOption;
 import model.view.product.ProductSummaryView;
 import model.view.product.ProductTypeOption;
+import model.view.shop.ShopPublicSummary;
 import service.ProductService;
+import service.ShopService;
+import units.IdObfuscator;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
-@WebServlet(name = "ProductListController", urlPatterns = {"/products"})
-public class ProductListController extends BaseController {
+/**
+ * Hiển thị trang công khai của shop bao gồm danh sách sản phẩm và các bộ lọc.
+ */
+@WebServlet(name = "ShopCatalogController", urlPatterns = {"/shops/*"})
+public class ShopCatalogController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_PAGE = 1;
@@ -27,59 +34,65 @@ public class ProductListController extends BaseController {
     private static final String SORT_NEWEST = "newest";
     private static final String SORT_BEST_SELLER = "best_seller";
 
+    private final ShopService shopService = new ShopService();
     private final ProductService productService = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<ProductTypeOption> typeOptions = productService.getTypeOptions(); //Lấy danh sách type khả dụng
-        String requestedType = request.getParameter("type"); //Lấy type từ query, normalize về code hợp lệ
-        String normalizedType = productService.normalizeTypeCode(requestedType);
-        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty();
-        if (normalizedType == null && hasRawType) {
-            Optional<String> fallbackType = typeOptions.stream()
-                    .map(ProductTypeOption::getCode)
-                    .findFirst();
-            if (fallbackType.isPresent()) {
-                // Nếu không truyền type hợp lệ thì chuyển sang loại đầu tiên.
-                response.sendRedirect(request.getContextPath() + "/products?type=" + fallbackType.get());
-                return;
-            }
+        String token = extractTokenFromPath(request);
+        if (token == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-//Lấy trang (mặc định 1) và kích thước trang (mặc định 5).
-        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE); 
+
+        int shopId;
+        try {
+            shopId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        Optional<ShopPublicSummary> shopOpt = shopService.findPublicSummary(shopId);
+        if (shopOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        ShopPublicSummary shop = shopOpt.get();
+
+        String requestedType = request.getParameter("type");
+        String normalizedType = productService.normalizeTypeCode(requestedType);
+        int page = parsePositiveIntOrDefault(request.getParameter("page"), DEFAULT_PAGE);
         int sizeCandidate = parsePositiveIntOrDefault(resolveSizeParam(request), DEFAULT_SIZE);
-        int size = PAGE_SIZE_OPTIONS.contains(sizeCandidate) ? sizeCandidate : DEFAULT_SIZE;
-//Chuẩn hoá keyword: trim, rỗng ⇒ coi như không có.
+        int pageSize = PAGE_SIZE_OPTIONS.contains(sizeCandidate) ? sizeCandidate : DEFAULT_SIZE;
+
         String rawKeyword = request.getParameter("keyword");
         String normalizedKeyword = rawKeyword == null ? null : rawKeyword.trim();
         if (normalizedKeyword != null && normalizedKeyword.isBlank()) {
             normalizedKeyword = null;
         }
-//Lấy danh sách subtype được chọn (có thể nhiều), chuẩn hoá theo type hiện tại.
+
         List<String> subtypeFilters = productService.normalizeSubtypeCodes(normalizedType,
                 request.getParameterValues("subtype"));
-        Set<String> selectedSubtypeSet = new LinkedHashSet<>(subtypeFilters);
-//Gọi service lấy kết quả trang (items, page, size, total, totalPages).
+        Set<String> selectedSubtypes = new LinkedHashSet<>(subtypeFilters);
+
         String sortOrder = normalizeSort(request.getParameter("sort"));
         String serviceSort = SORT_BEST_SELLER.equals(sortOrder) ? SORT_BEST_SELLER : null;
 
-        PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
-                normalizedKeyword, serviceSort, page, size);
+        PagedResult<ProductSummaryView> result = productService.browseByShop(shopId, normalizedType, subtypeFilters,
+                normalizedKeyword, serviceSort, page, pageSize);
+
+        List<ProductTypeOption> typeOptions = productService.getTypeOptionsForShop(shopId);
         List<ProductSubtypeOption> subtypeOptions = normalizedType == null
                 ? List.of()
-                : productService.getSubtypeOptions(normalizedType);
+                : productService.getSubtypeOptionsForShop(shopId, normalizedType);
         String currentTypeLabel = normalizedType == null
                 ? "Tất cả sản phẩm"
-                : typeOptions.stream()
-                        .filter(option -> option.getCode().equals(normalizedType))
-                        .map(ProductTypeOption::getLabel)
-                        .findFirst()
-                        .orElse(productService.getTypeLabel(normalizedType));
+                : productService.getTypeLabel(normalizedType);
 
-        request.setAttribute("pageTitle", currentTypeLabel + " - Sản phẩm");
+        request.setAttribute("shopSummary", shop);
+        request.setAttribute("pageTitle", shop.getName() + " - Shop");
         request.setAttribute("items", result.getItems());
         request.setAttribute("totalItems", result.getTotalItems());
         request.setAttribute("page", result.getPage());
@@ -88,17 +101,20 @@ public class ProductListController extends BaseController {
         request.setAttribute("pageSizeOptions", PAGE_SIZE_OPTIONS);
         request.setAttribute("totalPages", result.getTotalPages());
         request.setAttribute("selectedType", normalizedType == null ? "" : normalizedType);
-        request.setAttribute("selectedSubtypes", selectedSubtypeSet);
+        request.setAttribute("selectedSubtypes", selectedSubtypes);
         request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
         request.setAttribute("sortOrder", sortOrder == null ? SORT_NEWEST : sortOrder);
         request.setAttribute("typeOptions", typeOptions);
         request.setAttribute("subtypeOptions", subtypeOptions);
         request.setAttribute("currentTypeLabel", currentTypeLabel);
+        request.setAttribute("shopToken", shop.getEncodedId());
 
-        forward(request, response, "product/list");
+        forward(request, response, "shop/catalog");
     }
 
-    // Phân tích số nguyên dương, trả về mặc định nếu đầu vào không hợp lệ.
+    /**
+     * Chuẩn hóa số nguyên dương từ query string.
+     */
     private int parsePositiveIntOrDefault(String value, int defaultValue) {
         if (value == null) {
             return defaultValue;
@@ -111,7 +127,6 @@ public class ProductListController extends BaseController {
         }
     }
 
-    // Ưu tiên tham số pageSize nếu có, nếu không thì lấy size (tương thích cũ).
     private String resolveSizeParam(HttpServletRequest request) {
         String pageSizeParam = request.getParameter("pageSize");
         if (pageSizeParam != null && !pageSizeParam.isBlank()) {
@@ -121,16 +136,13 @@ public class ProductListController extends BaseController {
     }
 
     /**
-     * Chuẩn hóa tham số sắp xếp từ query string để tránh giá trị không hợp lệ.
-     *
-     * @param sortParam giá trị raw từ request
-     * @return mã sắp xếp hợp lệ hoặc {@code null} nếu mặc định
+     * Chuẩn hóa tham số sắp xếp để tránh truyền giá trị không hợp lệ xuống DAO.
      */
     private String normalizeSort(String sortParam) {
         if (sortParam == null) {
             return null;
         }
-        String normalized = sortParam.trim().toLowerCase(java.util.Locale.ROOT);
+        String normalized = sortParam.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             return null;
         }
@@ -141,5 +153,21 @@ public class ProductListController extends BaseController {
             return SORT_NEWEST;
         }
         return null;
+    }
+
+    /**
+     * Tách token shop từ phần path của URL thân thiện.
+     */
+    private String extractTokenFromPath(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || pathInfo.isBlank() || "/".equals(pathInfo)) {
+            return null;
+        }
+        String token = pathInfo.charAt(0) == '/' ? pathInfo.substring(1) : pathInfo;
+        int slashIndex = token.indexOf('/');
+        if (slashIndex >= 0) {
+            token = token.substring(0, slashIndex);
+        }
+        return token.isBlank() ? null : token;
     }
 }
