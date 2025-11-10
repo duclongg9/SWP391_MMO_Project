@@ -218,13 +218,21 @@
                     border-radius: 12px;
                     background: #fff7ed;
                     border: 1px solid rgba(249, 115, 22, 0.35);
-                    padding: 0.75rem 1rem;
+                    padding: 0.5rem;
+                    max-width: 160px;
                 }
 
                 .order-report__evidence a {
-                    color: #c2410c;
-                    font-weight: 600;
-                    text-decoration: none;
+                    display: block;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+
+                .order-report__evidence img {
+                    display: block;
+                    width: 100%;
+                    height: 120px;
+                    object-fit: cover;
                 }
 
                 .order-report-modal {
@@ -507,7 +515,11 @@
                         <div class="order-report__evidences">
                             <c:forEach var="attachment" items="${existingDisputeAttachments}">
                                 <div class="order-report__evidence">
-                                    <a href="<c:url value='/${attachment.filePath}' />" target="_blank" rel="noopener">Xem ảnh</a>
+                                    <a href="<c:url value='/${attachment.filePath}' />" target="_blank" rel="noopener">
+                                        <img src="<c:url value='/${attachment.filePath}' />"
+                                             alt="Ảnh bằng chứng liên quan đến báo cáo"
+                                             loading="lazy" />
+                                    </a>
                                 </div>
                             </c:forEach>
                         </div>
@@ -664,9 +676,9 @@
                             line-height: 1.6;
                         }
                     </style>
-                    <%-- Nếu đơn đã hoàn thành, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
+                    <%-- Nếu đơn đã hoàn thành hoặc đang tranh chấp, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
                     <c:choose>
-                        <c:when test="${order.status eq 'Completed'}">
+                        <c:when test="${order.status eq 'Completed' or order.status eq 'Disputed'}">
                             <c:choose>
                                 <c:when test="${credentialsUnlocked and not empty credentials}">
                                     <ul class="list">
@@ -676,7 +688,7 @@
                                     </ul>
                                 </c:when>
                                 <c:when test="${credentialsUnlocked and empty credentials}">
-                                    <p class="empty">Đơn hàng đã hoàn thành nhưng chưa có dữ liệu bàn giao.</p>
+                                    <p class="empty">Đơn hàng hiện chưa có dữ liệu bàn giao để hiển thị.</p>
                                 </c:when>
                                 <c:otherwise>
                                     <p class="credential-unlock__helper">
