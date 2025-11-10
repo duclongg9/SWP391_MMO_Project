@@ -140,6 +140,9 @@ public class AdminViewServlet extends HttpServlet {
             case "/shops/status":
                 handleShopStatus(req, resp);
                 return;
+            case "/systems/escrow":
+                handleUpdateEscrowConfig(req, resp);
+                return;
             default:
                 resp.sendError(404);
         }
@@ -227,6 +230,48 @@ public class AdminViewServlet extends HttpServlet {
             e.printStackTrace();
             resp.sendError(500, e.getMessage());
         }
+    }
+
+    /**
+     * Cập nhật cấu hình thời gian giữ escrow dựa trên giá trị (giờ) được gửi từ form.
+     */
+    private void handleUpdateEscrowConfig(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+
+        req.setCharacterEncoding("UTF-8");
+        String hoursParam = safe(req.getParameter("escrowHoldHours"));
+        HttpSession session = req.getSession();
+
+        if (hoursParam == null) {
+            session.setAttribute("flashError", "Vui lòng nhập thời gian escrow mong muốn (giờ).");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        try {
+            int hours = Integer.parseInt(hoursParam);
+            if (hours < 1 || hours > 720) {
+                session.setAttribute("flashError", "Thời gian escrow phải nằm trong khoảng 1 - 720 giờ.");
+                resp.sendRedirect(req.getContextPath() + "/admin/systems");
+                return;
+            }
+
+            long seconds = (long) hours * 3600L;
+            boolean updated = systemConfigDAO.upsertValueByKey(
+                    "escrow.hold.default.seconds",
+                    Long.toString(seconds)
+            );
+
+            if (updated) {
+                session.setAttribute("flash", "Đã cập nhật thời gian giữ tiền escrow thành " + hours + " giờ.");
+            } else {
+                session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
+            }
+        } catch (NumberFormatException ex) {
+            session.setAttribute("flashError", "Thời gian escrow phải là số nguyên hợp lệ.");
+        }
+
+        resp.sendRedirect(req.getContextPath() + "/admin/systems");
     }
 
     // ================== Tạo user: báo lỗi trong popup (không JS) ==================
@@ -378,12 +423,8 @@ public class AdminViewServlet extends HttpServlet {
                     handleShops(req, resp);
                 case "/kycs" ->
                     handleKycs(req, resp);
-                case "/systems" -> {
-                    req.setAttribute("pageTitle", "Quản lí hệ thống");
-                    req.setAttribute("active", "systems");
-                    req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
-                    req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
-                }
+                case "/systems" ->
+                    handleSystems(req, resp);
                 default -> {
                     // Nếu path không hợp lệ, redirect về dashboard
                     resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
@@ -562,51 +603,14 @@ public class AdminViewServlet extends HttpServlet {
             if (size <= 0) {
                 size = DEFAULT_SIZE;
             }
-            // total = 20, size = 8, pages = 3; page = (1,3), fromIdx =(0,
 
-            case "/systems": {
-                HttpSession session = req.getSession(false);
-                if (session != null) {
-                    Object flash = session.getAttribute("flash");
-                    if (flash != null) {
-                        req.setAttribute("flash", flash);
-                        session.removeAttribute("flash");
-                    }
-                    Object flashError = session.getAttribute("flashError");
-                    if (flashError != null) {
-                        req.setAttribute("flashError", flashError);
-                        session.removeAttribute("flashError");
-                    }
-                }
-                long escrowHoldSeconds = DEFAULT_ESCROW_HOLD_SECONDS;
-                int escrowHoldHours = (int) (DEFAULT_ESCROW_HOLD_SECONDS / 3600L);
-                String configValue = systemConfigDAO.findValueByKey("escrow.hold.default.seconds").orElse(null);
-                if (configValue != null) {
-                    String trimmed = configValue.trim();
-                    if (!trimmed.isEmpty()) {
-                        try {
-                            long parsedSeconds = Long.parseLong(trimmed);
-                            if (parsedSeconds > 0) {
-                                escrowHoldSeconds = parsedSeconds;
-                                long hoursCeil = (parsedSeconds + 3599L) / 3600L;
-                                if (hoursCeil > Integer.MAX_VALUE) {
-                                    escrowHoldHours = Integer.MAX_VALUE;
-                                } else {
-                                    escrowHoldHours = (int) Math.max(hoursCeil, 1L);
-                                }
-                            }
-                        } catch (NumberFormatException ignore) {
-                            // fallback về mặc định khi cấu hình không hợp lệ
-                        }
-                    }
-                }
-                req.setAttribute("escrowHoldHours", escrowHoldHours);
-                req.setAttribute("escrowHoldSeconds", escrowHoldSeconds);
-                content = "/WEB-INF/views/Admin/pages/systems.jsp";
-                title = "Cấu hình hệ thống";
-                active = "systems";
-                break;
-            }
+            int total = list.size();
+            int pages = ceilDiv(total, size);
+            page = clampPage(page, pages);
+
+            int fromIdx = Math.max(0, (page - 1) * size);
+            int toIdx = Math.min(total, fromIdx + size);
+            List<Users> pageList = list.subList(fromIdx, toIdx);
 
             req.setAttribute("userList", pageList);
             // set paging attrs (để JSP chỉ hiển thị)
@@ -633,6 +637,57 @@ public class AdminViewServlet extends HttpServlet {
         req.setAttribute("pageTitle", "Quản lý người dùng");
         req.setAttribute("active", "users");
         req.setAttribute("content", "/WEB-INF/views/Admin/pages/users.jsp");
+        req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+    }
+
+    /**
+     * Hiển thị trang cấu hình hệ thống và nạp thông tin cấu hình escrow hiện tại.
+     */
+    private void handleSystems(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        HttpSession session = req.getSession(false);
+        if (session != null) {
+            Object flash = session.getAttribute("flash");
+            if (flash != null) {
+                req.setAttribute("flash", flash);
+                session.removeAttribute("flash");
+            }
+            Object flashError = session.getAttribute("flashError");
+            if (flashError != null) {
+                req.setAttribute("flashError", flashError);
+                session.removeAttribute("flashError");
+            }
+        }
+
+        long escrowHoldSeconds = DEFAULT_ESCROW_HOLD_SECONDS;
+        int escrowHoldHours = (int) Math.max(DEFAULT_ESCROW_HOLD_SECONDS / 3600L, 1L);
+        String configValue = systemConfigDAO.findValueByKey("escrow.hold.default.seconds").orElse(null);
+        if (configValue != null) {
+            String trimmed = configValue.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    long parsedSeconds = Long.parseLong(trimmed);
+                    if (parsedSeconds > 0) {
+                        escrowHoldSeconds = parsedSeconds;
+                        long hoursCeil = (parsedSeconds + 3599L) / 3600L;
+                        if (hoursCeil > Integer.MAX_VALUE) {
+                            escrowHoldHours = Integer.MAX_VALUE;
+                        } else {
+                            escrowHoldHours = (int) Math.max(hoursCeil, 1L);
+                        }
+                    }
+                } catch (NumberFormatException ignore) {
+                    // fallback về mặc định khi cấu hình không hợp lệ
+                }
+            }
+        }
+
+        req.setAttribute("escrowHoldHours", escrowHoldHours);
+        req.setAttribute("escrowHoldSeconds", escrowHoldSeconds);
+        req.setAttribute("pageTitle", "Cấu hình hệ thống");
+        req.setAttribute("active", "systems");
+        req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
         req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
     }
 
@@ -728,48 +783,10 @@ public class AdminViewServlet extends HttpServlet {
         if (size <= 0) {
             size = DEFAULT_SIZE;
         }
-
-        if ("/systems/escrow".equalsIgnoreCase(path)) {
-            req.setCharacterEncoding("UTF-8");
-            String hoursParam = safe(req.getParameter("escrowHoldHours"));
-            HttpSession session = req.getSession();
-            if (hoursParam == null) {
-                session.setAttribute("flashError", "Vui lòng nhập thời gian escrow mong muốn (giờ).");
-                resp.sendRedirect(req.getContextPath() + "/admin/systems");
-                return;
-            }
-            try {
-                int hours = Integer.parseInt(hoursParam);
-                if (hours < 1 || hours > 720) {
-                    session.setAttribute("flashError", "Thời gian escrow phải nằm trong khoảng 1 - 720 giờ.");
-                    resp.sendRedirect(req.getContextPath() + "/admin/systems");
-                    return;
-                }
-                long seconds = (long) hours * 3600L;
-                boolean updated = systemConfigDAO.upsertValueByKey("escrow.hold.default.seconds", Long.toString(seconds));
-                if (updated) {
-                    session.setAttribute("flash", "Đã cập nhật thời gian giữ tiền escrow thành " + hours + " giờ.");
-                } else {
-                    session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
-                }
-            } catch (NumberFormatException ex) {
-                session.setAttribute("flashError", "Thời gian escrow phải là số nguyên hợp lệ.");
-            }
-            resp.sendRedirect(req.getContextPath() + "/admin/systems");
-            return;
-        }
-
-        // ----- 1) Cập nhật trạng thái (ban/unban) -----
-        if ("/users/status".equalsIgnoreCase(path)) {
-            req.setCharacterEncoding("UTF-8");
-            String action = safe(req.getParameter("action")); // ban | unban
-            String idStr = safe(req.getParameter("id"));
-            if (action == null || idStr == null || !idStr.matches("\\d+")) {
-                resp.sendError(400, "Thiếu hoặc sai tham số");
-                return;
-            }
-            int userId = Integer.parseInt(idStr);
-            int newStatus = "unban".equalsIgnoreCase(action) ? 1 : 0;
+        LocalDate fromD = tryParseDate(from);
+        LocalDate toD = tryParseDate(to);
+        Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
+        Timestamp toAt = (toD == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
 
         try (Connection con = DBConnect.getConnection()) {
             ManageShopDAO dao = new ManageShopDAO(con);
