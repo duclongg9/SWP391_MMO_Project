@@ -2111,3 +2111,42 @@
 10-Nov-2025 20:19:50.648 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
 10-Nov-2025 20:19:50.655 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
 10-Nov-2025 20:19:50.660 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+10-Nov-2025 21:00:49.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+10-Nov-2025 21:00:49.129 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+10-Nov-2025 21:00:49.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+10-Nov-2025 21:00:49.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+10-Nov-2025 21:00:49.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+10-Nov-2025 21:00:49.131 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+10-Nov-2025 21:00:49.139 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+10-Nov-2025 21:00:49.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+10-Nov-2025 21:00:49.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+10-Nov-2025 21:00:49.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+10-Nov-2025 21:00:49.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+10-Nov-2025 21:00:49.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=62758
+10-Nov-2025 21:00:49.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+10-Nov-2025 21:00:49.144 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+10-Nov-2025 21:00:49.150 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+10-Nov-2025 21:00:49.519 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+10-Nov-2025 21:00:49.539 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [581] milliseconds
+10-Nov-2025 21:00:49.582 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+10-Nov-2025 21:00:49.583 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+10-Nov-2025 21:00:49.597 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+10-Nov-2025 21:00:49.619 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+10-Nov-2025 21:00:51.086 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+10-Nov-2025 21:00:51.212 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,614] ms
+10-Nov-2025 21:00:51.214 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+10-Nov-2025 21:00:51.255 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1716] milliseconds
+10-Nov-2025 21:49:44.885 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+10-Nov-2025 21:49:45.031 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+10-Nov-2025 21:49:45.042 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+10-Nov-2025 21:49:45.068 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]

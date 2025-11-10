@@ -146,11 +146,6 @@ public class AdminViewServlet extends HttpServlet {
         }
 
         int txId = Integer.parseInt(idStr);
-
-        // ===== Validate ghi chú =====
-        // - Reject: luôn bắt buộc
-        // - Accept Deposit: bắt buộc
-        // - Accept Withdrawal: note không bắt buộc
         boolean requireNote =
                 "reject".equalsIgnoreCase(action)
                         || ("accept".equalsIgnoreCase(action) && "Deposit".equalsIgnoreCase(txTypeP));
@@ -291,16 +286,30 @@ public class AdminViewServlet extends HttpServlet {
                     );
 
                 } else if ("Withdrawal".equalsIgnoreCase(type)) {
-                    // Reject RÚT: hoàn tiền + update trạng thái + lưu ảnh nếu có
-                    rowsWal = cashDAO.updateWalletPlus(userId, amount);
-                    rowsTx  = cashDAO.updateWithdrawalStatus(txId, "Rejected", note, adminProofUrl);
 
-                    req.getSession().setAttribute(
-                            "flash",
-                            (rowsWal > 0 && rowsTx > 0)
-                                    ? "Đã từ chối rút tiền #" + txId + " và hoàn tiền vào ví."
-                                    : "Không có thay đổi khi từ chối rút tiền #" + txId + "."
-                    );
+                    BigDecimal fee = new BigDecimal("10000");
+                    BigDecimal refund = amount.subtract(fee);
+                    if (refund.compareTo(BigDecimal.ZERO) < 0) {
+                        refund = BigDecimal.ZERO;
+                    }
+
+                    // Cộng lại vào ví số refund
+                    rowsWal = cashDAO.updateWalletPlus(userId, refund);
+                    // Lưu trạng thái + note (nên ghi rõ phí đã trừ trong note hoặc message)
+                    rowsTx = cashDAO.updateWithdrawalStatus(txId, "Rejected", note, adminProofUrl);
+                    if (rowsWal > 0 && rowsTx > 0) {
+                        req.getSession().setAttribute(
+                                "flash",
+                                "Đã từ chối rút tiền #" + txId +
+                                        " và hoàn " + refund.toPlainString() +
+                                        " (đã trừ phí 10.000)."
+                        );
+                    } else {
+                        req.getSession().setAttribute(
+                                "flash",
+                                "Không có thay đổi khi từ chối rút tiền #" + txId + "."
+                        );
+                    }
                 }
             }
 
@@ -388,33 +397,85 @@ public class AdminViewServlet extends HttpServlet {
 
 
     private void handleShopStatus(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException, ServletException {
+            throws IOException {
 
-        String idStr  = req.getParameter("id");
-        String action = req.getParameter("action");   // accept | reject
+        req.setCharacterEncoding("UTF-8");
 
+        String idStr     = safe(req.getParameter("id"));
+        String action    = safe(req.getParameter("action"));      // hiện tại dùng "ban"
+        String adminNote = safe(req.getParameter("admin_note"));  // từ textarea trong modal
+
+        // Validate ID
         if (idStr == null || !idStr.matches("\\d+")) {
-            resp.sendError(400, "Sai ID");
-            return;
-        }
-        if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
-            resp.sendError(400, "Action không hợp lệ");
+            req.getSession().setAttribute("flash", "Lỗi: ID cửa hàng không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
             return;
         }
 
         int shopId = Integer.parseInt(idStr);
-        String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
 
         try (Connection con = DBConnect.getConnection()) {
             ManageShopDAO dao = new ManageShopDAO(con);
-            boolean ok = dao.updateStatus(shopId, newStatus);
-            req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
+
+            // Lấy thông tin shop hiện tại
+            Shops shop = dao.findById(shopId);
+            if (shop == null) {
+                req.getSession().setAttribute("flash", "Lỗi: Không tìm thấy cửa hàng #" + shopId);
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            String currentStatus = shop.getStatus() == null ? "" : shop.getStatus();
+
+            // Hiện tại ta chỉ xử lý action = "ban"
+            if (!"ban".equalsIgnoreCase(action)) {
+                req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            // Chỉ được ban khi đang Active
+            if (!"Active".equalsIgnoreCase(currentStatus)) {
+                req.getSession().setAttribute(
+                        "flash",
+                        "Chỉ có thể ban cửa hàng đang ở trạng thái Active."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            // Bắt buộc admin_note
+            if (adminNote == null || adminNote.isBlank()) {
+                req.getSession().setAttribute(
+                        "flash",
+                        "Lỗi: Vui lòng nhập Admin note khi ban cửa hàng."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            // Cập nhật trạng thái -> Suspended + lưu note
+            boolean ok = dao.updateStatusAndNote(shopId, "Suspended", adminNote.trim());
+
+            req.getSession().setAttribute(
+                    "flash",
+                    ok
+                            ? "Đã ban cửa hàng #" + shopId + " thành công."
+                            : "Không có thay đổi khi ban cửa hàng #" + shopId + "."
+            );
+
             resp.sendRedirect(req.getContextPath() + "/admin/shops");
+
         } catch (Exception e) {
             e.printStackTrace();
-            resp.sendError(500, e.getMessage());
+            req.getSession().setAttribute(
+                    "flash",
+                    "Lỗi hệ thống: " + e.getMessage()
+            );
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
         }
     }
+
 
     // ================== Tạo user: báo lỗi trong popup (không JS) ==================
     private void handleCreateUser(HttpServletRequest req, HttpServletResponse resp)
