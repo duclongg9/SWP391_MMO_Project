@@ -16,11 +16,13 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.sql.Types;
+
 /**
  *
  * @author D E L L
  */
 public class WithdrawRequestDAO {
+
     private static final String COL_ID = "id";
     private static final String COL_USER_ID = "user_id";
     private static final String COL_AMOUNT = "amount";
@@ -29,15 +31,15 @@ public class WithdrawRequestDAO {
     private static final String COL_PROOF_URL = "admin_proof_url";
     private static final String COL_CREATED_AT = "created_at";
     private static final String COL_PROCESSED_AT = "processed_at";
-    
+
     //Tạo một yêu cầu rút tiền mới 
-    public int createWithDrawRequest(int userId, BigDecimal amount, String bankAccountInfo){
+    public int createWithDrawRequest(int userId, BigDecimal amount, String bankAccountInfo) {
         String sql = """
                      INSERT INTO mmo_schema.withdrawal_requests
                      (user_id, amount, bank_account_info, status, admin_proof_url, created_at, processed_at)
                      VALUES (?, ?, ?,'Pending', NULL, NOW(), NOW())
-                     """;   
-        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+                     """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ps.setBigDecimal(2, amount);
             ps.setString(3, bankAccountInfo);
@@ -46,7 +48,28 @@ public class WithdrawRequestDAO {
         } catch (SQLException e) {
             Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);
         }
-        
+
         return 0;
+    }
+
+    //Gọi tổng số tiền rút theo tháng
+    public BigDecimal getTotalWithdrawByMonth(int month, int year) throws SQLException {
+        String sql = """
+        SELECT 
+              IFNULL(SUM(amount), 0) AS total_withdraw
+          FROM mmo_schema.withdrawal_requests
+          WHERE status = 'Completed'
+            AND YEAR(created_at) = ?
+            AND MONTH(created_at) = ?;
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal("total_withdraw");
+            }
+        }
+        return BigDecimal.ZERO;
     }
 }

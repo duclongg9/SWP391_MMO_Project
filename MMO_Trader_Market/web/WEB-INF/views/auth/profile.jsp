@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/notification.css"/>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -16,6 +17,7 @@
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
+
 <main class="layout__content grid-2">
     <section class="panel profile-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
 
@@ -43,7 +45,7 @@
                 <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
             </c:if>
             <c:if test="${not empty emg}">
-                <div class="alert alert--danger" role="alert" aria-live="assertive">${emg}</div>
+                <div class="alert alert--error" role="alert" aria-live="assertive">${emg}</div>
             </c:if>
         </div>
 
@@ -97,7 +99,7 @@
                     <tr>
                         <td colspan="2" class="actions">
                             <input type="hidden" name="csrfToken" value="${csrf}">
-                            <button type="submit" class="button button--primary">Update</button>
+                            <button type="submit" class="button button--primary" >Update</button>
                         </td>
                     </tr>
                 </tbody>
@@ -129,8 +131,8 @@
                         <th scope="row"><label for="newPass">Mật khẩu mới</label></th>
                         <td><input id="newPass" name="newPass" type="password" required
                                    autocomplete="new-password" minlength="8"
-                                   pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp"><br>
-                            <label>Tối thiểu 8 ký tự, có chữ và số.</label>
+                                   pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp" placeholder = "Tối thiểu 8 ký tự, có chữ và số."><br>
+                     
                         </td>
 
                     </tr>
@@ -138,7 +140,10 @@
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
                                    autocomplete="new-password" oninput="validatePass()"><br>
-                        <label id="errMsg" style="color:red;display:none;">Mật khẩu mới không được trùng mật khẩu cũ!</label>
+                        <div class="alert-wrapper">
+                            <div class="alert alert--error" id="errMsg" style="display:none;"></div>
+                            <div class="alert alert--success" id="msg" style="display:none;"></div>
+                        </div>
                         </td>
                 
 
@@ -152,27 +157,74 @@
                 </tbody>
             </table>
         </form>
-<script>
-function validatePass() {
-    const oldPass = document.getElementById("oldPass").value.trim();
-    const newPass = document.getElementById("newPass").value.trim();
-    const confirmPass = document.getElementById("confirmPass").value.trim();
-    const errMsg = document.getElementById("errMsg");
+                 <div id="toastBox"></div>             
+    
 
-    // Mật khẩu nhập lại sai
-    if (newPass && confirmPass && newPass !== confirmPass) {
-        errMsg.textContent = "Nhập lại mật khẩu không khớp!";
-        errMsg.style.display = "inline";
-        return false;
-    }
-
-    errMsg.style.display = "none";
-    return true;
-}
-</script>
 
     </section>
 
 </main>
+                           
+                       
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+ <script>
+     document.addEventListener('DOMContentLoaded', () => {
+            const toastBox = document.getElementById('toastBox');
+
+            function showToast(msg, type = 'success') {
+                if (!toastBox) return;
+                const toast = document.createElement('div');
+                toast.classList.add('mm-toast');
+                if (type === 'error') toast.classList.add('error');
+                toast.innerHTML = msg;
+                toastBox.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            }
+
+            // Lấy message từ request
+            const okMsg = "${fn:escapeXml(msg)}";
+            const errMsg = "${fn:escapeXml(emg)}";
+
+            if(errMsg) showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
+            if(okMsg) showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
+        });
+     
+function validatePass() {
+    const newPass = document.getElementById("newPass").value.trim();
+    const confirmPass = document.getElementById("confirmPass").value.trim();
+    const errMsg = document.getElementById("errMsg");
+    const msg = document.getElementById("msg");
+
+    errMsg.style.display = "none";
+    msg.style.display = "none";
+
+    if (newPass && confirmPass && newPass !== confirmPass) {
+        errMsg.textContent = "Nhập lại mật khẩu không khớp!";
+        errMsg.style.display = "block";
+        return false;
+    }
+
+    if (newPass && confirmPass && newPass === confirmPass) {
+        msg.textContent = "Mật khẩu khớp!";
+        msg.style.display = "block";
+        return true;
+    }
+
+    return true;
+}
+
+
+</script>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

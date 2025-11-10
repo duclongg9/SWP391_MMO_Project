@@ -1531,10 +1531,15 @@ code {
 }
 
 /* Alerts */
+alert-wrapper {
+    min-height: 1.5rem;  /* giữ khoảng trống khi alert ẩn */
+    margin-top: 4px;      /* khoảng cách với input */
+}
 .alert {
     padding: 0.85rem 1rem;
     border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    display: none;
 }
 
 .alert--error {

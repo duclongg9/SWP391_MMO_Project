@@ -2,6 +2,7 @@ package dao.user;
 
 import dao.BaseDAO;
 import dao.connect.DBConnect;
+import java.math.BigDecimal;
 import model.Users;
 
 import java.sql.*;
@@ -88,7 +89,7 @@ public class UserDAO extends BaseDAO {
      * @return số hàng bị ảnh hưởng
      * @throws SQLException khi câu lệnh SQL lỗi
      */
-    public int updateUserProfileBasic(int id, String name , String avata) throws SQLException {
+    public int updateUserProfileBasic(int id, String name, String avata) throws SQLException {
         final String sql = """
                 UPDATE users
                 SET name = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
@@ -153,7 +154,7 @@ public class UserDAO extends BaseDAO {
     }
 
     /**
-     lấy người dùng theo email
+     * lấy người dùng theo email
      */
     public Users getUserByEmail(String email) {
         final String sql = """
@@ -175,6 +176,7 @@ public class UserDAO extends BaseDAO {
         return null;
     }
 // tìm user theo email bất kể stt là gì
+
     public Users getUserByEmailAnyStatus(String email) {
         final String sql = """
                 SELECT * FROM users
@@ -361,5 +363,41 @@ public class UserDAO extends BaseDAO {
             ps.setInt(2, userId);
             return ps.executeUpdate();
         }
+    }
+
+    public int getTotalUserByMonth(int month, int year) throws SQLException {
+        String sql = """
+        SELECT 
+                COUNT(*) AS total_user
+            FROM mmo_schema.users
+            WHERE status = 1
+              AND YEAR(created_at) = ?
+              AND MONTH(created_at) = ?;
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total_order");
+            }
+        }
+        return 0;
+    }
+
+    public int getTotalActive() throws SQLException {
+        String sql = """
+                        SELECT 
+                       COUNT(*) AS total_user
+                       FROM mmo_schema.users
+                       WHERE status = 1;
+                        """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total_user");
+            }
+        }
+        return 0;
     }
 }

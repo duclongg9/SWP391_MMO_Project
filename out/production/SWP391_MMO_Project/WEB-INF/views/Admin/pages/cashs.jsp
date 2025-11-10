@@ -7,6 +7,7 @@
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
 <c:set var="total"    value="${pg_total != null ? pg_total : (txList != null ? fn:length(txList) : 0)}" />
 <c:set var="pages"    value="${(total + pageSize - 1) / pageSize}" />
+<c:set var="sort"     value="${empty requestScope.sort ? 'date_desc' : requestScope.sort}" />
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-cash-coin me-2"></i>Nạp / Rút</h4>
@@ -14,18 +15,19 @@
     <div class="card shadow-sm">
         <div class="card-body">
 
-            <!-- FILTER -->
+            <!-- ===== FILTER (giống UX KYC) ===== -->
             <form id="cashFilter"
                   action="${pageContext.request.contextPath}/admin/cashs"
                   method="get"
                   class="row g-2 align-items-end mb-3">
 
-                <!-- hidden để giữ page/size khi phân trang & reset về 1 khi đổi filter -->
+                <!-- giữ page/size/sort; reset page=1 khi đổi filter -->
                 <input type="hidden" name="page" id="pageInput" value="${pageNow}">
                 <input type="hidden" name="size" value="${pageSize}">
+                <input type="hidden" name="sort" id="sort" value="${sort}"/>
 
                 <div class="col-sm-2">
-                    <label class="form-label mb-1">Loại</label>
+                    <label class="form-label mb-1" for="typeSelect">Loại</label>
                     <select class="form-select" name="type" id="typeSelect">
                         <option value="all"        ${f_type=='all'?'selected':''}>Tất cả</option>
                         <option value="Deposit"    ${f_type=='Deposit'?'selected':''}>Nạp tiền</option>
@@ -34,15 +36,15 @@
                 </div>
 
                 <div class="col-sm-3">
-                    <label class="form-label mb-1">Tên người dùng</label>
+                    <label class="form-label mb-1" for="q">Tên người dùng</label>
                     <div class="input-group">
-                        <input type="text" class="form-control" name="q" value="${f_q}" placeholder="Nhập tên…">
+                        <input id="q" type="search" class="form-control" name="q" value="${f_q}" placeholder="Nhập tên…">
                         <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
                     </div>
                 </div>
 
                 <div class="col-sm-2">
-                    <label class="form-label mb-1">Trạng thái</label>
+                    <label class="form-label mb-1" for="statusSelect">Trạng thái</label>
                     <select class="form-select" name="status" id="statusSelect">
                         <option value="all"       ${f_status=='all'?'selected':''}>Tất cả</option>
                         <option value="Pending"   ${f_status=='Pending'?'selected':''}>Pending</option>
@@ -51,15 +53,7 @@
                     </select>
                 </div>
 
-                <div class="col-sm-2">
-                    <label class="form-label mb-1">Sắp xếp theo ngày</label>
-                    <select class="form-select" name="order" id="orderSelect">
-                        <option value="newest" ${f_order=='newest'?'selected':''}>Mới nhất → cũ</option>
-                        <option value="oldest" ${f_order=='oldest'?'selected':''}>Cũ nhất → mới</option>
-                    </select>
-                </div>
-
-                <div class="col-12 col-md-3 d-flex gap-2">
+                <div class="col-12 col-md-5 d-flex gap-2">
                     <button class="btn btn-dark flex-fill" type="submit">
                         <i class="bi bi-funnel"></i> Lọc / Tìm
                     </button>
@@ -67,7 +61,7 @@
                 </div>
             </form>
 
-            <!-- TABLE -->
+            <!-- ===== TABLE ===== -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -76,8 +70,33 @@
                         <th>Loại</th>
                         <th>User</th>
                         <th>Số tiền</th>
-                        <th>Trạng thái</th>
-                        <th>Tạo lúc</th>
+
+                        <!-- Toggle sort theo Trạng thái -->
+                        <th>
+                            <c:url var="uStatusSort" value="/admin/cashs">
+                                <c:param name="type"   value="${f_type}" />
+                                <c:param name="q"      value="${f_q}" />
+                                <c:param name="status" value="${f_status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'status_asc' ? 'status_desc' : 'status_asc'}" />
+                            </c:url>
+                            <a href="${uStatusSort}" class="text-decoration-none">Trạng thái</a>
+                        </th>
+
+                        <!-- Toggle sort theo Ngày tạo -->
+                        <th>
+                            <c:url var="uDateSort" value="/admin/cashs">
+                                <c:param name="type"   value="${f_type}" />
+                                <c:param name="q"      value="${f_q}" />
+                                <c:param name="status" value="${f_status}" />
+                                <c:param name="size"   value="${pageSize}" />
+                                <c:param name="page"   value="1" />
+                                <c:param name="sort"   value="${sort == 'date_asc' ? 'date_desc' : 'date_asc'}" />
+                            </c:url>
+                            <a href="${uDateSort}" class="text-decoration-none">Tạo lúc</a>
+                        </th>
+
                         <th>Xử lý lúc</th>
                         <th class="text-center">Hành động</th>
                     </tr>
@@ -120,7 +139,7 @@
                             </td>
                         </tr>
 
-                        <!-- ===== Modal cho từng giao dịch ===== -->
+                        <!-- ===== Modal theo item (giữ nguyên) ===== -->
                         <div class="modal fade" id="txModal_${t.type}_${t.id}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
                                 <div class="modal-content">
@@ -240,7 +259,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- ===== /Modal ===== -->
+                        <!-- /Modal -->
                     </c:forEach>
 
                     <c:if test="${empty txList}">
@@ -250,9 +269,8 @@
                 </table>
             </div>
 
-            <!-- PAGINATION -->
+            <!-- ===== PAGINATION (mang theo sort) ===== -->
             <c:url var="cashsPath" value="/admin/cashs"/>
-
             <c:if test="${pages > 1}">
                 <nav aria-label="Pagination">
                     <ul class="pagination justify-content-center mt-3">
@@ -263,7 +281,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${pageNow-1}" />
                             </c:url>
@@ -279,7 +297,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="1" />
                             </c:url>
@@ -292,7 +310,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${i}" />
                             </c:url>
@@ -307,7 +325,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${pages}" />
                             </c:url>
@@ -320,7 +338,7 @@
                                 <c:param name="type"   value="${f_type}" />
                                 <c:param name="q"      value="${f_q}" />
                                 <c:param name="status" value="${f_status}" />
-                                <c:param name="order"  value="${f_order}" />
+                                <c:param name="sort"   value="${sort}" />
                                 <c:param name="size"   value="${pageSize}" />
                                 <c:param name="page"   value="${pageNow+1}" />
                             </c:url>
@@ -335,7 +353,7 @@
     </div>
 </div>
 
-<!-- JS: render bank info + auto-submit filter -->
+<!-- ===== JS: render bank info + auto-submit filter kiểu KYC ===== -->
 <script>
     (function () {
         function htmlUnescape(s) {
@@ -376,15 +394,35 @@
         });
     })();
 
-    // Auto-submit + reset page về 1 khi đổi filter
+    // Auto-submit & chặn Enter ngoài ô q (giống KYC)
     (function () {
         const form = document.getElementById('cashFilter');
         const pageInput = document.getElementById('pageInput');
-        ['typeSelect', 'statusSelect', 'orderSelect'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('change', () => { pageInput.value = 1; form.submit(); });
+        const q = document.getElementById('q');
+        const typeSelect = document.getElementById('typeSelect');
+        const statusSelect = document.getElementById('statusSelect');
+
+        if (!form) return;
+
+        form.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target !== q) e.preventDefault();
         });
-        const q = form.querySelector('input[name="q"]');
-        if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') { pageInput.value = 1; form.submit(); }});
+
+        if (q) {
+            q.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    pageInput.value = '1';
+                    form.submit();
+                }
+            });
+        }
+
+        [typeSelect, statusSelect].forEach(el => {
+            if (!el) return;
+            el.addEventListener('change', () => {
+                pageInput.value = '1';
+                form.submit();
+            });
+        });
     })();
 </script>

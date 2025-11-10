@@ -55,26 +55,53 @@ public class ProductService {
         TYPE_LABELS = Collections.unmodifiableMap(typeLabels);
 
         Map<String, String> subtypeLabels = new LinkedHashMap<>();
+        // EMAIL subtypes
         subtypeLabels.put("GMAIL", "Gmail");
+        subtypeLabels.put("YAHOO", "Yahoo");
+        subtypeLabels.put("OUTLOOK", "Outlook");
+        // SOCIAL subtypes
         subtypeLabels.put("FACEBOOK", "Facebook");
         subtypeLabels.put("TIKTOK", "TikTok");
+        subtypeLabels.put("X", "X (Twitter)");
+        // SOFTWARE subtypes
         subtypeLabels.put("CANVA", "Canva");
+        subtypeLabels.put("OFFICE", "Office");
+        subtypeLabels.put("WINDOWS", "Windows");
+        subtypeLabels.put("CHATGPT", "ChatGPT");
+        // GAME subtypes
         subtypeLabels.put("VALORANT", "Valorant");
+        subtypeLabels.put("LEAGUE_OF_LEGENDS", "League of Legends");
+        subtypeLabels.put("CS2", "CS2");
+        // OTHER
         subtypeLabels.put("OTHER", "Khác");
         SUBTYPE_LABELS = Collections.unmodifiableMap(subtypeLabels);
 
         List<ProductTypeOption> options = new ArrayList<>();
         options.add(new ProductTypeOption("EMAIL", TYPE_LABELS.get("EMAIL"),
-                List.of(new ProductSubtypeOption("GMAIL", SUBTYPE_LABELS.get("GMAIL")))));
+                List.of(
+                        new ProductSubtypeOption("GMAIL", SUBTYPE_LABELS.get("GMAIL")),
+                        new ProductSubtypeOption("YAHOO", SUBTYPE_LABELS.get("YAHOO")),
+                        new ProductSubtypeOption("OUTLOOK", SUBTYPE_LABELS.get("OUTLOOK"))
+                )));
         options.add(new ProductTypeOption("SOCIAL", TYPE_LABELS.get("SOCIAL"),
                 List.of(
                         new ProductSubtypeOption("FACEBOOK", SUBTYPE_LABELS.get("FACEBOOK")),
-                        new ProductSubtypeOption("TIKTOK", SUBTYPE_LABELS.get("TIKTOK"))
+                        new ProductSubtypeOption("TIKTOK", SUBTYPE_LABELS.get("TIKTOK")),
+                        new ProductSubtypeOption("X", SUBTYPE_LABELS.get("X"))
                 )));
         options.add(new ProductTypeOption("SOFTWARE", TYPE_LABELS.get("SOFTWARE"),
-                List.of(new ProductSubtypeOption("CANVA", SUBTYPE_LABELS.get("CANVA")))));
+                List.of(
+                        new ProductSubtypeOption("CANVA", SUBTYPE_LABELS.get("CANVA")),
+                        new ProductSubtypeOption("OFFICE", SUBTYPE_LABELS.get("OFFICE")),
+                        new ProductSubtypeOption("WINDOWS", SUBTYPE_LABELS.get("WINDOWS")),
+                        new ProductSubtypeOption("CHATGPT", SUBTYPE_LABELS.get("CHATGPT"))
+                )));
         options.add(new ProductTypeOption("GAME", TYPE_LABELS.get("GAME"),
-                List.of(new ProductSubtypeOption("VALORANT", SUBTYPE_LABELS.get("VALORANT")))));
+                List.of(
+                        new ProductSubtypeOption("VALORANT", SUBTYPE_LABELS.get("VALORANT")),
+                        new ProductSubtypeOption("LEAGUE_OF_LEGENDS", SUBTYPE_LABELS.get("LEAGUE_OF_LEGENDS")),
+                        new ProductSubtypeOption("CS2", SUBTYPE_LABELS.get("CS2"))
+                )));
         options.add(new ProductTypeOption("OTHER", TYPE_LABELS.get("OTHER"),
                 List.of(new ProductSubtypeOption("OTHER", SUBTYPE_LABELS.get("OTHER")))));
         TYPE_OPTIONS = List.copyOf(options);
@@ -338,14 +365,14 @@ public class ProductService {
 
     /**
      * Đánh giá khả năng bàn giao credential cho sản phẩm hoặc từng biến thể.
-     * <ol>
-     * <li>Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả
-     * dụng và tồn kho.</li>
-     * <li>Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số
-     * lượng credential còn lại.</li>
-     * <li>Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ
-     * liệu.</li>
-     * </ol>
+     *
+     * Nếu danh sách biến thể được truyền vào, kiểm tra từng biến thể khả
+     * dụng và tồn kho.
+     * Gọi {@link CredentialDAO#fetchAvailability(int, String)} để biết số
+     * lượng credential còn lại.
+     * Fallback về kiểm tra tổng (không theo biến thể) khi chưa có dữ
+     * liệu.
+     * 
      */
     public boolean hasDeliverableCredentials(int productId, List<ProductVariantOption> variants) {
         boolean hasVariantData = variants != null && !variants.isEmpty();

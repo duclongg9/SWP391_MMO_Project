@@ -156,6 +156,10 @@ public class CredentialDAO extends BaseDAO {
      * 
      * Nếu tồn kho hiện tại thiếu, phương thức sẽ tự sinh thêm credential ảo và
      * trả về số liệu mới nhất.
+     * @param productId
+     * @param variantCode
+     * @param requiredQuantity
+     * @return 
      */
     public CredentialAvailability ensureAvailabilityForOrder(int productId, String variantCode, int requiredQuantity) {
         String normalized = normalizeVariantCode(variantCode);
@@ -345,6 +349,9 @@ public class CredentialDAO extends BaseDAO {
      * Admin sử dụng log này để truy vết lượt xem credential; tầng dịch vụ dựa
      * vào đây để quyết định có tải plaintext cho người dùng hay yêu cầu xác
      * nhận lại.
+     * @param orderId
+     * @param buyerId
+     * @return 
      */
     public boolean hasViewLog(int orderId, int buyerId) {
         final String sql = "SELECT 1 FROM credential_view_logs WHERE order_id = ? AND buyer_id = ? LIMIT 1";
@@ -366,6 +373,11 @@ public class CredentialDAO extends BaseDAO {
      * Việc lưu trữ được thực hiện trước khi trả plaintext về cho client nhằm
      * bảo vệ dữ liệu: nếu thao tác insert thất bại hệ thống sẽ ném ngoại lệ để
      * controller có thể báo lỗi và không hiển thị thông tin nhạy cảm.
+     * @param orderId
+     * @param productId
+     * @param buyerId
+     * @param variantCode
+     * @param viewerIp
      */
     public void logCredentialView(int orderId, int productId, int buyerId, String variantCode, String viewerIp) {
         final String sql = "INSERT INTO credential_view_logs (order_id, product_id, buyer_id, variant_code, viewer_ip) "
@@ -398,6 +410,8 @@ public class CredentialDAO extends BaseDAO {
      * Phương thức trả về danh sách bản ghi giàu thông tin (order, buyer, thời
      * điểm, IP) để admin có thể rà soát khi phát sinh tranh chấp về việc đã xem
      * dữ liệu hay chưa.
+     * @param orderId
+     * @return 
      */
     public List<CredentialViewLogEntry> findViewLogsByOrder(int orderId) {
         final String sql = "SELECT order_id, product_id, buyer_id, variant_code, viewer_ip, viewed_at "
@@ -434,6 +448,11 @@ public class CredentialDAO extends BaseDAO {
     /**
      * Sinh thêm credential ảo cho sản phẩm/biến thể để bảo đảm mỗi đơn vị hàng
      * hóa đều có dữ liệu bàn giao riêng biệt.
+     * @param connection
+     * @param productId
+     * @param variantCode
+     * @param quantity
+     * @throws java.sql.SQLException
      */
     public void generateFakeCredentials(Connection connection, int productId, String variantCode, int quantity)
             throws SQLException {
@@ -519,6 +538,64 @@ public class CredentialDAO extends BaseDAO {
 
     private char randomPasswordSymbol() {
         return PASSWORD_SYMBOLS[RANDOM.nextInt(PASSWORD_SYMBOLS.length)];
+    }
+
+    /**
+     * Thêm một credential thực (tài khoản) vào sản phẩm.
+     * 
+     * @param productId mã sản phẩm
+     * @param username tên đăng nhập
+     * @param password mật khẩu
+     * @param variantCode mã biến thể (có thể null)
+     * @return true nếu thêm thành công
+     */
+    public boolean addRealCredential(int productId, String username, String password, String variantCode) {
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                addRealCredential(connection, productId, username, password, variantCode);
+                connection.commit();
+                return true;
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể thêm credential thực", ex);
+                return false;
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể thêm credential thực", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Thêm một credential thực vào sản phẩm trong transaction.
+     */
+    public void addRealCredential(Connection connection, int productId, String username, String password, String variantCode) throws SQLException {
+        String normalized = normalizeVariantCode(variantCode);
+        String credentialJson = String.format(Locale.ROOT, "{\"username\":\"%s\",\"password\":\"%s\"}", 
+                username != null ? username.replace("\"", "\\\"") : "", 
+                password != null ? password.replace("\"", "\\\"") : "");
+        
+        final String sql = "INSERT INTO product_credentials (product_id, encrypted_value, variant_code, is_sold) "
+                + "VALUES (?, ?, ?, 0)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            statement.setString(2, credentialJson);
+            if (normalized == null) {
+                statement.setNull(3, Types.VARCHAR);
+            } else {
+                statement.setString(3, normalized);
+            }
+            statement.executeUpdate();
+        }
+        LOGGER.log(Level.INFO, "Đã thêm credential thực cho sản phẩm {0}", productId);
     }
 
     public record BulkGenerationSummary(int generatedCredentials, int skuTouched) {

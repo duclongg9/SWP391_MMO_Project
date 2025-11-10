@@ -31,7 +31,7 @@ public class ManageKycDAO {
             u.email AS user_email,
             krs.status_name AS status_name
         FROM mmo_schema.kyc_requests kr
-        LEFT JOIN mmo_schema.users u  ON u.id = kr.id        -- << id user == id KYC
+        LEFT JOIN mmo_schema.users u  ON u.id = kr.id 
         LEFT JOIN mmo_schema.kyc_request_statuses krs ON krs.id = kr.status_id
         ORDER BY kr.created_at DESC
     """;
@@ -71,68 +71,6 @@ public class ManageKycDAO {
         return list;
     }
 
-    /**
-     * Lấy 1 KYC theo id (JOIN users bằng kr.id = u.id)
-     */
-    public KycRequests findById(int id) throws SQLException {
-        String sql = """
-            SELECT
-                kr.id, kr.user_id, kr.status_id,
-                kr.front_image_url, kr.back_image_url, kr.selfie_image_url,
-                kr.id_number, kr.created_at, kr.reviewed_at, kr.admin_feedback,
-                u.name  AS user_name,
-                u.email AS user_email,
-                krs.status_name AS status_name
-            FROM mmo_schema.kyc_requests kr
-            LEFT JOIN mmo_schema.users u  ON u.id = kr.id        -- << ID KYC == ID USER
-            LEFT JOIN mmo_schema.kyc_request_statuses krs ON krs.id = kr.status_id
-            WHERE kr.id = ?
-        """;
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-                KycRequests k = new KycRequests(
-                        rs.getInt("id"),
-                        rs.getInt("user_id"),
-                        rs.getInt("status_id"),
-                        rs.getString("front_image_url"),
-                        rs.getString("back_image_url"),
-                        rs.getString("selfie_image_url"),
-                        rs.getString("id_number"),
-                        rs.getTimestamp("created_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("created_at").getTime()),
-                        rs.getTimestamp("reviewed_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("reviewed_at").getTime()),
-                        rs.getString("admin_feedback")
-                );
-                k.setUserName(rs.getString("user_name"));
-                k.setUserEmail(rs.getString("user_email"));
-                k.setStatusName(rs.getString("status_name"));
-                return k;
-            }
-        }
-    }
-
-    /**
-     * Trả về ID user ứng với 1 KYC: ở DB này user_id = role_id, id user chính
-     * là id KYC
-     */
-    public Integer getUserIdByKycId(int kycId) throws SQLException {
-        // user.id == kyc_requests.id
-        String sql = "SELECT id FROM mmo_schema.kyc_requests WHERE id = ?";
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, kycId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        }
-        return null;
-    }
 
     /**
      * Approve + promote (KHÔNG đụng user_id)

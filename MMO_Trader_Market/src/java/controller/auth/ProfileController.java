@@ -130,7 +130,14 @@ public class ProfileController extends HttpServlet {
                     String name = request.getParameter("fullName");
                     Part avatar = request.getPart("avatar");
                     // Cập nhật tên hiển thị của người dùng hiện tại.
-                    viewProfileService.updateMyProfile(user, name, avatar);
+                    try{
+                        viewProfileService.updateMyProfile(user, name, avatar);
+                    } catch (IOException e) {
+                        session.setAttribute("emg", e.getMessage());
+                        response.sendRedirect(request.getContextPath() + "/profile");
+                        return;
+                    }
+                    
                     session.setAttribute("msg", "Thông tin đã được cập nhật.");
                     response.sendRedirect(request.getContextPath() + "/profile");
                     break;

@@ -18,7 +18,7 @@ public class HashPassword {
         String salt = "asjrlkmcoewj@tjle;oxqskjhdjksjf1jurVn";// Làm cho mật khẩu phức tap
         String result = null;
 
-        str = str + salt; 
+        str = str + salt;
         try {
             byte[] dataBytes = str.getBytes("UTF-8"); //huyển chuỗi sau khi đã nối muối thành mảng byte theo mã hoá UTF-8, 20 byte
             MessageDigest md = MessageDigest.getInstance("SHA-1"); //ấy một đối tượng băm theo thuật toán SHA-1 từ Java Crypto.
@@ -30,7 +30,8 @@ public class HashPassword {
     }
 
     public static void main(String[] args) {
-        String test = "kino1234";
+        String test = "buyer";
         System.out.println(toSHA1(test));
     }
 }
+

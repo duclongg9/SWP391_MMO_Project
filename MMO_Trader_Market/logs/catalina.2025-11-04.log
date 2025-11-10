@@ -1,0 +1,681 @@
+04-Nov-2025 01:02:22.360 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:02:22.496 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:02:22.518 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:02:22.519 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:02:22.531 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:02:22.549 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:02:25.604 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 01:02:25.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 01:02:25.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 01:02:25.609 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 01:02:25.610 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:02:25.611 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:02:25.617 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 01:02:25.618 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 01:02:25.618 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 01:02:25.618 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=50637
+04-Nov-2025 01:02:25.618 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 01:02:25.621 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 01:02:25.624 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 01:02:25.947 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:02:25.966 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [508] milliseconds
+04-Nov-2025 01:02:26.021 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 01:02:26.021 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 01:02:26.030 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 01:02:26.045 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 01:02:27.346 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 01:02:27.462 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,433] ms
+04-Nov-2025 01:02:27.465 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:02:27.507 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1540] milliseconds
+04-Nov-2025 01:21:22.493 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:21:22.618 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:21:22.623 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:21:22.624 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:21:22.627 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:21:22.632 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:21:22.662 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:21:25.651 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 01:21:25.656 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 01:21:25.656 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 01:21:25.656 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:21:25.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:21:25.664 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 01:21:25.664 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 01:21:25.664 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 01:21:25.664 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=50803
+04-Nov-2025 01:21:25.665 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 01:21:25.667 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 01:21:25.671 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 01:21:25.999 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:21:26.015 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [513] milliseconds
+04-Nov-2025 01:21:26.057 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 01:21:26.057 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 01:21:26.071 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 01:21:26.096 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 01:21:27.378 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 01:21:27.482 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,411] ms
+04-Nov-2025 01:21:27.485 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:21:27.529 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1514] milliseconds
+04-Nov-2025 01:22:10.252 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:22:10.391 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:22:10.396 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:22:10.396 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:22:10.399 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:22:10.404 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:22:10.429 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:22:24.937 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 01:22:24.942 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 01:22:24.943 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 01:22:24.943 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 01:22:24.943 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 01:22:24.943 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 01:22:24.943 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 01:22:24.944 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 01:22:24.944 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 01:22:24.944 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:22:24.944 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 01:22:24.949 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=62386
+04-Nov-2025 01:22:24.950 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 01:22:24.952 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 01:22:24.956 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 01:22:25.259 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:22:25.277 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [483] milliseconds
+04-Nov-2025 01:22:25.323 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 01:22:25.324 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 01:22:25.337 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 01:22:25.357 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 01:22:26.642 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 01:22:26.756 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,419] ms
+04-Nov-2025 01:22:26.758 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:22:26.801 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1523] milliseconds
+04-Nov-2025 01:33:19.912 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:33:20.040 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:33:20.044 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:33:20.044 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:33:20.048 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:33:20.052 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:33:20.080 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:33:23.043 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 01:33:23.050 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 01:33:23.051 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:33:23.052 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:33:23.062 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:33:23.063 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 01:33:23.063 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 01:33:23.063 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 01:33:23.063 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=65188
+04-Nov-2025 01:33:23.063 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 01:33:23.066 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 01:33:23.071 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 01:33:23.418 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:33:23.437 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [685] milliseconds
+04-Nov-2025 01:33:23.478 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 01:33:23.478 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 01:33:23.490 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 01:33:23.507 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 01:33:24.916 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 01:33:25.025 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,536] ms
+04-Nov-2025 01:33:25.028 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:33:25.070 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1632] milliseconds
+04-Nov-2025 01:34:23.352 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:34:23.476 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:34:23.480 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:34:23.481 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:34:23.485 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:34:23.491 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:34:23.519 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:34:37.028 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 01:34:37.035 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 01:34:37.036 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:34:37.037 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 01:34:37.045 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=55663
+04-Nov-2025 01:34:37.046 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 01:34:37.049 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 01:34:37.053 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 01:34:37.734 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:34:37.769 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [984] milliseconds
+04-Nov-2025 01:34:37.821 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 01:34:37.821 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 01:34:37.835 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 01:34:37.871 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 01:34:39.426 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 01:34:39.550 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,715] ms
+04-Nov-2025 01:34:39.553 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:34:39.597 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1827] milliseconds
+04-Nov-2025 01:52:40.050 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:52:40.170 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 01:52:40.175 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 01:52:40.176 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:52:40.179 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:52:40.186 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:52:40.187 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 01:52:40.187 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:52:40.187 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 01:52:40.216 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 22:27:18.909 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 22:27:18.914 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 22:27:18.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 22:27:18.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 22:27:18.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 22:27:18.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 22:27:18.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 22:27:18.923 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=57019
+04-Nov-2025 22:27:18.924 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 22:27:18.929 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 22:27:18.946 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 22:27:19.264 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:27:19.282 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [572] milliseconds
+04-Nov-2025 22:27:19.332 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 22:27:19.332 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 22:27:19.343 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 22:27:19.369 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 22:27:21.021 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 22:27:21.155 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,812] ms
+04-Nov-2025 22:27:21.158 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:27:21.205 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1923] milliseconds
+04-Nov-2025 22:58:46.011 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:58:46.162 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 22:58:46.166 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 22:58:46.167 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 22:58:46.172 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:58:46.178 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:58:46.210 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 22:59:15.529 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 22:59:15.536 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 22:59:15.536 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 22:59:15.536 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 22:59:15.536 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 22:59:15.536 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 22:59:15.537 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 22:59:15.537 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 22:59:15.537 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 22:59:15.537 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 22:59:15.537 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 22:59:15.546 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 22:59:15.546 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 22:59:15.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 22:59:15.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 22:59:15.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 22:59:15.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 22:59:15.548 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 22:59:15.548 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 22:59:15.548 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 22:59:15.549 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 22:59:15.549 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=54891
+04-Nov-2025 22:59:15.549 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 22:59:15.553 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 22:59:15.557 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 22:59:15.889 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:59:15.907 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [542] milliseconds
+04-Nov-2025 22:59:15.956 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 22:59:15.956 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 22:59:15.967 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 22:59:15.989 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 22:59:17.323 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 22:59:17.444 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,476] ms
+04-Nov-2025 22:59:17.447 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 22:59:17.495 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1587] milliseconds
+04-Nov-2025 23:00:42.500 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:00:42.648 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 23:00:42.653 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 23:00:42.653 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:00:42.656 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:00:42.660 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:01:06.502 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:01:06.507 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:01:06.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 23:01:06.515 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 23:01:06.515 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 23:01:06.515 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=55394
+04-Nov-2025 23:01:06.515 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 23:01:06.518 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 23:01:06.523 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 23:01:06.842 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:01:06.861 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [503] milliseconds
+04-Nov-2025 23:01:06.909 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 23:01:06.909 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 23:01:06.920 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 23:01:06.940 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 23:01:08.339 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 23:01:08.460 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,539] ms
+04-Nov-2025 23:01:08.462 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:01:08.511 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1650] milliseconds
+04-Nov-2025 23:02:33.215 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:02:33.354 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 23:02:33.359 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 23:02:33.360 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:02:33.363 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:02:33.366 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:02:33.384 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:02:48.102 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:02:48.107 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 23:02:48.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 23:02:48.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 23:02:48.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=49580
+04-Nov-2025 23:02:48.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 23:02:48.118 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 23:02:48.122 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 23:02:48.420 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:02:48.439 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [500] milliseconds
+04-Nov-2025 23:02:48.488 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 23:02:48.489 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 23:02:48.522 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 23:02:48.536 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 23:02:49.863 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 23:02:49.992 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,470] ms
+04-Nov-2025 23:02:49.995 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:02:50.044 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1603] milliseconds
+04-Nov-2025 23:03:15.343 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:03:15.483 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 23:03:15.486 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 23:03:15.486 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:03:15.489 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:03:15.493 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:03:15.512 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:04:35.121 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 23:04:35.130 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:04:35.132 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:04:35.140 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 23:04:35.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 23:04:35.141 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=51819
+04-Nov-2025 23:04:35.142 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 23:04:35.147 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 23:04:35.152 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 23:04:35.485 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:04:35.505 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [578] milliseconds
+04-Nov-2025 23:04:35.556 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 23:04:35.556 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 23:04:35.568 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 23:04:35.588 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 23:04:36.935 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 23:04:37.061 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,492] ms
+04-Nov-2025 23:04:37.064 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:04:37.111 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1605] milliseconds
+04-Nov-2025 23:05:36.458 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:05:36.604 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 23:05:36.608 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 23:05:36.608 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:05:36.612 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:05:36.615 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:05:36.634 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:05:39.759 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 23:05:39.764 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 23:05:39.765 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 23:05:39.765 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 23:05:39.765 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:05:39.766 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:05:39.772 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:05:39.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:05:39.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 23:05:39.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 23:05:39.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 23:05:39.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=56903
+04-Nov-2025 23:05:39.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 23:05:39.777 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 23:05:39.782 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 23:05:40.120 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:05:40.138 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [529] milliseconds
+04-Nov-2025 23:05:40.182 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 23:05:40.182 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 23:05:40.198 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 23:05:40.219 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 23:05:41.523 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 23:05:41.645 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,447] ms
+04-Nov-2025 23:05:41.649 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:05:41.691 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1553] milliseconds
+04-Nov-2025 23:11:59.951 INFO [Thread-1] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:12:00.103 INFO [Thread-1] org.apache.catalina.core.StandardService.stopInternal Stopping service [Catalina]
+04-Nov-2025 23:12:00.110 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesJdbc The web application [ROOT] registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it when the web application was stopped. To prevent a memory leak, the JDBC Driver has been forcibly unregistered.
+04-Nov-2025 23:12:00.110 WARNING [Thread-1] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [mysql-cj-abandoned-connection-cleanup] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base@17.0.12/java.lang.Object.wait(Native Method)
+ java.base@17.0.12/java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:155)
+ com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:84)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+ java.base@17.0.12/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+ java.base@17.0.12/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:12:00.113 INFO [Thread-1] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:12:00.118 INFO [Thread-1] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:12:00.152 INFO [mysql-cj-abandoned-connection-cleanup] org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+	java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load []. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+		at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1396)
+		at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:984)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.checkThreadContextClassLoader(AbandonedConnectionCleanupThread.java:116)
+		at com.mysql.cj.jdbc.AbandonedConnectionCleanupThread.run(AbandonedConnectionCleanupThread.java:83)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+		at java.base/java.lang.Thread.run(Thread.java:842)
+04-Nov-2025 23:12:03.149 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.47
+04-Nov-2025 23:12:03.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Oct 2 2025 12:03:51 UTC
+04-Nov-2025 23:12:03.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.47.0
+04-Nov-2025 23:12:03.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+04-Nov-2025 23:12:03.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+04-Nov-2025 23:12:03.153 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+04-Nov-2025 23:12:03.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-17
+04-Nov-2025 23:12:03.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           17.0.12+8-LTS-286
+04-Nov-2025 23:12:03.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+04-Nov-2025 23:12:03.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:12:03.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+04-Nov-2025 23:12:03.163 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Admin\Desktop\apache-tomcat-10.1.47-windows-x64\apache-tomcat-10.1.47
+04-Nov-2025 23:12:03.164 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=E:\SWP391_MMO_Project\MMO_Trader_Market
+04-Nov-2025 23:12:03.164 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=E:\SWP391_MMO_Project\MMO_Trader_Market\temp
+04-Nov-2025 23:12:03.164 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=E:\SWP391_MMO_Project\MMO_Trader_Market\conf\logging.properties
+04-Nov-2025 23:12:03.164 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+04-Nov-2025 23:12:03.164 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2025.2.3\lib\idea_rt.jar=53435
+04-Nov-2025 23:12:03.165 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+04-Nov-2025 23:12:03.166 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+04-Nov-2025 23:12:03.172 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+04-Nov-2025 23:12:03.482 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:12:03.501 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [509] milliseconds
+04-Nov-2025 23:12:03.549 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+04-Nov-2025 23:12:03.549 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.47]
+04-Nov-2025 23:12:03.559 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deploying deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml]
+04-Nov-2025 23:12:03.577 WARNING [main] org.apache.catalina.startup.HostConfig.deployDescriptor The path attribute with value [/MMO_Trader_Market] in deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has been ignored
+04-Nov-2025 23:12:04.944 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+04-Nov-2025 23:12:05.069 INFO [main] org.apache.catalina.startup.HostConfig.deployDescriptor Deployment of deployment descriptor [E:\SWP391_MMO_Project\MMO_Trader_Market\conf\Catalina\localhost\ROOT.xml] has finished in [1,511] ms
+04-Nov-2025 23:12:05.072 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-9999"]
+04-Nov-2025 23:12:05.124 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [1623] milliseconds
