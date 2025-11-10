@@ -1026,18 +1026,48 @@ public class ProductDAO extends BaseDAO {
      */
     public boolean updateStatus(int productId, String status) {
         final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection connection = getConnection(); 
+
+        try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            
+
             statement.setString(1, status);
             statement.setInt(2, productId);
-            
+
             return statement.executeUpdate() > 0;
-            
+
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm", ex);
             return false;
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái cho toàn bộ sản phẩm của một shop.
+     * Sử dụng khi shop bị ẩn/khôi phục để đảm bảo đồng bộ trạng thái sản phẩm.
+     *
+     * @param shopId                mã shop cần cập nhật sản phẩm
+     * @param newStatus             trạng thái mới sẽ áp dụng cho các sản phẩm
+     * @param expectedCurrentStatus trạng thái hiện tại cần khớp (có thể null để bỏ qua điều kiện)
+     * @return số lượng bản ghi được cập nhật
+     */
+    public int updateStatusByShop(int shopId, String newStatus, String expectedCurrentStatus) {
+        StringBuilder sql = new StringBuilder("UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(newStatus);
+        params.add(shopId);
+
+        if (expectedCurrentStatus != null) {
+            sql.append(" AND status = ?");
+            params.add(expectedCurrentStatus);
+        }
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            return statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm theo shop_id=" + shopId, ex);
+            return 0;
         }
     }
 

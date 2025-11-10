@@ -152,7 +152,7 @@ public final class NavigationBuilder {
         incomeItem.put("active", incomeActive);
         children.add(incomeItem);
 
-        boolean active = dashboardActive || createActive || inventoryActive || incomeActive || ordersActive;
+        boolean active = dashboardActive || inventoryActive || incomeActive || ordersActive;
         Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
         dropdown.put("dropdown", true);
         dropdown.put("children", children);
