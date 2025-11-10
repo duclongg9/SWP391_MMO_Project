@@ -206,7 +206,16 @@ public class UserService {
         }
     }
 
-    public void resetPassword(String token, String newPassword, String confirmPassword) {
+    /**
+     * Đặt lại mật khẩu dựa trên token hợp lệ và trả về thông tin người dùng
+     * phục vụ bước đăng nhập tự động.
+     *
+     * @param token mã đặt lại mật khẩu do hệ thống phát hành
+     * @param newPassword mật khẩu mới người dùng cung cấp
+     * @param confirmPassword mật khẩu xác nhận để đối chiếu
+     * @return {@link Users} đã được cập nhật mật khẩu thành công
+     */
+    public Users resetPassword(String token, String newPassword, String confirmPassword) {
         String normalizedToken = requireText(token, "Token đặt lại mật khẩu không hợp lệ");
         String normalizedPassword = requireText(newPassword, "Vui lòng nhập mật khẩu mới");
         validatePassword(normalizedPassword);
@@ -219,12 +228,18 @@ public class UserService {
                 throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ");
             }
 
+            Users user = userDAO.getUserByUserId(resetToken.getUserId());
+            if (user == null) {
+                throw new IllegalStateException("Tài khoản không tồn tại hoặc đã bị khóa");
+            }
             String hashed = HashPassword.toSHA1(normalizedPassword); // băm mk
             int updated = userDAO.updateUserPassword(resetToken.getUserId(), hashed);
             if (updated < 1) {
                 throw new IllegalStateException("Không thể cập nhật mật khẩu. Vui lòng thử lại");
             }
             passwordResetTokenDAO.markUsed(resetToken.getId()); //Đánh dấu token đã dùng để không thể dùng lại
+            user.setHashedPassword(hashed);
+            return user;
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể đặt lại mật khẩu lúc này. Vui lòng thử lại sau.", e);
         }
