@@ -65,6 +65,39 @@ public class ShopDAO extends BaseDAO {
         }
         return 0;
     }
+    
+    public int getTotalPendingShops() {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Pending'";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql); 
+             ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop đang chờ duyệt", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Đếm tổng số shop đang ở trạng thái Suspended.
+     *
+     * @return số lượng shop bị tạm ngưng
+     */
+    public int getTotalSuspendedShops() {
+        final String sql = "SELECT COUNT(*) FROM shops WHERE status = 'Suspended'";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql); 
+             ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng shop bị tạm ngưng", ex);
+        }
+        return 0;
+    }
 
     /**
      * Đếm tổng số shop đang ở trạng thái Active (trả về int).
