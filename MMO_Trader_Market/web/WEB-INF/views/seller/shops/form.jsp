@@ -44,14 +44,14 @@
                            value="${fn:escapeXml(formName)}" maxlength="50" minlength="8"
                            placeholder="Ví dụ: Cửa hàng tài khoản game chất lượng"
                            required />
-                    <p class="form-note">Tên shop phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -. Nếu nhập ký tự đặc biệt hệ thống sẽ thông báo khi gửi.</p>
+                    <p class="form-note">Tên shop phải từ 8 đến 50 ký tự, không nhập ký tự đặc biệt. </p>
                 </div>
                 <div class="form-card__field">
                     <label class="form-card__label" for="description">Mô tả chi tiết</label>
                     <textarea class="form-card__input shop-form__textarea" id="description" name="description"
                               rows="5" minlength="8" maxlength="50"
                               placeholder="Giới thiệu điểm mạnh, cam kết bảo hành, thời gian hỗ trợ..." required>${fn:escapeXml(formDescription)}</textarea>
-                    <p class="form-note">Mô tả phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -. Nếu nhập ký tự đặc biệt hệ thống sẽ thông báo khi gửi.</p>
+                    <p class="form-note">Mô tả phải từ 8 đến 50 ký tự, không nhập ký tự đặc biệt .</p>
                 </div>
                 <div class="shop-form__actions">
                     <button type="submit" class="button button--primary">
