@@ -38,6 +38,9 @@ public class WalletTopUpService {
     private static final DateTimeFormatter TXN_REF_DATE = DateTimeFormatter.ofPattern("yyMMdd");
     private static final String ORDER_TYPE = "other";
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100L);
+    public static final long MIN_TOPUP_AMOUNT = 1_000L;
+    public static final long MAX_TOPUP_AMOUNT = 50_000_000L;
+    public static final int NOTE_MAX_LENGTH = 120;
 
     private final VnpayConfig config;
     private final VnpayGateway gateway;
@@ -70,8 +73,11 @@ public class WalletTopUpService {
      */
     public CreatePaymentResult createPaymentUrl(int userId, long amountVnd, String note,
             Locale locale, String clientIp) {
-        if (amountVnd <= 0) {
-            throw new IllegalArgumentException("Số tiền nạp phải lớn hơn 0");
+        if (amountVnd < MIN_TOPUP_AMOUNT) {
+            throw new IllegalArgumentException("Số tiền nạp tối thiểu là 1.000 VNĐ");
+        }
+        if (amountVnd > MAX_TOPUP_AMOUNT) {
+            throw new IllegalArgumentException("Số tiền nạp tối đa là 50.000.000 VNĐ cho mỗi giao dịch");
         }
         String resolvedIp = (clientIp == null || clientIp.isBlank()) ? "0.0.0.0" : clientIp;
         Locale resolvedLocale = (locale == null) ? config.defaultLocale() : locale;
@@ -79,13 +85,14 @@ public class WalletTopUpService {
         LocalDateTime createdAt = LocalDateTime.now(config.zoneId());
         LocalDateTime expiresAt = createdAt.plus(config.paymentTimeout());
         String txnRef = generateTxnRef(createdAt);
+        String normalizedNote = normalizeNote(note);
         Map<String, String> params = gateway.createPaymentParams(txnRef, amountVnd,
-                buildOrderInfo(txnRef, note), ORDER_TYPE, resolvedIp, resolvedLocale,
+                buildOrderInfo(txnRef, normalizedNote), ORDER_TYPE, resolvedIp, resolvedLocale,
                 createdAt, expiresAt);
         String paymentUrl = gateway.buildPaymentUrl(txnRef, amountVnd,
-                buildOrderInfo(txnRef, note), ORDER_TYPE, resolvedIp, resolvedLocale,
+                buildOrderInfo(txnRef, normalizedNote), ORDER_TYPE, resolvedIp, resolvedLocale,
                 createdAt, expiresAt);
-        String linkData = buildCreationLinkData(params, paymentUrl, resolvedIp, note);
+        String linkData = buildCreationLinkData(params, paymentUrl, resolvedIp, normalizedNote);
 
         Instant expireInstant = expiresAt.atZone(config.zoneId()).toInstant();
         BigDecimal amount = BigDecimal.valueOf(amountVnd);
@@ -218,6 +225,27 @@ public class WalletTopUpService {
             return "Nap vi VNPAY " + txnRef + " - " + note;
         }
         return "Nap vi VNPAY " + txnRef;
+    }
+
+    /**
+     * Chuẩn hoá ghi chú người dùng nhập vào nhằm tránh lỗi payload với VNPAY.
+     *
+     * @param note ghi chú thô nhận từ client
+     * @return ghi chú đã được cắt gọn hoặc {@code null} nếu trống
+     */
+    private String normalizeNote(String note) {
+        if (note == null) {
+            return null;
+        }
+        String trimmed = note.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        String singleLine = trimmed.replaceAll("\\s+", " ");
+        if (singleLine.length() > NOTE_MAX_LENGTH) {
+            return singleLine.substring(0, NOTE_MAX_LENGTH);
+        }
+        return singleLine;
     }
 
     private String buildCreationLinkData(Map<String, String> params, String paymentUrl,
