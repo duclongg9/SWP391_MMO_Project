@@ -11,7 +11,7 @@ import java.util.UUID;
 public class FileUploadUtil {
 
     private static final String DEFAULT_UPLOAD_DIR = "assets/images/products";
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final String[] ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
 
     /**
@@ -42,7 +42,7 @@ public class FileUploadUtil {
         
         // Kiểm tra kích thước file
         if (filePart.getSize() > MAX_FILE_SIZE) {
-            throw new IOException("File quá lớn. Kích thước tối đa: 10MB");
+            throw new IOException("File quá lớn. Kích thước tối đa: 5MB");
         }
         
         // Lấy tên file gốc

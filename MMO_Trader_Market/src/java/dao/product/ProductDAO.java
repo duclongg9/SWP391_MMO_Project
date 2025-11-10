@@ -207,6 +207,28 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
+     * Tra cứu nhanh chủ sở hữu shop dựa trên mã sản phẩm.
+     *
+     * @param productId mã sản phẩm cần tra cứu
+     * @return {@link Optional} chứa {@code owner_id} nếu tìm thấy
+     */
+    public Optional<Integer> findShopOwnerIdByProductId(int productId) {
+        final String sql = "SELECT s.owner_id FROM products p JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.id = ? LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getInt("owner_id"));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể truy vấn owner của sản phẩm", ex);
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Lấy danh sách sản phẩm bán chạy nhất trong trạng thái khả dụng.
      *
      * @param limit giới hạn số sản phẩm trả về
