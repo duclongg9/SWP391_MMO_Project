@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import model.Users;
 import service.UserService;
+import units.RoleHomeResolver;
 
 /**
  * Điều phối luồng "Đặt lại mật khẩu" khi người dùng truy cập từ email quên mật
@@ -48,10 +50,13 @@ public class ResetPasswordController extends BaseController {
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
         try {
-            userService.resetPassword(token, password, confirmPassword);
-            HttpSession session = request.getSession();
-            session.setAttribute("resetSuccess", "Đổi mật khẩu thành công. Vui lòng đăng nhập lại"); //flash message
-            response.sendRedirect(request.getContextPath() + "/auth");
+            Users user = userService.resetPassword(token, password, confirmPassword);
+            HttpSession session = renewSession(request);
+            session.setAttribute("currentUser", user);
+            session.setAttribute("userId", user.getId());
+            session.setAttribute("userRole", user.getRoleId());
+            session.setAttribute("success", "Đổi mật khẩu thành công. Bạn đã được đăng nhập.");
+            response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
             return;
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
@@ -62,5 +67,20 @@ public class ResetPasswordController extends BaseController {
         }
         request.setAttribute("token", token);
         forward(request, response, "auth/reset-password");
+    }
+
+    /**
+     * Tạo phiên đăng nhập mới để hoàn tất luồng đặt lại mật khẩu và giảm nguy
+     * cơ tấn công cố định phiên (session fixation).
+     *
+     * @param request yêu cầu hiện tại của người dùng
+     * @return phiên HTTP mới chứa thông tin đăng nhập
+     */
+    private HttpSession renewSession(HttpServletRequest request) {
+        HttpSession existing = request.getSession(false);
+        if (existing != null) {
+            existing.invalidate();
+        }
+        return request.getSession(true);
     }
 }
