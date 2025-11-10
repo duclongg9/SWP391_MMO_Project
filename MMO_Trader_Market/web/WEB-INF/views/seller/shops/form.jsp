@@ -42,17 +42,16 @@
                     <label class="form-card__label" for="name">Tên shop</label>
                     <input class="form-card__input" type="text" id="name" name="name"
                            value="${fn:escapeXml(formName)}" maxlength="50" minlength="8"
-                           data-basic-text
                            placeholder="Ví dụ: Cửa hàng tài khoản game chất lượng"
                            required />
-                    <p class="form-note">Tên shop phải từ 8 đến 50 ký tự, không chứa ký tự đặc biệt.</p>
+                    <p class="form-note">Tên shop phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -. Nếu nhập ký tự đặc biệt hệ thống sẽ thông báo khi gửi.</p>
                 </div>
                 <div class="form-card__field">
                     <label class="form-card__label" for="description">Mô tả chi tiết</label>
                     <textarea class="form-card__input shop-form__textarea" id="description" name="description"
-                              rows="5" minlength="8" maxlength="50" data-basic-text
+                              rows="5" minlength="8" maxlength="50"
                               placeholder="Giới thiệu điểm mạnh, cam kết bảo hành, thời gian hỗ trợ..." required>${fn:escapeXml(formDescription)}</textarea>
-                    <p class="form-note">Mô tả phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -</p>
+                    <p class="form-note">Mô tả phải từ 8 đến 50 ký tự, chỉ gồm chữ, số, khoảng trắng và dấu . , -. Nếu nhập ký tự đặc biệt hệ thống sẽ thông báo khi gửi.</p>
                 </div>
                 <div class="shop-form__actions">
                     <button type="submit" class="button button--primary">
@@ -68,18 +67,3 @@
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
 
-<script>
-    (function () {
-        // Lọc ký tự đặc biệt theo yêu cầu seller (chỉ cho phép chữ, số, khoảng trắng và ., -)
-        const ALLOWED_PATTERN = /[^\p{L}\p{N}\s.,-]+/gu;
-        document.querySelectorAll('[data-basic-text]').forEach(function (field) {
-            field.addEventListener('input', function () {
-                const original = field.value;
-                const sanitized = original.replace(ALLOWED_PATTERN, '');
-                if (original !== sanitized) {
-                    field.value = sanitized;
-                }
-            });
-        });
-    })();
-</script>
