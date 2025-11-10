@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -238,19 +239,60 @@ public class ShopDAO extends BaseDAO {
 	 * @return Optional chứa Shops nếu tìm thấy và thuộc về owner, Optional.empty() nếu không
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public java.util.Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
+        public Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
                 final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at FROM shops WHERE id = ? AND owner_id = ?";
-		try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
-			stmt.setInt(1, id);
-			stmt.setInt(2, ownerId);
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return java.util.Optional.of(mapRow(rs));
-				}
-			}
-		}
-		return java.util.Optional.empty();
-	}
+                try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
+                        stmt.setInt(1, id);
+                        stmt.setInt(2, ownerId);
+                        try (ResultSet rs = stmt.executeQuery()) {
+                                if (rs.next()) {
+                                        return Optional.of(mapRow(rs));
+                                }
+                        }
+                }
+                return Optional.empty();
+        }
+
+        /**
+         * Lấy chi tiết shop kèm thống kê cơ bản (sản phẩm, lượng bán, tồn kho) theo ID và owner.
+         *
+         * @param shopId  ID shop cần tìm
+         * @param ownerId ID chủ sở hữu
+         * @return {@link Optional} chứa {@link model.ShopStatsView} nếu tồn tại
+         * @throws SQLException khi truy vấn thất bại
+         */
+        public Optional<model.ShopStatsView> findDetailByIdAndOwner(int shopId, int ownerId) throws SQLException {
+                final String sql = "SELECT\n"
+                        + "  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n"
+                        + "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
+                        + "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
+                        + "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
+                        + "FROM shops s\n"
+                        + "LEFT JOIN (SELECT p.shop_id, COUNT(*) AS product_count FROM products p GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id\n"
+                        + "LEFT JOIN (SELECT p.shop_id, SUM(p.sold_count) AS total_sold FROM products p GROUP BY p.shop_id) sales ON sales.shop_id = s.id\n"
+                        + "LEFT JOIN (SELECT p.shop_id, SUM(p.inventory_count) AS total_inventory FROM products p GROUP BY p.shop_id) inven ON inven.shop_id = s.id\n"
+                        + "WHERE s.id = ? AND s.owner_id = ? LIMIT 1";
+                try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
+                        stmt.setInt(1, shopId);
+                        stmt.setInt(2, ownerId);
+                        try (ResultSet rs = stmt.executeQuery()) {
+                                if (rs.next()) {
+                                        model.ShopStatsView v = new model.ShopStatsView();
+                                        v.setId(rs.getInt("id"));
+                                        v.setName(rs.getString("name"));
+                                        v.setDescription(rs.getString("description"));
+                                        v.setStatus(rs.getString("status"));
+                                        v.setCreatedAt(rs.getTimestamp("created_at"));
+                                        v.setUpdatedAt(rs.getTimestamp("updated_at"));
+                                        v.setProductCount(rs.getInt("product_count"));
+                                        v.setTotalSold(rs.getInt("total_sold"));
+                                        v.setTotalInventory(rs.getInt("total_inventory"));
+                                        return Optional.of(v);
+                                }
+                        }
+                }
+                return Optional.empty();
+        }
 
 	/**
 	 * Lấy danh sách shop của owner kèm thống kê (số sản phẩm, lượng bán, tồn kho).
