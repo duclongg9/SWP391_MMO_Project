@@ -356,23 +356,32 @@ public class AdminViewServlet extends HttpServlet {
             path = "/dashboard";
         }
 
-        switch (path.toLowerCase()) {
-            case "/dashboard" ->
-                handleDashboard(req, resp);
-            case "/users" ->
-                handleUsers(req, resp);
-            case "/cashs" ->
-                handleCashs(req, resp);
-            case "/shops" ->
-                handleShops(req, resp);
-            case "/kycs" ->
-                handleKycs(req, resp);
-            case "/systems" -> {
-                req.setAttribute("pageTitle", "Quản lí hệ thống");
-                req.setAttribute("active", "systems");
-                req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
-                req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+        try {
+            switch (path.toLowerCase()) {
+                case "/dashboard" ->
+                    handleDashboard(req, resp);
+                case "/users" ->
+                    handleUsers(req, resp);
+                case "/cashs" ->
+                    handleCashs(req, resp);
+                case "/shops" ->
+                    handleShops(req, resp);
+                case "/kycs" ->
+                    handleKycs(req, resp);
+                case "/systems" -> {
+                    req.setAttribute("pageTitle", "Quản lí hệ thống");
+                    req.setAttribute("active", "systems");
+                    req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
+                    req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+                }
+                default -> {
+                    // Nếu path không hợp lệ, redirect về dashboard
+                    resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Lỗi xử lý yêu cầu: " + e.getMessage());
         }
     }
     // ================== /admin/users ==================
