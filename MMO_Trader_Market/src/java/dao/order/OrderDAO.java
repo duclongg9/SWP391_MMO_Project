@@ -5,7 +5,9 @@ import dao.connect.DBConnect;
 import model.OrderStatus;
 import model.Orders;
 import model.Products;
+import model.statistics.BestSellerProduct;
 import model.statistics.ProductStatistics;
+import model.statistics.QuarterRevenue;
 import model.statistics.TimeStatistics;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
@@ -587,6 +589,50 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Lấy thống kê doanh thu theo quý của một shop.
+     *
+     * @param shopId    mã shop cần thống kê
+     * @param startDate chỉ lấy dữ liệu từ thời điểm này trở về sau (có thể null)
+     * @return danh sách doanh thu từng quý (sắp xếp tăng dần theo thời gian)
+     */
+    public List<QuarterRevenue> getQuarterlyRevenue(int shopId, Timestamp startDate) {
+        StringBuilder sql = new StringBuilder("SELECT YEAR(o.created_at) AS y, QUARTER(o.created_at) AS q, "
+                + "COALESCE(SUM(o.total_amount), 0) AS revenue "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed'");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (startDate != null) {
+            sql.append(" AND o.created_at >= ?");
+            params.add(startDate);
+        }
+        sql.append(" GROUP BY YEAR(o.created_at), QUARTER(o.created_at) ORDER BY y ASC, q ASC");
+
+        List<QuarterRevenue> items = new ArrayList<>();
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    statement.setInt(i + 1, (Integer) param);
+                } else if (param instanceof Timestamp) {
+                    statement.setTimestamp(i + 1, (Timestamp) param);
+                }
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    items.add(new QuarterRevenue(
+                            rs.getInt("y"),
+                            rs.getInt("q"),
+                            rs.getBigDecimal("revenue")));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy thống kê doanh thu theo quý", ex);
+        }
+        return items;
+    }
+
+    /**
      * Đếm số đơn hàng đã hoàn thành nhưng chưa được giải ngân (chưa có wallet transaction PAYOUT).
      *
      * @param shopId mã shop
@@ -692,6 +738,72 @@ public class OrderDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải đơn hàng theo shop", ex);
         }
         return rows;
+    }
+
+    /**
+     * Lấy danh sách đơn hàng hoàn thành của shop có phân trang.
+     *
+     * @param shopId mã shop
+     * @param limit  số lượng bản ghi mỗi trang
+     * @param offset vị trí bắt đầu
+     * @return danh sách đơn hàng hoàn thành
+     */
+    public List<OrderRow> findCompletedOrdersByShop(int shopId, int limit, int offset) {
+        final String sql = "SELECT o.id, o.total_amount, o.status, o.created_at, p.name AS product_name "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed' "
+                + "ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
+        List<OrderRow> rows = new ArrayList<>();
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            statement.setInt(2, limit);
+            statement.setInt(3, offset);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp created = rs.getTimestamp("created_at");
+                    rows.add(new OrderRow(
+                            rs.getInt("id"),
+                            rs.getString("product_name"),
+                            rs.getBigDecimal("total_amount"),
+                            rs.getString("status"),
+                            created == null ? null : new java.util.Date(created.getTime())
+                    ));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải đơn hàng hoàn thành theo shop", ex);
+        }
+        return rows;
+    }
+
+    /**
+     * Tìm sản phẩm bán chạy nhất của một shop dựa trên số lượng bán ra.
+     *
+     * @param shopId mã shop
+     * @return {@link BestSellerProduct} nếu tìm thấy, {@link Optional#empty()} nếu không có dữ liệu
+     */
+    public Optional<BestSellerProduct> findBestSellingProduct(int shopId) {
+        final String sql = "SELECT p.id, p.name, p.primary_image_url, COALESCE(SUM(o.quantity), 0) AS total_qty, "
+                + "COALESCE(SUM(o.total_amount), 0) AS total_revenue "
+                + "FROM orders o JOIN products p ON p.id = o.product_id "
+                + "WHERE p.shop_id = ? AND o.status = 'Completed' "
+                + "GROUP BY p.id, p.name, p.primary_image_url ORDER BY total_qty DESC, total_revenue DESC LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(new BestSellerProduct(
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            rs.getString("primary_image_url"),
+                            rs.getInt("total_qty"),
+                            rs.getBigDecimal("total_revenue")));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy sản phẩm bán chạy nhất", ex);
+        }
+        return Optional.empty();
     }
     
     /**
