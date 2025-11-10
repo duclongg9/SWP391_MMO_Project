@@ -290,8 +290,15 @@
                 }
 
                 .order-report-modal__form-group textarea {
-                    min-height: 140px;
+                    height: 120px;
+                    max-height: 260px;
+                    overflow-y: auto;
                     resize: vertical;
+                }
+
+                .order-report-modal__error {
+                    font-size: 0.85rem;
+                    color: #b91c1c;
                 }
 
                 .order-report-modal__hint {
@@ -766,8 +773,10 @@
             </div>
             <div class="order-report-modal__form-group">
                 <label for="reportEvidence">Ảnh bằng chứng (tối đa <c:out value="${maxEvidenceFiles}" /> ảnh)</label>
-                <input id="reportEvidence" type="file" name="evidenceImages" accept="image/*" multiple required />
-                <p class="order-report-modal__hint">Hỗ trợ định dạng JPG, PNG, GIF, WEBP. Dung lượng tối đa <c:out value="${maxEvidenceFileSizeMb}" />MB mỗi ảnh, tổng cộng <c:out value="${maxEvidenceTotalSizeMb}" />MB cho toàn bộ yêu cầu.</p>
+                <input id="reportEvidence" type="file" name="evidenceImages" accept="image/*" multiple required
+                       data-max-files="${maxEvidenceFiles}" aria-describedby="reportEvidenceHint reportEvidenceError" />
+                <p class="order-report-modal__error is-hidden" id="reportEvidenceError" role="alert"></p>
+                <p class="order-report-modal__hint" id="reportEvidenceHint">Hỗ trợ định dạng JPG, PNG, GIF, WEBP. Dung lượng tối đa <c:out value="${maxEvidenceFileSizeMb}" />MB mỗi ảnh, tổng cộng <c:out value="${maxEvidenceTotalSizeMb}" />MB cho toàn bộ yêu cầu.</p>
             </div>
             <div class="order-report-modal__actions">
                 <button type="button" class="button button--ghost" data-close-modal>Hủy</button>
@@ -829,6 +838,46 @@
             };
             issueSelect.addEventListener('change', toggleCustom);
             toggleCustom();
+        }
+
+        const evidenceInput = document.getElementById('reportEvidence');
+        const evidenceError = document.getElementById('reportEvidenceError');
+        if (evidenceInput && evidenceError) {
+            const maxFiles = parseInt(evidenceInput.dataset.maxFiles, 10);
+
+            const updateEvidenceError = function (message) {
+                if (message) {
+                    evidenceError.textContent = message;
+                    evidenceError.classList.remove('is-hidden');
+                } else {
+                    evidenceError.textContent = '';
+                    evidenceError.classList.add('is-hidden');
+                }
+            };
+
+            /**
+             * Kiểm tra số lượng ảnh bằng chứng được chọn và hiển thị lỗi ngay trên giao diện.
+             */
+            const handleEvidenceChange = function () {
+                updateEvidenceError('');
+                evidenceInput.setCustomValidity('');
+
+                if (Number.isNaN(maxFiles) || maxFiles <= 0) {
+                    return;
+                }
+
+                const { files } = evidenceInput;
+                if (files && files.length > maxFiles) {
+                    const message = `Bạn chỉ có thể chọn tối đa ${maxFiles} ảnh bằng chứng.`;
+                    updateEvidenceError(message);
+                    evidenceInput.value = '';
+                    evidenceInput.setCustomValidity(message);
+                    evidenceInput.reportValidity();
+                }
+            };
+
+            evidenceInput.addEventListener('change', handleEvidenceChange);
+            handleEvidenceChange();
         }
     });
 </script>
