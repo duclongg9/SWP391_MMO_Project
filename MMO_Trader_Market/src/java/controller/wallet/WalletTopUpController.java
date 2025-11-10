@@ -27,6 +27,7 @@ public class WalletTopUpController extends HttpServlet {
     private static final Logger LOGGER = Logger.getLogger(WalletTopUpController.class.getName());
     private final transient Gson gson = new Gson();
     private transient WalletTopUpService walletTopUpService;
+    private static final long serialVersionUID = 1L;
 
     @Override
     public void init() throws ServletException {
@@ -69,8 +70,31 @@ public class WalletTopUpController extends HttpServlet {
             return;
         }
 
-        String note = payload.has("note") && !payload.get("note").isJsonNull()
-                ? payload.get("note").getAsString() : null;
+        if (amount < WalletTopUpService.MIN_TOPUP_AMOUNT) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            writeJson(response, Map.of("error", "Số tiền nạp tối thiểu là " + WalletTopUpService.MIN_TOPUP_AMOUNT + " VNĐ"));
+            return;
+        }
+        if (amount > WalletTopUpService.MAX_TOPUP_AMOUNT) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            writeJson(response, Map.of("error", "Số tiền nạp tối đa là " + WalletTopUpService.MAX_TOPUP_AMOUNT + " VNĐ"));
+            return;
+        }
+
+        String note = null;
+        if (payload.has("note") && !payload.get("note").isJsonNull()) {
+            try {
+                note = normalizeNote(payload.get("note").getAsString());
+            } catch (ClassCastException | IllegalStateException | UnsupportedOperationException ex) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                writeJson(response, Map.of("error", "Ghi chú không hợp lệ"));
+                return;
+            } catch (IllegalArgumentException ex) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                writeJson(response, Map.of("error", ex.getMessage()));
+                return;
+            }
+        }
 
         Locale locale = request.getLocale();
         String clientIp = resolveClientIp(request);
@@ -102,5 +126,26 @@ public class WalletTopUpController extends HttpServlet {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    /**
+     * Chuẩn hoá ghi chú của người dùng để đồng bộ với ràng buộc ở tầng service.
+     *
+     * @param rawNote ghi chú trước khi xử lý
+     * @return ghi chú đã chuẩn hoá hoặc {@code null}
+     */
+    private String normalizeNote(String rawNote) {
+        if (rawNote == null) {
+            return null;
+        }
+        String trimmed = rawNote.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > WalletTopUpService.NOTE_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Ghi chú tối đa " + WalletTopUpService.NOTE_MAX_LENGTH + " ký tự");
+        }
+        return trimmed;
     }
 }
