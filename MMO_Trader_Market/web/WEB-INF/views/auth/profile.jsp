@@ -37,18 +37,6 @@
         </c:if>
 
 
-
-
-        <!--Alerts dùng chung cho cả 2 form-->
-        <div style="grid-column: 1 / -1;">
-            <c:if test="${not empty msg}">
-                <div class="alert alert--success" role="status" aria-live="polite">${msg}</div>
-            </c:if>
-            <c:if test="${not empty emg}">
-                <div class="alert alert--error" role="alert" aria-live="assertive">${emg}</div>
-            </c:if>
-        </div>
-
         <!--Form cập nhật thông tin -->
         <form id="profileForm" class="card" method="post"
               action="${pageContext.request.contextPath}/profile" enctype="multipart/form-data">
