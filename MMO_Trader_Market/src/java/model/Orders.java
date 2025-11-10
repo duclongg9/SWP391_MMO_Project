@@ -76,6 +76,46 @@ public class Orders {
     private Date holdUntil;
 
     /**
+     * Thời lượng escrow theo giây được snapshot khi tạo đơn, phục vụ việc trả lại thời gian còn dư khi pause.
+     */
+    private Integer escrowHoldSeconds;
+
+    /**
+     * Mốc giải ngân escrow ban đầu trước khi phát sinh khiếu nại.
+     */
+    private Date escrowOriginalReleaseAt;
+
+    /**
+     * Thời điểm dự kiến giải ngân escrow hiện tại (null nếu đang tạm dừng).
+     */
+    private Date escrowReleaseAt;
+
+    /**
+     * Trạng thái dòng đời escrow: Scheduled/Paused/Released/Cancelled.
+     */
+    private String escrowStatus;
+
+    /**
+     * Thời điểm hệ thống dừng đếm escrow do phát sinh báo cáo.
+     */
+    private Date escrowPausedAt;
+
+    /**
+     * Số giây escrow còn lại tại thời điểm pause để hoàn trả khi resume.
+     */
+    private Integer escrowRemainingSeconds;
+
+    /**
+     * Thời điểm escrow được tiếp tục đếm sau khi dispute được xử lý.
+     */
+    private Date escrowResumedAt;
+
+    /**
+     * Thời điểm escrow thực sự giải ngân về phía seller.
+     */
+    private Date escrowReleasedAtActual;
+
+    /**
      * Ngày tạo bản ghi, dùng để sắp xếp lịch sử.
      */
     private Date createdAt;
@@ -171,6 +211,70 @@ public class Orders {
 
     public void setHoldUntil(Date holdUntil) {
         this.holdUntil = holdUntil;
+    }
+
+    public Integer getEscrowHoldSeconds() {
+        return escrowHoldSeconds;
+    }
+
+    public void setEscrowHoldSeconds(Integer escrowHoldSeconds) {
+        this.escrowHoldSeconds = escrowHoldSeconds;
+    }
+
+    public Date getEscrowOriginalReleaseAt() {
+        return escrowOriginalReleaseAt;
+    }
+
+    public void setEscrowOriginalReleaseAt(Date escrowOriginalReleaseAt) {
+        this.escrowOriginalReleaseAt = escrowOriginalReleaseAt;
+    }
+
+    public Date getEscrowReleaseAt() {
+        return escrowReleaseAt;
+    }
+
+    public void setEscrowReleaseAt(Date escrowReleaseAt) {
+        this.escrowReleaseAt = escrowReleaseAt;
+    }
+
+    public String getEscrowStatus() {
+        return escrowStatus;
+    }
+
+    public void setEscrowStatus(String escrowStatus) {
+        this.escrowStatus = escrowStatus;
+    }
+
+    public Date getEscrowPausedAt() {
+        return escrowPausedAt;
+    }
+
+    public void setEscrowPausedAt(Date escrowPausedAt) {
+        this.escrowPausedAt = escrowPausedAt;
+    }
+
+    public Integer getEscrowRemainingSeconds() {
+        return escrowRemainingSeconds;
+    }
+
+    public void setEscrowRemainingSeconds(Integer escrowRemainingSeconds) {
+        this.escrowRemainingSeconds = escrowRemainingSeconds;
+    }
+
+    public Date getEscrowResumedAt() {
+        return escrowResumedAt;
+    }
+
+    public void setEscrowResumedAt(Date escrowResumedAt) {
+        this.escrowResumedAt = escrowResumedAt;
+    }
+
+    public Date getEscrowReleasedAtActual() {
+        return escrowReleasedAtActual;
+    }
+
+    public void setEscrowReleasedAtActual(Date escrowReleasedAtActual) {
+        this.escrowReleasedAtActual = escrowReleasedAtActual;
     }
 
     public Date getCreatedAt() {

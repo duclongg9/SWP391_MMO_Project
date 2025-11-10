@@ -22,8 +22,13 @@ import queue.memory.InMemoryOrderQueue;
 import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Duration;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -197,6 +202,10 @@ public class OrderService {
         // 2. Nạp thông tin sản phẩm kèm tồn kho tại thời điểm hiện tại.
         Products product = productDAO.findAvailableById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
+        Optional<Integer> ownerIdOpt = productDAO.findShopOwnerIdByProductId(productId);
+        if (ownerIdOpt.filter(ownerId -> ownerId != null && ownerId == userId).isPresent()) {
+            throw new IllegalStateException("Bạn không thể mua sản phẩm trên gian hàng của mình.");
+        }
         Integer productInventory = product.getInventoryCount();
         List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                 product.getVariantSchema(), product.getVariantsJson());
@@ -232,10 +241,11 @@ public class OrderService {
                 resolvedVariantCode = null;
             }
         }
+        String normalizedVariantForStorage = ProductVariantUtils.normalizeCode(resolvedVariantCode);
 
         // 3. Kiểm tra tồn kho credential trước khi cho phép đặt mua.
-        CredentialDAO.CredentialAvailability credentialAvailability = resolvedVariantCode != null
-                ? credentialDAO.fetchAvailability(productId, resolvedVariantCode)
+        CredentialDAO.CredentialAvailability credentialAvailability = normalizedVariantForStorage != null
+                ? credentialDAO.fetchAvailability(productId, normalizedVariantForStorage)
                 : credentialDAO.fetchAvailability(productId);
         if (credentialAvailability.available() < quantity) {
             if (resolvedVariantCode != null) {
@@ -258,8 +268,9 @@ public class OrderService {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
         // 5. Tạo bản ghi đơn hàng Pending và đẩy vào hàng đợi bất đồng bộ.
-        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, resolvedVariantCode, trimmedKey);
-        queueProducer.publish(orderId, trimmedKey, productId, quantity, resolvedVariantCode);
+        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total,
+                normalizedVariantForStorage, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity, normalizedVariantForStorage);
         return orderId;
     }
 
@@ -346,10 +357,110 @@ public class OrderService {
     }
 
     /**
+     * Kiểm tra và tự động giải ngân escrow cho đơn hàng nếu đã hết hạn và không có khiếu nại.
+     *
+     * @param order bản ghi đơn hàng cần kiểm tra
+     * @return {@link Optional} chứa kết quả giải ngân nếu phát sinh
+     */
+    public Optional<EscrowReleaseResult> releaseEscrowIfExpired(Orders order) {
+        if (order == null || order.getId() == null || order.getProductId() == null) {
+            return Optional.empty();
+        }
+        Date now = new Date();
+        if (!isEscrowReleaseEligible(order, now)) {
+            return Optional.empty();
+        }
+        BigDecimal payoutAmount = order.getTotalAmount();
+        if (payoutAmount == null || payoutAmount.signum() <= 0) {
+            return Optional.empty();
+        }
+        Optional<Integer> ownerIdOpt = productDAO.findShopOwnerIdByProductId(order.getProductId());
+        if (ownerIdOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        int sellerId = ownerIdOpt.get();
+        if (walletsDAO.ensureUserWallet(sellerId) == null) {
+            throw new IllegalStateException("Không thể khởi tạo ví cho người bán trước khi giải ngân");
+        }
+        Timestamp releasedAtTs = new Timestamp(now.getTime());
+        Timestamp scheduledRelease = order.getEscrowReleaseAt() == null ? null
+                : new Timestamp(order.getEscrowReleaseAt().getTime());
+        try (Connection connection = orderDAO.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Wallets lockedWallet = walletsDAO.lockWalletForUpdate(connection, sellerId);
+                if (lockedWallet == null) {
+                    rollbackQuietly(connection);
+                    throw new IllegalStateException("Không thể khóa ví người bán để giải ngân");
+                }
+                BigDecimal currentBalance = lockedWallet.getBalance() == null
+                        ? BigDecimal.ZERO : lockedWallet.getBalance();
+                BigDecimal newBalance = currentBalance.add(payoutAmount);
+                if (!walletsDAO.updateBalance(connection, lockedWallet.getId(), newBalance)) {
+                    rollbackQuietly(connection);
+                    throw new IllegalStateException("Không thể cập nhật số dư ví người bán");
+                }
+                int payoutTxId = walletTransactionDAO.insertTransaction(connection, lockedWallet.getId(), order.getId(),
+                        TransactionType.PAYOUT, payoutAmount, currentBalance, newBalance,
+                        String.format("Giải ngân đơn #%d sau khi hết thời gian escrow", order.getId()));
+                if (!orderDAO.markEscrowReleased(connection, order.getId(), releasedAtTs)) {
+                    rollbackQuietly(connection);
+                    return Optional.empty();
+                }
+                orderDAO.insertEscrowReleasedEvent(connection, order.getId(), scheduledRelease, releasedAtTs,
+                        "{\"reason\":\"Auto release after escrow timeout\"}");
+                connection.commit();
+                Date releasedAt = new Date(releasedAtTs.getTime());
+                order.setEscrowStatus("Released");
+                order.setEscrowRemainingSeconds(0);
+                order.setEscrowReleasedAtActual(releasedAt);
+                order.setUpdatedAt(releasedAt);
+                return Optional.of(new EscrowReleaseResult(order.getId(), payoutAmount, newBalance, payoutTxId, releasedAt));
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    ex.addSuppressed(rollbackEx);
+                }
+                throw ex;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể giải ngân escrow cho đơn hàng", ex);
+        }
+    }
+
+    /**
      * Kiểm tra người dùng đã từng mở khóa thông tin bàn giao của đơn hay chưa.
      */
     public boolean hasUnlockedCredentials(int orderId, int userId) {
         return credentialDAO.hasViewLog(orderId, userId);
+    }
+
+    /**
+     * Kiểm tra đơn hàng có đủ điều kiện mở form báo cáo hay không.
+     */
+    public boolean canReportOrder(Orders order) {
+        if (order == null) {
+            return false;
+        }
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return false;
+        }
+        String escrowStatus = order.getEscrowStatus();
+        if (escrowStatus == null || !"Scheduled".equalsIgnoreCase(escrowStatus)) {
+            return false;
+        }
+        Date now = new Date();
+        Date releaseAt = order.getEscrowReleaseAt();
+        if (releaseAt != null) {
+            return releaseAt.after(now);
+        }
+        Integer remainingSeconds = order.getEscrowRemainingSeconds();
+        if (remainingSeconds != null && remainingSeconds > 0) {
+            return true;
+        }
+        Integer holdSeconds = order.getEscrowHoldSeconds();
+        return holdSeconds != null && holdSeconds > 0;
     }
 
     /**
@@ -509,6 +620,45 @@ public class OrderService {
                     null,
                     null,
                     buildSyntheticReference("S", orderId, events.size() + 1),
+                    false));
+        }
+
+        String escrowStatus = order.getEscrowStatus();
+        if ("Scheduled".equalsIgnoreCase(escrowStatus)) {
+            Date scheduledAt = copyDate(order.getUpdatedAt());
+            if (scheduledAt == null) {
+                scheduledAt = copyDate(order.getCreatedAt());
+            }
+            Date releaseAt = copyDate(order.getEscrowReleaseAt());
+            String releaseLabel = releaseAt == null ? "theo lịch cấu hình" : formatDateTime(releaseAt);
+            String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+            String desc = String.format(
+                    "Hệ thống đang giữ tiền escrow %s và sẽ tự động giải ngân vào %s nếu không phát sinh khiếu nại.",
+                    holdDescription,
+                    releaseLabel);
+            events.add(new OrderWalletEvent(
+                    "ESCROW_SCHEDULED",
+                    "Giữ tiền escrow",
+                    desc,
+                    scheduledAt,
+                    null,
+                    null,
+                    buildSyntheticReference("ES", orderId, events.size() + 1),
+                    false));
+        } else if ("Released".equalsIgnoreCase(escrowStatus)) {
+            Date payoutTime = copyDate(order.getEscrowReleasedAtActual());
+            if (payoutTime == null) {
+                payoutTime = copyDate(order.getEscrowReleaseAt());
+            }
+            String desc = "Hệ thống đã giải ngân tiền cho người bán sau khi hết thời gian escrow.";
+            events.add(new OrderWalletEvent(
+                    "ESCROW_RELEASED",
+                    "Giải ngân cho người bán",
+                    desc,
+                    payoutTime,
+                    order.getTotalAmount(),
+                    null,
+                    buildSyntheticReference("E", orderId, events.size() + 1),
                     false));
         }
 
@@ -677,6 +827,45 @@ public class OrderService {
         return input == null ? null : new Date(input.getTime());
     }
 
+    /**
+     * Định dạng thời gian theo mẫu {@code dd/MM/yyyy HH:mm} phục vụ hiển thị timeline.
+     */
+    private static String formatDateTime(Date date) {
+        if (date == null) {
+            return "theo lịch cấu hình";
+        }
+        return new SimpleDateFormat("dd/MM/yyyy HH:mm").format(date);
+    }
+
+    /**
+     * Chuyển đổi tổng thời gian giữ tiền escrow thành câu tiếng Việt dễ đọc.
+     */
+    private static String describeEscrowHold(Integer holdSeconds) {
+        if (holdSeconds == null || holdSeconds <= 0) {
+            return "theo cấu hình hiện hành";
+        }
+        Duration duration = Duration.ofSeconds(holdSeconds);
+        long days = duration.toDays();
+        duration = duration.minusDays(days);
+        long hours = duration.toHours();
+        duration = duration.minusHours(hours);
+        long minutes = duration.toMinutes();
+        List<String> parts = new ArrayList<>();
+        if (days > 0) {
+            parts.add(days + " ngày");
+        }
+        if (hours > 0) {
+            parts.add(hours + " giờ");
+        }
+        if (minutes > 0) {
+            parts.add(minutes + " phút");
+        }
+        if (parts.isEmpty()) {
+            parts.add("dưới 1 phút");
+        }
+        return "trong " + String.join(" ", parts);
+    }
+
     private static String buildSyntheticReference(String prefix, Integer orderId, int step) {
         if (prefix == null || orderId == null) {
             return null;
@@ -710,5 +899,48 @@ public class OrderService {
      */
     public record CredentialUnlockResult(boolean firstView) {
 
+    }
+
+    /**
+     * Thông tin trả về sau khi giải ngân escrow thành công.
+     *
+     * @param orderId mã đơn hàng
+     * @param amount số tiền giải ngân
+     * @param sellerBalanceAfter số dư ví người bán sau khi cộng tiền
+     * @param walletTransactionId mã giao dịch ví được ghi nhận
+     * @param releasedAt thời điểm giải ngân thực tế
+     */
+    public record EscrowReleaseResult(int orderId, BigDecimal amount, BigDecimal sellerBalanceAfter,
+            int walletTransactionId, Date releasedAt) {
+
+    }
+
+    private boolean isEscrowReleaseEligible(Orders order, Date now) {
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return false;
+        }
+        if (!"Scheduled".equalsIgnoreCase(order.getEscrowStatus())) {
+            return false;
+        }
+        Date releaseAt = order.getEscrowReleaseAt();
+        if (releaseAt != null) {
+            return !releaseAt.after(now);
+        }
+        Integer remainingSeconds = order.getEscrowRemainingSeconds();
+        return remainingSeconds != null && remainingSeconds <= 0;
+    }
+
+    /**
+     * Thực hiện rollback transaction và bỏ qua lỗi phát sinh trong quá trình rollback.
+     */
+    private void rollbackQuietly(Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.rollback();
+        } catch (SQLException ex) {
+            // Bỏ qua lỗi rollback để không che khuất ngoại lệ chính.
+        }
     }
 }
