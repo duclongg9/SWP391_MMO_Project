@@ -611,6 +611,30 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Gán mã giao dịch thanh toán cho đơn hàng sử dụng kết nối độc lập.
+     * <p>
+     * Phương thức này hỗ trợ các luồng hậu kiểm (ví dụ tự động khôi phục dữ
+     * liệu) khi phát hiện đơn hàng đã trừ tiền nhưng cột
+     * {@code payment_transaction_id} chưa được cập nhật. DAO sẽ tự mở kết nối,
+     * ủy quyền cho {@link #assignPaymentTransaction(Connection, int, Integer)}
+     * và log lỗi nếu thao tác thất bại.</p>
+     *
+     * @param orderId mã đơn hàng cần cập nhật
+     * @param paymentTransactionId mã giao dịch ví cần gắn
+     * @return {@code true} nếu cập nhật thành công, {@code false} nếu có lỗi SQL
+     */
+    public boolean assignPaymentTransaction(int orderId, Integer paymentTransactionId) {
+        try (Connection connection = getConnection()) {
+            assignPaymentTransaction(connection, orderId, paymentTransactionId);
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể gán mã giao dịch thanh toán ngoài transaction", ex);
+            return false;
+        }
+    }
+
+
+    /**
      * Ghi nhận lịch sử thay đổi tồn kho liên quan tới đơn hàng.
      *
      * @param connection kết nối giao dịch

@@ -206,6 +206,42 @@ public class WalletTransactionDAO {
         return Optional.empty();
     }
 
+    /**
+     * Tìm giao dịch mua hàng dựa trên {@code related_entity_id} trong trường hợp
+     * cột {@code payment_transaction_id} của đơn hàng chưa được gán.
+     *
+     * @param orderId mã đơn hàng cần truy vết giao dịch
+     * @param userId mã người mua sở hữu ví bị trừ tiền
+     * @return {@link Optional} chứa giao dịch nếu tìm thấy
+     */
+    public Optional<WalletTransactions> findPurchaseByOrderForUser(int orderId, int userId) {
+        String sql = """
+              SELECT wt.*
+              FROM wallet_transactions AS wt
+              JOIN wallets AS w ON w.id = wt.wallet_id
+              WHERE wt.related_entity_id = ?
+                AND w.user_id = ?
+                AND wt.transaction_type = ?
+              ORDER BY wt.id DESC
+              LIMIT 1
+              """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            ps.setInt(2, userId);
+            ps.setString(3, TransactionType.PURCHASE.getDbValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapTransaction(rs, false));
+                }
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE,
+                    "Lỗi truy vấn giao dịch mua hàng theo đơn", e);
+        }
+        return Optional.empty();
+    }
+
+
     public static void main(String[] args) {
         WalletTransactionDAO wdao = new WalletTransactionDAO();
         List<WalletTransactions> list = wdao.getListWalletTransactionPaging(1, 1, 5, null, null, null, null, null);
