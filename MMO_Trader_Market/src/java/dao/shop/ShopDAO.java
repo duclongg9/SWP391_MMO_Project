@@ -2,6 +2,7 @@ package dao.shop;
 
 import dao.BaseDAO;
 import model.Shops;
+import model.view.shop.ShopPublicSummary;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -93,7 +94,7 @@ public class ShopDAO extends BaseDAO {
     public Shops findByOwnerId(int ownerId) {
         final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE owner_id = ? LIMIT 1";
-        try (Connection connection = getConnection(); 
+        try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, ownerId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -105,6 +106,36 @@ public class ShopDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tải shop theo owner_id", ex);
         }
         return null;
+    }
+
+    /**
+     * Lấy thông tin công khai của shop kèm tổng số sản phẩm khả dụng.
+     *
+     * @param shopId mã shop cần tra cứu
+     * @return {@link Optional} chứa {@link ShopPublicSummary} nếu shop đang hoạt động
+     */
+    public Optional<ShopPublicSummary> findPublicSummaryById(int shopId) {
+        final String sql = "SELECT s.id, s.name, s.description, COALESCE(pcnt.total_products, 0) AS product_count "
+                + "FROM shops s "
+                + "LEFT JOIN (SELECT p.shop_id, COUNT(*) AS total_products FROM products p "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0 GROUP BY p.shop_id) pcnt ON pcnt.shop_id = s.id "
+                + "WHERE s.id = ? AND s.status = 'Active' LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    ShopPublicSummary summary = new ShopPublicSummary(
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            rs.getString("description"),
+                            rs.getLong("product_count"));
+                    return Optional.of(summary);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải thông tin shop công khai", ex);
+        }
+        return Optional.empty();
     }
 
     /**
