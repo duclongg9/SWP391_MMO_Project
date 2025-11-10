@@ -103,6 +103,8 @@ public class OrderDAO extends BaseDAO {
     public Optional<OrderDetailView> findByIdForUser(int orderId, int userId) {
         final String sql = "SELECT o.id, o.buyer_id, o.product_id, o.quantity, o.unit_price, o.total_amount, o.status, "
                 + "o.created_at, o.updated_at, o.payment_transaction_id, o.idempotency_key, o.hold_until, o.variant_code, "
+                + "o.escrow_hold_seconds, o.escrow_original_release_at, o.escrow_release_at, o.escrow_status, o.escrow_paused_at, "
+                + "o.escrow_remaining_seconds, o.escrow_resumed_at, o.escrow_released_at_actual, "
                 + "p.id AS p_id, p.shop_id, p.product_type AS p_product_type, p.product_subtype AS p_product_subtype, "
                 + "p.name, p.short_description AS p_short_description, p.description, p.price, p.primary_image_url AS p_primary_image_url, "
                 + "p.gallery_json AS p_gallery_json, p.inventory_count, COALESCE(ps.sold_count, 0) AS p_sold_count, p.status AS p_status, "
@@ -190,7 +192,9 @@ public class OrderDAO extends BaseDAO {
      */
     public Optional<Orders> findById(int orderId) {
         final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
-                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
+                + "variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at, "
+                + "escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + "created_at, updated_at FROM orders WHERE id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, orderId);
             try (ResultSet rs = statement.executeQuery()) {
@@ -216,7 +220,9 @@ public class OrderDAO extends BaseDAO {
      */
     public Optional<Orders> findByIdemKey(String idemKey) {
         final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
-                + "variant_code, idempotency_key, hold_until, created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
+                + "variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at, "
+                + "escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + "created_at, updated_at FROM orders WHERE idempotency_key = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, idemKey);
             try (ResultSet rs = statement.executeQuery()) {
@@ -228,6 +234,155 @@ public class OrderDAO extends BaseDAO {
             LOGGER.log(Level.SEVERE, "Không thể tìm đơn hàng theo khóa idempotency", ex);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Đánh dấu đơn hàng đang tranh chấp để đóng băng escrow.
+     */
+    public boolean pauseEscrowForDispute(int orderId, int buyerId, Timestamp pausedAt, Integer remainingSeconds,
+            java.util.Date releaseAtSnapshot, Connection connection) throws SQLException {
+        final String sql = "UPDATE orders SET status = 'Disputed', escrow_status = 'Paused', escrow_paused_at = ?, "
+                + "escrow_remaining_seconds = ?, escrow_resumed_at = NULL, escrow_release_at = NULL, "
+                + "escrow_original_release_at = COALESCE(escrow_original_release_at, escrow_release_at, ?), updated_at = NOW()"
+                + " WHERE id = ? AND buyer_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (pausedAt == null) {
+                statement.setNull(1, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(1, pausedAt);
+            }
+            if (remainingSeconds == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, remainingSeconds);
+            }
+            Timestamp releaseSnapshot;
+            if (releaseAtSnapshot != null) {
+                releaseSnapshot = new Timestamp(releaseAtSnapshot.getTime());
+            } else if (pausedAt != null) {
+                releaseSnapshot = pausedAt;
+            } else {
+                releaseSnapshot = new Timestamp(System.currentTimeMillis());
+            }
+            statement.setTimestamp(3, releaseSnapshot);
+            statement.setInt(4, orderId);
+            statement.setInt(5, buyerId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Lên lịch giải ngân escrow tự động cho đơn hàng vừa hoàn tất.
+     *
+     * @param connection kết nối giao dịch hiện tại
+     * @param orderId mã đơn hàng
+     * @param releaseAt thời điểm dự kiến giải ngân
+     * @param holdSeconds tổng thời gian giữ tiền theo cấu hình (giây)
+     * @return {@code true} nếu cập nhật thành công
+     * @throws SQLException khi truy vấn lỗi
+     */
+    public boolean scheduleEscrowRelease(Connection connection, int orderId, Timestamp releaseAt, int holdSeconds)
+            throws SQLException {
+        final String sql = "UPDATE orders SET escrow_hold_seconds = ?, "
+                + "escrow_original_release_at = COALESCE(escrow_original_release_at, ?), "
+                + "escrow_release_at = ?, escrow_status = 'Scheduled', escrow_paused_at = NULL, "
+                + "escrow_remaining_seconds = NULL, escrow_resumed_at = NULL, updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int normalizedHold = Math.max(holdSeconds, 0);
+            statement.setInt(1, normalizedHold);
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+                statement.setNull(3, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+                statement.setTimestamp(3, releaseAt);
+            }
+            statement.setInt(4, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện lên lịch escrow nhằm phục vụ truy vết thay đổi tự động.
+     *
+     * @param connection kết nối giao dịch
+     * @param orderId mã đơn hàng
+     * @param releaseAt thời điểm dự kiến giải ngân
+     * @param holdSeconds tổng thời gian giữ tiền (giây)
+     * @throws SQLException khi thao tác ghi log thất bại
+     */
+    public void insertEscrowScheduledEvent(Connection connection, int orderId, Timestamp releaseAt, int holdSeconds)
+            throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, release_at_snapshot, "
+                + "remaining_seconds_snapshot, metadata, created_at) VALUES (?, 'SCHEDULED', 'SYSTEM', ?, ?, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+            }
+            if (holdSeconds <= 0) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, holdSeconds);
+            }
+            String metadata = String.format("{\"holdSeconds\":%d}", Math.max(holdSeconds, 0));
+            statement.setString(4, metadata);
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Đánh dấu đơn hàng đã giải ngân escrow về phía người bán.
+     *
+     * @param connection kết nối đang mở transaction
+     * @param orderId mã đơn hàng
+     * @param releasedAt mốc thời gian thực tế hệ thống giải ngân
+     * @return {@code true} nếu có bản ghi được cập nhật
+     * @throws SQLException nếu câu lệnh SQL gặp lỗi
+     */
+    public boolean markEscrowReleased(Connection connection, int orderId, Timestamp releasedAt) throws SQLException {
+        final String sql = "UPDATE orders SET escrow_status = 'Released', escrow_remaining_seconds = 0, "
+                + "escrow_released_at_actual = ?, updated_at = ? "
+                + "WHERE id = ? AND status = 'Completed' AND escrow_status = 'Scheduled'";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setTimestamp(1, releasedAt);
+            statement.setTimestamp(2, releasedAt);
+            statement.setInt(3, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện escrow được giải ngân để tiện truy vết.
+     *
+     * @param connection kết nối transaction
+     * @param orderId mã đơn hàng
+     * @param scheduledRelease mốc giải ngân dự kiến chụp lại tại thời điểm xử lý
+     * @param releasedAt mốc thực tế đã giải ngân
+     * @param metadataJson chuỗi JSON mô tả ngữ cảnh (có thể null)
+     * @throws SQLException nếu thao tác ghi log thất bại
+     */
+    public void insertEscrowReleasedEvent(Connection connection, int orderId, Timestamp scheduledRelease,
+            Timestamp releasedAt, String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, release_at_snapshot, "
+                + "remaining_seconds_snapshot, metadata, created_at) VALUES (?, 'RELEASED', 'SYSTEM', ?, 0, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (scheduledRelease == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, scheduledRelease);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(3, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(3, metadataJson);
+            }
+            statement.setTimestamp(4, releasedAt);
+            statement.executeUpdate();
+        }
     }
 
     /**
@@ -504,6 +659,35 @@ public class OrderDAO extends BaseDAO {
         order.setVariantCode(rs.getString("variant_code"));
         order.setIdempotencyKey(rs.getString("idempotency_key"));
         order.setHoldUntil(rs.getTimestamp("hold_until"));
+        int holdSeconds = rs.getInt("escrow_hold_seconds");
+        if (!rs.wasNull()) {
+            order.setEscrowHoldSeconds(holdSeconds);
+        }
+        Timestamp originalRelease = rs.getTimestamp("escrow_original_release_at");
+        if (originalRelease != null) {
+            order.setEscrowOriginalReleaseAt(new java.util.Date(originalRelease.getTime()));
+        }
+        Timestamp releaseAt = rs.getTimestamp("escrow_release_at");
+        if (releaseAt != null) {
+            order.setEscrowReleaseAt(new java.util.Date(releaseAt.getTime()));
+        }
+        order.setEscrowStatus(rs.getString("escrow_status"));
+        Timestamp pausedAt = rs.getTimestamp("escrow_paused_at");
+        if (pausedAt != null) {
+            order.setEscrowPausedAt(new java.util.Date(pausedAt.getTime()));
+        }
+        int remainingSeconds = rs.getInt("escrow_remaining_seconds");
+        if (!rs.wasNull()) {
+            order.setEscrowRemainingSeconds(remainingSeconds);
+        }
+        Timestamp resumedAt = rs.getTimestamp("escrow_resumed_at");
+        if (resumedAt != null) {
+            order.setEscrowResumedAt(new java.util.Date(resumedAt.getTime()));
+        }
+        Timestamp releasedAtActual = rs.getTimestamp("escrow_released_at_actual");
+        if (releasedAtActual != null) {
+            order.setEscrowReleasedAtActual(new java.util.Date(releasedAtActual.getTime()));
+        }
         order.setCreatedAt(rs.getTimestamp("created_at"));
         order.setUpdatedAt(rs.getTimestamp("updated_at"));
         return order;

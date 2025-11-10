@@ -9,11 +9,11 @@ import java.util.UUID;
  * Utility class để xử lý upload file.
  */
 public class FileUploadUtil {
-    
-    private static final String UPLOAD_DIR = "assets/images/products";
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+    private static final String DEFAULT_UPLOAD_DIR = "assets/images/products";
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private static final String[] ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
-    
+
     /**
      * Lưu file upload và trả về đường dẫn relative.
      *
@@ -23,13 +23,26 @@ public class FileUploadUtil {
      * @throws IOException nếu có lỗi khi lưu file
      */
     public static String saveFile(Part filePart, String uploadPath) throws IOException {
+        return saveFile(filePart, uploadPath, DEFAULT_UPLOAD_DIR);
+    }
+
+    /**
+     * Lưu file upload vào thư mục tùy chỉnh và trả về đường dẫn relative.
+     *
+     * @param filePart Part từ multipart form
+     * @param uploadPath đường dẫn thực tế trên server (từ ServletContext.getRealPath)
+     * @param targetRelativeDir thư mục con relative trong ứng dụng web để lưu file
+     * @return đường dẫn relative của file (để lưu vào DB)
+     * @throws IOException nếu có lỗi khi lưu file
+     */
+    public static String saveFile(Part filePart, String uploadPath, String targetRelativeDir) throws IOException {
         if (filePart == null || filePart.getSize() == 0) {
             return null;
         }
         
         // Kiểm tra kích thước file
         if (filePart.getSize() > MAX_FILE_SIZE) {
-            throw new IOException("File quá lớn. Kích thước tối đa: 10MB");
+            throw new IOException("File quá lớn. Kích thước tối đa: 5MB");
         }
         
         // Lấy tên file gốc
@@ -45,20 +58,21 @@ public class FileUploadUtil {
         String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
         
         // Tạo đường dẫn đầy đủ
-        String fullUploadPath = uploadPath + File.separator + UPLOAD_DIR;
+        String sanitizedRelativeDir = sanitizeRelativeDir(targetRelativeDir);
+        String fullUploadPath = uploadPath + File.separator + sanitizedRelativeDir;
         File uploadDir = new File(fullUploadPath);
-        
+
         // Tạo thư mục nếu chưa có
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();
         }
-        
+
         // Lưu file
         String filePath = fullUploadPath + File.separator + uniqueFileName;
         filePart.write(filePath);
-        
+
         // Trả về đường dẫn relative (dùng / thay vì File.separator cho web path)
-        return UPLOAD_DIR + "/" + uniqueFileName;
+        return sanitizedRelativeDir.replace(File.separatorChar, '/') + "/" + uniqueFileName;
     }
     
     /**
@@ -125,6 +139,31 @@ public class FileUploadUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * Chuẩn hóa đường dẫn relative để tránh truyền ký tự ../ gây truy cập ngoài thư mục cho phép.
+     */
+    private static String sanitizeRelativeDir(String targetRelativeDir) {
+        String normalized = targetRelativeDir == null ? DEFAULT_UPLOAD_DIR : targetRelativeDir.trim();
+        if (normalized.isEmpty()) {
+            normalized = DEFAULT_UPLOAD_DIR;
+        }
+        normalized = normalized.replace('\\', '/');
+        while (normalized.contains("..")) {
+            normalized = normalized.replace("..", "");
+        }
+        if (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        if (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        normalized = normalized.replace('/', File.separatorChar);
+        if (normalized.isEmpty()) {
+            normalized = DEFAULT_UPLOAD_DIR;
+        }
+        return normalized;
     }
 }
 

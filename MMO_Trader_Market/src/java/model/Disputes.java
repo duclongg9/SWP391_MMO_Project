@@ -2,30 +2,32 @@ package model;
 
 import java.util.Date;
 
+/**
+ * POJO ánh xạ bảng {@code disputes} lưu báo cáo đơn hàng của người mua.
+ */
 public class Disputes {
 
     private Integer id;
     private Integer orderId;
+    private String orderReferenceCode;
     private Integer reporterId;
     private Integer resolvedByAdminId;
+    private String issueType;
+    private String customIssueTitle;
+    private String reason;
     private String status;
+    private Date escrowPausedAt;
+    private Integer escrowRemainingSeconds;
+    private Date resolvedAt;
+    private String resolutionNote;
     private Date createdAt;
     private Date updatedAt;
-    private String reason;
+
+    public Disputes() {
+    }
 
     public Integer getId() {
         return id;
-    }
-
-    public Disputes(Integer id, Integer orderId, Integer reporterId, Integer resolvedByAdminId, String status, Date createdAt, Date updatedAt, String reason) {
-        this.id = id;
-        this.orderId = orderId;
-        this.reporterId = reporterId;
-        this.resolvedByAdminId = resolvedByAdminId;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.reason = reason;
     }
 
     public void setId(Integer id) {
@@ -38,6 +40,14 @@ public class Disputes {
 
     public void setOrderId(Integer orderId) {
         this.orderId = orderId;
+    }
+
+    public String getOrderReferenceCode() {
+        return orderReferenceCode;
+    }
+
+    public void setOrderReferenceCode(String orderReferenceCode) {
+        this.orderReferenceCode = orderReferenceCode;
     }
 
     public Integer getReporterId() {
@@ -56,12 +66,68 @@ public class Disputes {
         this.resolvedByAdminId = resolvedByAdminId;
     }
 
+    public String getIssueType() {
+        return issueType;
+    }
+
+    public void setIssueType(String issueType) {
+        this.issueType = issueType;
+    }
+
+    public String getCustomIssueTitle() {
+        return customIssueTitle;
+    }
+
+    public void setCustomIssueTitle(String customIssueTitle) {
+        this.customIssueTitle = customIssueTitle;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Date getEscrowPausedAt() {
+        return escrowPausedAt;
+    }
+
+    public void setEscrowPausedAt(Date escrowPausedAt) {
+        this.escrowPausedAt = escrowPausedAt;
+    }
+
+    public Integer getEscrowRemainingSeconds() {
+        return escrowRemainingSeconds;
+    }
+
+    public void setEscrowRemainingSeconds(Integer escrowRemainingSeconds) {
+        this.escrowRemainingSeconds = escrowRemainingSeconds;
+    }
+
+    public Date getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(Date resolvedAt) {
+        this.resolvedAt = resolvedAt;
+    }
+
+    public String getResolutionNote() {
+        return resolutionNote;
+    }
+
+    public void setResolutionNote(String resolutionNote) {
+        this.resolutionNote = resolutionNote;
     }
 
     public Date getCreatedAt() {
@@ -78,13 +144,5 @@ public class Disputes {
 
     public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
     }
 }

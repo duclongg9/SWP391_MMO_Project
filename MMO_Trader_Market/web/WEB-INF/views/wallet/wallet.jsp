@@ -92,6 +92,11 @@
             </tbody>
         </table>
 
+        <div class="form__group" style="margin-top:1.6rem;">
+            <a class="btn btn--primary" href="${pageContext.request.contextPath}/wallet/deposit">Nạp tiền qua VNPAY</a>
+            <span class="form__hint">Thanh toán an toàn, số dư sẽ cập nhật sau khi IPN được xác nhận.</span>
+        </div>
+
 
         <!--Lịch sử ví -->
 
