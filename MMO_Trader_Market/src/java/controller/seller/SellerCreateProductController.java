@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,14 +31,14 @@ import java.util.Optional;
  */
 @WebServlet(name = "SellerCreateProductController", urlPatterns = {"/seller/products/create"})
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024,      // 1MB
-    maxFileSize = 1024 * 1024 * 10,       // 10MB per file
-    maxRequestSize = 1024 * 1024 * 50     // 50MB total (cho phép upload nhiều ảnh)
+        fileSizeThreshold = 1024 * 1024, // 1MB
+        maxFileSize = 1024 * 1024 * 10, // 10MB per file
+        maxRequestSize = 1024 * 1024 * 50 // 50MB total (cho phép upload nhiều ảnh)
 )
 public class SellerCreateProductController extends SellerBaseController {
 
     private static final long serialVersionUID = 1L;
-    
+
     private final ProductDAO productDAO = new ProductDAO();
     private final ShopDAO shopDAO = new ShopDAO();
 
@@ -47,7 +48,7 @@ public class SellerCreateProductController extends SellerBaseController {
         if (!ensureSellerAccess(request, response)) {
             return;
         }
-        
+
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         prepareLayout(request);
@@ -79,7 +80,7 @@ public class SellerCreateProductController extends SellerBaseController {
         if (!ensureSellerAccess(request, response)) {
             return;
         }
-        
+
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         prepareLayout(request);
@@ -107,25 +108,26 @@ public class SellerCreateProductController extends SellerBaseController {
         String priceStr = request.getParameter("price");
         String variantsJsonStr = request.getParameter("variantsJson");
         String variantIndicesStr = request.getParameter("variantIndices");
-        
+
         // Validate
         List<String> errors = new ArrayList<>();
-        
+
         // Xử lý variants với ảnh
         String primaryImageUrl = null;
         List<String> galleryImages = new ArrayList<>();
         List<Map<String, Object>> variants = new ArrayList<>();
-        
+
         if (variantsJsonStr != null && !variantsJsonStr.trim().isEmpty()) {
             try {
                 String applicationPath = request.getServletContext().getRealPath("");
                 Collection<Part> parts = request.getParts();
-                
+
                 // Parse variants metadata
                 Gson gson = new Gson();
-                Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                Type listType = new TypeToken<List<Map<String, Object>>>() {
+                }.getType();
                 List<Map<String, Object>> variantsMetadata = gson.fromJson(variantsJsonStr, listType);
-                
+
                 // Parse variant indices để biết variant nào có bao nhiêu ảnh
                 Map<Integer, Integer> variantImageCounts = new HashMap<>();
                 if (variantIndicesStr != null && !variantIndicesStr.trim().isEmpty()) {
@@ -139,15 +141,15 @@ public class SellerCreateProductController extends SellerBaseController {
                         }
                     }
                 }
-                
+
                 // Process variant images
                 for (int i = 0; i < variantsMetadata.size(); i++) {
                     Map<String, Object> variantMeta = variantsMetadata.get(i);
                     List<String> variantImages = new ArrayList<>();
-                    
+
                     // Get image count for this variant
                     int imageCount = variantImageCounts.getOrDefault(i, 0);
-                    
+
                     // Process images for this variant
                     for (int j = 0; j < imageCount; j++) {
                         String partName = "variantImages_" + i + "_" + j;
@@ -160,7 +162,7 @@ public class SellerCreateProductController extends SellerBaseController {
                             }
                         }
                     }
-                    
+
                     // Validate: mỗi variant phải có ít nhất 1 ảnh, tối đa 3 ảnh
                     if (variantImages.isEmpty()) {
                         errors.add("Biến thể \"" + variantMeta.get("name") + "\" phải có ít nhất 1 ảnh");
@@ -171,7 +173,7 @@ public class SellerCreateProductController extends SellerBaseController {
                         variantMeta.put("images", variantImages);
                         variantMeta.put("image_url", variantImages.get(0)); // Ảnh đầu tiên làm ảnh chính
                         variants.add(variantMeta);
-                        
+
                         // Add to gallery (ảnh đầu tiên của variant đầu tiên làm primary)
                         if (primaryImageUrl == null && i == 0 && !variantImages.isEmpty()) {
                             primaryImageUrl = variantImages.get(0);
@@ -179,11 +181,11 @@ public class SellerCreateProductController extends SellerBaseController {
                         galleryImages.addAll(variantImages);
                     }
                 }
-                
+
                 if (variants.isEmpty()) {
                     errors.add("Vui lòng thêm ít nhất một biến thể sản phẩm với ảnh");
                 }
-                
+
             } catch (Exception e) {
                 e.printStackTrace();
                 errors.add("Lỗi xử lý biến thể: " + e.getMessage());
@@ -191,15 +193,15 @@ public class SellerCreateProductController extends SellerBaseController {
         } else {
             errors.add("Vui lòng thêm ít nhất một biến thể sản phẩm");
         }
-        
+
         if (productName == null || productName.trim().isEmpty()) {
             errors.add("Tên sản phẩm không được để trống");
         }
-        
+
         if (productType == null || productType.trim().isEmpty()) {
             errors.add("Vui lòng chọn loại sản phẩm");
         }
-        
+
         // Price sẽ là giá thấp nhất của variants
         BigDecimal price = BigDecimal.ZERO;
         if (!variants.isEmpty()) {
@@ -211,7 +213,7 @@ public class SellerCreateProductController extends SellerBaseController {
                 }
             }
         }
-        
+
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
             request.setAttribute("productName", productName);
@@ -226,7 +228,7 @@ public class SellerCreateProductController extends SellerBaseController {
             doGet(request, response);
             return;
         }
-        
+
         // Tạo sản phẩm với inventory = 0 (sẽ thêm sau bằng cách thêm sản phẩm)
         Products product = new Products();
         product.setShopId(shop.getId());
@@ -238,14 +240,14 @@ public class SellerCreateProductController extends SellerBaseController {
         product.setPrice(price);
         product.setInventoryCount(0); // Mặc định 0, sẽ tăng khi thêm sản phẩm
         product.setPrimaryImageUrl(primaryImageUrl);
-        
+
         // Lưu gallery_json từ danh sách ảnh (tất cả ảnh từ tất cả variants)
         if (!galleryImages.isEmpty()) {
             Gson gson = new Gson();
             String galleryJson = gson.toJson(galleryImages);
             product.setGalleryJson(galleryJson);
         }
-        
+
         // Lưu variants_json
         if (!variants.isEmpty()) {
             Gson gson = new Gson();
@@ -256,11 +258,11 @@ public class SellerCreateProductController extends SellerBaseController {
             product.setVariantsJson("[]");
             product.setVariantSchema("none");
         }
-        
+
         product.setStatus("Available"); // Đăng thẳng lên shop
-        
+
         boolean success = productDAO.createProduct(product);
-        
+
         if (success) {
             session.setAttribute("successMessage", "Đã đăng sản phẩm thành công!");
             response.sendRedirect(request.getContextPath() + "/seller/inventory");
@@ -284,10 +286,11 @@ public class SellerCreateProductController extends SellerBaseController {
     }
 
     /**
-     * Tìm shop thuộc sở hữu của seller dựa trên tham số truyền vào. Nếu không chỉ định, trả về shop đầu tiên.
+     * Tìm shop thuộc sở hữu của seller dựa trên tham số truyền vào. Nếu không
+     * chỉ định, trả về shop đầu tiên.
      *
-     * @param ownerId      mã người dùng sở hữu shop
-     * @param shopIdParam  tham số shopId từ request (có thể null)
+     * @param ownerId mã người dùng sở hữu shop
+     * @param shopIdParam tham số shopId từ request (có thể null)
      * @return đối tượng Shops nếu tồn tại, null nếu không tìm thấy
      * @throws SQLException nếu xảy ra lỗi khi truy vấn cơ sở dữ liệu
      */
