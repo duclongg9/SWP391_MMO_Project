@@ -100,6 +100,29 @@ public class DepositeRequestDAO {
         }
     }
 }
+    //Status = succsess
+    public int UpdateDepositStatus(int id , int status) throws SQLException{
+        String statusString;
+        if(status == 2){
+            statusString = "Complete";
+        }else if(status == 3){
+            statusString = "Failed";
+        }else if(status == 4){
+            statusString ="Exprired";
+        }else{
+            statusString = "Pending";
+        }
+        String sql="""
+                   UPDATE deposit_requests
+                   SET status = ?   
+                   WHERE id = ?;
+                   """;
+        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+            ps.setString(1, statusString);
+            ps.setInt(2,id);
+            return ps.executeUpdate();
+        }
+    }
 
 //    public static void main(String[] args) throws SQLException {
 //        DepositeRequestDAO drdao = new DepositeRequestDAO();
