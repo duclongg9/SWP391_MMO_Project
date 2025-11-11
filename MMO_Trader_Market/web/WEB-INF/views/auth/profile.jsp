@@ -36,7 +36,7 @@
             </small>
         </c:if>
 
-
+        <div></div>
         <!--Form cập nhật thông tin -->
         <form id="profileForm" class="card" method="post"
               action="${pageContext.request.contextPath}/profile" enctype="multipart/form-data">

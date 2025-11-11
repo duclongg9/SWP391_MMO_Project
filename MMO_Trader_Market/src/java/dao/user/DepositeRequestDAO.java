@@ -12,6 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Statement;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,6 +22,7 @@ import java.util.logging.Logger;
  * @author D E L L
  */
 public class DepositeRequestDAO {
+
     private static final String COL_ID = "id";
     private static final String COL_USER_ID = "user_id";
     private static final String COL_AMOUNT = "amount";
@@ -29,30 +32,29 @@ public class DepositeRequestDAO {
     private static final String COL_EXPIRES_AT = "expires_at";
     private static final String COL_ADMIN_NOTE = "admin_note";
     private static final String COL_CREATED_AT = "created_at";
-    
+
     //Gọi tổng só tiền nạp theo tháng
     public BigDecimal getTotalDepositByMonth(int month, int year) throws SQLException {
-    String sql = """
+        String sql = """
         SELECT IFNULL(SUM(amount), 0) AS total_deposit
         FROM mmo_schema.deposit_requests
         WHERE status = 'Completed'
           AND YEAR(created_at) = ?
           AND MONTH(created_at) = ?
     """;
-    try (Connection con = DBConnect.getConnection();
-         PreparedStatement ps = con.prepareStatement(sql)) {
-        ps.setInt(1, year);
-        ps.setInt(2, month);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            return rs.getBigDecimal("total_deposit");
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal("total_deposit");
+            }
         }
+        return BigDecimal.ZERO;
     }
-    return BigDecimal.ZERO;
-}
-    
+
     public List<Integer> getAvailableYears() throws SQLException {
-    String sql = """
+        String sql = """
         SELECT DISTINCT YEAR(created_at) AS year
         FROM (
             SELECT created_at FROM mmo_schema.deposit_requests WHERE status = 'Completed'
@@ -62,15 +64,46 @@ public class DepositeRequestDAO {
         ORDER BY year DESC;
     """;
 
-    List<Integer> years = new ArrayList<>();
+        List<Integer> years = new ArrayList<>();
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                years.add(rs.getInt("year"));
+            }
+        }
+        return years;
+    }
+    
+    //tạo 1 bản ghi DepositRequest để đối chiếu
+    public int createDepositRequest(int userId, double amount, String message) throws SQLException {
+    final String sql = """
+        INSERT INTO deposit_requests (user_id, amount, qr_content, idempotency_key,status, expires_at,admin_note,created_at)
+        VALUES (?, ?, ?, ?,'Pending', DATE_ADD(NOW(), INTERVAL 15 MINUTE),'',NOW())
+    """;
+
     try (Connection con = DBConnect.getConnection();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
-        while (rs.next()) {
-            years.add(rs.getInt("year"));
+         PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+        ps.setInt(1, userId);
+        ps.setDouble(2, amount);                 
+        ps.setString(3, message);
+        ps.setString(4, java.util.UUID.randomUUID().toString());
+
+        int affected = ps.executeUpdate();
+        if (affected == 0) throw new SQLException("Insert deposit_requests failed, no rows affected.");
+
+        try (ResultSet rs = ps.getGeneratedKeys()) {
+            if (rs.next()) {
+                return rs.getInt(1);                 // chính là cột AUTO_INCREMENT id
+            } else {
+                throw new SQLException("Insert deposit_requests failed, no ID obtained.");
+            }
         }
     }
-    return years;
 }
 
+//    public static void main(String[] args) throws SQLException {
+//        DepositeRequestDAO drdao = new DepositeRequestDAO();
+//        int a = drdao.createDepositRequest(3, 1000, "chat");
+//        System.out.println(a);
+//    }
 }
