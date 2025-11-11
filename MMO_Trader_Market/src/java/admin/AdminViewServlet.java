@@ -168,10 +168,90 @@ public class AdminViewServlet extends HttpServlet {
             case "/systems/escrow":
                 handleUpdateEscrowConfig(req, resp);
                 return;
+            case "/disputes/status":
+                handleDisputeStatus(req, resp);
+                return;
             default:
                 resp.sendError(404);
         }
     }
+    private void handleDisputeStatus(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+
+        String idStr   = req.getParameter("id");
+        String action  = req.getParameter("action");          // inreview | accept | reject
+        String note    = req.getParameter("resolution_note"); // ghi chú
+
+        if (idStr == null || !idStr.matches("\\d+")) {
+            req.getSession().setAttribute("flash", "Lỗi: ID khiếu nại không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/disputes");
+            return;
+        }
+        int id = Integer.parseInt(idStr);
+
+        if (action == null ||
+                !(action.equalsIgnoreCase("inreview")
+                        || action.equalsIgnoreCase("accept")
+                        || action.equalsIgnoreCase("reject"))) {
+            req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/disputes");
+            return;
+        }
+
+        // Reject bắt buộc có note
+        if ("reject".equalsIgnoreCase(action) && (note == null || note.trim().isEmpty())) {
+            req.getSession().setAttribute("flash", "Lỗi: Vui lòng nhập ghi chú khi Reject.");
+            resp.sendRedirect(req.getContextPath() + "/admin/disputes");
+            return;
+        }
+
+        String newStatus;
+        switch (action.toLowerCase()) {
+            case "inreview" -> newStatus = "InReview";
+            case "accept"   -> newStatus = "ResolvedWithoutRefund"; // hoặc ResolvedWithRefund: tùy rule bạn
+            case "reject"   -> newStatus = "Closed";
+            default -> {
+                req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+                resp.sendRedirect(req.getContextPath() + "/admin/disputes");
+                return;
+            }
+        }
+
+        Integer adminId = (Integer) req.getSession().getAttribute("userId");
+
+        try (Connection con = DBConnect.getConnection()) {
+            String sql =
+                    "UPDATE disputes " +
+                            "SET status = ?, " +
+                            "    resolution_note = ?, " +
+                            "    resolved_by_admin_id = ?, " +
+                            "    updated_at = NOW() " +
+                            "WHERE id = ?";
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, newStatus);
+                ps.setString(2, note);
+                ps.setObject(3, adminId, java.sql.Types.INTEGER);
+                ps.setInt(4, id);
+
+                int updated = ps.executeUpdate();
+                if (updated > 0) {
+                    req.getSession().setAttribute("flash",
+                            "Cập nhật khiếu nại #" + id + " thành công.");
+                } else {
+                    req.getSession().setAttribute("flash",
+                            "Không tìm thấy khiếu nại #" + id + ".");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            req.getSession().setAttribute("flash",
+                    "Lỗi xử lý khiếu nại: " + e.getMessage());
+        }
+
+        resp.sendRedirect(req.getContextPath() + "/admin/disputes");
+    }
+
 
     private void handleKycStatus(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
