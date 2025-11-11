@@ -600,7 +600,7 @@ public class OrderController extends BaseController {
         }
         String escrowStatus = order.getEscrowStatus();
         if (escrowStatus == null || !"Scheduled".equalsIgnoreCase(escrowStatus)) {
-            return "Đơn hàng hiện không nằm trong giai đoạn escrow để tạo báo cáo.";
+            return "Đơn hàng hiện đã hết thời gian escrow nên chức năng gửi báo cáo không còn hiệu lực.";
         }
         return "Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.";
     }

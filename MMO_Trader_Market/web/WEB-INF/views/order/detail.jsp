@@ -503,7 +503,7 @@
             </c:if>
             <div class="alert alert--danger order-report__eligibility-alert is-hidden" id="orderReportEligibilityAlert"
                  role="alert">
-                <strong>Không thể mở biểu mẫu báo cáo.</strong>
+                <strong>Hết thời gian báo cáo.</strong>
                 <span class="order-report__eligibility-message"></span>
             </div>
             <c:if test="${not empty existingDispute}">
