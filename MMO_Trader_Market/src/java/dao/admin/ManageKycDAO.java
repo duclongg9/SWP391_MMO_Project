@@ -48,10 +48,8 @@ public class ManageKycDAO {
                         rs.getString("back_image_url"),
                         rs.getString("selfie_image_url"),
                         rs.getString("id_number"),
-                        rs.getTimestamp("created_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("created_at").getTime()),
-                        rs.getTimestamp("reviewed_at") == null ? null
-                        : new java.util.Date(rs.getTimestamp("reviewed_at").getTime()),
+                        rs.getTimestamp("created_at") == null ? null : new java.util.Date(rs.getTimestamp("created_at").getTime()),
+                        rs.getTimestamp("reviewed_at") == null ? null : new java.util.Date(rs.getTimestamp("reviewed_at").getTime()),
                         rs.getString("admin_feedback")
                 );
                 k.setUserName(rs.getString("user_name"));
@@ -83,8 +81,8 @@ public class ManageKycDAO {
             int updatedKyc;
             try (PreparedStatement p = con.prepareStatement(
                     "UPDATE mmo_schema.kyc_requests "
-                    + "SET status_id = 2, user_id = 2, reviewed_at = NOW(), admin_feedback = ? "
-                    + "WHERE id = ? AND status_id = 1"
+                            + "SET status_id = 2, user_id = 2, reviewed_at = NOW(), admin_feedback = ? "
+                            + "WHERE id = ? AND status_id = 1"
             )) {
                 p.setString(1, feedback);
                 p.setInt(2, kycId);
@@ -96,8 +94,8 @@ public class ManageKycDAO {
             if (updatedKyc > 0) {
                 try (PreparedStatement p = con.prepareStatement(
                         "UPDATE mmo_schema.users "
-                        + "SET role_id = 2, updated_at = NOW() "
-                        + "WHERE id = ? AND role_id = 3"
+                                + "SET role_id = 2, updated_at = NOW() "
+                                + "WHERE id = ? AND role_id = 3"
                 )) {
                     p.setInt(1, kycId);
                     updatedUser = p.executeUpdate();
@@ -120,8 +118,8 @@ public class ManageKycDAO {
     public int rejectKyc(int kycId, String feedback) throws SQLException {
         try (PreparedStatement ps = con.prepareStatement(
                 "UPDATE mmo_schema.kyc_requests "
-                + "SET status_id=3, reviewed_at=NOW(), admin_feedback=? "
-                + "WHERE id=? AND status_id=1")) {
+                        + "SET status_id=3, reviewed_at=NOW(), admin_feedback=? "
+                        + "WHERE id=? AND status_id=1")) {
             ps.setString(1, feedback);
             ps.setInt(2, kycId);
             return ps.executeUpdate();

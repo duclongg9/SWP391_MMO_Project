@@ -477,6 +477,8 @@ public class AdminViewServlet extends HttpServlet {
                     handleShops(req, resp);
                 case "/kycs" ->
                     handleKycs(req, resp);
+                case "/disputes" ->
+                        handleDisputes(req, resp);
                 case "/systems" ->
                     handleSystems(req, resp);
                 default -> {
@@ -490,7 +492,76 @@ public class AdminViewServlet extends HttpServlet {
         }
     }
     // ================== /admin/users ==================
+    private void handleDisputes(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
+        String q         = clean(req.getParameter("q"));
+        String status    = clean(req.getParameter("status"));     // all | Open | ...
+        String issueType = clean(req.getParameter("issueType"));  // all | ACCOUNT_...
+        String from      = clean(req.getParameter("from"));
+        String to        = clean(req.getParameter("to"));
+
+        LocalDate fromD = tryParseDate(from);
+        LocalDate toD   = tryParseDate(to);
+        Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
+        Timestamp toAt   = (toD   == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+
+        final int DEFAULT_SIZE = 10;
+        int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
+        int page = parseIntOrDefault(req.getParameter("page"), 1);
+        if (size <= 0) size = DEFAULT_SIZE;
+
+        try (Connection con = DBConnect.getConnection()) {
+            ManageDisputeDAO dao = new ManageDisputeDAO(con);
+
+            // Lấy list theo filter (tự viết như bên users/shops)
+            List<Dispute> list = dao.search(q,
+                    (status == null || "all".equalsIgnoreCase(status)) ? null : status,
+                    (issueType == null || "all".equalsIgnoreCase(issueType)) ? null : issueType,
+                    fromAt, toAt);
+
+            // sort mới -> cũ
+            list = list.stream()
+                    .sorted(Comparator.comparing(
+                            d -> d.getCreatedAt() == null ? new java.util.Date(0) : d.getCreatedAt(),
+                            Comparator.reverseOrder()))
+                    .toList();
+
+            int total = list.size();
+            int pages = ceilDiv(total, size);
+            page = clampPage(page, pages);
+
+            int fromIdx = Math.max(0, (page - 1) * size);
+            int toIdx   = Math.min(total, fromIdx + size);
+            List<Dispute> pageList = list.subList(fromIdx, toIdx);
+
+            // 👈 RẤT QUAN TRỌNG: tên phải đúng "disputes"
+            req.setAttribute("disputes", pageList);
+
+            req.setAttribute("pg_total", total);
+            req.setAttribute("pg_page",  page);
+            req.setAttribute("pg_size",  size);
+            req.setAttribute("pg_pages", pages);
+            req.setAttribute("pg_isFirst", page <= 1);
+            req.setAttribute("pg_isLast",  page >= pages);
+            req.setAttribute("pg_single",  pages <= 1);
+
+        } catch (Exception e) {
+            throw new ServletException("Lỗi tải khiếu nại: " + e.getMessage(), e);
+        }
+
+        // giữ lại filter cho JSP
+        req.setAttribute("q",         q == null ? "" : q);
+        req.setAttribute("status",    status == null ? "all" : status);
+        req.setAttribute("issueType", issueType == null ? "all" : issueType);
+        req.setAttribute("from",      fromD == null ? "" : fromD.toString());
+        req.setAttribute("to",        toD   == null ? "" : toD.toString());
+
+        req.setAttribute("pageTitle", "Quản lý khiếu nại");
+        req.setAttribute("active",    "disputes");
+        req.setAttribute("content",   "/WEB-INF/views/Admin/pages/disputes.jsp");
+        req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+    }
     // ================== /admin/users ==================
     private void handleDashboard(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {

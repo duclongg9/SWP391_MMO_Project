@@ -3,7 +3,6 @@ package service;
 import dao.order.OrderDAO;
 import dao.support.DisputeDAO;
 import model.DisputeAttachment;
-import model.Disputes;
 import model.Orders;
 
 import java.sql.Connection;

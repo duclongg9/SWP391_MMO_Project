@@ -8,7 +8,7 @@ public class DBConnect {
 
     private static final String URL = "jdbc:mysql://localhost:3306/mmo_schema";
     private static final String USER = "root";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "123";
 
     // Ham lay ket noi moi moi lan duoc goi
     public static Connection getConnection() {
