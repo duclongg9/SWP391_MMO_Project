@@ -115,7 +115,8 @@
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
             <div class="panel__actions">
                 <c:if test="${canReportOrder}">
-                    <button type="button" class="button button--danger" id="openReportModal">Báo cáo đơn hàng</button>
+                    <button type="button" class="button button--danger" id="openReportModal"
+                            data-eligibility-url="<c:url value='/orders/detail/${orderToken}/report-eligibility' />">Báo cáo đơn hàng</button>
                 </c:if>
                 <c:if test="${not canReportOrder and not empty existingDispute}">
                     <span class="panel__badge panel__badge--warning">Đơn đang trong thời gian khiếu nại</span>
@@ -179,6 +180,10 @@
                 .alert ul {
                     margin: 0;
                     padding-left: 1.1rem;
+                }
+
+                .order-report__eligibility-alert {
+                    margin-top: 1rem;
                 }
 
                 .order-report__summary {
@@ -496,6 +501,11 @@
                     </ul>
                 </div>
             </c:if>
+            <div class="alert alert--danger order-report__eligibility-alert is-hidden" id="orderReportEligibilityAlert"
+                 role="alert">
+                <strong>Không thể mở biểu mẫu báo cáo.</strong>
+                <span class="order-report__eligibility-message"></span>
+            </div>
             <c:if test="${not empty existingDispute}">
                 <section class="order-report__summary">
                     <h3>Tình trạng báo cáo hiện tại</h3>
@@ -801,6 +811,21 @@
     document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('orderReportModal');
         const openButton = document.getElementById('openReportModal');
+        const eligibilityAlert = document.getElementById('orderReportEligibilityAlert');
+        const eligibilityMessage = eligibilityAlert ? eligibilityAlert.querySelector('.order-report__eligibility-message') : null;
+        const hideEligibilityAlert = function () {
+            if (eligibilityAlert) {
+                eligibilityAlert.classList.add('is-hidden');
+            }
+        };
+        const showEligibilityAlert = function (message) {
+            if (eligibilityAlert && eligibilityMessage) {
+                eligibilityMessage.textContent = message;
+                eligibilityAlert.classList.remove('is-hidden');
+            } else {
+                alert(message);
+            }
+        };
         if (modal) {
             const closeTargets = modal.querySelectorAll('[data-close-modal]');
             function openModal() {
@@ -814,9 +839,50 @@
             }
 
             if (openButton) {
+                const eligibilityUrl = openButton.getAttribute('data-eligibility-url');
+                let checkingEligibility = false;
                 openButton.addEventListener('click', function (event) {
                     event.preventDefault();
-                    openModal();
+                    if (!eligibilityUrl) {
+                        hideEligibilityAlert();
+                        openModal();
+                        return;
+                    }
+                    if (checkingEligibility) {
+                        return;
+                    }
+                    checkingEligibility = true;
+                    hideEligibilityAlert();
+                    let keepDisabled = false;
+                    openButton.disabled = true;
+                    // Kiểm tra lại điều kiện escrow trước khi hiển thị modal báo cáo.
+                    fetch(eligibilityUrl, {headers: {'Accept': 'application/json'}})
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Eligibility check failed');
+                            }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (data && data.canReport) {
+                                keepDisabled = false;
+                                openModal();
+                            } else {
+                                keepDisabled = true;
+                                const message = data && typeof data.message === 'string' && data.message.trim().length > 0
+                                        ? data.message
+                                        : 'Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.';
+                                showEligibilityAlert(message);
+                            }
+                        })
+                        .catch(function () {
+                            keepDisabled = false;
+                            showEligibilityAlert('Không thể kiểm tra trạng thái đơn hàng. Vui lòng tải lại trang và thử lại.');
+                        })
+                        .finally(function () {
+                            checkingEligibility = false;
+                            openButton.disabled = keepDisabled;
+                        });
                 });
             }
 
