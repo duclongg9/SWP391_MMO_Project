@@ -2,6 +2,7 @@ package admin;
 
 import com.google.gson.Gson;
 import controller.dashboard.AdminDashboardController;
+import dao.ManageDisputeDAO;
 import dao.admin.ManageKycDAO;
 import dao.admin.ManageShopDAO;
 import dao.admin.ManageUserDAO;
@@ -9,6 +10,7 @@ import dao.connect.DBConnect;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+import model.Disputes;
 import model.KycRequests;
 import model.Shops;
 import model.Users;
@@ -515,7 +517,7 @@ public class AdminViewServlet extends HttpServlet {
             ManageDisputeDAO dao = new ManageDisputeDAO(con);
 
             // Lấy list theo filter (tự viết như bên users/shops)
-            List<Dispute> list = dao.search(q,
+            List<Disputes> list = dao.search(q,
                     (status == null || "all".equalsIgnoreCase(status)) ? null : status,
                     (issueType == null || "all".equalsIgnoreCase(issueType)) ? null : issueType,
                     fromAt, toAt);
@@ -533,7 +535,7 @@ public class AdminViewServlet extends HttpServlet {
 
             int fromIdx = Math.max(0, (page - 1) * size);
             int toIdx   = Math.min(total, fromIdx + size);
-            List<Dispute> pageList = list.subList(fromIdx, toIdx);
+            List<Disputes> pageList = list.subList(fromIdx, toIdx);
 
             // 👈 RẤT QUAN TRỌNG: tên phải đúng "disputes"
             req.setAttribute("disputes", pageList);

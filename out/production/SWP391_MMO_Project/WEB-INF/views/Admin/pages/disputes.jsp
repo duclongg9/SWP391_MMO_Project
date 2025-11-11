@@ -5,7 +5,6 @@
 
 <c:set var="base" value="${pageContext.request.contextPath}" />
 
-<!-- ===== Biến phân trang ===== -->
 <c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
 <c:set var="total"    value="${pg_total != null ? pg_total : (disputes != null ? fn:length(disputes) : 0)}" />
@@ -22,7 +21,7 @@
         </div>
     </c:if>
 
-    <!-- ===== BỘ LỌC ===== -->
+    <!-- FILTER -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <form id="dpFilter" class="row g-2 align-items-end"
@@ -33,7 +32,6 @@
                 <input type="hidden" name="sort" id="sort"
                        value="${empty param.sort ? 'date_desc' : param.sort}"/>
 
-                <!-- Từ khóa -->
                 <div class="col-12 col-md-3">
                     <label class="form-label mb-1" for="q">Từ khóa</label>
                     <div class="input-group">
@@ -44,22 +42,20 @@
                     </div>
                 </div>
 
-                <!-- Trạng thái -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="status">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
                         <c:set var="st" value="${empty param.status ? 'all' : param.status}" />
-                        <option value="all"                    ${st=='all'?'selected':''}>Tất cả</option>
-                        <option value="Open"                   ${st=='Open'?'selected':''}>Open</option>
-                        <option value="InReview"               ${st=='InReview'?'selected':''}>In review</option>
-                        <option value="ResolvedWithRefund"     ${st=='ResolvedWithRefund'?'selected':''}>Resolved + Refund</option>
-                        <option value="ResolvedWithoutRefund"  ${st=='ResolvedWithoutRefund'?'selected':''}>Resolved no Refund</option>
-                        <option value="Closed"                 ${st=='Closed'?'selected':''}>Closed</option>
-                        <option value="Cancelled"              ${st=='Cancelled'?'selected':''}>Cancelled</option>
+                        <option value="all"                   ${st=='all'?'selected':''}>Tất cả</option>
+                        <option value="Open"                  ${st=='Open'?'selected':''}>Open</option>
+                        <option value="InReview"              ${st=='InReview'?'selected':''}>In review</option>
+                        <option value="ResolvedWithRefund"    ${st=='ResolvedWithRefund'?'selected':''}>Resolved + Refund</option>
+                        <option value="ResolvedWithoutRefund" ${st=='ResolvedWithoutRefund'?'selected':''}>Resolved no Refund</option>
+                        <option value="Closed"                ${st=='Closed'?'selected':''}>Closed</option>
+                        <option value="Cancelled"             ${st=='Cancelled'?'selected':''}>Cancelled</option>
                     </select>
                 </div>
 
-                <!-- Loại issue -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="issueType">Loại vấn đề</label>
                     <select id="issueType" name="issueType" class="form-select">
@@ -73,21 +69,18 @@
                     </select>
                 </div>
 
-                <!-- Từ ngày -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="from">Từ ngày</label>
                     <input id="from" name="from" type="date" class="form-control"
                            value="${fn:escapeXml(param.from)}">
                 </div>
 
-                <!-- Đến ngày -->
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="to">Đến ngày</label>
                     <input id="to" name="to" type="date" class="form-control"
                            value="${fn:escapeXml(param.to)}">
                 </div>
 
-                <!-- Xóa lọc -->
                 <div class="col-12 col-md-1 d-grid">
                     <a href="${base}/admin/disputes" class="btn btn-outline-secondary">
                         Xóa lọc
@@ -99,7 +92,7 @@
         </div>
     </div>
 
-    <!-- ===== DANH SÁCH ===== -->
+    <!-- LIST -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -117,227 +110,217 @@
                     </thead>
                     <tbody>
                     <c:choose>
-                    <c:when test="${not empty disputes}">
-                    <c:forEach var="d" items="${disputes}" varStatus="st">
-                    <tr>
-                        <td>${(pageNow-1)*pageSize + st.index + 1}</td>
+                        <c:when test="${not empty disputes}">
+                            <c:forEach var="d" items="${disputes}" varStatus="st">
+                                <tr>
+                                    <td>${(pageNow-1)*pageSize + st.index + 1}</td>
 
-                        <td>${fn:escapeXml(d.orderReferenceCode)}</td>
+                                    <td>${fn:escapeXml(d.orderReferenceCode)}</td>
 
-                        <td>
-                                ${fn:escapeXml(d.reporterName)}<br>
-                            <small class="text-muted">
-                                    ${fn:escapeXml(d.reporterEmail)}
-                            </small>
-                        </td>
+                                    <td>
+                                            ${fn:escapeXml(d.reporterName)}<br>
+                                        <small class="text-muted">
+                                                ${fn:escapeXml(d.reporterEmail)}
+                                        </small>
+                                    </td>
 
-                        <!-- Loại vấn đề (ưu tiên custom_issue_title) -->
-                        <td>
-                            <c:choose>
-                                <c:when test="${not empty d.customIssueTitle}">
-                                    ${fn:escapeXml(d.customIssueTitle)}
-                                </c:when>
-                                <c:otherwise>
-                                    ${fn:escapeXml(d.issueType)}
-                                </c:otherwise>
-                            </c:choose>
-                        </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty d.customIssueTitle}">
+                                                ${fn:escapeXml(d.customIssueTitle)}
+                                            </c:when>
+                                            <c:otherwise>
+                                                ${fn:escapeXml(d.issueType)}
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
 
-                        <!-- Badge trạng thái -->
-                        <td>
+                                    <td>
                                         <span class="badge
                                             <c:choose>
-                                                <c:when test="${d.status == 'Open'}">bg-warning text-dark</c:when>
-                                                <c:when test="${d.status == 'InReview'}">bg-info text-dark</c:when>
-                                                <c:when test="${d.status == 'ResolvedWithRefund' || d.status == 'ResolvedWithoutRefund'}">bg-success</c:when>
-                                                <c:when test="${d.status == 'Closed'}">bg-secondary</c:when>
-                                                <c:when test="${d.status == 'Cancelled'}">bg-dark</c:when>
-                                                <c:otherwise>bg-light text-dark</c:otherwise>
+                                                <c:when test="${d.status == 'Open'}"> bg-warning text-dark</c:when>
+                                                <c:when test="${d.status == 'InReview'}"> bg-info text-dark</c:when>
+                                                <c:when test="${d.status == 'ResolvedWithRefund' || d.status == 'ResolvedWithoutRefund'}"> bg-success</c:when>
+                                                <c:when test="${d.status == 'Closed'}"> bg-secondary</c:when>
+                                                <c:when test="${d.status == 'Cancelled'}"> bg-dark</c:when>
+                                                <c:otherwise> bg-light text-dark</c:otherwise>
                                             </c:choose>">
                                                 ${fn:escapeXml(d.status)}
                                         </span>
-                        </td>
+                                    </td>
 
-                        <!-- Ngày tạo -->
-                        <td>
-                            <fmt:formatDate value="${d.createdAt}" pattern="dd-MM-yyyy HH:mm"/>
-                        </td>
+                                    <td>
+                                        <fmt:formatDate value="${d.createdAt}" pattern="dd-MM-yyyy HH:mm"/>
+                                    </td>
 
-                        <!-- Nút xem chi tiết -->
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-primary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#dpModal_${d.id}">
-                                Xem
-                            </button>
-                        </td>
-                    </tr>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#dpModal_${d.id}">
+                                            Xem
+                                        </button>
+                                    </td>
+                                </tr>
 
-                    <!-- ===== MODAL CHI TIẾT ===== -->
-                    <div class="modal fade" id="dpModal_${d.id}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">
-                                        Khiếu nại #${d.id} - Đơn: ${fn:escapeXml(d.orderReferenceCode)}
-                                    </h5>
-                                    <button type="button" class="btn-close"
-                                            data-bs-dismiss="modal"></button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <div class="row g-3 mb-3">
-                                        <div class="col-md-6">
-                                            <div class="small text-muted mb-1">Người báo cáo</div>
-                                            <div class="fw-semibold">
-                                                    ${fn:escapeXml(d.reporterName)}
+                                <!-- MODAL -->
+                                <div class="modal fade" id="dpModal_${d.id}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                    Khiếu nại #${d.id} - Đơn: ${fn:escapeXml(d.orderReferenceCode)}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
-                                            <div class="text-muted small">
-                                                    ${fn:escapeXml(d.reporterEmail)}
-                                            </div>
-                                        </div>
 
-                                        <div class="col-md-3">
-                                            <div class="small text-muted mb-1">Thời gian tạo</div>
-                                            <div class="fw-semibold">
-                                                <fmt:formatDate value="${d.createdAt}"
-                                                                pattern="dd-MM-yyyy HH:mm"/>
-                                            </div>
-                                        </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3 mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="small text-muted mb-1">Người báo cáo</div>
+                                                        <div class="fw-semibold">${fn:escapeXml(d.reporterName)}</div>
+                                                        <div class="text-muted small">${fn:escapeXml(d.reporterEmail)}</div>
+                                                    </div>
 
-                                        <div class="col-md-3">
-                                            <div class="small text-muted mb-1">Trạng thái hiện tại</div>
-                                            <span class="badge
+                                                    <div class="col-md-3">
+                                                        <div class="small text-muted mb-1">Thời gian tạo</div>
+                                                        <div class="fw-semibold">
+                                                            <fmt:formatDate value="${d.createdAt}" pattern="dd-MM-yyyy HH:mm"/>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="small text-muted mb-1">Trạng thái hiện tại</div>
+                                                        <span class="badge
                                                             <c:choose>
-                                                                <c:when test='${d.status eq "Open"}'>bg-warning text-dark</c:when>
-                                                                <c:when test='${d.status eq "InReview"}'>bg-info text-dark</c:when>
-                                                                <c:when test='${d.status eq "ResolvedWithRefund" || d.status eq "ResolvedWithoutRefund"}'>bg-success</c:when>
-                                                                <c:when test='${d.status eq "Closed"}'>bg-secondary</c:when>
-                                                                <c:when test='${d.status eq "Cancelled"}'>bg-dark</c:when>
-                                                                <c:otherwise>bg-light text-dark</c:otherwise>
-                                                            </c:choose>'>
-                                                            ${fn:escapeXml(d.status)}
+                                                                <c:when test="${d.status == 'Open'}"> bg-warning text-dark</c:when>
+                                                                <c:when test="${d.status == 'InReview'}"> bg-info text-dark</c:when>
+                                                                <c:when test="${d.status == 'ResolvedWithRefund' || d.status == 'ResolvedWithoutRefund'}"> bg-success</c:when>
+                                                                <c:when test="${d.status == 'Closed'}"> bg-secondary</c:when>
+                                                                <c:when test="${d.status == 'Cancelled'}"> bg-dark</c:when>
+                                                                <c:otherwise> bg-light text-dark</c:otherwise>
+                                                            </c:choose>">
+                                                                ${fn:escapeXml(d.status)}
                                                         </span>
                                                     </div>
                                                 </div>
 
-                                                <!-- Loại vấn đề -->
                                                 <div class="mb-3">
-                                            <div class="small text-muted mb-1">Loại vấn đề</div>
-                                            <div class="fw-semibold">
-                                                <c:choose>
-                                                    <c:when test="${not empty d.customIssueTitle}">
-                                                        ${fn:escapeXml(d.customIssueTitle)}
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        ${fn:escapeXml(d.issueType)}
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </div>
-                                        </div>
-
-                                        <!-- Lý do chi tiết -->
-                                        <div class="mb-3">
-                                            <div class="small text-muted mb-1">Lý do chi tiết</div>
-                                            <div class="border rounded p-3 bg-light"
-                                                 style="min-height:80px; white-space:pre-wrap;">
-                                                <c:out value="${d.reason}"/>
-                                            </div>
-                                        </div>
-
-                                        <!-- Snapshot đơn hàng -->
-                                        <c:if test="${not empty d.orderSnapshotJson}">
-                                            <div class="mb-3">
-                                                <div class="small text-muted mb-1">
-                                                    Snapshot đơn hàng
+                                                    <div class="small text-muted mb-1">Loại vấn đề</div>
+                                                    <div class="fw-semibold">
+                                                        <c:choose>
+                                                            <c:when test="${not empty d.customIssueTitle}">
+                                                                ${fn:escapeXml(d.customIssueTitle)}
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                ${fn:escapeXml(d.issueType)}
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
                                                 </div>
-                                                <textarea class="form-control form-control-sm"
-                                                          rows="3" readonly>
-                                                        ${fn:escapeXml(d.orderSnapshotJson)}
-                                                </textarea>
+
+                                                <div class="mb-3">
+                                                    <div class="small text-muted mb-1">Lý do chi tiết</div>
+                                                    <div class="border rounded p-3 bg-light"
+                                                         style="min-height:80px; white-space:pre-wrap;">
+                                                        <c:out value="${d.reason}"/>
+                                                    </div>
+                                                </div>
+
+                                                <c:if test="${not empty d.attachments}">
+                                                    <div class="mb-3">
+                                                        <div class="small text-muted mb-1">Ảnh đính kèm</div>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            <c:forEach var="att" items="${d.attachments}">
+                                                                <c:if test="${not empty att.filePath}">
+                                                                    <img src="${fn:escapeXml(att.filePath)}"
+                                                                         alt="Attachment"
+                                                                         class="img-thumbnail js-zoomable"
+                                                                         style="width:90px;height:90px;object-fit:cover;cursor:zoom-in;">
+                                                                </c:if>
+                                                            </c:forEach>
+                                                        </div>
+                                                    </div>
+                                                </c:if>
+
+                                                <c:if test="${not empty d.orderSnapshotJson}">
+                                                    <div class="mb-3">
+                                                        <div class="small text-muted mb-1">Snapshot đơn hàng</div>
+                                                        <textarea class="form-control form-control-sm"
+                                                                  rows="3" readonly>${fn:escapeXml(d.orderSnapshotJson)}</textarea>
+                                                    </div>
+                                                </c:if>
+
+                                                <!-- FORM XỬ LÝ -->
+                                                <form id="dpForm_${d.id}"
+                                                      action="${base}/admin/disputes/status"
+                                                      method="post"
+                                                      class="mt-3">
+                                                    <input type="hidden" name="id" value="${d.id}">
+                                                    <input type="hidden" name="action" id="dpAction_${d.id}" value="">
+
+                                                    <label for="dpNote_${d.id}" class="small text-muted mb-1">
+                                                        Ghi chú xử lý (resolution_note)
+                                                    </label>
+                                                    <textarea id="dpNote_${d.id}"
+                                                              name="resolution_note"
+                                                              class="form-control"
+                                                              rows="3"
+                                                              placeholder="Mô tả cách xử lý, lý do reject/refund...">${fn:escapeXml(d.resolutionNote)}</textarea>
+
+                                                    <div id="dpNoteErr_${d.id}"
+                                                         class="text-danger small mt-1 d-none">
+                                                        ⚠️ Vui lòng nhập ghi chú khi chọn Reject.
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2 mt-3">
+                                                        <button type="button"
+                                                                class="btn btn-outline-info"
+                                                                onclick="onDisputeAction(${d.id}, 'inreview');">
+                                                            In review
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-success"
+                                                                onclick="onDisputeAction(${d.id}, 'accept');">
+                                                            Accept
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-danger"
+                                                                onclick="onDisputeAction(${d.id}, 'reject');">
+                                                            Reject
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-outline-secondary ms-auto"
+                                                                data-bs-dismiss="modal">
+                                                            Đóng
+                                                        </button>
+                                                    </div>
+                                                </form>
                                             </div>
-                                        </c:if>
-
-                                        <!-- Form xử lý -->
-                                        <form id="dpForm_${d.id}"
-                                              action="${base}/admin/disputes/status"
-                                              method="post" class="mt-3">
-                                            <input type="hidden" name="id" value="${d.id}">
-                                            <input type="hidden" name="action"
-                                                   id="dpAction_${d.id}" value="">
-
-                                            <label for="dpNote_${d.id}"
-                                                   class="small text-muted mb-1">
-                                                Ghi chú xử lý (resolution_note)
-                                            </label>
-                                            <textarea id="dpNote_${d.id}"
-                                                      name="resolution_note"
-                                                      class="form-control"
-                                                      rows="3"
-                                                      placeholder="Mô tả cách xử lý, lý do reject/refund...">${fn:escapeXml(d.resolutionNote)}</textarea>
-
-                                            <div id="dpNoteErr_${d.id}"
-                                                 class="text-danger small mt-1 d-none">
-                                                ⚠️ Vui lòng nhập ghi chú khi chọn Reject.
-                                            </div>
-
-                                            <div class="d-flex align-items-center gap-2 mt-3">
-                                                <!-- InReview -->
-                                                <button type="button"
-                                                        class="btn btn-outline-info"
-                                                        onclick="onDisputeAction(${d.id}, 'inreview');">
-                                                    In review
-                                                </button>
-
-                                                <!-- Accept -->
-                                                <button type="button"
-                                                        class="btn btn-success"
-                                                        onclick="onDisputeAction(${d.id}, 'accept');">
-                                                    Accept
-                                                </button>
-
-                                                <!-- Reject (bắt buộc note) -->
-                                                <button type="button"
-                                                        class="btn btn-danger"
-                                                        onclick="onDisputeAction(${d.id}, 'reject');">
-                                                    Reject
-                                                </button>
-
-                                                <button type="button"
-                                                        class="btn btn-outline-secondary ms-auto"
-                                                        data-bs-dismiss="modal">
-                                                    Đóng
-                                                </button>
-                                            </div>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <!-- /MODAL -->
-                        </c:forEach>
+                                <!-- /MODAL -->
+                            </c:forEach>
                         </c:when>
 
                         <c:otherwise>
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                Không có khiếu nại nào.
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    Không có khiếu nại nào.
+                                </td>
+                            </tr>
                         </c:otherwise>
-                        </c:choose>
+                    </c:choose>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- ===== PHÂN TRANG ===== -->
+    <!-- PAGINATION -->
     <c:url var="dpPath" value="/admin/disputes"/>
     <nav aria-label="Pagination">
         <ul class="pagination justify-content-center mt-3">
-
-            <!-- Prev -->
             <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
                 <c:url var="uPrev" value="${dpPath}">
                     <c:param name="page" value="${pageNow-1}" />
@@ -352,7 +335,6 @@
                 <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}">&laquo;</a>
             </li>
 
-            <!-- Pages -->
             <c:forEach var="i" begin="1" end="${pages}">
                 <c:url var="uI" value="${dpPath}">
                     <c:param name="page" value="${i}" />
@@ -369,7 +351,6 @@
                 </li>
             </c:forEach>
 
-            <!-- Next -->
             <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
                 <c:url var="uNext" value="${dpPath}">
                     <c:param name="page" value="${pageNow+1}" />
@@ -438,12 +419,12 @@
     .modal-header .modal-title{
         font-weight:600;
         font-size:18px;
-        margin-right:auto; /* luôn canh trái */
+        margin-right:auto;
     }
 </style>
 
 <script>
-    function showToast(msg, type='success'){
+    function showToast(msg, type){
         const box = document.getElementById('toastBox');
         if(!box){ alert(msg); return; }
         const t = document.createElement('div');
@@ -453,7 +434,6 @@
         setTimeout(()=> t.remove(), 4000);
     }
 
-    // 3 action: inreview / accept / reject
     function onDisputeAction(id, action){
         const form   = document.getElementById('dpForm_' + id);
         const note   = document.getElementById('dpNote_' + id);
@@ -474,13 +454,10 @@
                 return false;
             }
             if(!confirm('Bạn chắc chắn muốn REJECT khiếu nại này?')) return false;
-
         }else if(action === 'accept'){
             if(!confirm('Xác nhận ACCEPT / giải quyết khiếu nại này?')) return false;
-
         }else if(action === 'inreview'){
             if(!confirm('Đánh dấu khiếu nại này là IN REVIEW?')) return false;
-
         }else{
             return false;
         }
@@ -490,7 +467,6 @@
         return true;
     }
 
-    // Clear lỗi khi sửa note
     document.addEventListener('input', function(e){
         const m = e.target.id && e.target.id.match(/^dpNote_(\d+)$/);
         if(!m) return;
@@ -500,7 +476,6 @@
         e.target.classList.remove('is-invalid');
     });
 
-    // Filter: auto submit khi đổi trạng thái/issue, chặn Enter linh tinh
     (function(){
         const form      = document.getElementById('dpFilter');
         if(!form) return;
