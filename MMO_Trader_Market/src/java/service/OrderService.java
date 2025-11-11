@@ -41,6 +41,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * <p>
@@ -63,6 +65,9 @@ public class OrderService {
     // Bảng ánh xạ trạng thái sang nhãn tiếng Việt.
     private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
     private static final Map<TransactionType, String> TRANSACTION_TYPE_LABELS = buildTransactionTypeLabels();
+
+    private static final Logger LOGGER = Logger.getLogger(OrderService.class.getName());
+    private static final int DEFAULT_ESCROW_RELEASE_BATCH_SIZE = 50;
 
     // DAO quản lý đơn hàng.
     private final OrderDAO orderDAO;
@@ -428,6 +433,46 @@ public class OrderService {
         } catch (SQLException ex) {
             throw new IllegalStateException("Không thể giải ngân escrow cho đơn hàng", ex);
         }
+    }
+
+    /**
+     * Thực thi auto-release escrow cho một lô đơn hàng đã hết hạn.
+     *
+     * @return số lượng đơn hàng giải ngân thành công
+     */
+    public int releaseExpiredEscrows() {
+        return releaseExpiredEscrows(DEFAULT_ESCROW_RELEASE_BATCH_SIZE);
+    }
+
+    /**
+     * Thực thi auto-release escrow cho một lô đơn hàng đã hết hạn với kích thước tùy chỉnh.
+     *
+     * @param batchSize số lượng tối đa đơn hàng xử lý trong một lần chạy job
+     * @return số lượng đơn hàng giải ngân thành công
+     */
+    public int releaseExpiredEscrows(int batchSize) {
+        if (batchSize <= 0) {
+            return 0;
+        }
+        List<Orders> candidates = orderDAO.findEscrowReleaseCandidates(batchSize);
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+        int releasedCount = 0;
+        for (Orders candidate : candidates) {
+            try {
+                Optional<EscrowReleaseResult> result = releaseEscrowIfExpired(candidate);
+                if (result.isPresent()) {
+                    releasedCount++;
+                }
+            } catch (RuntimeException ex) {
+                Integer orderId = candidate == null ? null : candidate.getId();
+                LOGGER.log(Level.WARNING, "Không thể auto-release escrow cho đơn hàng {0}: {1}",
+                        new Object[]{orderId, ex.getMessage()});
+                LOGGER.log(Level.FINE, "Chi tiết lỗi auto-release escrow cho đơn hàng " + orderId, ex);
+            }
+        }
+        return releasedCount;
     }
 
     /**

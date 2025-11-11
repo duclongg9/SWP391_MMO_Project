@@ -212,8 +212,43 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Truy vấn các đơn hàng đã hết thời gian escrow và cần giải ngân tự động.
+     *
+     * <p>
+     * Job nền sẽ gọi phương thức này để lấy danh sách giới hạn theo {@code limit}
+     * và xử lý lần lượt nhằm tránh khóa quá nhiều bản ghi trong một lần chạy.</p>
+     *
+     * @param limit số lượng tối đa đơn hàng cần truy vấn
+     * @return danh sách đơn cần auto-release escrow (có thể rỗng)
+     */
+    public List<Orders> findEscrowReleaseCandidates(int limit) {
+        List<Orders> orders = new ArrayList<>();
+        if (limit <= 0) {
+            return orders;
+        }
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at, "
+                + "escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + "created_at, updated_at FROM orders WHERE status = 'Completed' AND escrow_status = 'Scheduled' "
+                + "AND ((escrow_release_at IS NOT NULL AND escrow_release_at <= NOW()) "
+                + "OR (escrow_release_at IS NULL AND escrow_remaining_seconds IS NOT NULL AND escrow_remaining_seconds <= 0)) "
+                + "ORDER BY (escrow_release_at IS NULL), escrow_release_at, id LIMIT ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, limit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapOrder(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể truy vấn danh sách đơn cần giải ngân escrow", ex);
+        }
+        return orders;
+    }
+
+    /**
      * Tìm đơn hàng thông qua khóa idempotency.
-     * 
+     *
      * Dịch vụ gọi phương thức này để phát hiện các lần submit lặp lại từ
      * client.
      *
