@@ -157,4 +157,11 @@ public class WalletsDAO {
         boolean results = updateBalance(DBConnect.getConnection(), userId, (presentBalance.subtract(balance)));
         return results;
     }
+    
+    //Hàm cộng tiền trong ví
+    public boolean increaseBalance(int userId , BigDecimal balance) throws SQLException{
+        BigDecimal presentBalance = getWalletBalanceByUserId(userId);
+        boolean results = updateBalance(DBConnect.getConnection(), userId, (presentBalance.add(balance)));
+        return results;
+    }
 }

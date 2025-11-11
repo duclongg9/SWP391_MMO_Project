@@ -24,4 +24,13 @@
         <url-pattern>/payment</url-pattern>
     </servlet-mapping>
     
+    <servlet>
+        <servlet-name>vnpayRefund</servlet-name>
+        <servlet-class>com.vnpay.common.vnpayRefund</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>vnpayRefund</servlet-name>
+        <url-pattern>/vnpayRefund</url-pattern>
+    </servlet-mapping>
+    
 </web-app>

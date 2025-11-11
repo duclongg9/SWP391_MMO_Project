@@ -7,6 +7,7 @@ package com.vnpay.common;
 
 import com.google.gson.JsonObject;
 import dao.user.DepositeRequestDAO;
+import dao.user.WalletsDAO;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -20,9 +21,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import service.WalletService;
 
 /**
  *
@@ -30,11 +33,34 @@ import java.util.logging.Logger;
  */
 public class vnpayRefund extends HttpServlet {
     DepositeRequestDAO dtdao = new DepositeRequestDAO();
+    WalletsDAO wdao = new WalletsDAO();
     
+     @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+         Integer user = (Integer) req.getSession().getAttribute("userId");
+        if (user == null) {
+            resp.sendRedirect(req.getContextPath() + "/auth");
+            return;
+        }
+        
+        Object flash = req.getSession().getAttribute("transResult");
+        if (flash != null) {
+            req.setAttribute("transResult", flash);
+            req.getSession().removeAttribute("transResult");
+        }
+        req.getRequestDispatcher("/WEB-INF/views/wallet/paymentResult.jsp").forward(req, resp);
+    }
     
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
+        Integer user = (Integer) req.getSession().getAttribute("userId");
+        if (user == null) {
+            resp.sendRedirect(req.getContextPath() + "/auth");
+            return;
+        }
+        
         //Command: refund
         String vnp_RequestId = Config.getRandomNumber(8);
         String vnp_Version = "2.1.0";
@@ -152,10 +178,13 @@ public class vnpayRefund extends HttpServlet {
         
         
          //Cập nhật trạng thái cho bản ghi deposit
+         
+        BigDecimal amounts = BigDecimal.valueOf(amount);
         boolean transactionSuccess = false;
         if("00".equals(req.getParameter("vnp_TransactionStatus"))){
             try {
                 int results = dtdao.UpdateDepositStatus(depositId, 2);
+                wdao.increaseBalance(user,amounts);
                 transactionSuccess = true;
             } catch (SQLException ex) {
                 Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
@@ -168,8 +197,8 @@ public class vnpayRefund extends HttpServlet {
             }
         }
         
-        req.setAttribute("transResult", transactionSuccess);
-        req.getRequestDispatcher("/WEB-INF/views/wallet/paymentResult.jsp").forward(req, resp);
+        req.getSession().setAttribute("transResult", transactionSuccess);
+        resp.sendRedirect(req.getContextPath()+"/vnpayRefund");
     }
     
     
