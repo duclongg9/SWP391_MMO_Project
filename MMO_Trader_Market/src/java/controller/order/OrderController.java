@@ -548,8 +548,9 @@ public class OrderController extends BaseController {
         Orders order = detailOpt.get().order();
         orderService.releaseEscrowIfExpired(order);
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        Optional<Disputes> disputeOpt = disputeService.findByOrderId(order.getId());
         // Xây dựng danh sách sự kiện ví và trả về JSON để front-end polling.
-        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
+        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt, disputeOpt);
         response.setContentType("application/json; charset=UTF-8");
         response.getWriter().write(buildWalletEventsPayload(events));
     }

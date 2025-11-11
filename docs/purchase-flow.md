@@ -39,7 +39,7 @@ Nếu có lỗi nghiệp vụ/SQL, worker rollback và đánh dấu đơn `Faile
   - Hàm kiểm tra quyền sở hữu, nạp `OrderDetailView` qua `OrderService#getDetail`.
   - Nếu người dùng đã mở khóa credential, service trả về danh sách plaintext để JSP hiển thị.
 - Giao diện `order/detail.jsp` gọi AJAX `/orders/detail/{token}/wallet-events` (do `OrderController#handleWalletEventsApi` cung cấp).
-  - API trả về danh sách sự kiện ví được dựng bởi `OrderService#buildWalletTimeline`, mô tả các bước: kiểm tra ví, trừ tiền, chờ giao dịch và trạng thái đơn.
+  - API trả về danh sách sự kiện ví được dựng bởi `OrderService#buildWalletTimeline`, mô tả các bước từ lúc thông điệp được đưa vào queue, worker khóa ví, ghi nhận giao dịch, cho tới khiếu nại và vòng đời escrow.
 
 ## 6. Mở khóa thông tin bàn giao
 - Khi đơn ở trạng thái `Completed`, người dùng bấm nút mở khóa.

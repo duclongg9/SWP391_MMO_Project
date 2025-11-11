@@ -5,6 +5,7 @@ import dao.order.OrderDAO;
 import dao.product.ProductDAO;
 import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
+import model.Disputes;
 import model.OrderStatus;
 import model.Orders;
 import model.PaginatedResult;
@@ -573,16 +574,26 @@ public class OrderService {
      *
      * @param order bản ghi đơn cần hiển thị
      * @param paymentTxOpt giao dịch ví thực tế (nếu đã ghi nhận)
+     * @param disputeOpt thông tin khiếu nại gắn với đơn (nếu đã được tạo)
      * @return danh sách sự kiện theo thứ tự thời gian
      */
-    public List<OrderWalletEvent> buildWalletTimeline(Orders order, Optional<WalletTransactions> paymentTxOpt) {
+    public List<OrderWalletEvent> buildWalletTimeline(Orders order, Optional<WalletTransactions> paymentTxOpt,
+            Optional<Disputes> disputeOpt) {
         if (order == null) {
             return Collections.emptyList();
         }
         List<OrderWalletEvent> events = new ArrayList<>();
         Date createdAt = copyDate(order.getCreatedAt());
         Integer orderId = order.getId();
-        // Bỏ qua sự kiện hàng đợi để giao diện không hiển thị bước này nhưng vẫn giữ nguyên luồng API.
+        events.add(new OrderWalletEvent(
+                "ORDER_ENQUEUED",
+                "Đưa vào hàng đợi",
+                "Hệ thống ghi nhận yêu cầu mua và đưa vào worker bất đồng bộ để tiếp tục xử lý.",
+                createdAt,
+                null,
+                null,
+                buildSyntheticReference("Q", orderId, events.size() + 1),
+                false));
         Date walletStepTime = copyDate(order.getUpdatedAt());
         if (walletStepTime == null) {
             walletStepTime = createdAt;
@@ -600,7 +611,7 @@ public class OrderService {
                 walletStepTime,
                 totalAmount,
                 null,
-                buildSyntheticReference("V", orderId, 1),
+                buildSyntheticReference("V", orderId, events.size() + 1),
                 false));
 
         if (paymentTxOpt.isPresent()) {
@@ -652,13 +663,58 @@ public class OrderService {
                     false));
         }
 
-        String escrowStatus = order.getEscrowStatus();
-        if ("Scheduled".equalsIgnoreCase(escrowStatus)) {
-            Date scheduledAt = copyDate(order.getUpdatedAt());
-            if (scheduledAt == null) {
-                scheduledAt = copyDate(order.getCreatedAt());
+        disputeOpt.ifPresent(dispute -> {
+            Date disputeCreated = copyDate(dispute.getCreatedAt());
+            if (disputeCreated == null) {
+                disputeCreated = copyDate(dispute.getEscrowPausedAt());
             }
-            Date releaseAt = copyDate(order.getEscrowReleaseAt());
+            if (disputeCreated == null) {
+                disputeCreated = walletStepTime;
+            }
+            String disputeDescription = buildDisputeCreatedDescription(dispute);
+            String reference = dispute.getOrderReferenceCode();
+            if (reference == null || reference.isBlank()) {
+                reference = buildSyntheticReference("D", orderId, events.size() + 1);
+            }
+            events.add(new OrderWalletEvent(
+                    "DISPUTE_CREATED",
+                    "Khiếu nại được tạo",
+                    disputeDescription,
+                    disputeCreated,
+                    null,
+                    null,
+                    reference,
+                    false));
+            Date resolvedAt = copyDate(dispute.getResolvedAt());
+            if (resolvedAt != null) {
+                String resolvedDescription = buildDisputeResolvedDescription(dispute);
+                events.add(new OrderWalletEvent(
+                        "DISPUTE_RESOLVED",
+                        "Khiếu nại được xử lý",
+                        resolvedDescription,
+                        resolvedAt,
+                        null,
+                        null,
+                        buildSyntheticReference("DR", orderId, events.size() + 1),
+                        false));
+            }
+        });
+
+        String escrowStatus = order.getEscrowStatus();
+        boolean hasEscrowHold = order.getEscrowHoldSeconds() != null
+                || order.getEscrowReleaseAt() != null
+                || order.getEscrowOriginalReleaseAt() != null
+                || (escrowStatus != null && !escrowStatus.isBlank());
+        if (hasEscrowHold) {
+            Date scheduledAt = copyDate(order.getEscrowResumedAt());
+            if (scheduledAt == null) {
+                scheduledAt = copyDate(order.getUpdatedAt());
+            }
+            if (scheduledAt == null) {
+                scheduledAt = createdAt;
+            }
+            Date releaseAt = copyDate(Optional.ofNullable(order.getEscrowReleaseAt())
+                    .orElse(order.getEscrowOriginalReleaseAt()));
             String releaseLabel = releaseAt == null ? "theo lịch cấu hình" : formatDateTime(releaseAt);
             String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
             String desc = String.format(
@@ -674,7 +730,59 @@ public class OrderService {
                     null,
                     buildSyntheticReference("ES", orderId, events.size() + 1),
                     false));
-        } else if ("Released".equalsIgnoreCase(escrowStatus)) {
+        }
+
+        Integer escrowRemainingSeconds = resolveEscrowRemainingSeconds(order, disputeOpt);
+        if ("Paused".equalsIgnoreCase(escrowStatus)) {
+            Date pausedAt = copyDate(Optional.ofNullable(order.getEscrowPausedAt())
+                    .orElseGet(() -> disputeOpt.map(Disputes::getEscrowPausedAt).orElse(null)));
+            String desc;
+            if (escrowRemainingSeconds != null && escrowRemainingSeconds > 0) {
+                String remaining = describeEscrowRemaining(escrowRemainingSeconds);
+                desc = String.format(
+                        "Escrow bị tạm dừng do khiếu nại. Hệ thống bảo lưu thời gian còn lại (%s) cho tới khi tranh chấp được xử lý.",
+                        remaining);
+            } else {
+                String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+                desc = String.format(
+                        "Escrow bị tạm dừng do khiếu nại. Thời gian giải ngân sẽ được tính lại %s sau khi tranh chấp kết thúc.",
+                        holdDescription);
+            }
+            events.add(new OrderWalletEvent(
+                    "ESCROW_PAUSED",
+                    "Tạm dừng escrow",
+                    desc,
+                    pausedAt,
+                    null,
+                    null,
+                    buildSyntheticReference("EP", orderId, events.size() + 1),
+                    false));
+        }
+
+        Date resumedAt = copyDate(order.getEscrowResumedAt());
+        if (resumedAt != null && (escrowStatus == null || "Scheduled".equalsIgnoreCase(escrowStatus))) {
+            String desc;
+            if (escrowRemainingSeconds != null && escrowRemainingSeconds > 0) {
+                String remaining = describeEscrowRemaining(escrowRemainingSeconds);
+                desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và tiếp tục đếm thời gian còn lại "
+                        + '(' + remaining + ').';
+            } else {
+                String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+                desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và sẽ tiếp tục đếm "
+                        + holdDescription + '.';
+            }
+            events.add(new OrderWalletEvent(
+                    "ESCROW_RESUMED",
+                    "Tiếp tục giữ escrow",
+                    desc,
+                    resumedAt,
+                    null,
+                    null,
+                    buildSyntheticReference("ER", orderId, events.size() + 1),
+                    false));
+        }
+
+        if ("Released".equalsIgnoreCase(escrowStatus)) {
             Date payoutTime = copyDate(order.getEscrowReleasedAtActual());
             if (payoutTime == null) {
                 payoutTime = copyDate(order.getEscrowReleaseAt());
@@ -688,6 +796,18 @@ public class OrderService {
                     order.getTotalAmount(),
                     null,
                     buildSyntheticReference("E", orderId, events.size() + 1),
+                    false));
+        } else if ("Cancelled".equalsIgnoreCase(escrowStatus)) {
+            Date cancelledAt = copyDate(order.getUpdatedAt());
+            String desc = "Escrow bị hủy do đơn hàng không còn đủ điều kiện giải ngân (ví dụ hoàn tiền).";
+            events.add(new OrderWalletEvent(
+                    "ESCROW_CANCELLED",
+                    "Hủy escrow",
+                    desc,
+                    cancelledAt,
+                    null,
+                    null,
+                    buildSyntheticReference("EC", orderId, events.size() + 1),
                     false));
         }
 
@@ -857,6 +977,76 @@ public class OrderService {
     }
 
     /**
+     * Xây dựng mô tả ngắn gọn cho sự kiện khiếu nại được tạo để timeline dễ đọc.
+     */
+    private static String buildDisputeCreatedDescription(Disputes dispute) {
+        StringBuilder builder = new StringBuilder("Người mua tạo đơn khiếu nại");
+        String issueTitle = firstNonBlank(dispute.getCustomIssueTitle(), dispute.getIssueType());
+        if (issueTitle != null && !issueTitle.isBlank()) {
+            builder.append(' ').append("về \"").append(issueTitle.trim()).append('\"');
+        }
+        builder.append('.');
+        if (dispute.getStatus() != null && !dispute.getStatus().isBlank()) {
+            builder.append(' ').append("Trạng thái hiện tại: ")
+                    .append(dispute.getStatus().trim()).append('.');
+        }
+        String reason = truncateWithEllipsis(dispute.getReason(), 180);
+        if (reason != null && !reason.isBlank()) {
+            builder.append(' ').append("Lý do: ").append(reason);
+            if (!reason.endsWith(".")) {
+                builder.append('.');
+            }
+        }
+        return builder.toString();
+    }
+
+    /**
+     * Sinh mô tả cho sự kiện khiếu nại được giải quyết (nếu có) dựa trên ghi chú của admin.
+     */
+    private static String buildDisputeResolvedDescription(Disputes dispute) {
+        StringBuilder builder = new StringBuilder("Admin đã xử lý khiếu nại.");
+        if (dispute.getStatus() != null && !dispute.getStatus().isBlank()) {
+            builder.append(' ').append("Trạng thái cuối: ")
+                    .append(dispute.getStatus().trim()).append('.');
+        }
+        String note = truncateWithEllipsis(dispute.getResolutionNote(), 180);
+        if (note != null && !note.isBlank()) {
+            builder.append(' ').append("Ghi chú: ").append(note);
+            if (!note.endsWith(".")) {
+                builder.append('.');
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static String truncateWithEllipsis(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() <= maxLength) {
+            return trimmed;
+        }
+        int safeLength = Math.max(0, maxLength - 1);
+        return trimmed.substring(0, safeLength).trim() + "…";
+    }
+
+    /**
      * Định dạng thời gian theo mẫu {@code dd/MM/yyyy HH:mm} phục vụ hiển thị timeline.
      */
     private static String formatDateTime(Date date) {
@@ -870,10 +1060,23 @@ public class OrderService {
      * Chuyển đổi tổng thời gian giữ tiền escrow thành câu tiếng Việt dễ đọc.
      */
     private static String describeEscrowHold(Integer holdSeconds) {
-        if (holdSeconds == null || holdSeconds <= 0) {
-            return "theo cấu hình hiện hành";
+        String phrase = describeDuration(holdSeconds);
+        return phrase == null ? "theo cấu hình hiện hành" : "trong " + phrase;
+    }
+
+    /**
+     * Mô tả phần thời gian escrow còn lại khi bị tạm dừng/resume.
+     */
+    private static String describeEscrowRemaining(Integer remainingSeconds) {
+        String phrase = describeDuration(remainingSeconds);
+        return phrase == null ? "0 giây" : phrase;
+    }
+
+    private static String describeDuration(Integer seconds) {
+        if (seconds == null || seconds <= 0) {
+            return null;
         }
-        Duration duration = Duration.ofSeconds(holdSeconds);
+        Duration duration = Duration.ofSeconds(seconds.longValue());
         long days = duration.toDays();
         duration = duration.minusDays(days);
         long hours = duration.toHours();
@@ -892,7 +1095,23 @@ public class OrderService {
         if (parts.isEmpty()) {
             parts.add("dưới 1 phút");
         }
-        return "trong " + String.join(" ", parts);
+        return String.join(" ", parts);
+    }
+
+    /**
+     * Trích xuất số giây escrow còn lại dựa trên bản ghi đơn hoặc dispute đính kèm.
+     */
+    private static Integer resolveEscrowRemainingSeconds(Orders order, Optional<Disputes> disputeOpt) {
+        if (order == null) {
+            return null;
+        }
+        Integer remaining = order.getEscrowRemainingSeconds();
+        if (remaining != null && remaining > 0) {
+            return remaining;
+        }
+        return disputeOpt.map(Disputes::getEscrowRemainingSeconds)
+                .filter(value -> value != null && value > 0)
+                .orElse(null);
     }
 
     private static String buildSyntheticReference(String prefix, Integer orderId, int step) {
