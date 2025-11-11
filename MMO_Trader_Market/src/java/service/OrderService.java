@@ -594,10 +594,8 @@ public class OrderService {
                 null,
                 buildSyntheticReference("Q", orderId, events.size() + 1),
                 false));
-        Date walletStepTime = copyDate(order.getUpdatedAt());
-        if (walletStepTime == null) {
-            walletStepTime = createdAt;
-        }
+        final Date walletStepTime = Optional.ofNullable(copyDate(order.getUpdatedAt()))
+                .orElse(createdAt);
         StringBuilder walletDesc = new StringBuilder("Worker khóa ví người mua, kiểm tra trạng thái hoạt động và số dư trước khi trừ tiền.");
         BigDecimal totalAmount = order.getTotalAmount();
         if (totalAmount != null) {
@@ -765,7 +763,7 @@ public class OrderService {
             if (escrowRemainingSeconds != null && escrowRemainingSeconds > 0) {
                 String remaining = describeEscrowRemaining(escrowRemainingSeconds);
                 desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và tiếp tục đếm thời gian còn lại "
-                        + '(' + remaining + ').';
+                        + "(" + remaining + ").";
             } else {
                 String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
                 desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và sẽ tiếp tục đếm "
