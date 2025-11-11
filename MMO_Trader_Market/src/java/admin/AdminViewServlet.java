@@ -3,17 +3,12 @@ package admin;
 import com.google.gson.Gson;
 import controller.dashboard.AdminDashboardController;
 import dao.ManageDisputeDAO;
-import dao.admin.ManageKycDAO;
-import dao.admin.ManageShopDAO;
-import dao.admin.ManageUserDAO;
+import dao.admin.*;
 import dao.connect.DBConnect;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.Disputes;
-import model.KycRequests;
-import model.Shops;
-import model.Users;
+import model.*;
 
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
@@ -42,6 +37,7 @@ import service.AdnimDashboardService;
 public class AdminViewServlet extends HttpServlet {
 
     Users user;
+    private CashDAO cashDAO;
     AdnimDashboardService adminDashboard = new AdnimDashboardService();
     // ------ Date helpers ------
     // Chấp nhận: dd-MM-yyyy, yyyy-MM-dd, dd/MM/yyyy
@@ -171,10 +167,14 @@ public class AdminViewServlet extends HttpServlet {
             case "/disputes/status":
                 handleDisputeStatus(req, resp);
                 return;
+            case "/cashs/status":
+                handleCashsStatus(req, resp);
+                return;
             default:
                 resp.sendError(404);
         }
     }
+
     private void handleDisputeStatus(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
 
@@ -254,15 +254,15 @@ public class AdminViewServlet extends HttpServlet {
 
 
     private void handleKycStatus(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
+            throws IOException, ServletException {
 
         req.setCharacterEncoding("UTF-8");
 
-        String action = safe(req.getParameter("action"));   // "approve" | "reject"
-        String idStr = safe(req.getParameter("id"));
+        String action   = safe(req.getParameter("action"));   // "approve" | "reject"
+        String idStr    = safe(req.getParameter("id"));
         String feedback = safe(req.getParameter("feedback"));
 
-        // Validate cơ bản
+        // Validate ID & action: lỗi cứng -> flash + redirect
         if (idStr == null || !idStr.matches("\\d+")) {
             req.getSession().setAttribute("flash", "Lỗi: ID không hợp lệ");
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
@@ -273,15 +273,20 @@ public class AdminViewServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/admin/kycs");
             return;
         }
-        // Bắt buộc ghi chú khi từ chối
-        if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
-            req.getSession().setAttribute("flash", "Lỗi: Vui lòng nhập lý do từ chối");
-            resp.sendRedirect(req.getContextPath() + "/admin/kycs");
-            return;
-        }
 
         int kycId = Integer.parseInt(idStr);
 
+        // Case đặc biệt: Reject nhưng thiếu feedback -> không flash, không redirect
+        if ("reject".equalsIgnoreCase(action) && (feedback == null || feedback.isBlank())) {
+            req.setAttribute("kycErrorId", kycId);
+            req.setAttribute("kycErrorMessage", "Vui lòng nhập lí do từ chối KYC.");
+
+            // render lại trang KYC với lỗi inline
+            handleKycs(req, resp);
+            return;
+        }
+
+        // Các case hợp lệ: approve hoặc reject có feedback
         try (Connection con = DBConnect.getConnection()) {
             ManageKycDAO dao = new ManageKycDAO(con);
             int rows;
@@ -292,7 +297,7 @@ public class AdminViewServlet extends HttpServlet {
                         "flash",
                         rows > 0 ? "Duyệt KYC thành công!" : "Không có thay đổi"
                 );
-            } else { // reject
+            } else { // reject (đã có feedback)
                 rows = dao.rejectKyc(kycId, feedback);
                 req.getSession().setAttribute(
                         "flash",
@@ -309,31 +314,111 @@ public class AdminViewServlet extends HttpServlet {
     }
 
     private void handleShopStatus(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException, ServletException {
+            throws IOException {
 
-        String idStr = req.getParameter("id");
-        String action = req.getParameter("action");   // accept | reject
+        req.setCharacterEncoding("UTF-8");
 
+        String idStr     = safe(req.getParameter("id"));
+        String action    = safe(req.getParameter("action"));      // "ban" | "unban"
+        String adminNote = safe(req.getParameter("admin_note"));  // từ textarea trong modal
+
+        // Validate ID
         if (idStr == null || !idStr.matches("\\d+")) {
-            resp.sendError(400, "Sai ID");
+            req.getSession().setAttribute("flash", "Lỗi: ID cửa hàng không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
             return;
         }
-        if (action == null || !(action.equalsIgnoreCase("accept") || action.equalsIgnoreCase("reject"))) {
-            resp.sendError(400, "Action không hợp lệ");
+        if (action == null ||
+                !(action.equalsIgnoreCase("ban") || action.equalsIgnoreCase("unban"))) {
+            req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
             return;
         }
 
         int shopId = Integer.parseInt(idStr);
-        String newStatus = action.equalsIgnoreCase("accept") ? "Active" : "Rejected";
 
         try (Connection con = DBConnect.getConnection()) {
             ManageShopDAO dao = new ManageShopDAO(con);
-            boolean ok = dao.updateStatus(shopId, newStatus);
-            req.getSession().setAttribute("flash", ok ? "Cập nhật trạng thái thành công" : "Không có thay đổi");
-            resp.sendRedirect(req.getContextPath() + "/admin/shops");
+
+            // Lấy thông tin shop hiện tại
+            Shops shop = dao.findById(shopId);
+            if (shop == null) {
+                req.getSession().setAttribute("flash", "Lỗi: Không tìm thấy cửa hàng #" + shopId);
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            String currentStatus = shop.getStatus() == null ? "" : shop.getStatus();
+
+            /* ========== BAN ========== */
+            if ("ban".equalsIgnoreCase(action)) {
+
+                // Chỉ được ban khi đang Active
+                if (!"Active".equalsIgnoreCase(currentStatus)) {
+                    req.getSession().setAttribute(
+                            "flash",
+                            "Chỉ có thể ban cửa hàng đang ở trạng thái Active."
+                    );
+                    resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                    return;
+                }
+
+                // Bắt buộc admin_note
+                if (adminNote == null || adminNote.isBlank()) {
+                    req.getSession().setAttribute(
+                            "flash",
+                            "Lỗi: Vui lòng nhập Admin note khi ban cửa hàng."
+                    );
+                    resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                    return;
+                }
+
+                boolean ok = dao.updateStatusAndNote(shopId, "Suspended", adminNote.trim());
+
+                req.getSession().setAttribute(
+                        "flash",
+                        ok
+                                ? "Đã ban cửa hàng #" + shopId + " thành công."
+                                : "Không có thay đổi khi ban cửa hàng #" + shopId + "."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                return;
+            }
+
+            /* ========== UNBAN ========== */
+            if ("unban".equalsIgnoreCase(action)) {
+
+                // Chỉ unban nếu đang Suspended
+                if (!"Suspended".equalsIgnoreCase(currentStatus)) {
+                    req.getSession().setAttribute(
+                            "flash",
+                            "Chỉ có thể unban cửa hàng đang ở trạng thái Suspended."
+                    );
+                    resp.sendRedirect(req.getContextPath() + "/admin/shops");
+                    return;
+                }
+
+                // Có thể giữ nguyên admin_note cũ hoặc cập nhật note mới nếu nhập
+                String newNote = (adminNote != null ? adminNote.trim() : shop.getAdminNote());
+
+                boolean ok = dao.updateStatusAndNote(shopId, "Active", newNote);
+
+                req.getSession().setAttribute(
+                        "flash",
+                        ok
+                                ? "Đã unban cửa hàng #" + shopId + " (chuyển về Active)."
+                                : "Không có thay đổi khi unban cửa hàng #" + shopId + "."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/shops");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            resp.sendError(500, e.getMessage());
+            req.getSession().setAttribute(
+                    "flash",
+                    "Lỗi hệ thống: " + e.getMessage()
+            );
+            resp.sendRedirect(req.getContextPath() + "/admin/shops");
         }
     }
 
@@ -415,26 +500,19 @@ public class AdminViewServlet extends HttpServlet {
             throws ServletException, IOException {
 
         req.setCharacterEncoding("UTF-8");
-        String name = safe(req.getParameter("name"));
-        String email = safe(req.getParameter("email"));
+        String name     = safe(req.getParameter("name"));
+        String email    = safe(req.getParameter("email"));
         String password = safe(req.getParameter("password"));
-        String role = safe(req.getParameter("role"));
-        if (role == null || role.isBlank()) {
-            role = "buyer";
-        }
+        String role     = safe(req.getParameter("role"));
+        if (role == null || role.isBlank()) role = "buyer";
 
-        java.util.Map<String, String> errs = new java.util.LinkedHashMap<>();
+        java.util.Map<String,String> errs = new java.util.LinkedHashMap<>();
 
         // Validate cơ bản
-        if (name == null || name.length() < 5) {
-            errs.put("name", "Họ tên phải từ 2 ký tự.");
-        }
-        if (email == null || !email.matches("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$")) {
+        if (name == null || name.length() < 5)              errs.put("name", "Họ tên phải từ 2 ký tự.");
+        if (email == null || !email.matches("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))
             errs.put("email", "Email không hợp lệ.");
-        }
-        if (password == null || password.length() < 6) {
-            errs.put("password", "Mật khẩu tối thiểu 6 ký tự.");
-        }
+        if (password == null || password.length() < 6)      errs.put("password", "Mật khẩu tối thiểu 6 ký tự.");
 
         Integer roleId = null;
 
@@ -445,14 +523,10 @@ public class AdminViewServlet extends HttpServlet {
                         "SELECT id FROM roles WHERE UPPER(name)=UPPER(?) LIMIT 1")) {
                     rp.setString(1, role);
                     try (ResultSet rs = rp.executeQuery()) {
-                        if (rs.next()) {
-                            roleId = rs.getInt(1);
-                        }
+                        if (rs.next()) roleId = rs.getInt(1);
                     }
                 }
-                if (roleId == null) {
-                    errs.put("form", "Vai trò không hợp lệ.");
-                }
+                if (roleId == null) errs.put("form", "Vai trò không hợp lệ.");
 
                 // email trùng
                 if (errs.isEmpty()) {
@@ -460,9 +534,7 @@ public class AdminViewServlet extends HttpServlet {
                             "SELECT 1 FROM users WHERE email=? LIMIT 1")) {
                         ck.setString(1, email);
                         try (ResultSet rs = ck.executeQuery()) {
-                            if (rs.next()) {
-                                errs.put("email", "Email đã tồn tại.");
-                            }
+                            if (rs.next()) errs.put("email", "Email đã tồn tại.");
                         }
                     }
                 }
@@ -472,8 +544,8 @@ public class AdminViewServlet extends HttpServlet {
                     String hashed = org.mindrot.jbcrypt.BCrypt.hashpw(
                             password, org.mindrot.jbcrypt.BCrypt.gensalt(10));
                     try (PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO users(name,email,hashed_password,role_id,status,created_at,updated_at) "
-                            + "VALUES (?,?,?,?,0,NOW(),NOW())")) {
+                            "INSERT INTO users(name,email,hashed_password,role_id,status,created_at,updated_at) " +
+                                    "VALUES (?,?,?,?,0,NOW(),NOW())")) {
                         ps.setString(1, name);
                         ps.setString(2, email);
                         ps.setString(3, hashed);
@@ -493,10 +565,10 @@ public class AdminViewServlet extends HttpServlet {
 
         // Có lỗi → mở lại modal + giữ giá trị đã nhập, forward về trang list
         req.setAttribute("openCreateModal", true);
-        req.setAttribute("form_name", name);
+        req.setAttribute("form_name",  name);
         req.setAttribute("form_email", email);
-        req.setAttribute("form_role", role);
-        req.setAttribute("form_errs", errs);
+        req.setAttribute("form_role",  role);
+        req.setAttribute("form_errs",  errs);
 
         // nạp lại bảng + phân trang rồi render
         handleUsers(req, resp);
@@ -507,7 +579,7 @@ public class AdminViewServlet extends HttpServlet {
             throws IOException {
         req.setCharacterEncoding("UTF-8");
         String action = safe(req.getParameter("action"));     // "ban" | "unban"
-        String idStr = safe(req.getParameter("id"));
+        String idStr  = safe(req.getParameter("id"));
 
         if (action == null || idStr == null || !idStr.matches("\\d+")) {
             req.getSession().setAttribute("flash", "Tham số không hợp lệ.");
@@ -531,6 +603,218 @@ public class AdminViewServlet extends HttpServlet {
             req.getSession().setAttribute("flash", "Lỗi hệ thống: " + e.getMessage());
         }
         resp.sendRedirect(req.getContextPath() + "/admin/users");
+    }
+
+    private void handleCashsStatus(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException, ServletException {
+
+        req.setCharacterEncoding("UTF-8");
+
+        String idStr   = safe(req.getParameter("id"));
+        String action  = safe(req.getParameter("action"));   // "accept" | "reject"
+        String note    = safe(req.getParameter("note"));
+        String txTypeP = safe(req.getParameter("txType"));   // "Deposit" | "Withdrawal"
+
+        // ===== Validate cơ bản =====
+        if (idStr == null || !idStr.matches("\\d+")) {
+            req.getSession().setAttribute("flash", "Lỗi: ID giao dịch không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+        if (!"accept".equalsIgnoreCase(action) && !"reject".equalsIgnoreCase(action)) {
+            req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+        if (txTypeP == null ||
+                !(txTypeP.equalsIgnoreCase("Deposit") || txTypeP.equalsIgnoreCase("Withdrawal"))) {
+            req.getSession().setAttribute("flash", "Lỗi: Loại giao dịch không hợp lệ.");
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+            return;
+        }
+
+        int txId = Integer.parseInt(idStr);
+        boolean requireNote =
+                "reject".equalsIgnoreCase(action)
+                        || ("accept".equalsIgnoreCase(action) && "Deposit".equalsIgnoreCase(txTypeP));
+
+        if (requireNote && (note == null || note.isBlank())) {
+            req.setAttribute("cashErrorId", txId);
+            req.setAttribute("cashErrorMessage", "Vui lòng nhập ghi chú cho hành động này (bắt buộc).");
+            handleCashs(req, resp); // render lại list + modal với lỗi đỏ
+            return;
+        }
+
+        // ===== Xử lý upload ảnh (chỉ khi là multipart và form có proof_file) =====
+        String adminProofUrl = null;
+        try {
+            String ct = req.getContentType();
+            if (ct != null && ct.toLowerCase().startsWith("multipart/")) {
+                jakarta.servlet.http.Part part = req.getPart("proof_file");
+                if (part != null && part.getSize() > 0) {
+                    String original = part.getSubmittedFileName();
+                    String cleanName = java.nio.file.Paths.get(
+                            original == null ? "" : original).getFileName().toString();
+
+                    String fileName = System.currentTimeMillis() + "_" + cleanName;
+                    String uploadDir = req.getServletContext()
+                            .getRealPath("/uploads/withdrawals");
+                    java.nio.file.Files.createDirectories(java.nio.file.Path.of(uploadDir));
+
+                    java.nio.file.Path dest = java.nio.file.Path.of(uploadDir, fileName);
+                    part.write(dest.toString());
+
+                    adminProofUrl = req.getContextPath() + "/uploads/withdrawals/" + fileName;
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            // Không fail toàn bộ, chỉ log; nếu muốn thì set flash lỗi upload riêng.
+        }
+
+        try (Connection con = DBConnect.getConnection()) {
+            con.setAutoCommit(false);
+
+            CashDAO cashDAO = new CashDAO(con);
+
+            // Lấy đúng giao dịch theo loại form gửi lên
+            CashTxn tx = cashDAO.findById(txId, txTypeP);
+            if (tx == null) {
+                con.rollback();
+                req.getSession().setAttribute("flash", "Lỗi: Không tìm thấy giao dịch #" + txId);
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            String type   = tx.getType();   // Deposit | Withdrawal
+            String status = tx.getStatus(); // Pending / Completed / Rejected
+            int userId    = tx.getUserId();
+            BigDecimal amount = tx.getAmount();
+
+            // Double-check type khớp txTypeP
+            if (!txTypeP.equalsIgnoreCase(type)) {
+                con.rollback();
+                req.getSession().setAttribute(
+                        "flash",
+                        "Lỗi: Loại giao dịch không khớp dữ liệu. Vui lòng tải lại trang."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            // Chỉ xử lý khi còn Pending
+            if (!"Pending".equalsIgnoreCase(status)) {
+                con.rollback();
+                req.getSession().setAttribute(
+                        "flash",
+                        "Giao dịch #" + txId + " đã được xử lý trước đó."
+                );
+                resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+                return;
+            }
+
+            // Nếu Accept Withdrawal: bắt buộc có ảnh (mới upload hoặc đã có sẵn)
+            if ("accept".equalsIgnoreCase(action) && "Withdrawal".equalsIgnoreCase(type)) {
+                String existingProof = tx.getAdminProofUrl();
+                if (adminProofUrl == null || adminProofUrl.isBlank()) {
+                    adminProofUrl = existingProof;
+                }
+                if (adminProofUrl == null || adminProofUrl.isBlank()) {
+                    con.rollback();
+                    req.setAttribute("cashErrorId", txId);
+                    req.setAttribute("cashErrorMessage",
+                            "Vui lòng upload ảnh chuyển khoản của admin trước khi duyệt rút tiền.");
+                    handleCashs(req, resp);
+                    return;
+                }
+            }
+
+            int rowsTx  = 0;
+            int rowsWal = 0;
+
+            /* ========== ACCEPT ========== */
+            if ("accept".equalsIgnoreCase(action)) {
+
+                if ("Deposit".equalsIgnoreCase(type)) {
+                    // Accept NẠP: cộng ví + lưu note
+                    rowsWal = cashDAO.updateWalletPlus(userId, amount);
+                    rowsTx  = cashDAO.updateDepositStatus(txId, "Completed", note);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsWal > 0 && rowsTx > 0)
+                                    ? "Duyệt nạp tiền #" + txId + " thành công (đã cộng vào ví)."
+                                    : "Không có thay đổi khi duyệt nạp tiền #" + txId + "."
+                    );
+
+                } else if ("Withdrawal".equalsIgnoreCase(type)) {
+                    // Accept RÚT: cập nhật trạng thái + lưu/giữ admin_proof_url
+                    rowsTx = cashDAO.updateWithdrawalStatus(txId, "Completed", note, adminProofUrl);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsTx > 0)
+                                    ? "Duyệt rút tiền #" + txId + " thành công."
+                                    : "Không có thay đổi khi duyệt rút tiền #" + txId + "."
+                    );
+                }
+
+                /* ========== REJECT ========== */
+            } else { // "reject"
+
+                if ("Deposit".equalsIgnoreCase(type)) {
+                    // Reject NẠP
+                    rowsTx = cashDAO.updateDepositStatus(txId, "Rejected", note);
+
+                    req.getSession().setAttribute(
+                            "flash",
+                            (rowsTx > 0)
+                                    ? "Đã từ chối nạp tiền #" + txId + "."
+                                    : "Không có thay đổi khi từ chối nạp tiền #" + txId + "."
+                    );
+
+                } else if ("Withdrawal".equalsIgnoreCase(type)) {
+
+                    BigDecimal fee = new BigDecimal("10000");
+                    BigDecimal refund = amount.subtract(fee);
+                    if (refund.compareTo(BigDecimal.ZERO) < 0) {
+                        refund = BigDecimal.ZERO;
+                    }
+
+                    // Cộng lại vào ví số refund
+                    rowsWal = cashDAO.updateWalletPlus(userId, refund);
+                    // Lưu trạng thái + note (nên ghi rõ phí đã trừ trong note hoặc message)
+                    rowsTx = cashDAO.updateWithdrawalStatus(txId, "Rejected", note, adminProofUrl);
+                    if (rowsWal > 0 && rowsTx > 0) {
+                        req.getSession().setAttribute(
+                                "flash",
+                                "Đã từ chối rút tiền #" + txId +
+                                        " và hoàn " + refund.toPlainString() +
+                                        " (đã trừ phí 10.000)."
+                        );
+                    } else {
+                        req.getSession().setAttribute(
+                                "flash",
+                                "Không có thay đổi khi từ chối rút tiền #" + txId + "."
+                        );
+                    }
+                }
+            }
+
+            // Commit / rollback
+            if (rowsTx > 0 || rowsWal > 0) {
+                con.commit();
+            } else {
+                con.rollback();
+            }
+
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            req.getSession().setAttribute("flash", "Lỗi hệ thống: " + e.getMessage());
+            resp.sendRedirect(req.getContextPath() + "/admin/cashs");
+        }
     }
 
     @Override
@@ -781,65 +1065,82 @@ public class AdminViewServlet extends HttpServlet {
     private void handleUsers(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String q = clean(req.getParameter("q"));
+        String q    = clean(req.getParameter("q"));
         String role = clean(req.getParameter("role"));
         String from = clean(req.getParameter("from"));
-        String to = clean(req.getParameter("to"));
+        String to   = clean(req.getParameter("to"));
+
+        // role = all / buyer / seller / ...  -> all = null
+        if (role != null && ("all".equalsIgnoreCase(role) || role.isBlank())) {
+            role = null;
+        }
 
         LocalDate fromD = tryParseDate(from);
-        LocalDate toD = tryParseDate(to);
+        LocalDate toD   = tryParseDate(to);
         Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
-        Timestamp toAt = (toD == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+        Timestamp toAt   = (toD == null)   ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
 
         try (Connection con = DBConnect.getConnection()) {
             ManageUserDAO dao = new ManageUserDAO(con);
 
-            // TODO: Nên có dao.countUsers(filter) & dao.findUsers(filter, size, offset)
+            // Lấy danh sách theo filter thô
             List<Users> list = dao.searchUsers(q, role, fromAt, toAt);
 
-            // sort mới -> cũ
+            // 1) BỎ ADMIN TRƯỚC KHI SORT + PHÂN TRANG
+            list = list.stream()
+                    .filter(u -> {
+                        String rn = u.getRoleName();
+                        return rn == null || !rn.equalsIgnoreCase("ADMIN");
+                    })
+                    .toList();
+
+            // 2) Sort mới -> cũ
             list = list.stream()
                     .sorted(Comparator.comparing(
-                            u -> u.getCreatedAt() == null ? new java.util.Date(0) : u.getCreatedAt(),
+                            u -> u.getCreatedAt() == null
+                                    ? new java.util.Date(0)
+                                    : u.getCreatedAt(),
                             Comparator.reverseOrder()))
                     .toList();
 
+            // 3) Paging
             final int DEFAULT_SIZE = 8;
             int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
             int page = parseIntOrDefault(req.getParameter("page"), 1);
-            if (size <= 0) {
-                size = DEFAULT_SIZE;
-            }
+            if (size <= 0) size = DEFAULT_SIZE;
 
-            int total = list.size();
+            int total = list.size();                  // đã KHÔNG gồm admin
             int pages = ceilDiv(total, size);
             page = clampPage(page, pages);
 
             int fromIdx = Math.max(0, (page - 1) * size);
-            int toIdx = Math.min(total, fromIdx + size);
+            int toIdx   = Math.min(total, fromIdx + size);
             List<Users> pageList = list.subList(fromIdx, toIdx);
 
+            // 4) Gán sang JSP
             req.setAttribute("userList", pageList);
-            // set paging attrs (để JSP chỉ hiển thị)
+
             req.setAttribute("pg_total", total);
-            req.setAttribute("pg_page", page);
-            req.setAttribute("pg_size", size);
+            req.setAttribute("pg_page",  page);
+            req.setAttribute("pg_size",  size);
             req.setAttribute("pg_pages", pages);
             req.setAttribute("pg_isFirst", page <= 1);
-            req.setAttribute("pg_isLast", page >= pages);
-            req.setAttribute("pg_single", pages <= 1);
+            req.setAttribute("pg_isLast",  page >= pages);
+            req.setAttribute("pg_single",  pages <= 1);
 
         } catch (Exception e) {
             throw new ServletException(e);
         }
+
         if ("1".equals(req.getParameter("openCreate"))) {
             req.setAttribute("openCreateModal", true);
         }
-        // giữ filter (ISO cho input date)
-        req.setAttribute("q", q == null ? "" : q);
+
+        // giữ filter
+        req.setAttribute("q",    q == null ? "" : q);
         req.setAttribute("role", role == null ? "all" : role);
         req.setAttribute("from", fromD == null ? "" : fromD.toString());
-        req.setAttribute("to", toD == null ? "" : toD.toString());
+        req.setAttribute("to",   toD   == null ? "" : toD.toString());
 
         req.setAttribute("pageTitle", "Quản lý người dùng");
         req.setAttribute("active", "users");
@@ -903,17 +1204,15 @@ public class AdminViewServlet extends HttpServlet {
     // ================== /admin/cashs ==================
     private void handleCashs(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        String type = clean(req.getParameter("type"));   // all | Deposit | Withdrawal
-        String q = clean(req.getParameter("q"));      // search userName
+        String type   = clean(req.getParameter("type"));   // all | Deposit | Withdrawal
+        String q      = clean(req.getParameter("q"));      // search userName
         String status = clean(req.getParameter("status")); // all | Pending | Completed | Rejected
-        String order = clean(req.getParameter("order"));  // newest | oldest
+        String order  = clean(req.getParameter("order"));  // newest | oldest
 
         final int DEFAULT_SIZE = 8;
         int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
         int page = parseIntOrDefault(req.getParameter("page"), 1);
-        if (size <= 0) {
-            size = DEFAULT_SIZE;
-        }
+        if (size <= 0) size = DEFAULT_SIZE;
 
         try (Connection con = DBConnect.getConnection()) {
             dao.admin.CashDAO dao = new dao.admin.CashDAO(con);
@@ -947,26 +1246,26 @@ public class AdminViewServlet extends HttpServlet {
             int pages = ceilDiv(total, size);
             page = clampPage(page, pages);
             int from = Math.max(0, (page - 1) * size);
-            int to = Math.min(total, from + size);
+            int to   = Math.min(total, from + size);
             List<model.CashTxn> pageList = txns.subList(from, to);
 
             req.setAttribute("txList", pageList);
             req.setAttribute("pg_total", total);
-            req.setAttribute("pg_page", page);
-            req.setAttribute("pg_size", size);
+            req.setAttribute("pg_page",  page);
+            req.setAttribute("pg_size",  size);
             req.setAttribute("pg_pages", pages);
             req.setAttribute("pg_isFirst", page <= 1);
-            req.setAttribute("pg_isLast", page >= pages);
-            req.setAttribute("pg_single", pages <= 1);
+            req.setAttribute("pg_isLast",  page >= pages);
+            req.setAttribute("pg_single",  pages <= 1);
 
         } catch (Exception e) {
             throw new ServletException("Lỗi tải giao dịch: " + e.getMessage(), e);
         }
 
-        req.setAttribute("f_type", type == null ? "all" : type);
-        req.setAttribute("f_q", q == null ? "" : q);
+        req.setAttribute("f_type",   type   == null ? "all" : type);
+        req.setAttribute("f_q",      q      == null ? ""    : q);
         req.setAttribute("f_status", status == null ? "all" : status);
-        req.setAttribute("f_order", order == null ? "newest" : order);
+        req.setAttribute("f_order",  order  == null ? "newest" : order);
 
         req.setAttribute("pageTitle", "Nạp / Rút");
         req.setAttribute("active", "cashs");
@@ -978,24 +1277,22 @@ public class AdminViewServlet extends HttpServlet {
     private void handleShops(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String q = clean(req.getParameter("q"));
+        String q      = clean(req.getParameter("q"));
         String status = clean(req.getParameter("status"));      // all | Active | Pending | Rejected | Banned...
-        String from = clean(req.getParameter("from"));
-        String to = clean(req.getParameter("to"));
-        String sort = clean(req.getParameter("sort"));        // date_desc | date_asc | status_asc | status_desc
-        if (sort == null || sort.isBlank()) {
-            sort = "date_desc"; // giống KYC
-        }
+        String from   = clean(req.getParameter("from"));
+        String to     = clean(req.getParameter("to"));
+        String sort   = clean(req.getParameter("sort"));        // date_desc | date_asc | status_asc | status_desc
+        if (sort == null || sort.isBlank()) sort = "date_desc"; // giống KYC
+
         final int DEFAULT_SIZE = 8;
         int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
         int page = parseIntOrDefault(req.getParameter("page"), 1);
-        if (size <= 0) {
-            size = DEFAULT_SIZE;
-        }
+        if (size <= 0) size = DEFAULT_SIZE;
+
         LocalDate fromD = tryParseDate(from);
-        LocalDate toD = tryParseDate(to);
+        LocalDate toD   = tryParseDate(to);
         Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
-        Timestamp toAt = (toD == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+        Timestamp toAt   = (toD == null)   ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
 
         try (Connection con = DBConnect.getConnection()) {
             ManageShopDAO dao = new ManageShopDAO(con);
@@ -1005,9 +1302,9 @@ public class AdminViewServlet extends HttpServlet {
             if (q != null && !q.isEmpty()) {
                 final String qLower = q.toLowerCase();
                 list = list.stream()
-                        .filter(s
-                                -> (s.getName() != null && s.getName().toLowerCase().contains(qLower))
-                        || (s.getOwnerName() != null && s.getOwnerName().toLowerCase().contains(qLower))
+                        .filter(s ->
+                                (s.getName() != null && s.getName().toLowerCase().contains(qLower)) ||
+                                        (s.getOwnerName() != null && s.getOwnerName().toLowerCase().contains(qLower))
                         )
                         .toList();
             }
@@ -1019,7 +1316,7 @@ public class AdminViewServlet extends HttpServlet {
             }
             if (fromAt != null || toAt != null) {
                 final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
-                final long toMs = (toAt == null ? Long.MAX_VALUE : toAt.getTime());
+                final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
                 list = list.stream().filter(s -> {
                     java.util.Date d = s.getCreatedAt();
                     long t = (d == null ? Long.MIN_VALUE : d.getTime());
@@ -1033,13 +1330,13 @@ public class AdminViewServlet extends HttpServlet {
             );
 
             // rank trạng thái để sort status_asc/status_desc
-            java.util.Map<String, Integer> rank = new java.util.HashMap<>();
+            java.util.Map<String,Integer> rank = new java.util.HashMap<>();
             // Ưu tiên “đang chờ -> duyệt -> từ chối” tương tự 1/2/3 của KYC,
             // nhưng với string của Shop:
-            rank.put("Pending", 1);
-            rank.put("Active", 2);
+            rank.put("Pending",  1);
+            rank.put("Active",   2);
             rank.put("Rejected", 3);
-            rank.put("Banned", 4);
+            rank.put("Banned",   4);
 
             Comparator<Shops> byStatus = Comparator.comparing(s -> {
                 String st = (s.getStatus() == null ? "" : s.getStatus());
@@ -1047,14 +1344,10 @@ public class AdminViewServlet extends HttpServlet {
             });
 
             list = switch (sort) {
-                case "date_asc" ->
-                    list.stream().sorted(byDate).toList();
-                case "status_asc" ->
-                    list.stream().sorted(byStatus).toList();
-                case "status_desc" ->
-                    list.stream().sorted(byStatus.reversed()).toList();
-                default ->
-                    list.stream().sorted(byDate.reversed()).toList(); // date_desc
+                case "date_asc"    -> list.stream().sorted(byDate).toList();
+                case "status_asc"  -> list.stream().sorted(byStatus).toList();
+                case "status_desc" -> list.stream().sorted(byStatus.reversed()).toList();
+                default            -> list.stream().sorted(byDate.reversed()).toList(); // date_desc
             };
 
             // ===== Paging =====
@@ -1063,17 +1356,17 @@ public class AdminViewServlet extends HttpServlet {
             page = clampPage(page, pages);
 
             int fromIdx = Math.max(0, (page - 1) * size);
-            int toIdx = Math.min(total, fromIdx + size);
+            int toIdx   = Math.min(total, fromIdx + size);
             List<Shops> pageList = list.subList(fromIdx, toIdx);
 
             req.setAttribute("shopList", pageList);
             req.setAttribute("pg_total", total);
-            req.setAttribute("pg_page", page);
-            req.setAttribute("pg_size", size);
+            req.setAttribute("pg_page",  page);
+            req.setAttribute("pg_size",  size);
             req.setAttribute("pg_pages", pages);
             req.setAttribute("pg_isFirst", page <= 1);
-            req.setAttribute("pg_isLast", page >= pages);
-            req.setAttribute("pg_single", pages <= 1);
+            req.setAttribute("pg_isLast",  page >= pages);
+            req.setAttribute("pg_single",  pages <= 1);
 
         } catch (Exception e) {
             throw new ServletException(e);
@@ -1083,7 +1376,7 @@ public class AdminViewServlet extends HttpServlet {
         req.setAttribute("q", q == null ? "" : q);
         req.setAttribute("status", status == null ? "all" : status);
         req.setAttribute("from", fromD == null ? "" : fromD.toString());
-        req.setAttribute("to", toD == null ? "" : toD.toString());
+        req.setAttribute("to",   toD   == null ? "" : toD.toString());
         req.setAttribute("sort", sort);
 
         req.setAttribute("pageTitle", "Quản lý cửa hàng");
@@ -1096,33 +1389,26 @@ public class AdminViewServlet extends HttpServlet {
     private void handleKycs(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String q = clean(req.getParameter("q"));
+        String q      = clean(req.getParameter("q"));
         String status = clean(req.getParameter("status"));   // all | 1 | 2 | 3
-        String from = clean(req.getParameter("from"));
-        String to = clean(req.getParameter("to"));
-        String sort = clean(req.getParameter("sort"));     // date_desc | date_asc | status_asc | status_desc
-        if (sort == null || sort.isBlank()) {
-            sort = "date_desc";
-        }
+        String from   = clean(req.getParameter("from"));
+        String to     = clean(req.getParameter("to"));
+        String sort   = clean(req.getParameter("sort"));     // date_desc | date_asc | status_asc | status_desc
+        if (sort == null || sort.isBlank()) sort = "date_desc";
 
         final int DEFAULT_SIZE = 8;
         int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
         int page = parseIntOrDefault(req.getParameter("page"), 1);
-        if (size <= 0) {
-            size = DEFAULT_SIZE;
-        }
+        if (size <= 0) size = DEFAULT_SIZE;
 
         LocalDate fromD = tryParseDate(from);
-        LocalDate toD = tryParseDate(to);
+        LocalDate toD   = tryParseDate(to);
         Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());
-        Timestamp toAt = (toD == null) ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
+        Timestamp toAt   = (toD == null)   ? null : Timestamp.valueOf(toD.plusDays(1).atStartOfDay().minusSeconds(1));
 
         Integer statusId = null;
         if (status != null && !"all".equalsIgnoreCase(status)) {
-            try {
-                statusId = Integer.valueOf(status);
-            } catch (Exception ignore) {
-            }
+            try { statusId = Integer.valueOf(status); } catch (Exception ignore) {}
         }
 
         try (Connection con = DBConnect.getConnection()) {
@@ -1144,7 +1430,7 @@ public class AdminViewServlet extends HttpServlet {
             // filter theo ngày
             if (fromAt != null || toAt != null) {
                 final long fromMs = (fromAt == null ? Long.MIN_VALUE : fromAt.getTime());
-                final long toMs = (toAt == null ? Long.MAX_VALUE : toAt.getTime());
+                final long toMs   = (toAt   == null ? Long.MAX_VALUE : toAt.getTime());
                 list = list.stream().filter(k -> {
                     java.util.Date d = k.getCreatedAt();
                     long t = (d == null ? Long.MIN_VALUE : d.getTime());
@@ -1158,75 +1444,68 @@ public class AdminViewServlet extends HttpServlet {
             Comparator<KycRequests> byStatus = Comparator.comparing(k -> {
                 Integer v = k.getStatusId();
                 return v == null ? 9 : switch (v) {
-                    case 1 ->
-                        1; // Pending
-                    case 2 ->
-                        2; // Approved
-                    case 3 ->
-                        3; // Rejected
-                    default ->
-                        9;
+                    case 1 -> 1; // Pending
+                    case 2 -> 2; // Approved
+                    case 3 -> 3; // Rejected
+                    default -> 9;
                 };
             });
 
             list = switch (sort) {
-                case "date_asc" ->
-                    list.stream().sorted(byDate).toList();
-                case "status_asc" ->
-                    list.stream().sorted(byStatus).toList();
-                case "status_desc" ->
-                    list.stream().sorted(byStatus.reversed()).toList();
-                default ->
-                    list.stream().sorted(byDate.reversed()).toList(); // date_desc
+                case "date_asc"    -> list.stream().sorted(byDate).toList();
+                case "status_asc"  -> list.stream().sorted(byStatus).toList();
+                case "status_desc" -> list.stream().sorted(byStatus.reversed()).toList();
+                default            -> list.stream().sorted(byDate.reversed()).toList(); // date_desc
             };
 
             // === Paging ===
             int total = list.size();
             int pages = (int) Math.ceil(total / (double) size);
-            if (pages < 1) {
-                pages = 1;
-            }
+            if (pages < 1) pages = 1;
 
             page = Math.max(1, Math.min(page, pages));
             int fromIdx = Math.max(0, (page - 1) * size);
-            int toIdx = Math.min(total, fromIdx + size);
+            int toIdx   = Math.min(total, fromIdx + size);
             List<KycRequests> pageList = list.subList(fromIdx, toIdx);
 
             // Chuẩn hoá URL ảnh (tuỳ chọn)
             for (KycRequests k : pageList) {
-                k.setFrontImageUrl(normalizeKycImageUrl(req, k.getFrontImageUrl()));
-                k.setBackImageUrl(normalizeKycImageUrl(req, k.getBackImageUrl()));
+                k.setFrontImageUrl( normalizeKycImageUrl(req, k.getFrontImageUrl()) );
+                k.setBackImageUrl(  normalizeKycImageUrl(req, k.getBackImageUrl())  );
                 k.setSelfieImageUrl(normalizeKycImageUrl(req, k.getSelfieImageUrl()));
             }
 
             // Cờ phân trang (tính SAU clamp)
-            boolean isFirst = (page <= 1);
-            boolean isLast = (page >= pages);
+            boolean isFirst    = (page <= 1);
+            boolean isLast     = (page >= pages);
             boolean singlePage = (pages <= 1);
 
             // ĐẨY DỮ LIỆU XUỐNG JSP (đừng quên kycList!)
-            req.setAttribute("kycList", pageList);
-            req.setAttribute("pg_total", total);
-            req.setAttribute("pg_page", page);
-            req.setAttribute("pg_size", size);
-            req.setAttribute("pg_pages", pages);
-            req.setAttribute("pg_isFirst", isFirst);
+            req.setAttribute("kycList",   pageList);
+            req.setAttribute("pg_total",  total);
+            req.setAttribute("pg_page",   page);
+            req.setAttribute("pg_size",   size);
+            req.setAttribute("pg_pages",  pages);
+            req.setAttribute("pg_isFirst",isFirst);
             req.setAttribute("pg_isLast", isLast);
             req.setAttribute("pg_single", singlePage);
         } catch (Exception e) {
             throw new ServletException("Lỗi khi tải danh sách KYC: " + e.getMessage(), e);
         }
 
+
+
+
         // giữ lại filter cho JSP
-        req.setAttribute("q", q == null ? "" : q);
+        req.setAttribute("q",      q == null ? "" : q);
         req.setAttribute("status", status == null ? "all" : status);
-        req.setAttribute("from", from == null ? "" : (tryParseDate(from) == null ? from : tryParseDate(from).toString()));
-        req.setAttribute("to", to == null ? "" : (tryParseDate(to) == null ? to : tryParseDate(to).toString()));
-        req.setAttribute("sort", sort);
+        req.setAttribute("from",   from == null ? "" : (tryParseDate(from) == null ? from : tryParseDate(from).toString()));
+        req.setAttribute("to",     to   == null ? "" : (tryParseDate(to)   == null ? to   : tryParseDate(to).toString()));
+        req.setAttribute("sort",   sort);
 
         req.setAttribute("pageTitle", "Quản lý KYC");
-        req.setAttribute("active", "kycs");
-        req.setAttribute("content", "/WEB-INF/views/Admin/pages/kycs.jsp");
+        req.setAttribute("active",    "kycs");
+        req.setAttribute("content",   "/WEB-INF/views/Admin/pages/kycs.jsp");
         System.out.printf(
                 "[DEBUG-KYC] total=%d, size=%d, page=%d, pages=%d, isFirst=%s, isLast=%s, singlePage=%s%n",
                 req.getAttribute("pg_total"),

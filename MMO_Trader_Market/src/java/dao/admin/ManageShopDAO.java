@@ -57,20 +57,13 @@ public class ManageShopDAO {
     // Lấy 1 shop theo id (dùng cho handleShopStatus)
     public Shops findById(int id) throws SQLException {
         String sql = """
-            SELECT s.id,
-                   s.owner_id,
-                   s.name,
-                   s.status,
-                   s.description,
-                   s.admin_note,
-                   s.created_at,
-                   u.name AS owner_name
-            FROM shops s
-            LEFT JOIN users u ON s.owner_id = u.id
-            WHERE s.id = ?
-            LIMIT 1
+        SELECT s.id, s.owner_id, s.name, s.status, s.description,
+               s.admin_note, s.created_at,
+               u.name AS owner_name
+        FROM shops s
+        LEFT JOIN users u ON s.owner_id = u.id
+        WHERE s.id = ?
         """;
-
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -82,10 +75,8 @@ public class ManageShopDAO {
                     s.setStatus(rs.getString("status"));
                     s.setDescription(rs.getString("description"));
                     s.setAdminNote(rs.getString("admin_note"));
-
                     Timestamp cAt = rs.getTimestamp("created_at");
                     s.setCreatedAt(cAt != null ? new java.util.Date(cAt.getTime()) : null);
-
                     s.setOwnerName(rs.getString("owner_name"));
                     return s;
                 }
@@ -94,20 +85,16 @@ public class ManageShopDAO {
         return null;
     }
 
-    // Cập nhật trạng thái + admin_note
-    public boolean updateStatusAndNote(int id, String newStatus, String adminNote) throws SQLException {
-        String sql = """
-            UPDATE shops
-            SET status = ?, admin_note = ?
-            WHERE id = ?
-        """;
+    public boolean updateStatusAndNote(int id, String status, String note) throws SQLException {
+        String sql = "UPDATE shops SET status = ?, admin_note = ? WHERE id = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setString(2, adminNote);
+            ps.setString(1, status);
+            ps.setString(2, note);
             ps.setInt(3, id);
             return ps.executeUpdate() > 0;
         }
     }
+
 
     // (Tuỳ: giữ lại nếu nơi khác còn dùng)
     public boolean updateStatus(int id, String newStatus) throws SQLException {
