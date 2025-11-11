@@ -63,17 +63,19 @@
     </div>
 </div>
 
-<!-- Main -->
 <div class="main">
-    <div class="header">
-        <h5 class="m-0">${pageTitle != null ? pageTitle : "Bảng điều khiển"}</h5>
-    </div>
+            <div class="header">
+                <h5 class="m-0">${pageTitle != null ? pageTitle : "Bảng điều khiển"}</h5>
+                <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/home">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Về trang Market
+                </a>
+            </div>
 
-    <div class="page-content">
-        <jsp:useBean id="content" scope="request" type="java.lang.String"/>
-        <jsp:include page="${content}" />
-    </div>
-</div>
+            <div class="page-content">
+                <jsp:useBean id="content" scope="request" type="java.lang.String"/>
+                <jsp:include page="${content}" />
+            </div>
+        </div>
 
 
 
