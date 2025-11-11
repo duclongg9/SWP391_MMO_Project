@@ -114,6 +114,8 @@
         <div class="panel__header">
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
             <div class="panel__actions">
+                <%-- Nút bật pop-up giúp người mua đọc nhanh tiến độ xử lý đơn theo ngôn ngữ thông thường. --%>
+                <button type="button" class="button button--ghost" id="orderWorkflowTrigger">Trạng thái xử lý</button>
                 <c:if test="${canReportOrder}">
                     <button type="button" class="button button--danger" id="openReportModal"
                             data-eligibility-url="<c:url value='/orders/detail/${orderToken}/report-eligibility' />">Báo cáo đơn hàng</button>
@@ -360,6 +362,67 @@
                     color: #0f172a;
                 }
 
+                .order-workflow-modal {
+                    position: fixed;
+                    inset: 0;
+                    display: none;
+                    align-items: flex-end;
+                    justify-content: flex-end;
+                    padding: 1.5rem;
+                    z-index: 1200;
+                    background: rgba(15, 23, 42, 0.25);
+                }
+
+                .order-workflow-modal.is-visible {
+                    display: flex;
+                }
+
+                .order-workflow-modal__dialog {
+                    position: relative;
+                    width: min(420px, 100%);
+                    max-height: calc(100vh - 3rem);
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 1.75rem;
+                    box-shadow: 0 25px 55px rgba(15, 23, 42, 0.25);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                }
+
+                .order-workflow-modal__close {
+                    position: absolute;
+                    top: 0.75rem;
+                    right: 0.75rem;
+                    border: none;
+                    background: none;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    color: #475569;
+                    cursor: pointer;
+                }
+
+                .order-workflow-modal__title {
+                    margin: 0;
+                    font-size: 1.15rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-workflow-modal__intro {
+                    margin: 0;
+                    color: #475569;
+                    line-height: 1.6;
+                }
+
+                .order-workflow-modal__content {
+                    overflow-y: auto;
+                    padding-right: 0.25rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
                 .wallet-events {
                     display: flex;
                     flex-direction: column;
@@ -568,8 +631,22 @@
                         <div class="order-detail__info-column order-detail__info-column--wallet">
                             <h4 class="order-detail__info-title">Giao dịch ví</h4>
                             <c:url var="walletEventsUrl" value="/orders/detail/${orderToken}/wallet-events" />
-                            <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
-                                <div class="wallet-events__placeholder">Đang tải dữ liệu giao dịch ví...</div>
+                            <div class="order-workflow-modal" id="orderWorkflowModal" aria-hidden="true">
+                                <div class="order-workflow-modal__dialog" role="dialog" aria-modal="true"
+                                     aria-labelledby="orderWorkflowTitle" aria-describedby="orderWorkflowIntro">
+                                    <button type="button" class="order-workflow-modal__close" data-close-workflow
+                                            aria-label="Đóng">&times;</button>
+                                    <h3 class="order-workflow-modal__title" id="orderWorkflowTitle">Quy trình xử lý đơn hàng</h3>
+                                    <p class="order-workflow-modal__intro" id="orderWorkflowIntro">
+                                        Chúng tôi sẽ thông báo từng bước xử lý bằng ngôn ngữ dễ hiểu để bạn nắm rõ: khi nào khóa ví,
+                                        kiểm tra hàng, bàn giao tài khoản và hoàn tất thanh toán.
+                                    </p>
+                                    <div class="order-workflow-modal__content">
+                                        <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
+                                            <div class="wallet-events__placeholder">Đang tải tiến độ đơn hàng...</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <c:if test="${not empty paymentTransaction}">
                                 <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
@@ -959,6 +1036,47 @@
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const workflowTrigger = document.getElementById('orderWorkflowTrigger');
+        const workflowModal = document.getElementById('orderWorkflowModal');
+        const workflowCloseButtons = workflowModal ? workflowModal.querySelectorAll('[data-close-workflow]') : [];
+
+        /**
+         * Hiển thị hoặc đóng pop-up diễn giải workflow bằng câu chữ thân thiện.
+         */
+        const toggleWorkflowModal = function (show) {
+            if (!workflowModal) {
+                return;
+            }
+            workflowModal.classList.toggle('is-visible', show);
+            workflowModal.setAttribute('aria-hidden', show ? 'false' : 'true');
+        };
+
+        if (workflowTrigger && workflowModal) {
+            workflowTrigger.addEventListener('click', function (event) {
+                event.preventDefault();
+                toggleWorkflowModal(true);
+            });
+
+            workflowModal.addEventListener('click', function (event) {
+                if (event.target === workflowModal) {
+                    toggleWorkflowModal(false);
+                }
+            });
+        }
+
+        workflowCloseButtons.forEach(function (btn) {
+            btn.addEventListener('click', function (event) {
+                event.preventDefault();
+                toggleWorkflowModal(false);
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && workflowModal && workflowModal.classList.contains('is-visible')) {
+                toggleWorkflowModal(false);
+            }
+        });
+
         const container = document.getElementById('walletEvents');
         if (!container) {
             return;
