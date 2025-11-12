@@ -3158,7 +3158,20 @@ code {
 
 .topup__form-card {
     display: grid;
-    gap: 1.5rem;
+    gap: 1.75rem;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    box-shadow: 0 24px 40px -24px rgba(15, 23, 42, 0.32);
+    max-width: 520px;
+    width: 100%;
+    justify-self: center;
+}
+
+/* Điều chỉnh bố cục form cố định để dễ thao tác hơn */
+.topup__form-header {
+    display: grid;
+    gap: 1.25rem;
 }
 
 .topup__intro {
@@ -3185,11 +3198,136 @@ code {
     font-weight: 500;
 }
 
-.topup__form .form__actions {
+.topup__limits {
+    display: grid;
+    gap: 0.75rem;
+    border: 1px dashed rgba(15, 23, 42, 0.12);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    background: rgba(15, 23, 42, 0.015);
+}
+
+.topup__limits-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.topup__limits-list {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.topup__limit {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.topup__limit dt {
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.topup__limit dd {
+    margin: 0;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.topup__form {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.topup__field {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.topup__label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.topup__control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid #cddbe5;
+    border-radius: 12px;
+    padding: 0 1rem;
+    background: #f9fcff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.topup__control:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(15, 111, 166, 0.12);
+    background: #ffffff;
+}
+
+.topup__control--textarea {
+    padding: 0.75rem 1rem;
+    align-items: flex-start;
+}
+
+.topup__control-prefix {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.topup__input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    height: 48px;
+    padding: 0;
+}
+
+.topup__input:focus {
+    outline: none;
+}
+
+.topup__input::-webkit-outer-spin-button,
+.topup__input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+
+.topup__input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.topup__input--textarea {
+    resize: vertical;
+    min-height: 96px;
+    width: 100%;
+}
+
+.topup__hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.topup__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
+}
+
+.topup__submit {
+    min-width: 200px;
 }
 
 .topup__guide {

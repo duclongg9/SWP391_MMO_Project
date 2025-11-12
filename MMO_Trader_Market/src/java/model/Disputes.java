@@ -14,7 +14,6 @@ public class Disputes {
     private Integer id;
     private Integer orderId;
     private String orderReferenceCode;
-    private Date escrowResolvedAt;   // map với escrow_resolved_at
     private String orderSnapshotJson; // map với order_snapshot_json
 
     private Integer reporterId;
@@ -23,6 +22,14 @@ public class Disputes {
 
     private Integer resolvedByAdminId;
     private String resolvedByAdminName;
+
+    private Integer productId;
+    private String productName;
+    private Integer shopId;
+    private String shopName;
+
+    private Integer orderQuantity;
+    private String orderStatus;
 
     private String issueType;          // ACCOUNT_NOT_WORKING / OTHER / ...
     private String customIssueTitle;   // tiêu đề tùy chọn khi chọn OTHER
@@ -69,13 +76,6 @@ public class Disputes {
 
     public void setOrderReferenceCode(String orderReferenceCode) {
         this.orderReferenceCode = orderReferenceCode;
-    }
-    public Date getEscrowResolvedAt() {
-        return escrowResolvedAt;
-    }
-
-    public void setEscrowResolvedAt(Date escrowResolvedAt) {
-        this.escrowResolvedAt = escrowResolvedAt;
     }
 
     public String getOrderSnapshotJson() {
@@ -126,6 +126,54 @@ public class Disputes {
 
     public void setResolvedByAdminName(String resolvedByAdminName) {
         this.resolvedByAdminName = resolvedByAdminName;
+    }
+
+    public Integer getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Integer productId) {
+        this.productId = productId;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public Integer getShopId() {
+        return shopId;
+    }
+
+    public void setShopId(Integer shopId) {
+        this.shopId = shopId;
+    }
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public void setShopName(String shopName) {
+        this.shopName = shopName;
+    }
+
+    public Integer getOrderQuantity() {
+        return orderQuantity;
+    }
+
+    public void setOrderQuantity(Integer orderQuantity) {
+        this.orderQuantity = orderQuantity;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
     }
 
     // ===== Issue / Reason / Status =====

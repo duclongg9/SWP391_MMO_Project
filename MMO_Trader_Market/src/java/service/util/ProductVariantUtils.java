@@ -117,6 +117,21 @@ public final class ProductVariantUtils {
         variant.setInventoryCount(Math.max(remaining, 0));
     }
 
+    /**
+     * Tăng tồn kho cho biến thể khi hoàn trả credential về kho.
+     *
+     * @param variant  biến thể cần cập nhật
+     * @param quantity số lượng hoàn trả
+     */
+    public static void increaseInventory(ProductVariantOption variant, int quantity) {
+        if (variant == null || quantity <= 0) {
+            return;
+        }
+        Integer current = variant.getInventoryCount();
+        int next = (current == null ? 0 : current) + quantity;
+        variant.setInventoryCount(Math.max(next, 0));
+    }
+
     // Chuyển danh sách biến thể thành JSON để lưu trữ.
     public static String toJson(List<ProductVariantOption> variants) {
         if (variants == null || variants.isEmpty()) {

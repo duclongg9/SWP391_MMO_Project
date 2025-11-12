@@ -18,30 +18,58 @@
         <div class="panel__body">
             <div class="topup topup--with-guide">
                 <div class="topup__form-card">
-                    <p class="topup__intro">Vui lòng nhập số tiền muốn nạp (đơn vị VNĐ). Bạn sẽ được chuyển tới cổng thanh toán VNPAY và số dư ví cập nhật ngay khi IPN thành công.</p>
+                    <!-- Ghi chú UI: bố cục form được cố định chiều rộng để người dùng tập trung vào thao tác nhập liệu. -->
+                    <header class="topup__form-header">
+                        <p class="topup__intro">Vui lòng nhập số tiền muốn nạp (đơn vị VNĐ). Bạn sẽ được chuyển tới cổng thanh toán VNPAY và số dư ví cập nhật ngay khi IPN thành công.</p>
 
-                    <div class="topup__meta" role="list">
-                        <span class="topup__meta-item" role="listitem"><i class="fas fa-clock"></i> Liên kết hết hạn sau 15 phút</span>
-                        <span class="topup__meta-item" role="listitem"><i class="fas fa-shield-alt"></i> Giao dịch bảo mật bởi VNPAY</span>
-                        <span class="topup__meta-item" role="listitem"><i class="fas fa-receipt"></i> Có hoá đơn trong lịch sử ví</span>
-                    </div>
+                        <div class="topup__meta" role="list">
+                            <span class="topup__meta-item" role="listitem"><i class="fas fa-clock"></i> Liên kết hết hạn sau 15 phút</span>
+                            <span class="topup__meta-item" role="listitem"><i class="fas fa-shield-alt"></i> Giao dịch bảo mật bởi VNPAY</span>
+                            <span class="topup__meta-item" role="listitem"><i class="fas fa-receipt"></i> Có hoá đơn trong lịch sử ví</span>
+                        </div>
+                    </header>
 
-                    <form action="${pageContext.request.contextPath}/payment" method="post" class="form topup__form">
-                        <div class="form__group">
-                            <label for="amount" class="form__label">Số tiền</label>
-                            <input type="number" id="amount" name="amount" class="form-control" min="1000" max="50000000" step="1000" required>
-                            <small class="form__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch.</small>
+                    <section class="topup__limits" aria-label="Giới hạn giao dịch">
+                        <h2 class="topup__limits-title">Giới hạn mỗi giao dịch</h2>
+                        <dl class="topup__limits-list">
+                            <div class="topup__limit">
+                                <dt>Tối thiểu</dt>
+                                <dd>1.000 VNĐ</dd>
+                            </div>
+                            <div class="topup__limit">
+                                <dt>Tối đa</dt>
+                                <dd>50.000.000 VNĐ</dd>
+                            </div>
+                            <div class="topup__limit">
+                                <dt>Thời gian xử lý</dt>
+                                <dd>Tức thì sau khi IPN thành công</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <form action="${pageContext.request.contextPath}/payment" method="post" class="topup__form" novalidate>
+                        <div class="topup__field">
+                            <label for="amount-display" class="topup__label">Số tiền</label>
+                            <div class="topup__control">
+                                <span class="topup__control-prefix" aria-hidden="true">VNĐ</span>
+                                <input type="text" id="amount-display" class="topup__input" inputmode="numeric" autocomplete="off" required aria-describedby="amount-hint">
+                                <input type="hidden" id="amount" name="amount">
+                            </div>
+                            <p id="amount-hint" class="topup__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch.</p>
                         </div>
 
-                        <div class="form__group">
-                            <label for="note" class="form__label">Ghi chú (tuỳ chọn)</label>
-                            <textarea id="note" name="note" class="form-control" rows="3" maxlength="120"></textarea>
-                            <small class="form__hint">Ghi chú giúp bạn nhận diện giao dịch (tối đa 120 ký tự).</small>
+                        <div class="topup__field">
+                            <label for="note" class="topup__label">Ghi chú (tuỳ chọn)</label>
+                            <div class="topup__control topup__control--textarea">
+                                <textarea id="note" name="note" class="topup__input topup__input--textarea" rows="3" maxlength="120" placeholder="Ví dụ: Nạp cho sự kiện tháng 7"></textarea>
+                            </div>
+                            <p class="topup__hint">Ghi chú giúp bạn nhận diện giao dịch (tối đa 120 ký tự).</p>
                         </div>
 
-                        <div class="form__group form__actions">
-                            <!-- Button bình thường, submit form -->
-                            <button type="submit" class="btn btn--primary">Tạo yêu cầu nạp</button>
+                        <div class="topup__actions">
+                            <button type="submit" class="btn btn--primary topup__submit">
+                                <span class="btn__text">Tạo yêu cầu nạp</span>
+                            </button>
                             <a href="${pageContext.request.contextPath}/wallet" class="btn btn--ghost">Quay lại ví</a>
                         </div>
                     </form>
@@ -90,3 +118,92 @@
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+
+<script>
+    // JavaScript: Định dạng số tiền theo từng nhóm nghìn và kiểm tra giới hạn trước khi gửi form.
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('.topup__form');
+        const amountDisplay = document.getElementById('amount-display');
+        const amountHidden = document.getElementById('amount');
+        const alertBox = document.getElementById('topup-alert');
+        const MIN_AMOUNT = 1000;
+        const MAX_AMOUNT = 50000000;
+
+        const formatCurrency = (value) => {
+            const numericValue = value.replace(/\D/g, '');
+
+            if (!numericValue) {
+                amountHidden.value = '';
+                return '';
+            }
+
+            const parsed = parseInt(numericValue, 10);
+            amountHidden.value = parsed;
+            return parsed.toLocaleString('vi-VN');
+        };
+
+        const showAlert = (message) => {
+            alertBox.textContent = message;
+            alertBox.style.display = 'block';
+            alertBox.focus();
+            amountDisplay.setAttribute('aria-invalid', 'true');
+        };
+
+        const hideAlert = () => {
+            alertBox.textContent = '';
+            alertBox.style.display = 'none';
+            amountDisplay.removeAttribute('aria-invalid');
+        };
+
+        const validateAmount = () => {
+            const currentValue = amountHidden.value ? parseInt(amountHidden.value, 10) : NaN;
+
+            if (!amountHidden.value) {
+                showAlert('Vui lòng nhập số tiền cần nạp.');
+                return false;
+            }
+
+            if (Number.isNaN(currentValue)) {
+                showAlert('Số tiền không hợp lệ, vui lòng kiểm tra lại.');
+                return false;
+            }
+
+            if (currentValue < MIN_AMOUNT) {
+                showAlert(`Số tiền tối thiểu là 1.000 VNĐ.`);
+                return false;
+            }
+
+            if (currentValue > MAX_AMOUNT) {
+                showAlert(`Số tiền tối đa là 50.000.000 VNĐ.`);
+                return false;
+            }
+
+            if (currentValue % 1000 !== 0) {
+                showAlert('Số tiền phải là bội số của 1.000 VNĐ.');
+                return false;
+            }
+
+            hideAlert();
+            return true;
+        };
+
+        amountDisplay.addEventListener('input', (event) => {
+            const formatted = formatCurrency(event.target.value);
+            event.target.value = formatted;
+            hideAlert();
+        });
+
+        amountDisplay.addEventListener('blur', () => {
+            amountDisplay.value = formatCurrency(amountDisplay.value);
+            validateAmount();
+        });
+
+        form.addEventListener('submit', (event) => {
+            amountDisplay.value = formatCurrency(amountDisplay.value);
+
+            if (!validateAmount()) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>

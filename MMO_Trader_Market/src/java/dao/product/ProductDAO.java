@@ -1077,11 +1077,9 @@ public class ProductDAO extends BaseDAO {
      * @return true nếu cập nhật thành công
      */
     public boolean incrementInventoryCount(int productId) {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
-            return statement.executeUpdate() > 0;
+        try (Connection connection = getConnection()) {
+            incrementInventoryCount(connection, productId, 1);
+            return true;
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tăng số lượng tồn kho cho product_id=" + productId, ex);
             return false;
@@ -1092,57 +1090,82 @@ public class ProductDAO extends BaseDAO {
      * Tăng số lượng tồn kho của sản phẩm trong transaction.
      */
     public void incrementInventoryCount(Connection connection, int productId) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        incrementInventoryCount(connection, productId, 1);
+    }
+
+    /**
+     * Tăng số lượng tồn kho của sản phẩm trong transaction với số lượng tùy chỉnh.
+     *
+     * @param connection kết nối cơ sở dữ liệu đang mở
+     * @param productId  mã sản phẩm cần cập nhật
+     * @param quantity   số lượng cần cộng thêm
+     * @throws SQLException khi thao tác SQL thất bại
+     */
+    public void incrementInventoryCount(Connection connection, int productId, int quantity) throws SQLException {
+        if (quantity <= 0) {
+            return;
+        }
+        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
+            statement.setInt(1, quantity);
+            statement.setInt(2, productId);
             statement.executeUpdate();
         }
     }
 
     /**
      * Tăng số lượng tồn kho của sản phẩm và cập nhật inventory_count trong variants_json nếu có variant.
-     * 
+     *
      * @param connection database connection
      * @param productId ID sản phẩm
      * @param variantCode mã biến thể (có thể null nếu không có variant)
      * @throws SQLException nếu có lỗi database
      */
     public void incrementInventoryWithVariant(Connection connection, int productId, String variantCode) throws SQLException {
-        // 1. Khóa và lấy thông tin sản phẩm mới nhất từ database
+        incrementInventoryWithVariant(connection, productId, variantCode, 1);
+    }
+
+    /**
+     * Tăng tồn kho sản phẩm/biến thể theo số lượng chỉ định.
+     *
+     * @param connection kết nối hiện hành
+     * @param productId  mã sản phẩm
+     * @param variantCode mã biến thể (có thể {@code null})
+     * @param quantity   số lượng cần hoàn trả vào kho
+     * @throws SQLException nếu thao tác cập nhật thất bại
+     */
+    public void incrementInventoryWithVariant(Connection connection, int productId, String variantCode, int quantity)
+            throws SQLException {
+        if (quantity <= 0) {
+            return;
+        }
+
         ProductInventoryLock lock = lockProductForUpdate(connection, productId);
-        
-        // 2. Tăng inventory_count trong bảng products
-        incrementInventoryCount(connection, productId);
-        
-        // 3. Nếu có variant, cập nhật inventory_count trong variants_json
-        if (variantCode != null && !variantCode.trim().isEmpty() && 
-            ProductVariantUtils.hasVariants(lock.variantSchema()) && 
-            lock.variantsJson() != null && !lock.variantsJson().trim().isEmpty()) {
-            
-            // Parse variants từ JSON mới nhất từ database
+
+        incrementInventoryCount(connection, productId, quantity);
+
+        if (variantCode != null && !variantCode.trim().isEmpty()
+                && ProductVariantUtils.hasVariants(lock.variantSchema())
+                && lock.variantsJson() != null && !lock.variantsJson().trim().isEmpty()) {
+
             List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
-                lock.variantSchema(), 
-                lock.variantsJson()
-            );
-            
-            // Tìm variant tương ứng và tăng inventory_count
+                    lock.variantSchema(), lock.variantsJson());
+
             String normalizedCode = ProductVariantUtils.normalizeCode(variantCode);
             Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedCode);
-            
+
             if (variantOpt.isPresent()) {
                 ProductVariantOption variant = variantOpt.get();
-                Integer currentInventory = variant.getInventoryCount();
-                variant.setInventoryCount((currentInventory == null ? 0 : currentInventory) + 1);
-                
-                // Cập nhật lại variants_json
+                ProductVariantUtils.increaseInventory(variant, quantity);
+
                 String updatedVariantsJson = ProductVariantUtils.toJson(variants);
                 updateVariantsJson(connection, productId, updatedVariantsJson);
             } else {
-                // Log warning nếu không tìm thấy variant
-                LOGGER.log(Level.WARNING, "Không tìm thấy variant với code '{0}' cho product_id={1}. Variants có sẵn: {2}", 
-                    new Object[]{normalizedCode, productId, variants.stream()
-                        .map(ProductVariantOption::getVariantCode)
-                        .collect(Collectors.joining(", "))});
+                LOGGER.log(Level.WARNING,
+                        "Không tìm thấy variant với code '{0}' cho product_id={1}. Variants có sẵn: {2}",
+                        new Object[]{normalizedCode, productId, variants.stream()
+                                .map(ProductVariantOption::getVariantCode)
+                                .collect(Collectors.joining(", "))});
             }
         }
     }

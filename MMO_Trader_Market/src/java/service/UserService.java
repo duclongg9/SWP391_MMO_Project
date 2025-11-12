@@ -510,12 +510,23 @@ public class UserService {
         return existingEmailUser;
     }
 
+    /**
+     * Khởi tạo người dùng mới thông qua Google SSO và bảo đảm có ví khả dụng.
+     */
     private Users createGoogleAccount(String email, String name, String googleId) throws SQLException {
         ensureEmailAvailable(email);
         String fallbackHash = HashPassword.toSHA1(generateRandomSecret());
         Users created = userDAO.createUserWithGoogle(email, name, googleId, fallbackHash, DEFAULT_ROLE_ID);
         if (created == null) {
             throw new IllegalStateException("Không thể tạo tài khoản Google mới");
+        }
+        int createdWallet = wdao.createWallet(created.getId());
+        if (createdWallet < 1) {
+            /*
+             * Đảm bảo tài khoản Google mới có ví hoạt động ngay sau khi khởi tạo.
+             * Nếu thao tác này thất bại, trả lỗi để caller có thể hiển thị thông báo phù hợp.
+             */
+            throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
         }
         return created;
     }

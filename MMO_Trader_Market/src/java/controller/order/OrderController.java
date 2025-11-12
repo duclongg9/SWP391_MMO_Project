@@ -69,7 +69,10 @@ public class OrderController extends BaseController {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int ROLE_SELLER = 2;
     private static final int ROLE_BUYER = 3;
-    private static final String DISPUTE_UPLOAD_DIR = "assets/uploads/disputes";
+    /**
+     * Đường dẫn thư mục (relative) lưu trữ ảnh bằng chứng của khiếu nại.
+     */
+    private static final String DISPUTE_UPLOAD_DIR = "assets/images/disputes";
     private static final int MAX_EVIDENCE_FILES = 5;
     /**
      * Dung lượng tối đa cho mỗi file ảnh bằng chứng (đơn vị MB).

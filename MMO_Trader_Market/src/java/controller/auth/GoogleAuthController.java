@@ -2,7 +2,6 @@ package controller.auth;
 
 import controller.BaseController;
 import dao.user.UserDAO;
-import dao.user.WalletsDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +27,6 @@ public class GoogleAuthController extends BaseController {
     private static final String SESSION_STATE = "googleOauthState";
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
     private final UserService userService = new UserService(new UserDAO());
-    private final WalletsDAO wdao = new WalletsDAO();
 
 
     @Override
@@ -70,7 +68,6 @@ public class GoogleAuthController extends BaseController {
             // Lấy thông tin hồ sơ từ Google và đăng nhập (hoặc tạo mới) tài khoản nội bộ.
             GoogleProfile profile = googleOAuthService.fetchUserProfile(code);
             Users user = userService.loginWithGoogle(profile.getGoogleId(), profile.getEmail(), profile.getName());
-            wdao.createWallet(user.getId()); // Phần tạo ví tôi để ở đây được không
             HttpSession newSession = renewSession(request);
             newSession.setAttribute("currentUser", user); //gắn các thuộc tính phiên dùng cho app
             newSession.setAttribute("userId", user.getId());
