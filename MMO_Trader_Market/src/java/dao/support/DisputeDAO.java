@@ -2,6 +2,7 @@ package dao.support;
 
 import dao.BaseDAO;
 import model.DisputeAttachment;
+import model.DisputeStatus;
 import model.Disputes;
 
 import java.sql.Connection;
@@ -91,19 +92,19 @@ public class DisputeDAO extends BaseDAO {
      *
      * @param connection kết nối đang sử dụng
      * @param disputeId  mã khiếu nại cần cập nhật
-     * @param status     trạng thái mới
+     * @param status     trạng thái mới (theo {@link DisputeStatus})
      * @param adminId    admin xử lý
      * @param note       ghi chú xử lý
      * @param resolvedAt thời điểm hoàn tất (có thể null)
      * @return {@code true} nếu có bản ghi được cập nhật
      * @throws SQLException nếu thao tác SQL thất bại
      */
-    public boolean updateStatus(Connection connection, int disputeId, String status, Integer adminId, String note,
+    public boolean updateStatus(Connection connection, int disputeId, DisputeStatus status, Integer adminId, String note,
             Timestamp resolvedAt) throws SQLException {
         final String sql = "UPDATE disputes SET status = ?, resolved_by_admin_id = ?, resolution_note = ?, resolved_at = ?, "
                 + "updated_at = NOW() WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, status);
+            statement.setString(1, status.getDatabaseValue());
             if (adminId == null) {
                 statement.setNull(2, java.sql.Types.INTEGER);
             } else {

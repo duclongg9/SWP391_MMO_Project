@@ -6,6 +6,7 @@ import dao.product.ProductDAO;
 import dao.support.DisputeDAO;
 import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
+import model.DisputeStatus;
 import model.Disputes;
 import model.Orders;
 import model.TransactionType;
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -113,7 +115,7 @@ public class DisputeResolutionService {
     }
 
     private void markInReview(Connection connection, Disputes dispute, Integer adminId, String note) throws SQLException {
-        disputeDAO.updateStatus(connection, dispute.getId(), "InReview", adminId, trimToNull(note), null);
+        disputeDAO.updateStatus(connection, dispute.getId(), DisputeStatus.IN_REVIEW, adminId, trimToNull(note), null);
     }
 
     private void resolveWithRefund(Connection connection, Disputes dispute, Integer adminId, String note)
@@ -152,7 +154,8 @@ public class DisputeResolutionService {
                 "{\"action\":\"ACCEPT\"}");
 
         Timestamp resolvedAt = Timestamp.from(Instant.now());
-        disputeDAO.updateStatus(connection, dispute.getId(), "ResolvedWithRefund", adminId, trimToNull(note), resolvedAt);
+        disputeDAO.updateStatus(connection, dispute.getId(), DisputeStatus.RESOLVED_WITH_REFUND, adminId,
+                trimToNull(note), resolvedAt);
     }
 
     private void resolveWithoutRefund(Connection connection, Disputes dispute, Integer adminId, String note)
@@ -173,8 +176,8 @@ public class DisputeResolutionService {
                 dispute.getId(), "{\"action\":\"REJECT\"}");
 
         Timestamp resolvedAt = Timestamp.from(Instant.now());
-        disputeDAO.updateStatus(connection, dispute.getId(), "ResolvedWithoutRefund", adminId, trimToNull(note),
-                resolvedAt);
+        disputeDAO.updateStatus(connection, dispute.getId(), DisputeStatus.RESOLVED_WITHOUT_REFUND, adminId,
+                trimToNull(note), resolvedAt);
     }
 
     private Integer resolveEscrowSeconds(Orders order, Disputes dispute) {
@@ -196,11 +199,18 @@ public class DisputeResolutionService {
         if (status == null) {
             return;
         }
-        String normalized = status.trim().toUpperCase();
-        if (normalized.equals("RESOLVEDWITHREFUND") || normalized.equals("RESOLVEDWITHOUTREFUND")
-                || normalized.equals("CLOSED") || normalized.equals("CANCELLED")) {
-            throw new IllegalStateException("Khiếu nại đã được xử lý trước đó");
-        }
+        DisputeStatus.fromDatabaseValue(status).ifPresentOrElse(current -> {
+            if (current == DisputeStatus.RESOLVED_WITH_REFUND || current == DisputeStatus.RESOLVED_WITHOUT_REFUND
+                    || current == DisputeStatus.CLOSED || current == DisputeStatus.CANCELLED) {
+                throw new IllegalStateException("Khiếu nại đã được xử lý trước đó");
+            }
+        }, () -> {
+            String normalized = status.trim().toUpperCase(Locale.ROOT);
+            if ("RESOLVED".equals(normalized)) {
+                throw new IllegalStateException("Khiếu nại đã được xử lý trước đó");
+            }
+        });
+    }
     }
 
     private String trimToNull(String value) {
