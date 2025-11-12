@@ -172,7 +172,7 @@ public class ProductService {
      * </ol>
      */
     public PagedResult<ProductSummaryView> browseByType(String productType, List<String> productSubtypes,
-            String keyword, int page, int size) {
+            String keyword, String sortOrder, int page, int size) {
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
         String normalizedType = normalizeFilter(productType);
@@ -180,6 +180,7 @@ public class ProductService {
                 ? List.of()
                 : normalizeSubtypeList(normalizedType, productSubtypes);
         String normalizedKeyword = normalize(keyword);
+        String normalizedSort = normalizeSortOrder(sortOrder);
 
         long totalItems = productDAO.countAvailableByType(normalizedType, normalizedSubtypes, normalizedKeyword);
         int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
@@ -188,7 +189,47 @@ public class ProductService {
 
         List<ProductSummaryView> items = totalItems == 0
                 ? List.of()
-                : productDAO.findAvailableByType(normalizedType, normalizedSubtypes, normalizedKeyword, safeSize, offset)
+                : productDAO.findAvailableByType(normalizedType, normalizedSubtypes, normalizedKeyword, normalizedSort,
+                        safeSize, offset)
+                        .stream()
+                        .map(this::toSummaryView)
+                        .toList();
+
+        return new PagedResult<>(items, currentPage, safeSize, totalPages, totalItems);
+    }
+
+    /**
+     * Phân trang sản phẩm theo từng shop phục vụ trang công khai của shop.
+     *
+     * @param shopId          mã shop
+     * @param productType     mã loại sản phẩm (có thể null)
+     * @param productSubtypes danh sách phân loại con (có thể rỗng)
+     * @param keyword         từ khóa tìm kiếm (có thể null)
+     * @param sortOrder       cách sắp xếp ("best_seller" hoặc mặc định mới nhất)
+     * @param page            trang hiện tại
+     * @param size            số bản ghi mỗi trang
+     * @return {@link PagedResult} chứa danh sách sản phẩm và thông tin phân trang
+     */
+    public PagedResult<ProductSummaryView> browseByShop(int shopId, String productType, List<String> productSubtypes,
+            String keyword, String sortOrder, int page, int size) {
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.max(size, 1);
+        String normalizedType = normalizeFilter(productType);
+        List<String> normalizedSubtypes = normalizedType == null
+                ? List.of()
+                : normalizeSubtypeList(normalizedType, productSubtypes);
+        String normalizedKeyword = normalize(keyword);
+        String normalizedSort = normalizeSortOrder(sortOrder);
+
+        long totalItems = productDAO.countAvailableByShop(shopId, normalizedType, normalizedSubtypes, normalizedKeyword);
+        int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
+        int currentPage = Math.min(safePage, totalPages);
+        int offset = (currentPage - 1) * safeSize;
+
+        List<ProductSummaryView> items = totalItems == 0
+                ? List.of()
+                : productDAO.findAvailableByShop(shopId, normalizedType, normalizedSubtypes, normalizedKeyword,
+                        normalizedSort, safeSize, offset)
                         .stream()
                         .map(this::toSummaryView)
                         .toList();
@@ -299,6 +340,54 @@ public class ProductService {
                     .findFirst()
                     .map(ProductTypeOption::getSubtypes)
                     .orElse(List.of());
+        }
+        return List.copyOf(options);
+    }
+
+    /**
+     * Lấy danh sách loại sản phẩm mà một shop đang kinh doanh.
+     *
+     * @param shopId mã shop
+     * @return danh sách {@link ProductTypeOption}
+     */
+    public List<ProductTypeOption> getTypeOptionsForShop(int shopId) {
+        List<String> typeCodes = productDAO.findAvailableTypeCodesByShop(shopId);
+        if (typeCodes.isEmpty()) {
+            return List.of();
+        }
+        List<ProductTypeOption> options = new ArrayList<>();
+        for (ProductTypeOption option : TYPE_OPTIONS) {
+            if (typeCodes.contains(option.getCode())) {
+                options.add(option);
+            }
+        }
+        return List.copyOf(options);
+    }
+
+    /**
+     * Lấy danh sách phân loại con mà shop đang bán trong một loại cụ thể.
+     *
+     * @param shopId      mã shop
+     * @param productType mã loại sản phẩm
+     * @return danh sách {@link ProductSubtypeOption}
+     */
+    public List<ProductSubtypeOption> getSubtypeOptionsForShop(int shopId, String productType) {
+        String normalizedType = normalizeFilter(productType);
+        if (normalizedType == null) {
+            return List.of();
+        }
+        List<String> availableSubtypes = productDAO.findAvailableSubtypeCodesByShop(shopId, normalizedType);
+        if (availableSubtypes.isEmpty()) {
+            return getSubtypeOptions(normalizedType);
+        }
+        List<ProductSubtypeOption> options = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (String code : availableSubtypes) {
+            String normalized = normalizeSubtypeCode(code);
+            if (normalized == null || !seen.add(normalized)) {
+                continue;
+            }
+            options.add(new ProductSubtypeOption(normalized, resolveSubtypeLabel(normalized)));
         }
         return List.copyOf(options);
     }
@@ -440,6 +529,7 @@ public class ProductService {
                 resolveTypeLabel(row.getProductType()),
                 row.getProductSubtype(),
                 resolveSubtypeLabel(row.getProductSubtype()),
+                row.getShopId(),
                 row.getShopName(),
                 priceRange.min(),
                 priceRange.max(),
@@ -605,6 +695,21 @@ public class ProductService {
         }
         String upper = normalized.toUpperCase(Locale.ROOT);
         return TYPE_LABELS.containsKey(upper) ? upper : null;
+    }
+
+    /**
+     * Chuẩn hóa tham số sắp xếp để tránh giá trị lạ truyền xuống DAO.
+     */
+    private String normalizeSortOrder(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if ("best_seller".equals(lower) || "best-seller".equals(lower) || "bestseller".equals(lower)) {
+            return "best_seller";
+        }
+        return null;
     }
 
     /**

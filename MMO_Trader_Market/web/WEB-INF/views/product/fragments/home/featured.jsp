@@ -47,7 +47,7 @@
                         </header>
                         <p class="product-card__meta">
                             <span><c:out value="${product.productTypeLabel}" /> • <c:out value="${product.productSubtypeLabel}" /></span>
-                            <span>Shop: <strong><c:out value="${product.shopName}" /></strong></span>
+                            <span>Shop: <strong><a class="product-card__shop" href="${cPath}/shops/${p.shopEncodedId}"><c:out value="${p.shopName}" /></a></strong></span>
                         </p>
                         <p class="product-card__description"><c:out value="${product.shortDescription}" /></p>
                         <p class="product-card__price">
