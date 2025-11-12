@@ -46,14 +46,19 @@ public class ajaxServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath()+"/wallet/deposit");
             return;
         }
-        String message = req.getParameter("note");
+        String message; 
+        if(req.getParameter("note").isEmpty()){
+            message = "";
+        }else{
+            message = req.getParameter("note");
+        }
         
         int depositId = 0;
         double eAmount = Double.parseDouble(req.getParameter("amount"));
         try {
             depositId = drdao.createDepositRequest(user, eAmount, message);
         } catch (SQLException ex) {
-            Logger.getLogger(ajaxServlet.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ajaxServlet.class.getName()).log(Level.SEVERE, "SQL error when creating deposit request", ex);
         }
         if(depositId < 1){
             resp.sendRedirect(req.getContextPath()+"/wallet/deposit");

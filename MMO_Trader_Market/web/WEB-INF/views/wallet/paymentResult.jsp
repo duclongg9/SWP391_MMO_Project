@@ -30,7 +30,7 @@
                     <i class="fas fa-check-circle"></i>
                 </h3>
                 <p style="font-size: 18px; margin-top: 15px;">Vui lòng để ý số điện thoại của nhân viên tư vấn:</p>
-                <strong style="color: red; font-size: 24px;">0383459560</strong>
+                <strong style="color: red; font-size: 24px;">0852099029</strong>
             </div>
         </c:if>
 
@@ -42,7 +42,7 @@
                 </h3>
                 <p style="font-size: 18px; margin-top: 15px;">Cảm ơn quý khách đã dùng dịch vụ của chúng tôi.</p>
                 <p style="font-size: 18px;">Liên hệ tổng đài để được tư vấn:</p>
-                <strong style="color: red; font-size: 24px;">0383456xxx</strong>
+                <strong style="color: red; font-size: 24px;">0852099029</strong>
             </div>
         </c:if>
 
@@ -53,9 +53,10 @@
                     Chúng tôi đã tiếp nhận đơn hàng, xin chờ quá trình xử lý!
                 </h3>
                 <p style="font-size: 18px; margin-top: 15px;">Vui lòng để ý số điện thoại của nhân viên tư vấn:</p>
-                <strong style="color: red; font-size: 24px;">0383456xxx</strong>
+                <strong style="color: red; font-size: 24px;">0852099029</strong>
             </div>
         </c:if>
+        <a href="${pageContext.request.contextPath}/wallet" class="btn btn--ghost">Quay lại ví</a>
     </section>
 
 </body>

@@ -123,6 +123,20 @@ public class DepositeRequestDAO {
             return ps.executeUpdate();
         }
     }
+    public int getUserIdBydeposit(int depositId) throws SQLException{
+        String sql ="""
+                  SELECT user_id 
+                  FROM mmo_schema.deposit_requests
+                  WHERE id =?;
+                  """;
+        try(Connection con =DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+            ps.setInt(1, depositId);
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next()) return rs.getInt("user_id");
+            }
+        }
+        return 0;
+    }
 
 //    public static void main(String[] args) throws SQLException {
 //        DepositeRequestDAO drdao = new DepositeRequestDAO();

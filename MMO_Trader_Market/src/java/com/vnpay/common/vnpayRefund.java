@@ -23,6 +23,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import service.WalletService;
@@ -32,35 +35,101 @@ import service.WalletService;
  * @author CTT VNPAY
  */
 public class vnpayRefund extends HttpServlet {
+
     DepositeRequestDAO dtdao = new DepositeRequestDAO();
     WalletsDAO wdao = new WalletsDAO();
-    
-     @Override
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-         Integer user = (Integer) req.getSession().getAttribute("userId");
-        if (user == null) {
-            resp.sendRedirect(req.getContextPath() + "/auth");
-            return;
+
+        Map<String, String[]> raw = req.getParameterMap();
+        Map<String, String> params = new TreeMap<>();
+        for (var e : raw.entrySet()) {
+            if (e.getValue() != null && e.getValue().length > 0) {
+                params.put(e.getKey(), e.getValue()[0]);
+            }
         }
-        
-        Object flash = req.getSession().getAttribute("transResult");
-        if (flash != null) {
-            req.setAttribute("transResult", flash);
-            req.getSession().removeAttribute("transResult");
+
+        String secureHash = params.remove("vnp_SecureHash"); // bỏ ra để build data
+        // build data = key=value&key=value... (đã sort)
+        StringBuilder data = new StringBuilder();
+        for (Iterator<Map.Entry<String, String>> it = params.entrySet().iterator(); it.hasNext();) {
+            var en = it.next();
+            data.append(en.getKey()).append("=")
+                    .append(java.net.URLEncoder.encode(en.getValue(), java.nio.charset.StandardCharsets.UTF_8));
+            if (it.hasNext()) {
+                data.append("&");
+            }
         }
+        String calc = Config.hmacSHA512(Config.secretKey, data.toString());
+        boolean hashOk = calc.equalsIgnoreCase(secureHash);
+
+        String respCode = params.get("vnp_ResponseCode");
+        String txnStatus = params.get("vnp_TransactionStatus");
+        String tmn = params.get("vnp_TmnCode");
+        String txnRef = params.get("vnp_TxnRef");
+        String amountStr = params.get("vnp_Amount"); // đơn vị x100
+
+        boolean paidOk = "00".equals(respCode) && "00".equals(txnStatus) && hashOk && "P8MN1RS8".equals(tmn);
+
+        // map deposit id
+        int depositId = Integer.parseInt(txnRef);
+        BigDecimal amountVnd = new BigDecimal(amountStr).divide(new BigDecimal(100)); // về VND
+
+        // === Audit JSON link_data ===
+        com.google.gson.JsonObject link = new com.google.gson.JsonObject();
+        link.addProperty("direction", "return");
+        link.addProperty("source", "VnpayReturnServlet");
+        link.addProperty("hash_verified", hashOk);
+        link.addProperty("vnp_ResponseCode", respCode);
+        link.addProperty("vnp_TransactionStatus", txnStatus);
+        link.addProperty("vnp_TmnCode", tmn);
+        link.addProperty("vnp_TxnRef", txnRef);
+        link.addProperty("vnp_Amount", amountStr);
+
+        // Ghi audit + cập nhật DB
+        dao.vnpay.vnpayTransactionDAO txDao = new dao.vnpay.vnpayTransactionDAO();
+        try {
+            txDao.createVnpayTransaction(depositId, link.toString(), paidOk ? "success" : "failed");
+        } catch (SQLException ex) {
+            Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (paidOk) {
+            // mark deposit completed + tăng ví
+            int userId = 0;
+            try {
+                userId = dtdao.getUserIdBydeposit(depositId);
+            } catch (SQLException ex) {
+                Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            try {
+                dtdao.UpdateDepositStatus(depositId, 2); // Completed
+            } catch (SQLException ex) {
+                Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            try {
+                wdao.increaseBalance(userId, amountVnd);
+            } catch (SQLException ex) {
+                Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            req.setAttribute("transResult", true);
+        } else {
+            try {
+                dtdao.UpdateDepositStatus(depositId, 3); // Failed
+            } catch (SQLException ex) {
+                Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            req.setAttribute("transResult", false);
+        }
+
         req.getRequestDispatcher("/WEB-INF/views/wallet/paymentResult.jsp").forward(req, resp);
     }
-    
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        Integer user = (Integer) req.getSession().getAttribute("userId");
-        if (user == null) {
-            resp.sendRedirect(req.getContextPath() + "/auth");
-            return;
-        }
-        
         //Command: refund
         String vnp_RequestId = Config.getRandomNumber(8);
         String vnp_Version = "2.1.0";
@@ -129,78 +198,99 @@ public class vnpayRefund extends HttpServlet {
         while ((output = in.readLine()) != null) {
             response.append(output);
         }
-        in.close();
-        System.out.println(response.toString());
-        
-         //Ghi bản ghi để đối chiếu
-         // 1) Xác định deposit_request_id từ vnp_TxnRef
+        //Ghi bản ghi để đối chiếu
+        // 1) Xác định deposit_request_id từ vnp_TxnRef
         int depositId = Integer.parseInt(vnp_TxnRef);
-       
+        int user = 0;
         try {
+            user = dtdao.getUserIdBydeposit(depositId);
+        } catch (SQLException ex) {
+            Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
-            // 2) Gói request + response thành JSON audit
-            com.google.gson.JsonObject linkData = new com.google.gson.JsonObject();
-            linkData.addProperty("direction", "refund");            // phân biệt loại thao tác
-            linkData.addProperty("source", "vnpayRefund");          // servlet nguồn
-            linkData.addProperty("remote_ip", vnp_IpAddr);
-            linkData.addProperty("http_status", responseCode);
-            linkData.add("request", vnp_Params);                    // payload đã gửi
+        com.google.gson.JsonObject resJson;
+        try {
+            // Parse JSON trả về từ VNPay (nếu không phải JSON thì lưu raw)
 
-            com.google.gson.JsonObject resJson;
             try {
-                resJson = com.google.gson.JsonParser
-                        .parseString(response.toString())
-                        .getAsJsonObject();
+                resJson = com.google.gson.JsonParser.parseString(response.toString()).getAsJsonObject();
             } catch (Exception ignore) {
-                // response không phải JSON (hoặc 4xx/5xx text) -> lưu raw
                 resJson = new com.google.gson.JsonObject();
                 resJson.addProperty("raw", response.toString());
+                System.out.println("chạy đến đây");
             }
-            linkData.add("response", resJson);                      // payload nhận về
 
-            // 3) Suy ra status: 00 = success, còn lại failed (tuỳ bạn muốn mapping chi tiết hơn)
-            String status = (resJson.has("vnp_ResponseCode")
-                    && "00".equals(resJson.get("vnp_ResponseCode").getAsString()))
-                    ? "success" : "failed";
+            // Suy ra status tổng quát: "success" khi vnp_ResponseCode == "00", ngược lại "failed"
+            final String respCode = resJson.has("vnp_ResponseCode")
+                    ? resJson.get("vnp_ResponseCode").getAsString()
+                    : null;
+            final String status = "00".equals(respCode) ? "success" : "failed";
 
-            // 4) Ghi vào bảng qua DAO (đã viết trước đó)
+            // Build JSON audit (link_data) đầy đủ ngữ cảnh
+            com.google.gson.JsonObject linkData = new com.google.gson.JsonObject();
+            linkData.addProperty("direction", "refund");         // loại thao tác
+            linkData.addProperty("source", "vnpayRefund");       // servlet/handler nguồn
+            linkData.addProperty("remote_ip", vnp_IpAddr);       // IP phía client khi gọi
+            linkData.addProperty("http_status", responseCode);   // mã HTTP từ VNPay
+            linkData.add("request", vnp_Params);                // payload đã gửi đi
+            linkData.add("response", resJson);                   // payload nhận về
+
+            // Một số trường tiện tra soát (nếu có trong response)
+            if (respCode != null) {
+                linkData.addProperty("vnp_ResponseCode", respCode);
+            }
+            if (resJson.has("vnp_Message")) {
+                linkData.addProperty("vnp_Message", resJson.get("vnp_Message").getAsString());
+            }
+            if (resJson.has("vnp_TransactionNo")) {
+                linkData.addProperty("vnp_TransactionNo", resJson.get("vnp_TransactionNo").getAsString());
+            }
+            if (resJson.has("vnp_PayDate")) {
+                linkData.addProperty("vnp_PayDate", resJson.get("vnp_PayDate").getAsString());
+            }
+
+            // Ghi DB qua DAO
             dao.vnpay.vnpayTransactionDAO txDao = new dao.vnpay.vnpayTransactionDAO();
             int affected = txDao.createVnpayTransaction(depositId, linkData.toString(), status);
-            System.out.println("[VNPayRefund] audit rows affected = " + affected);
+            System.out.println("[VNPayRefund][AUDIT] rows=" + affected
+                    + " depositId=" + depositId + " status=" + status);
 
         } catch (NumberFormatException nf) {
-            // vnp_TxnRef không phải số -> nếu bạn map theo kiểu khác, thay thế đoạn parse ở trên
-            System.err.println("[VNPayRefund] Cannot parse vnp_TxnRef to deposit_id: " + vnp_TxnRef);
+            System.err.println("[VNPayRefund][AUDIT] depositId không hợp lệ: " + depositId);
         } catch (Exception e) {
+            System.err.println("[VNPayRefund][AUDIT][ERROR] " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace();
         }
 
-        
-        
-         //Cập nhật trạng thái cho bản ghi deposit
-         
-        BigDecimal amounts = BigDecimal.valueOf(amount);
+        //Cập nhật trạng thái cho bản ghi deposit
+        try {
+            resJson = com.google.gson.JsonParser.parseString(response.toString()).getAsJsonObject();
+        } catch (Exception ignore) {
+            resJson = new com.google.gson.JsonObject();
+            resJson.addProperty("raw", response.toString());
+        }
+        BigDecimal amountVnd = new BigDecimal(req.getParameter("amount"));
         boolean transactionSuccess = false;
-        if("00".equals(req.getParameter("vnp_TransactionStatus"))){
+        if ("00".equals(resJson.has("vnp_ResponseCode") ? resJson.get("vnp_ResponseCode").getAsString() : null)) {
             try {
                 int results = dtdao.UpdateDepositStatus(depositId, 2);
-                wdao.increaseBalance(user,amounts);
+                wdao.increaseBalance(user, amountVnd);
                 transactionSuccess = true;
             } catch (SQLException ex) {
                 Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }else {
+        } else {
             try {
                 int results = dtdao.UpdateDepositStatus(depositId, 3);
             } catch (SQLException ex) {
                 Logger.getLogger(vnpayRefund.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        
+        in.close();
+        System.out.println(response.toString());
+
         req.getSession().setAttribute("transResult", transactionSuccess);
-        resp.sendRedirect(req.getContextPath()+"/vnpayRefund");
+        resp.sendRedirect(req.getContextPath() + "/vnpayRefund");
     }
-    
-    
-   
+
 }
