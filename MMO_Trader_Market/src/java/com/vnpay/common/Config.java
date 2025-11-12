@@ -24,8 +24,8 @@ public class Config {
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     public static String vnp_ReturnUrl = "http://localhost:9999/MMO_Trader_Market/vnpayRefund";
-    public static String vnp_TmnCode = "P8MN1RS8";
-    public static String secretKey ="MVB29EZQNHS66R6TCYLZEDCRZB2WPN82";
+    public static String vnp_TmnCode = "V5ZTQG0H";
+    public static String secretKey ="Q6X7F3YMZMAM4O6TNWJMQ3EHWUG7ZF8P";
     public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
     public static String md5(String message) {

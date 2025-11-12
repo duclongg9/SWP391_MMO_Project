@@ -143,7 +143,7 @@ public class ManageDisputeDAO {
         }
 
         String sql
-                = "SELECT id, dispute_id, file_url, created_at "
+                = "SELECT id, dispute_id, file_path, created_at "
                 + "FROM dispute_attachments "
                 + "WHERE dispute_id IN (" + in + ") "
                 + "ORDER BY created_at ASC";
@@ -160,7 +160,7 @@ public class ManageDisputeDAO {
                 DisputeAttachment att = new DisputeAttachment();
                 att.setId(rs.getInt("id"));
                 att.setDisputeId(disputeId);
-                att.setFilePath(rs.getString("file_url"));
+                att.setFilePath(rs.getString("file_path"));
                 att.setCreatedAt(rs.getTimestamp("created_at"));
 
                 d.addAttachment(att);
