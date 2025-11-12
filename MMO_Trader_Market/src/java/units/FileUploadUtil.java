@@ -96,7 +96,7 @@ public class FileUploadUtil {
         }
         
         try {
-            String normalized = oldFilePath.replace('\', '/');
+            String normalized = oldFilePath.replace('\\', '/');
             while (normalized.startsWith("/")) {
                 normalized = normalized.substring(1);
             }
