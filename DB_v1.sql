@@ -277,7 +277,7 @@ CREATE TABLE `deposit_requests` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `amount` decimal(18,4) NOT NULL,
-  `qr_content` varchar(255) NOT NULL UNIQUE,
+  `qr_content` varchar(255),
   `idempotency_key` varchar(36) DEFAULT NULL UNIQUE,
   `status` enum('Pending','Completed','Failed','Expired','RequiresManualCheck') NOT NULL DEFAULT 'Pending',
   `expires_at` timestamp NOT NULL,
