@@ -164,4 +164,15 @@ public class WalletsDAO {
         boolean results = updateBalance(DBConnect.getConnection(), userId, (presentBalance.add(balance)));
         return results;
     }
+    
+    public int createWallet(int userId) throws SQLException{
+        String sql = """
+                     INSERT INTO mmo_schema.wallets (user_id, status)
+                     VALUES (?, 1);
+                     """;
+        try(Connection con = DBConnect.getConnection();PreparedStatement ps = con.prepareStatement(sql)){
+            ps.setInt(1, userId);
+            return ps.executeUpdate();
+        }
+    }
 }
