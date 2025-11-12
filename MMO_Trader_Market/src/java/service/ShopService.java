@@ -19,7 +19,10 @@ import java.util.regex.Pattern;
  */
 public class ShopService {
 
-        private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\p{N}\\s.,-]+$");
+        private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\s]+$");
+        private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
+        private static final Pattern SPECIAL_CHARACTER_PATTERN = Pattern.compile(".*[^\\p{L}\\s].*");
+        private static final Pattern EXTRA_WHITESPACE_PATTERN = Pattern.compile(".*[\\t\\n\\r].*");
         private static final int NAME_MIN_LENGTH = 8;
         private static final int NAME_MAX_LENGTH = 50;
         private static final int DESCRIPTION_MIN_LENGTH = 8;
@@ -260,8 +263,23 @@ public class ShopService {
                 if (length > maxLength) {
                         throw new BusinessException(fieldLabel + " không được vượt quá " + maxLength + " ký tự.");
                 }
+                                /*
+                 * Kiểm tra bổ sung dành cho nghiệp vụ tạo shop:
+                 * - Không cho phép chữ số.
+                 * - Không cho phép ký tự đặc biệt (bao gồm dấu câu).
+                 * - Không cho phép khoảng trắng không chuẩn (tab, xuống dòng).
+                 */
+                if (DIGIT_PATTERN.matcher(value).find()) {
+                        throw new BusinessException(fieldLabel + " không được chứa chữ số.");
+                }
+                if (SPECIAL_CHARACTER_PATTERN.matcher(value).find()) {
+                        throw new BusinessException(fieldLabel + " không được chứa ký tự đặc biệt.");
+                }
+                if (EXTRA_WHITESPACE_PATTERN.matcher(value).find()) {
+                        throw new BusinessException(fieldLabel + " không được chứa khoảng trắng không hợp lệ.");
+                }
                 if (!BASIC_TEXT_PATTERN.matcher(value).matches()) {
-                        throw new BusinessException(fieldLabel + " chỉ được chứa chữ cái, chữ số, khoảng trắng và các ký tự . , -.");
+                        throw new BusinessException(fieldLabel + " chỉ được chứa chữ cái.");
                 }
         }
 }
