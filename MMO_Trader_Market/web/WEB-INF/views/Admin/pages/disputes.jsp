@@ -232,7 +232,8 @@
                                                         <div class="d-flex flex-wrap gap-2">
                                                             <c:forEach var="att" items="${d.attachments}">
                                                                 <c:if test="${not empty att.filePath}">
-                                                                    <img src="${fn:escapeXml(att.filePath)}"
+                                                                    <c:url var="attUrl" value="${att.filePath}" />
+                                                                    <img src="${fn:escapeXml(attUrl)}"
                                                                          alt="Attachment"
                                                                          class="img-thumbnail js-zoomable"
                                                                          style="width:90px;height:90px;object-fit:cover;cursor:zoom-in;">

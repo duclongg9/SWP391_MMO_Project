@@ -1,4 +1,4 @@
-package dao;
+package dao.admin;
 
 import model.Disputes;
 import model.DisputeAttachment;
@@ -18,13 +18,25 @@ public class ManageDisputeDAO {
             String status,
             String issueType,
             Timestamp from,
-            Timestamp to) throws SQLException {
+            Timestamp to,
+            Integer sellerId,
+            Integer shopId,
+            Integer productId) throws SQLException {
 
         StringBuilder sql = new StringBuilder(
                 "SELECT d.*, "
                 + "       u.name  AS reporter_name, "
-                + "       u.email AS reporter_email "
+                + "       u.email AS reporter_email, "
+                + "       o.quantity AS order_quantity, "
+                + "       o.status   AS order_status, "
+                + "       p.id       AS product_id, "
+                + "       p.name     AS product_name, "
+                + "       s.id       AS shop_id, "
+                + "       s.name     AS shop_name "
                 + "FROM disputes d "
+                + "JOIN orders o   ON d.order_id = o.id "
+                + "JOIN products p ON o.product_id = p.id "
+                + "JOIN shops s    ON p.shop_id = s.id "
                 + "LEFT JOIN users u ON d.reporter_id = u.id "
                 + "WHERE 1=1 "
         );
@@ -35,8 +47,10 @@ public class ManageDisputeDAO {
         if (q != null && !q.isBlank()) {
             sql.append(" AND (d.order_reference_code LIKE ? "
                     + "      OR u.email LIKE ? "
-                    + "      OR u.name LIKE ?) ");
+                    + "      OR u.name LIKE ? "
+                    + "      OR p.name LIKE ?) ");
             String like = "%" + q.trim() + "%";
+            params.add(like);
             params.add(like);
             params.add(like);
             params.add(like);
@@ -52,6 +66,21 @@ public class ManageDisputeDAO {
         if (issueType != null && !issueType.isBlank() && !"all".equalsIgnoreCase(issueType)) {
             sql.append(" AND d.issue_type = ? ");
             params.add(issueType);
+        }
+
+        if (sellerId != null) {
+            sql.append(" AND s.owner_id = ? ");
+            params.add(sellerId);
+        }
+
+        if (shopId != null) {
+            sql.append(" AND s.id = ? ");
+            params.add(shopId);
+        }
+
+        if (productId != null) {
+            sql.append(" AND p.id = ? ");
+            params.add(productId);
         }
 
         // Date range
@@ -102,6 +131,25 @@ public class ManageDisputeDAO {
                         // từ LEFT JOIN users
                         d.setReporterName(rs.getString("reporter_name"));
                         d.setReporterEmail(rs.getString("reporter_email"));
+
+                        if (columnLabels.contains("order_quantity")) {
+                            d.setOrderQuantity((Integer) rs.getObject("order_quantity"));
+                        }
+                        if (columnLabels.contains("order_status")) {
+                            d.setOrderStatus(rs.getString("order_status"));
+                        }
+                        if (columnLabels.contains("product_id")) {
+                            d.setProductId((Integer) rs.getObject("product_id"));
+                        }
+                        if (columnLabels.contains("product_name")) {
+                            d.setProductName(rs.getString("product_name"));
+                        }
+                        if (columnLabels.contains("shop_id")) {
+                            d.setShopId((Integer) rs.getObject("shop_id"));
+                        }
+                        if (columnLabels.contains("shop_name")) {
+                            d.setShopName(rs.getString("shop_name"));
+                        }
 
                         map.put(id, d);
                     }

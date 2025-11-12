@@ -703,6 +703,161 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Tìm đơn hàng và khóa bản ghi để đảm bảo nhất quán khi cập nhật.
+     *
+     * @param connection kết nối đang sử dụng trong transaction
+     * @param orderId    mã đơn hàng cần khóa
+     * @return {@link Optional} chứa bản ghi đơn hàng nếu tìm thấy
+     * @throws SQLException nếu truy vấn thất bại
+     */
+    public Optional<Orders> findByIdForUpdate(Connection connection, int orderId) throws SQLException {
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status," 
+                + " variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at" 
+                + ", escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + " created_at, updated_at FROM orders WHERE id = ? FOR UPDATE";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapOrder(rs));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Khôi phục trạng thái escrow sau khi admin từ chối khiếu nại.
+     *
+     * @param connection  kết nối đang mở trong transaction xử lý khiếu nại
+     * @param orderId     mã đơn hàng cần cập nhật
+     * @param resumedAt   thời điểm tiếp tục escrow (có thể {@code null})
+     * @param releaseAt   thời điểm dự kiến giải phóng escrow (có thể {@code null})
+     * @return {@code true} nếu bản ghi được cập nhật
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public boolean resumeEscrowAfterDispute(Connection connection, int orderId, Timestamp resumedAt, Timestamp releaseAt)
+            throws SQLException {
+        final String sql = "UPDATE orders SET status = 'Completed', escrow_status = 'Scheduled', escrow_resumed_at = ?, "
+                + "escrow_release_at = ?, escrow_remaining_seconds = NULL, updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (resumedAt == null) {
+                statement.setNull(1, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(1, resumedAt);
+            }
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+            }
+            statement.setInt(3, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log việc khôi phục escrow do admin xử lý tranh chấp.
+     *
+     * @param connection       kết nối hiện hành
+     * @param orderId          mã đơn hàng liên quan
+     * @param resumedAt        thời điểm escrow được tiếp tục (có thể {@code null})
+     * @param releaseAt        thời điểm giải phóng dự kiến (có thể {@code null})
+     * @param remainingSeconds số giây còn lại của escrow tại thời điểm tiếp tục
+     * @param adminId          admin thực hiện thao tác (có thể {@code null})
+     * @param disputeId        mã khiếu nại liên quan (có thể {@code null})
+     * @param metadataJson     metadata bổ sung dạng JSON (có thể rỗng)
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public void insertEscrowResumedEvent(Connection connection, int orderId, Timestamp resumedAt, Timestamp releaseAt,
+            Integer remainingSeconds, Integer adminId, Integer disputeId, String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, actor_admin_id, related_dispute_id, "
+                + "release_at_snapshot, remaining_seconds_snapshot, metadata, created_at) "
+                + "VALUES (?, 'RESUMED', 'ADMIN', ?, ?, ?, ?, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (adminId == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, adminId);
+            }
+            if (disputeId == null) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, disputeId);
+            }
+            if (releaseAt == null) {
+                statement.setNull(4, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(4, releaseAt);
+            }
+            if (remainingSeconds == null) {
+                statement.setNull(5, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(5, remainingSeconds);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(6, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(6, metadataJson);
+            }
+        }
+    }
+
+    /**
+     * Hủy escrow khi hoàn tiền cho người mua do khiếu nại được chấp nhận.
+     *
+     * @param connection kết nối đang mở trong transaction
+     * @param orderId    mã đơn hàng cần cập nhật
+     * @return {@code true} nếu bản ghi được cập nhật
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public boolean cancelEscrowForRefund(Connection connection, int orderId) throws SQLException {
+        final String sql = "UPDATE orders SET status = 'Refunded', escrow_status = 'Cancelled', escrow_remaining_seconds = NULL, "
+                + "escrow_resumed_at = NULL, escrow_release_at = NULL, escrow_paused_at = NULL, escrow_released_at_actual = NULL, "
+                + "updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện escrow bị hủy.
+     *
+     * @param connection   kết nối hiện hành
+     * @param orderId      mã đơn hàng liên quan
+     * @param adminId      admin thực hiện thao tác (có thể {@code null})
+     * @param disputeId    mã khiếu nại liên quan (có thể {@code null})
+     * @param metadataJson metadata bổ sung dạng JSON (có thể rỗng)
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public void insertEscrowCancelledEvent(Connection connection, int orderId, Integer adminId, Integer disputeId,
+            String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, actor_admin_id, related_dispute_id, "
+                + "release_at_snapshot, remaining_seconds_snapshot, metadata, created_at) "
+                + "VALUES (?, 'CANCELLED', 'ADMIN', ?, ?, NULL, NULL, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (adminId == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, adminId);
+            }
+            if (disputeId == null) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, disputeId);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(4, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(4, metadataJson);
+            }
+        }
+    }
+
+    /**
      * Ánh xạ dữ liệu {@code orders} từ ResultSet sang thực thể {@link Orders}.
      */
     private Orders mapOrder(ResultSet rs) throws SQLException {

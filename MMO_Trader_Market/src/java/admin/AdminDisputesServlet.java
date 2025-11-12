@@ -1,23 +1,27 @@
 package admin;
 
-import dao.ManageDisputeDAO;
+import dao.admin.ManageDisputeDAO;
 import dao.connect.DBConnect;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import model.Disputes;
+import service.DisputeResolutionService;
+import service.DisputeResolutionService.ResolutionAction;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @WebServlet(name = "AdminDisputesServlet",
         urlPatterns = {"/admin/disputes", "/admin/disputes/status"})
 public class AdminDisputesServlet extends AbstractAdminServlet {
+
+    private final DisputeResolutionService disputeResolutionService = new DisputeResolutionService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -62,7 +66,10 @@ public class AdminDisputesServlet extends AbstractAdminServlet {
                     q,
                     (status == null || "all".equalsIgnoreCase(status)) ? null : status,
                     (issueType == null || "all".equalsIgnoreCase(issueType)) ? null : issueType,
-                    fromAt, toAt
+                    fromAt, toAt,
+                    null,
+                    null,
+                    null
             );
 
             list = list.stream()
@@ -137,47 +144,32 @@ public class AdminDisputesServlet extends AbstractAdminServlet {
             return;
         }
 
-        String newStatus = switch (action.toLowerCase()) {
-            case "inreview" -> "InReview";
-            case "accept"   -> "ResolvedWithoutRefund";
-            case "reject"   -> "Closed";
+        String normalizedAction = action.toLowerCase(Locale.ROOT);
+        ResolutionAction resolutionAction = switch (normalizedAction) {
+            case "inreview" -> ResolutionAction.IN_REVIEW;
+            case "accept" -> ResolutionAction.ACCEPT;
+            case "reject" -> ResolutionAction.REJECT;
             default -> null;
         };
-        if (newStatus == null) {
+        if (resolutionAction == null) {
             req.getSession().setAttribute("flash", "Lỗi: Hành động không hợp lệ.");
             resp.sendRedirect(req.getContextPath() + "/admin/disputes");
             return;
         }
 
         Integer adminId = (Integer) req.getSession().getAttribute("userId");
-
-        try (Connection con = DBConnect.getConnection()) {
-            String sql = """
-                    UPDATE disputes
-                    SET status = ?,
-                        resolution_note = ?,
-                        resolved_by_admin_id = ?,
-                        updated_at = NOW()
-                    WHERE id = ?
-                    """;
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, newStatus);
-                ps.setString(2, note);
-                ps.setObject(3, adminId, java.sql.Types.INTEGER);
-                ps.setInt(4, id);
-                int updated = ps.executeUpdate();
-                if (updated > 0) {
-                    req.getSession().setAttribute("flash",
-                            "Cập nhật khiếu nại #" + id + " thành công.");
-                } else {
-                    req.getSession().setAttribute("flash",
-                            "Không tìm thấy khiếu nại #" + id + ".");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            req.getSession().setAttribute("flash",
-                    "Lỗi xử lý khiếu nại: " + e.getMessage());
+        try {
+            disputeResolutionService.handle(id, resolutionAction, adminId, note);
+            String successMessage = switch (resolutionAction) {
+                case IN_REVIEW -> "Đã chuyển khiếu nại #" + id + " sang trạng thái In review.";
+                case ACCEPT -> "Đã chấp nhận khiếu nại #" + id + " và hoàn tiền cho người mua.";
+                case REJECT -> "Đã từ chối khiếu nại #" + id + " và tiếp tục escrow.";
+            };
+            req.getSession().setAttribute("flash", successMessage);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            req.getSession().setAttribute("flash", "Lỗi xử lý khiếu nại: " + ex.getMessage());
+        } catch (RuntimeException ex) {
+            req.getSession().setAttribute("flash", "Lỗi xử lý khiếu nại: " + ex.getMessage());
         }
 
         resp.sendRedirect(req.getContextPath() + "/admin/disputes");
