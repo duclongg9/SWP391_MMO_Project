@@ -775,7 +775,7 @@ INSERT INTO `withdrawal_request_reasons_map` (`request_id`,`reason_id`) VALUES (
 -- Support / Chat
 INSERT INTO `disputes` (`id`,`order_id`,`order_reference_code`,`reporter_id`,`resolved_by_admin_id`,`issue_type`,`custom_issue_title`,`reason`,`status`,`escrow_paused_at`,`escrow_remaining_seconds`,`resolved_at`,`resolution_note`,`created_at`,`updated_at`) VALUES
  (1,5002,'ORD-5002',3,NULL,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify không hoạt động','Open','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-27 08:10:00','2024-01-27 08:10:00'),
- (2,5003,'ORD-5003',3,1,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify báo lỗi nhưng đã hoạt động lại sau khi xác minh','Resolved','2024-02-02 09:30:00',1200,'2024-02-02 09:45:00','Admin xác nhận tài khoản hoạt động bình thường, mở lại escrow','2024-02-02 09:30:00','2024-02-02 09:45:00');
+ (2,5003,'ORD-5003',3,1,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify báo lỗi nhưng đã hoạt động lại sau khi xác minh','Closed','2024-02-02 09:30:00',1200,'2024-02-02 09:45:00','Admin xác nhận tài khoản hoạt động bình thường, mở lại escrow','2024-02-02 09:30:00','2024-02-02 09:45:00');
 
 INSERT INTO `dispute_attachments` (`id`,`dispute_id`,`file_path`,`created_at`) VALUES
  (1,1,'https://cdn.mmo.local/disputes/5002/proof-1.png','2024-01-27 08:11:00'),

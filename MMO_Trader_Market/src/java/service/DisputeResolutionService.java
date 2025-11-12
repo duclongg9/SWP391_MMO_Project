@@ -48,7 +48,7 @@ public class DisputeResolutionService {
     }
 
     public DisputeResolutionService(DisputeDAO disputeDAO, OrderDAO orderDAO, WalletsDAO walletsDAO,
-            WalletTransactionDAO walletTransactionDAO, CredentialDAO credentialDAO, ProductDAO productDAO) {
+                                    WalletTransactionDAO walletTransactionDAO, CredentialDAO credentialDAO, ProductDAO productDAO) {
         this.disputeDAO = disputeDAO;
         this.orderDAO = orderDAO;
         this.walletsDAO = walletsDAO;
@@ -122,22 +122,28 @@ public class DisputeResolutionService {
             throws SQLException {
         Orders order = orderDAO.findByIdForUpdate(connection, dispute.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy đơn hàng liên quan"));
+
         Wallets wallet = walletsDAO.lockWalletForUpdate(connection, order.getBuyerId());
         if (wallet == null) {
             throw new IllegalStateException("Không thể khóa ví của người mua");
         }
+
         BigDecimal totalAmount = Optional.ofNullable(order.getTotalAmount())
                 .orElseThrow(() -> new IllegalStateException("Đơn hàng thiếu thông tin tổng tiền"));
+
         BigDecimal balanceBefore = wallet.getBalance() == null ? BigDecimal.ZERO : wallet.getBalance();
         BigDecimal balanceAfter = balanceBefore.add(totalAmount);
+
         boolean balanceUpdated = walletsDAO.updateBalance(connection, wallet.getId(), balanceAfter);
         if (!balanceUpdated) {
             throw new IllegalStateException("Không thể cập nhật số dư ví");
         }
+
         String transactionNote = "Hoàn tiền tranh chấp đơn #" + order.getId();
         walletTransactionDAO.insertTransaction(connection, wallet.getId(), order.getId(), TransactionType.REFUND,
                 totalAmount, balanceBefore, balanceAfter, transactionNote);
 
+        // Trả lại/thu hồi credential & restock tồn kho
         credentialDAO.releaseCredentialsForOrder(connection, order.getId());
         Integer quantity = order.getQuantity();
         if (quantity != null && quantity > 0) {
@@ -162,12 +168,15 @@ public class DisputeResolutionService {
             throws SQLException {
         Orders order = orderDAO.findByIdForUpdate(connection, dispute.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy đơn hàng liên quan"));
+
         Integer remainingSeconds = resolveEscrowSeconds(order, dispute);
+
         Timestamp resumedAt = Timestamp.from(Instant.now());
         Timestamp releaseAt = null;
         if (remainingSeconds != null && remainingSeconds > 0) {
             releaseAt = new Timestamp(resumedAt.getTime() + remainingSeconds * 1000L);
         }
+
         boolean resumed = orderDAO.resumeEscrowAfterDispute(connection, order.getId(), resumedAt, releaseAt);
         if (!resumed) {
             throw new IllegalStateException("Không thể khôi phục escrow cho đơn hàng");
@@ -200,8 +209,10 @@ public class DisputeResolutionService {
             return;
         }
         DisputeStatus.fromDatabaseValue(status).ifPresentOrElse(current -> {
-            if (current == DisputeStatus.RESOLVED_WITH_REFUND || current == DisputeStatus.RESOLVED_WITHOUT_REFUND
-                    || current == DisputeStatus.CLOSED || current == DisputeStatus.CANCELLED) {
+            if (current == DisputeStatus.RESOLVED_WITH_REFUND
+                    || current == DisputeStatus.RESOLVED_WITHOUT_REFUND
+                    || current == DisputeStatus.CLOSED
+                    || current == DisputeStatus.CANCELLED) {
                 throw new IllegalStateException("Khiếu nại đã được xử lý trước đó");
             }
         }, () -> {
@@ -211,8 +222,8 @@ public class DisputeResolutionService {
             }
         });
     }
-    }
 
+    /** Helper: cắt chuỗi, trả về null nếu rỗng */
     private String trimToNull(String value) {
         if (value == null) {
             return null;
