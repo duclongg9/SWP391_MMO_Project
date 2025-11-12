@@ -9,7 +9,20 @@ import java.util.List;
 
 public class CashDAO {
     private final Connection con;
-    public CashDAO(Connection con) { this.con = con; }
+
+    public CashDAO(Connection con) {
+        this.con = con;
+        // --- CHỈNH MÚI GIỜ CHO PHIÊN LÀM VIỆC (UTC+7) ---
+        // Đảm bảo mọi NOW(), TIMESTAMP trả/nhận theo giờ Việt Nam.
+        try (Statement st = this.con.createStatement()) {
+            // Cách 1: set trực tiếp offset
+            st.execute("SET time_zone = '+07:00'");
+            // (Tuỳ chọn) Cách 2: nếu server đã có timezone name
+            // st.execute("SET time_zone = 'Asia/Ho_Chi_Minh'");
+        } catch (SQLException ignored) {
+            // Không phá vỡ luồng nếu DB không cho phép set; vẫn chạy bình thường
+        }
+    }
 
     /* Map ResultSet -> CashTxn (giữ như cũ) */
     private CashTxn mapCashTxn(ResultSet rs) throws SQLException {
@@ -37,52 +50,51 @@ public class CashDAO {
         return t;
     }
 
-
     /** Dùng cho trang list /admin/cashs */
-
     public List<CashTxn> listAll() throws SQLException {
         String sql = """
-            SELECT * FROM (
-                -- DEPOSIT
-                SELECT
-                    'Deposit'  AS type,
-                    dr.id,
-                    dr.user_id,
-                    u.name              AS user_name,
-                    dr.amount,
-                    dr.status,
-                    dr.created_at,
-                    dr.expires_at,
-                    NULL                AS bank_account_info,
-                    NULL                AS admin_proof_url,
-                    dr.qr_content       AS qr_content,
-                    dr.idempotency_key,
-                    dr.admin_note       AS admin_note
-                FROM mmo_schema.deposit_requests dr
-                LEFT JOIN mmo_schema.users u ON u.id = dr.user_id
+        SELECT * FROM (
+            -- DEPOSIT
+            SELECT
+                'Deposit'  AS type,
+                dr.id,
+                dr.user_id,
+                u.name              AS user_name,
+                dr.amount,
+                dr.status,
+                dr.created_at,
+                /* alias để mapper đọc được */
+                dr.expires_at       AS processed_at,
+                NULL                AS bank_account_info,
+                NULL                AS admin_proof_url,
+                dr.qr_content       AS qr_content,
+                dr.idempotency_key,
+                dr.admin_note       AS admin_note
+            FROM mmo_schema.deposit_requests dr
+            LEFT JOIN mmo_schema.users u ON u.id = dr.user_id
 
-                UNION ALL
+            UNION ALL
 
-                -- WITHDRAWAL
-                SELECT
-                    'Withdrawal'        AS type,
-                    wr.id,
-                    wr.user_id,
-                    u.name              AS user_name,
-                    wr.amount,
-                    wr.status,
-                    wr.created_at,
-                    wr.processed_at,
-                    wr.bank_account_info,
-                    wr.admin_proof_url,
-                    wr.bank_account_info AS qr_content,
-                    NULL                AS idempotency_key,
-                    wr.admin_note       AS admin_note
-                FROM mmo_schema.withdrawal_requests wr
-                LEFT JOIN mmo_schema.users u ON u.id = wr.user_id
-            ) x
-            ORDER BY x.created_at DESC
-            """;
+            -- WITHDRAWAL
+            SELECT
+                'Withdrawal'        AS type,
+                wr.id,
+                wr.user_id,
+                u.name              AS user_name,
+                wr.amount,
+                wr.status,
+                wr.created_at,
+                wr.processed_at     AS processed_at,
+                wr.bank_account_info,
+                wr.admin_proof_url,
+                wr.bank_account_info AS qr_content,
+                NULL                AS idempotency_key,
+                wr.admin_note       AS admin_note
+            FROM mmo_schema.withdrawal_requests wr
+            LEFT JOIN mmo_schema.users u ON u.id = wr.user_id
+        ) x
+        ORDER BY x.created_at DESC
+        """;
 
         List<CashTxn> list = new ArrayList<>();
         try (PreparedStatement ps = con.prepareStatement(sql);
@@ -93,28 +105,29 @@ public class CashDAO {
         }
         return list;
     }
+
     /** Lấy 1 tx dùng cho handleCashsStatus (tự detect Deposit/Withdrawal) */
     public CashTxn findById(int txId, String txType) throws SQLException {
         if ("Deposit".equalsIgnoreCase(txType)) {
             String sql = """
-            SELECT
-                'Deposit'       AS type,
-                dr.id,
-                dr.user_id,
-                u.name          AS user_name,
-                dr.amount,
-                dr.status,
-                dr.created_at,
-                NULL            AS processed_at,
-                dr.qr_content   AS qr_content,
-                NULL            AS bank_account_info,
-                NULL            AS admin_proof_url,
-                dr.idempotency_key,
-                dr.admin_note   AS admin_note
-            FROM mmo_schema.deposit_requests dr
-            LEFT JOIN mmo_schema.users u ON u.id = dr.user_id
-            WHERE dr.id = ?
-            """;
+    SELECT
+        'Deposit'       AS type,
+        dr.id,
+        dr.user_id,
+        u.name          AS user_name,
+        dr.amount,
+        dr.status,
+        dr.created_at,
+        dr.expires_at   AS processed_at,  -- giữ nguyên alias theo code hiện tại
+        dr.qr_content   AS qr_content,
+        NULL            AS bank_account_info,
+        NULL            AS admin_proof_url,
+        dr.idempotency_key,
+        dr.admin_note   AS admin_note
+    FROM mmo_schema.deposit_requests dr
+    LEFT JOIN mmo_schema.users u ON u.id = dr.user_id
+    WHERE dr.id = ?
+    """;
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setInt(1, txId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -151,8 +164,6 @@ public class CashDAO {
         return null;
     }
 
-
-
     /* ============ UPDATE STATUS THEO LOẠI ============ */
 
     public int updateDepositStatus(int id, String status, String note) throws SQLException {
@@ -174,6 +185,7 @@ public class CashDAO {
         UPDATE mmo_schema.withdrawal_requests
         SET status = ?,
             admin_note = ?,
+            -- Giờ phiên đã là +07:00, dùng NOW() là đúng giờ VN
             processed_at = NOW(),
             admin_proof_url = COALESCE(?, admin_proof_url)
         WHERE id = ?
@@ -203,7 +215,6 @@ public class CashDAO {
         }
     }
 
-    // Nếu cần trừ (vd đã cộng trước, giờ rollback)
     public int updateWalletMinus(int userId, BigDecimal amount) throws SQLException {
         String sql = """
             UPDATE mmo_schema.wallets

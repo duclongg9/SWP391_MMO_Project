@@ -14,9 +14,6 @@ public class ManageKycDAO {
         this.con = con;
     }
 
-    /**
-     * Lấy toàn bộ danh sách KYC (JOIN users bằng kr.id = u.id)
-     */
     public List<KycRequests> getAllKycRequests() throws SQLException {
         List<KycRequests> list = new ArrayList<>();
         String sql = """
@@ -70,9 +67,6 @@ public class ManageKycDAO {
     }
 
 
-    /**
-     * Approve + promote (KHÔNG đụng user_id)
-     */
     public int approveKycAndPromote(int kycId, String feedback) throws SQLException {
         boolean oldAuto = con.getAutoCommit();
         con.setAutoCommit(false);
