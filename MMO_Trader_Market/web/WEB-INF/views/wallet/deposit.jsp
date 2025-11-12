@@ -49,12 +49,13 @@
 
                     <form action="${pageContext.request.contextPath}/payment" method="post" class="topup__form" novalidate>
                         <div class="topup__field">
-                            <label for="amount" class="topup__label">Số tiền</label>
+                            <label for="amount-display" class="topup__label">Số tiền</label>
                             <div class="topup__control">
                                 <span class="topup__control-prefix" aria-hidden="true">VNĐ</span>
-                                <input type="number" id="amount" name="amount" class="topup__input" min="1000" max="50000000" step="1000" required>
+                                <input type="text" id="amount-display" class="topup__input" inputmode="numeric" autocomplete="off" required aria-describedby="amount-hint">
+                                <input type="hidden" id="amount" name="amount">
                             </div>
-                            <p class="topup__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch.</p>
+                            <p id="amount-hint" class="topup__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch.</p>
                         </div>
 
                         <div class="topup__field">
@@ -117,3 +118,92 @@
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+
+<script>
+    // JavaScript: Định dạng số tiền theo từng nhóm nghìn và kiểm tra giới hạn trước khi gửi form.
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('.topup__form');
+        const amountDisplay = document.getElementById('amount-display');
+        const amountHidden = document.getElementById('amount');
+        const alertBox = document.getElementById('topup-alert');
+        const MIN_AMOUNT = 1000;
+        const MAX_AMOUNT = 50000000;
+
+        const formatCurrency = (value) => {
+            const numericValue = value.replace(/\D/g, '');
+
+            if (!numericValue) {
+                amountHidden.value = '';
+                return '';
+            }
+
+            const parsed = parseInt(numericValue, 10);
+            amountHidden.value = parsed;
+            return parsed.toLocaleString('vi-VN');
+        };
+
+        const showAlert = (message) => {
+            alertBox.textContent = message;
+            alertBox.style.display = 'block';
+            alertBox.focus();
+            amountDisplay.setAttribute('aria-invalid', 'true');
+        };
+
+        const hideAlert = () => {
+            alertBox.textContent = '';
+            alertBox.style.display = 'none';
+            amountDisplay.removeAttribute('aria-invalid');
+        };
+
+        const validateAmount = () => {
+            const currentValue = amountHidden.value ? parseInt(amountHidden.value, 10) : NaN;
+
+            if (!amountHidden.value) {
+                showAlert('Vui lòng nhập số tiền cần nạp.');
+                return false;
+            }
+
+            if (Number.isNaN(currentValue)) {
+                showAlert('Số tiền không hợp lệ, vui lòng kiểm tra lại.');
+                return false;
+            }
+
+            if (currentValue < MIN_AMOUNT) {
+                showAlert(`Số tiền tối thiểu là ${MIN_AMOUNT.toLocaleString('vi-VN')} VNĐ.`);
+                return false;
+            }
+
+            if (currentValue > MAX_AMOUNT) {
+                showAlert(`Số tiền tối đa là ${MAX_AMOUNT.toLocaleString('vi-VN')} VNĐ.`);
+                return false;
+            }
+
+            if (currentValue % 1000 !== 0) {
+                showAlert('Số tiền phải là bội số của 1.000 VNĐ.');
+                return false;
+            }
+
+            hideAlert();
+            return true;
+        };
+
+        amountDisplay.addEventListener('input', (event) => {
+            const formatted = formatCurrency(event.target.value);
+            event.target.value = formatted;
+            hideAlert();
+        });
+
+        amountDisplay.addEventListener('blur', () => {
+            amountDisplay.value = formatCurrency(amountDisplay.value);
+            validateAmount();
+        });
+
+        form.addEventListener('submit', (event) => {
+            amountDisplay.value = formatCurrency(amountDisplay.value);
+
+            if (!validateAmount()) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
