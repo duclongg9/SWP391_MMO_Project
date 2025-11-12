@@ -21,6 +21,152 @@
 <c:set var="base" value="${pageContext.request.contextPath}" />
 <%-- Theo yêu cầu: tái sử dụng filterbar và tách CSS sang file chung để dễ bảo trì. --%>
 
+<!-- Page specific styles for seller disputes UI refresh -->
+<style>
+    .dispute-filters {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dispute-filters__actions {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        justify-content: flex-start;
+    }
+
+    .dispute-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .dispute-summary__item {
+        background: #f8f9fb;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+    }
+
+    .dispute-summary__label {
+        color: #475569;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .dispute-summary__value {
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-badge--open {
+        background: rgba(59, 130, 246, 0.14);
+        color: #1d4ed8;
+    }
+
+    .status-badge--review {
+        background: rgba(250, 204, 21, 0.18);
+        color: #92400e;
+    }
+
+    .status-badge--resolved {
+        background: rgba(16, 185, 129, 0.18);
+        color: #047857;
+    }
+
+    .status-badge--closed {
+        background: rgba(148, 163, 184, 0.2);
+        color: #334155;
+    }
+
+    .dispute-details {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 1px dashed #cbd5f5;
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .dispute-details__group {
+        display: grid;
+        gap: 4px;
+    }
+
+    .dispute-attachments {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .dispute-attachments__item {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        display: inline-flex;
+        background: #fff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dispute-attachments__item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+    }
+
+    .table-responsive {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table thead th {
+        background: #f1f5f9;
+    }
+
+    details > summary {
+        cursor: pointer;
+        color: #2563eb;
+        font-weight: 600;
+    }
+
+    details[open] > summary::after {
+        content: "";
+    }
+
+    @media (max-width: 768px) {
+        .dispute-filters__actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .dispute-filters__actions .button {
+            flex: 1 1 auto;
+        }
+    }
+</style>
+
 <main class="layout__content seller-page">
     <c:if test="${not empty errorMessage}">
         <div class="alert alert--danger" role="alert">${errorMessage}</div>
