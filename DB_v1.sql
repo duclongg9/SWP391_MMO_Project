@@ -346,7 +346,7 @@ CREATE TABLE `disputes` (
     `issue_type` enum('ACCOUNT_NOT_WORKING','ACCOUNT_DUPLICATED','ACCOUNT_EXPIRED','ACCOUNT_MISSING','OTHER') NOT NULL,
     `custom_issue_title` varchar(255) DEFAULT NULL,
     `reason` text NOT NULL,
-    `status` enum('Open','Resolved','Cancelled') NOT NULL DEFAULT 'Open',
+    `status` enum('Open','InReview','ResolvedWithRefund','ResolvedWithoutRefund','Closed','Cancelled') NOT NULL DEFAULT 'Open',
     `escrow_paused_at` timestamp NULL DEFAULT NULL,
     `escrow_remaining_seconds` int DEFAULT NULL,
     `resolved_at` timestamp NULL DEFAULT NULL,

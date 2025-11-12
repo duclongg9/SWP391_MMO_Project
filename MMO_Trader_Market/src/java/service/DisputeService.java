@@ -3,6 +3,7 @@ package service;
 import dao.order.OrderDAO;
 import dao.support.DisputeDAO;
 import model.DisputeAttachment;
+import model.DisputeStatus;
 import model.Disputes;
 import model.Orders;
 
@@ -89,7 +90,7 @@ public class DisputeService {
         dispute.setIssueType(issueType);
         dispute.setCustomIssueTitle(customIssueTitle);
         dispute.setReason(reason);
-        dispute.setStatus("Open");
+        dispute.setStatus(DisputeStatus.OPEN.getDatabaseValue());
         dispute.setEscrowPausedAt(new Date(now.getTime()));
         dispute.setEscrowRemainingSeconds(remainingSeconds);
 

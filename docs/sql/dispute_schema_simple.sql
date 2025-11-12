@@ -57,7 +57,8 @@ CREATE TABLE disputes (
                                 NOT NULL,
     custom_issue_title          VARCHAR(255) NULL,
     reason                      TEXT NOT NULL,
-    status                      ENUM('Open','Resolved','Cancelled') NOT NULL DEFAULT 'Open',
+    status                      ENUM('Open','InReview','ResolvedWithRefund','ResolvedWithoutRefund','Closed','Cancelled')
+                                NOT NULL DEFAULT 'Open',
     escrow_paused_at            TIMESTAMP NULL,
     escrow_remaining_seconds    INT NULL,
     resolved_at                 TIMESTAMP NULL,
