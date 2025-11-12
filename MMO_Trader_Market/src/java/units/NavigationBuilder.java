@@ -136,6 +136,14 @@ public final class NavigationBuilder {
         inventoryItem.put("active", inventoryActive);
         children.add(inventoryItem);
 
+        Map<String, Object> disputesItem = new HashMap<>();
+        disputesItem.put("href", contextPath + "/seller/disputes");
+        disputesItem.put("text", "Khiếu nại");
+        disputesItem.put("label", "Khiếu nại");
+        boolean disputesActive = isActive(currentPath, "/seller/disputes");
+        disputesItem.put("active", disputesActive);
+        children.add(disputesItem);
+
         Map<String, Object> buyerOrdersItem = new HashMap<>();
         buyerOrdersItem.put("href", contextPath + "/orders/my");
         buyerOrdersItem.put("text", "Đơn đã mua & khiếu nại");
@@ -152,7 +160,7 @@ public final class NavigationBuilder {
         incomeItem.put("active", incomeActive);
         children.add(incomeItem);
 
-        boolean active = dashboardActive || inventoryActive || incomeActive || ordersActive;
+        boolean active = dashboardActive || inventoryActive || disputesActive || incomeActive || ordersActive;
         Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
         dropdown.put("dropdown", true);
         dropdown.put("children", children);

@@ -41,6 +41,32 @@ public class DisputeDAO extends BaseDAO {
     }
 
     /**
+     * Tìm kiếm dispute theo ID.
+     *
+     * @param disputeId mã khiếu nại cần tìm
+     * @return {@link Optional} chứa bản ghi nếu tồn tại
+     */
+    public Optional<Disputes> findById(int disputeId) {
+        try (Connection connection = getConnection()) {
+            return findById(connection, disputeId, false);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể tải thông tin khiếu nại", ex);
+        }
+    }
+
+    /**
+     * Tìm kiếm dispute theo ID đồng thời khóa bản ghi để cập nhật trong transaction.
+     *
+     * @param connection kết nối hiện hành
+     * @param disputeId  mã khiếu nại
+     * @return {@link Optional} chứa bản ghi nếu tồn tại
+     * @throws SQLException khi truy vấn lỗi
+     */
+    public Optional<Disputes> findByIdForUpdate(Connection connection, int disputeId) throws SQLException {
+        return findById(connection, disputeId, true);
+    }
+
+    /**
      * Lấy danh sách ảnh bằng chứng gắn với dispute.
      */
     public List<DisputeAttachment> findAttachments(int disputeId) {
@@ -58,6 +84,44 @@ public class DisputeDAO extends BaseDAO {
             throw new IllegalStateException("Không thể tải ảnh bằng chứng", ex);
         }
         return attachments;
+    }
+
+    /**
+     * Cập nhật trạng thái và ghi chú xử lý cho dispute.
+     *
+     * @param connection kết nối đang sử dụng
+     * @param disputeId  mã khiếu nại cần cập nhật
+     * @param status     trạng thái mới
+     * @param adminId    admin xử lý
+     * @param note       ghi chú xử lý
+     * @param resolvedAt thời điểm hoàn tất (có thể null)
+     * @return {@code true} nếu có bản ghi được cập nhật
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public boolean updateStatus(Connection connection, int disputeId, String status, Integer adminId, String note,
+            Timestamp resolvedAt) throws SQLException {
+        final String sql = "UPDATE disputes SET status = ?, resolved_by_admin_id = ?, resolution_note = ?, resolved_at = ?, "
+                + "updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status);
+            if (adminId == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, adminId);
+            }
+            if (note == null || note.isBlank()) {
+                statement.setNull(3, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(3, note);
+            }
+            if (resolvedAt == null) {
+                statement.setNull(4, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(4, resolvedAt);
+            }
+            statement.setInt(5, disputeId);
+            return statement.executeUpdate() > 0;
+        }
     }
 
     /**
@@ -180,5 +244,23 @@ public class DisputeDAO extends BaseDAO {
             attachment.setCreatedAt(new Date(created.getTime()));
         }
         return attachment;
+    }
+
+    private Optional<Disputes> findById(Connection connection, int disputeId, boolean forUpdate) throws SQLException {
+        String sql = "SELECT id, order_id, order_reference_code, reporter_id, resolved_by_admin_id, issue_type, "
+                + "custom_issue_title, reason, status, escrow_paused_at, escrow_remaining_seconds, resolved_at, resolution_note, "
+                + "created_at, updated_at FROM disputes WHERE id = ?";
+        if (forUpdate) {
+            sql += " FOR UPDATE";
+        }
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, disputeId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapDispute(rs));
+                }
+            }
+        }
+        return Optional.empty();
     }
 }
