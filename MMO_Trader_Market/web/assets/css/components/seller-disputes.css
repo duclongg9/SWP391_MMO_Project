@@ -117,8 +117,15 @@
     overflow: hidden;
 }
 
+/* Điều chỉnh màu header bảng theo phản hồi người dùng để chữ không bị hòa lẫn. */
+.disputes-table-wrapper .table thead {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+
 .disputes-table-wrapper .table thead th {
-    background: #f1f5f9;
+    background: transparent;
 }
 
 .details-toggle {
