@@ -104,16 +104,16 @@ public class DepositeRequestDAO {
     public int UpdateDepositStatus(int id , int status) throws SQLException{
         String statusString;
         if(status == 2){
-            statusString = "Complete";
+            statusString = "Completed";
         }else if(status == 3){
             statusString = "Failed";
         }else if(status == 4){
-            statusString ="Exprired";
+            statusString ="Expired";
         }else{
             statusString = "Pending";
         }
         String sql="""
-                   UPDATE deposit_requests
+                   UPDATE mmo_schema.deposit_requests
                    SET status = ?   
                    WHERE id = ?;
                    """;

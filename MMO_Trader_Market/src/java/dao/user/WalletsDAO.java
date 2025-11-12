@@ -25,7 +25,7 @@ public class WalletsDAO {
 
     public Wallets getWalletById(int id) {
         String sql = """
-                SELECT * FROM wallets
+                SELECT * FROM mmo_schema.wallets
                 WHERE id = ?
                 LIMIT 1
                 """;
@@ -46,7 +46,7 @@ public class WalletsDAO {
 
     public Wallets getUserWallet(int userId) {
         String sql = """
-                SELECT * FROM wallets
+                SELECT * FROM mmo_schema.wallets
                 WHERE user_id = ?
                 LIMIT 1
                 """;
@@ -72,7 +72,7 @@ public class WalletsDAO {
         }
 
         String sql = """
-                INSERT INTO wallets (user_id)
+                INSERT INTO mmo_schema.wallets (user_id)
                 VALUES (?)
                 """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
@@ -90,7 +90,7 @@ public class WalletsDAO {
 
     public Wallets lockWalletForUpdate(Connection connection, int userId) throws SQLException {
         // Sử dụng SELECT ... FOR UPDATE để khóa bản ghi ví trong suốt giao dịch.
-        final String sql = "SELECT * FROM wallets WHERE user_id = ? FOR UPDATE";
+        final String sql = "SELECT * FROM mmo_schema.wallets WHERE user_id = ? FOR UPDATE";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -104,7 +104,7 @@ public class WalletsDAO {
 
     public boolean updateBalance(Connection connection, int walletId, BigDecimal newBalance) throws SQLException {
         // Cập nhật số dư và mốc thời gian chỉnh sửa để phản ánh giao dịch mới nhất.
-        final String sql = "UPDATE wallets SET balance = ?, updated_at = NOW() WHERE id = ?";
+        final String sql = "UPDATE mmo_schema.wallets SET balance = ?, updated_at = NOW() WHERE id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setBigDecimal(1, newBalance);
             ps.setInt(2, walletId);
@@ -174,5 +174,9 @@ public class WalletsDAO {
             ps.setInt(1, userId);
             return ps.executeUpdate();
         }
+    }
+    public static void main(String[] args) throws SQLException {
+        WalletsDAO wdao = new WalletsDAO();
+        wdao.increaseBalance(3, BigDecimal.valueOf(100000));
     }
 }
