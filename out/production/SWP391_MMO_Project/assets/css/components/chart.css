@@ -1,0 +1,23 @@
+.chart-container {
+  display: none;
+  transition: all 0.3s ease;
+}
+.chart-container.show {
+  display: block;
+}
+.chart-toggle {
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.chart-toggle:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+}
+
+.chart-toggle.active {
+  background-color: #e9ecef; /* xám nhạt */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+

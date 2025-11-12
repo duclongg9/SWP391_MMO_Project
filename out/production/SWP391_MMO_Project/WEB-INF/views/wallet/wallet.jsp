@@ -77,8 +77,25 @@
                         <fmt:formatNumber value="${wallet.balance}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
                     </td>
                 </tr>
+                        <!-- Nút rút tiền -->
+        <tr>
+            <td></td>
+            <td colspan="1" style="text-align:right; padding-top: 1rem;">
+                <a href="${pageContext.request.contextPath}/withdraw" 
+                   class="button button--primary" 
+                   style="padding: 0.6rem 1.2rem; font-size: 1rem;">
+                   Rút tiền
+                </a>
+            </td>
+        </tr>
+                
             </tbody>
         </table>
+
+        <div class="form__group" style="margin-top:1.6rem;">
+            <a class="btn btn--primary" href="${pageContext.request.contextPath}/wallet/deposit">Nạp tiền qua VNPAY</a>
+            <span class="form__hint">Thanh toán an toàn, số dư sẽ cập nhật sau khi IPN được xác nhận.</span>
+        </div>
 
 
         <!--Lịch sử ví -->
