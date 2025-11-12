@@ -126,8 +126,9 @@
                                                         <div style="margin-top:6px;"><strong>Ảnh đính kèm:</strong>
                                                             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
                                                                 <c:forEach var="att" items="${d.attachments}">
-                                                                    <c:if test="${not empty att.filePath}">
-                                                                        <c:url var="attUrl" value="${att.filePath}" />
+                                                                    <c:set var="attWebPath" value="${att.webPath}" />
+                                                                    <c:if test="${not empty attWebPath}">
+                                                                        <c:url var="attUrl" value="${attWebPath}" />
                                                                         <a href="${fn:escapeXml(attUrl)}" target="_blank" rel="noopener"
                                                                            style="display:inline-block;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
                                                                             <img src="${fn:escapeXml(attUrl)}" alt="Attachment"

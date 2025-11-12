@@ -72,7 +72,16 @@ public class FileUploadUtil {
         filePart.write(filePath);
 
         // Trả về đường dẫn relative (dùng / thay vì File.separator cho web path)
-        return sanitizedRelativeDir.replace(File.separatorChar, '/') + "/" + uniqueFileName;
+        String relativePath = sanitizedRelativeDir.replace(File.separatorChar, '/') + "/" + uniqueFileName;
+        relativePath = relativePath.replace("\\", "/");
+        if (!relativePath.startsWith("/")) {
+            relativePath = "/" + relativePath;
+        }
+        // Loại bỏ trường hợp nhiều dấu '/' liên tiếp khi ghép chuỗi.
+        while (relativePath.contains("//")) {
+            relativePath = relativePath.replace("//", "/");
+        }
+        return relativePath;
     }
     
     /**
@@ -87,7 +96,12 @@ public class FileUploadUtil {
         }
         
         try {
-            String fullPath = applicationPath + File.separator + oldFilePath.replace("/", File.separator);
+            String normalized = oldFilePath.replace('\', '/');
+            while (normalized.startsWith("/")) {
+                normalized = normalized.substring(1);
+            }
+            normalized = normalized.replace("//", "/");
+            String fullPath = applicationPath + File.separator + normalized.replace("/", File.separator);
             File file = new File(fullPath);
             if (file.exists() && file.isFile()) {
                 file.delete();

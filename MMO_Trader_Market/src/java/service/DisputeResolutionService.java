@@ -83,12 +83,32 @@ public class DisputeResolutionService {
                 if (ex instanceof RuntimeException runtime) {
                     throw runtime;
                 }
-                throw new IllegalStateException("Không thể xử lý khiếu nại", ex);
+                String message = ex.getMessage();
+                if (message == null || message.isBlank()) {
+                    Throwable cause = ex.getCause();
+                    while (cause != null && (cause.getMessage() == null || cause.getMessage().isBlank())) {
+                        cause = cause.getCause();
+                    }
+                    message = (cause != null && cause.getMessage() != null && !cause.getMessage().isBlank())
+                            ? cause.getMessage()
+                            : "Không thể xử lý khiếu nại";
+                }
+                throw new IllegalStateException(message, ex);
             } finally {
                 connection.setAutoCommit(previousAutoCommit);
             }
         } catch (SQLException ex) {
-            throw new IllegalStateException("Không thể xử lý khiếu nại", ex);
+            String message = ex.getMessage();
+            if (message == null || message.isBlank()) {
+                Throwable cause = ex.getCause();
+                while (cause != null && (cause.getMessage() == null || cause.getMessage().isBlank())) {
+                    cause = cause.getCause();
+                }
+                message = (cause != null && cause.getMessage() != null && !cause.getMessage().isBlank())
+                        ? cause.getMessage()
+                        : "Không thể xử lý khiếu nại";
+            }
+            throw new IllegalStateException(message, ex);
         }
     }
 
