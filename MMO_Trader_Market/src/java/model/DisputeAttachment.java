@@ -51,4 +51,29 @@ public class DisputeAttachment {
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
+
+    /**
+     * Chuẩn hóa đường dẫn để hiển thị trên web. Đảm bảo đường dẫn luôn bắt đầu
+     * bằng dấu {@code '/'} và sử dụng dấu gạch chéo xuôi giúp trình duyệt đọc
+     * đúng resource.
+     *
+     * @return đường dẫn ảnh sẵn sàng dùng cho thuộc tính {@code src}; trả về
+     * {@code null} nếu giá trị rỗng.
+     */
+    public String getWebPath() {
+        if (filePath == null) {
+            return null;
+        }
+        String normalized = filePath.trim().replace('\\', '/');
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        while (normalized.contains("//")) {
+            normalized = normalized.replace("//", "/");
+        }
+        return normalized;
+    }
 }

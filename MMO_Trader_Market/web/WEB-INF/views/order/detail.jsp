@@ -587,13 +587,17 @@
                     <c:if test="${not empty existingDisputeAttachments}">
                         <div class="order-report__evidences">
                             <c:forEach var="attachment" items="${existingDisputeAttachments}">
-                                <div class="order-report__evidence">
-                                    <a href="<c:url value='/${attachment.filePath}' />" target="_blank" rel="noopener">
-                                        <img src="<c:url value='/${attachment.filePath}' />"
-                                             alt="Ảnh bằng chứng liên quan đến báo cáo"
-                                             loading="lazy" />
-                                    </a>
-                                </div>
+                                <c:set var="attachmentWebPath" value="${attachment.webPath}" />
+                                <c:if test="${not empty attachmentWebPath}">
+                                    <c:url var="attachmentUrl" value="${attachmentWebPath}" />
+                                    <div class="order-report__evidence">
+                                        <a href="${attachmentUrl}" target="_blank" rel="noopener">
+                                            <img src="${attachmentUrl}"
+                                                 alt="Ảnh bằng chứng liên quan đến báo cáo"
+                                                 loading="lazy" />
+                                        </a>
+                                    </div>
+                                </c:if>
                             </c:forEach>
                         </div>
                     </c:if>
