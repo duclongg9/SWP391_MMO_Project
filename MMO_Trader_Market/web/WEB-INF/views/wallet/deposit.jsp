@@ -169,12 +169,12 @@
             }
 
             if (currentValue < MIN_AMOUNT) {
-                showAlert(`Số tiền tối thiểu là ${MIN_AMOUNT.toLocaleString('vi-VN')} VNĐ.`);
+                showAlert(`Số tiền tối thiểu là 1.000 VNĐ.`);
                 return false;
             }
 
             if (currentValue > MAX_AMOUNT) {
-                showAlert(`Số tiền tối đa là ${MAX_AMOUNT.toLocaleString('vi-VN')} VNĐ.`);
+                showAlert(`Số tiền tối đa là 50.000.000 VNĐ.`);
                 return false;
             }
 
