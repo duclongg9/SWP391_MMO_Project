@@ -884,6 +884,308 @@ code {
     }
 }
 
+/* Seller shop detail */
+.shop-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.shop-detail__header {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.shop-detail__title-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.shop-detail__title {
+    margin: 0;
+}
+
+.shop-detail__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.shop-detail__status.is-active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #047857;
+}
+
+.shop-detail__status.is-suspended {
+    background: rgba(248, 113, 113, 0.14);
+    color: #b91c1c;
+}
+
+.shop-detail__meta {
+    display: grid;
+    gap: 1rem;
+}
+
+.shop-detail__description {
+    margin: 0;
+    color: var(--text-light);
+    max-width: 720px;
+}
+
+.shop-detail__description--empty {
+    color: rgba(15, 23, 42, 0.5);
+    font-style: italic;
+}
+
+.shop-detail__meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.25rem;
+}
+
+.shop-detail__meta-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.shop-detail__meta-value {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.shop-detail__metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.shop-detail__metric-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.shop-detail__metric-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(0, 102, 255, 0.12), transparent 55%);
+    pointer-events: none;
+}
+
+.shop-detail__metric-card > div {
+    position: relative;
+    z-index: 1;
+}
+
+.shop-detail__best-seller {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1.75rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(130deg, rgba(0, 102, 255, 0.12), rgba(0, 102, 255, 0.02));
+    border: 1px solid rgba(0, 102, 255, 0.18);
+    margin-bottom: 2rem;
+}
+
+.shop-detail__best-seller-thumb {
+    width: 104px;
+    height: 104px;
+    border-radius: var(--radius-md);
+    background: white;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.shop-detail__best-seller-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.shop-detail__best-seller-placeholder {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.shop-detail__best-seller-info {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.shop-detail__best-seller-info h2 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.shop-detail__best-seller-name {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+}
+
+.shop-detail__best-seller-info ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--text-light);
+    display: grid;
+    gap: 0.35rem;
+}
+
+.shop-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.shop-detail__actions .button,
+.shop-detail__actions form {
+    flex: 1 1 220px;
+}
+
+.shop-detail__actions form {
+    display: flex;
+}
+
+.shop-detail__actions form .button {
+    width: 100%;
+}
+
+.shop-detail__range {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.shop-detail__range-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.02);
+    color: inherit;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.shop-detail__range-button:hover {
+    border-color: rgba(0, 102, 255, 0.35);
+}
+
+.shop-detail__range-button.is-active {
+    background: rgba(0, 102, 255, 0.12);
+    color: var(--primary-color);
+    border-color: rgba(0, 102, 255, 0.35);
+    font-weight: 600;
+}
+
+.shop-detail__chart {
+    margin-bottom: 1.5rem;
+}
+
+.shop-detail__revenue-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.shop-detail__revenue-table th,
+.shop-detail__revenue-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    text-align: left;
+}
+
+.shop-detail__revenue-table tbody tr:hover {
+    background: rgba(15, 23, 42, 0.02);
+}
+
+.shop-detail__orders td,
+.shop-detail__orders th {
+    white-space: nowrap;
+}
+
+.shop-detail__badge {
+    display: inline-flex;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    font-size: 0.85rem;
+}
+
+.shop-detail__empty {
+    margin: 0;
+    color: var(--text-light);
+    text-align: center;
+    padding: 1.5rem 0;
+}
+
+.shop-detail__pagination {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+
+.shop-detail__pagination-actions {
+    display: inline-flex;
+    gap: 0.75rem;
+}
+
+.shop-detail__pagination-info {
+    display: flex;
+    gap: 0.75rem;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .shop-detail__metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .shop-detail__actions {
+        flex-direction: column;
+    }
+
+    .shop-detail__range {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .shop-detail__best-seller {
+        grid-template-columns: minmax(0, 1fr);
+        text-align: center;
+        justify-items: center;
+    }
+}
+
 .panel__footer {
     display: flex;
     gap: 1rem;
