@@ -1,0 +1,29 @@
+.insight-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.insight-chip.up {
+    background-color: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+}
+
+.insight-chip.up::before {
+    content: "▲";
+    font-size: 11px;
+}
+
+.insight-chip.down {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+}
+
+.insight-chip.down::before {
+    content: "▼";
+    font-size: 11px;
+}

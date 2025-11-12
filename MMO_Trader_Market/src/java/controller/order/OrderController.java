@@ -8,11 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
-import model.DisputeAttachment;
-import model.Disputes;
-import model.Orders;
-import model.Products;
-import model.WalletTransactions;
+import model.*;
 import model.view.OrderDetailView;
 import model.view.OrderWalletEvent;
 import service.DisputeService;
@@ -32,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * 
@@ -81,6 +79,11 @@ public class OrderController extends BaseController {
      * Tổng dung lượng tối đa của toàn bộ minh chứng trong một lần gửi (đơn vị MB).
      */
     private static final int MAX_EVIDENCE_TOTAL_SIZE_MB = 30;
+
+    /**
+     * Logger trung tâm giúp truy vết các hoạt động mua hàng và lý do thất bại.
+     */
+    private static final Logger LOGGER = Logger.getLogger(OrderController.class.getName());
 
     private final OrderService orderService = new OrderService();
     private final DisputeService disputeService = new DisputeService();
@@ -139,13 +142,20 @@ public class OrderController extends BaseController {
                 showMyOrders(request, response);
             case "/orders/detail" -> {
                 String pathInfo = request.getPathInfo();
-                if (pathInfo != null && pathInfo.endsWith("/wallet-events")) {
-                    // API JSON cho phép front-end polling tiến độ ví.
-                    handleWalletEventsApi(request, response);
-                } else {
-                    // Trường hợp còn lại: render trang chi tiết đơn hàng.
-                    showOrderDetail(request, response);
+                if (pathInfo != null) {
+                    if (pathInfo.endsWith("/report-eligibility")) {
+                        // API JSON xác thực điều kiện mở form báo cáo theo thời gian thực.
+                        handleReportEligibilityApi(request, response);
+                        return;
+                    }
+                    if (pathInfo.endsWith("/wallet-events")) {
+                        // API JSON cho phép front-end polling tiến độ ví.
+                        handleWalletEventsApi(request, response);
+                        return;
+                    }
                 }
+                // Trường hợp còn lại: render trang chi tiết đơn hàng.
+                showOrderDetail(request, response);
             }
             default ->
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -183,6 +193,7 @@ public class OrderController extends BaseController {
         HttpSession session = request.getSession(false);
         // Bảo vệ route: chỉ cho phép buyer/seller đăng nhập tiếp tục.
         if (!isBuyerOrSeller(session)) {
+            LOGGER.log(Level.FINE, "Từ chối yêu cầu mua hàng do chưa đăng nhập hoặc không có quyền phù hợp.");
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
@@ -190,8 +201,13 @@ public class OrderController extends BaseController {
         int productId = decodeIdentifier(request.getParameter("productId"));
         int quantity = parsePositiveInt(request.getParameter("qty"));
         String variantCode = normalize(request.getParameter("variantCode"));
+        LOGGER.log(Level.INFO, "Buyer {0} gửi yêu cầu mua sản phẩm {1} với số lượng {2}",
+                new Object[]{userId, productId, quantity});
         // Nếu dữ liệu đầu vào thiếu -> trả lỗi cho client.
         if (userId == null || productId <= 0 || quantity <= 0) {
+            LOGGER.log(Level.WARNING,
+                    "Yêu cầu mua hàng không hợp lệ (buyer={0}, productId={1}, quantity={2})",
+                    new Object[]{userId, productId, quantity});
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -204,10 +220,17 @@ public class OrderController extends BaseController {
             int orderId = orderService.placeOrderPending(userId, productId, quantity, variantCode, idemKeyParam);
             String token = IdObfuscator.encode(orderId);
             String redirectUrl = request.getContextPath() + "/orders/detail/" + token + "?processing=1";
+            LOGGER.log(Level.INFO,
+                    "Tạo đơn hàng pending thành công (orderId={0}, buyer={1}, productId={2})",
+                    new Object[]{orderId, userId, productId});
             response.sendRedirect(redirectUrl);
         } catch (IllegalArgumentException ex) {
+            LOGGER.log(Level.WARNING, "Không thể tạo đơn hàng cho buyer {0}: {1}",
+                    new Object[]{userId, safeMessage(ex)});
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
         } catch (IllegalStateException ex) {
+            LOGGER.log(Level.WARNING, "Giao dịch mua hàng của buyer {0} thất bại: {1}",
+                    new Object[]{userId, safeMessage(ex)});
             if (!redirectBackWithError(request, response, session, productId, ex.getMessage())) {
                 response.sendError(HttpServletResponse.SC_CONFLICT, ex.getMessage());
             }
@@ -224,8 +247,24 @@ public class OrderController extends BaseController {
                 : message;
         session.setAttribute("purchaseError", resolvedMessage);
         String target = request.getContextPath() + "/product/detail/" + IdObfuscator.encode(productId);
+        LOGGER.log(Level.INFO, "Chuyển hướng buyer {0} về trang sản phẩm {1} do lỗi: {2}",
+                new Object[]{session.getAttribute("userId"), productId, resolvedMessage});
         response.sendRedirect(target);
         return true;
+    }
+
+    /**
+     * Bảo vệ logger khỏi thông báo {@code null} để log dễ đọc hơn.
+     *
+     * @param throwable ngoại lệ cần lấy thông điệp
+     * @return chuỗi mô tả an toàn, không rỗng
+     */
+    private String safeMessage(Throwable throwable) {
+        if (throwable == null) {
+            return "Không xác định";
+        }
+        String message = throwable.getMessage();
+        return (message == null || message.isBlank()) ? throwable.getClass().getSimpleName() : message;
     }
 
     /**
@@ -420,6 +459,52 @@ public class OrderController extends BaseController {
     }
 
     /**
+     * Phản hồi JSON mô tả điều kiện còn hiệu lực để mở form báo cáo đơn hàng.
+     *
+     * @param request  yêu cầu HTTP hiện tại
+     * @param response phản hồi HTTP sẽ ghi JSON trả về front-end
+     * @throws IOException nếu xảy ra lỗi ghi dữ liệu ra response stream
+     */
+    private void handleReportEligibilityApi(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        if (!isBuyerOrSeller(session)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        Integer userId = session == null ? null : (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        String token = extractTokenFromPath(request);
+        if (token == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        int orderId;
+        try {
+            orderId = IdObfuscator.decode(token);
+        } catch (IllegalArgumentException ex) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Optional<OrderDetailView> detailOpt = orderService.getDetail(orderId, userId);
+        if (detailOpt.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Orders order = detailOpt.get().order();
+        orderService.releaseEscrowIfExpired(order);
+        Optional<Disputes> disputeOpt = disputeService.findByOrderId(orderId);
+        boolean canReport = disputeOpt.isEmpty() && orderService.canReportOrder(order);
+        String message = canReport ? "" : resolveReportIneligibilityMessage(order, disputeOpt);
+        response.setContentType("application/json; charset=UTF-8");
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        response.getWriter().write(buildReportEligibilityPayload(canReport, message));
+    }
+
+    /**
      * Phản hồi JSON mô tả các sự kiện ví của đơn hàng để giao diện tải bằng AJAX.
      */
     private void handleWalletEventsApi(HttpServletRequest request, HttpServletResponse response)
@@ -459,8 +544,9 @@ public class OrderController extends BaseController {
         Orders order = detailOpt.get().order();
         orderService.releaseEscrowIfExpired(order);
         Optional<WalletTransactions> paymentTxOpt = orderService.getPaymentTransactionForOrder(order);
+        Optional<Disputes> disputeOpt = disputeService.findByOrderId(order.getId());
         // Xây dựng danh sách sự kiện ví và trả về JSON để front-end polling.
-        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt);
+        List<OrderWalletEvent> events = orderService.buildWalletTimeline(order, paymentTxOpt, disputeOpt);
         response.setContentType("application/json; charset=UTF-8");
         response.getWriter().write(buildWalletEventsPayload(events));
     }
@@ -487,6 +573,47 @@ public class OrderController extends BaseController {
             builder.append('}');
         }
         builder.append(']');
+        builder.append('}');
+        return builder.toString();
+    }
+
+    /**
+     * Xây dựng thông điệp tiếng Việt giải thích lý do người mua không thể tiếp tục báo cáo.
+     *
+     * @param order      đối tượng đơn hàng đang xét
+     * @param disputeOpt trạng thái dispute hiện tại của đơn
+     * @return chuỗi mô tả lỗi thân thiện với người dùng cuối
+     */
+    private String resolveReportIneligibilityMessage(Orders order, Optional<Disputes> disputeOpt) {
+        if (disputeOpt != null && disputeOpt.isPresent()) {
+            return "Đơn hàng này đã có báo cáo đang xử lý.";
+        }
+        if (order == null) {
+            return "Không tìm thấy thông tin đơn hàng.";
+        }
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return "Chỉ có thể báo cáo những đơn đã hoàn tất.";
+        }
+        String escrowStatus = order.getEscrowStatus();
+        if (escrowStatus == null || !"Scheduled".equalsIgnoreCase(escrowStatus)) {
+            return "Đơn hàng hiện đã hết thời gian escrow nên chức năng gửi báo cáo không còn hiệu lực.";
+        }
+        return "Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.";
+    }
+
+    /**
+     * Tạo JSON trả về cho front-end khi kiểm tra điều kiện báo cáo.
+     *
+     * @param canReport trạng thái đủ điều kiện
+     * @param message   thông điệp lỗi (chuỗi rỗng nếu đủ điều kiện)
+     * @return chuỗi JSON dạng {@code {"canReport":true,"message":"..."}}
+     */
+    private String buildReportEligibilityPayload(boolean canReport, String message) {
+        StringBuilder builder = new StringBuilder(96);
+        builder.append('{');
+        appendJsonField(builder, "canReport", Boolean.toString(canReport), false);
+        appendJsonField(builder, "message", escapeJson(message == null ? "" : message), true);
+        trimTrailingComma(builder);
         builder.append('}');
         return builder.toString();
     }

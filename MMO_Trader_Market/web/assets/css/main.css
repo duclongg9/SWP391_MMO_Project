@@ -748,7 +748,7 @@ code {
 
 @media (min-width: 1200px) {
     .shop-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 2rem;
     }
 }
@@ -1833,7 +1833,7 @@ code {
 }
 
 /* Alerts */
-alert-wrapper {
+.alert-wrapper {
     min-height: 1.5rem;  /* giữ khoảng trống khi alert ẩn */
     margin-top: 4px;      /* khoảng cách với input */
 }
@@ -1841,8 +1841,10 @@ alert-wrapper {
     padding: 0.85rem 1rem;
     border-radius: var(--radius-sm);
     font-size: 0.875rem;
-    display: none;
+    margin-bottom: 1rem;
+    display: block; 
 }
+
 
 .alert--error {
     background: rgba(192, 57, 43, 0.1);

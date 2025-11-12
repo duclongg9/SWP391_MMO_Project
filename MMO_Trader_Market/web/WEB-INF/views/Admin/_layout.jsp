@@ -50,6 +50,9 @@
                 <a href="${pageContext.request.contextPath}/admin/cashs" class="${active=='cashs'?'active':''}">
                     <i class="bi bi-cash-stack"></i><span>Nạp / Rút</span>
                 </a>
+        <a href="${pageContext.request.contextPath}/admin/disputes" class="${active=='disputes'?'active':''}">
+            <i class="bi bi-arrow-up-right-circle-fill"></i><span>Khiếu Nại</span>
+        </a>
                 <a href="${pageContext.request.contextPath}/admin/systems" class="${active=='systems'?'active':''}">
                     <i class="bi bi-gear"></i><span>Cấu hình hệ thống</span>
                 </a>
@@ -63,17 +66,19 @@
     </div>
 </div>
 
-<!-- Main -->
 <div class="main">
-    <div class="header">
-        <h5 class="m-0">${pageTitle != null ? pageTitle : "Bảng điều khiển"}</h5>
-    </div>
+            <div class="header">
+                <h5 class="m-0">${pageTitle != null ? pageTitle : "Bảng điều khiển"}</h5>
+                <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/home">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Về trang Market
+                </a>
+            </div>
 
-    <div class="page-content">
-        <jsp:useBean id="content" scope="request" type="java.lang.String"/>
-        <jsp:include page="${content}" />
-    </div>
-</div>
+            <div class="page-content">
+                <jsp:useBean id="content" scope="request" type="java.lang.String"/>
+                <jsp:include page="${content}" />
+            </div>
+        </div>
 
 
 

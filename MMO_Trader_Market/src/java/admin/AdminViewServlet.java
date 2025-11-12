@@ -88,6 +88,29 @@ public class AdminViewServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Tạo chuỗi mô tả thời lượng escrow dựa trên ba thành phần giờ, phút, giây.
+     */
+    private static String formatEscrowDuration(int hours, int minutes, int seconds) {
+        StringBuilder label = new StringBuilder();
+        if (hours > 0) {
+            label.append(hours).append(" giờ");
+        }
+        if (minutes > 0) {
+            if (label.length() > 0) {
+                label.append(' ');
+            }
+            label.append(minutes).append(" phút");
+        }
+        if (seconds > 0 || label.length() == 0) {
+            if (label.length() > 0) {
+                label.append(' ');
+            }
+            label.append(seconds).append(" giây");
+        }
+        return label.toString();
+    }
+
     // ------ Pagination helpers ------ 20 , 8
     private static int ceilDiv(int total, int size) {
         return Math.max(1, (int) Math.ceil(total / (double) Math.max(1, size)));
@@ -233,42 +256,73 @@ public class AdminViewServlet extends HttpServlet {
     }
 
     /**
-     * Cập nhật cấu hình thời gian giữ escrow dựa trên giá trị (giờ) được gửi từ form.
+     * Cập nhật cấu hình thời gian giữ escrow dựa trên giá trị giờ-phút-giây được gửi từ form.
      */
     private void handleUpdateEscrowConfig(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
 
         req.setCharacterEncoding("UTF-8");
         String hoursParam = safe(req.getParameter("escrowHoldHours"));
+        String minutesParam = safe(req.getParameter("escrowHoldMinutes"));
+        String secondsParam = safe(req.getParameter("escrowHoldSeconds"));
         HttpSession session = req.getSession();
 
-        if (hoursParam == null) {
-            session.setAttribute("flashError", "Vui lòng nhập thời gian escrow mong muốn (giờ).");
+        int hours;
+        int minutes;
+        int seconds;
+
+        try {
+            hours = hoursParam == null ? 0 : Integer.parseInt(hoursParam);
+            minutes = minutesParam == null ? 0 : Integer.parseInt(minutesParam);
+            seconds = secondsParam == null ? 0 : Integer.parseInt(secondsParam);
+        } catch (NumberFormatException ex) {
+            session.setAttribute("flashError", "Vui lòng nhập giá trị số hợp lệ cho giờ, phút và giây.");
             resp.sendRedirect(req.getContextPath() + "/admin/systems");
             return;
         }
 
-        try {
-            int hours = Integer.parseInt(hoursParam);
-            if (hours < 1 || hours > 720) {
-                session.setAttribute("flashError", "Thời gian escrow phải nằm trong khoảng 1 - 720 giờ.");
-                resp.sendRedirect(req.getContextPath() + "/admin/systems");
-                return;
-            }
+        if (hours < 0 || hours > 720) {
+            session.setAttribute("flashError", "Giá trị giờ phải nằm trong khoảng 0 - 720.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (minutes < 0 || minutes >= 60) {
+            session.setAttribute("flashError", "Giá trị phút phải nằm trong khoảng 0 - 59.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (seconds < 0 || seconds >= 60) {
+            session.setAttribute("flashError", "Giá trị giây phải nằm trong khoảng 0 - 59.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
 
-            long seconds = (long) hours * 3600L;
-            boolean updated = systemConfigDAO.upsertValueByKey(
-                    "escrow.hold.default.seconds",
-                    Long.toString(seconds)
+        long totalSeconds = hours * 3600L + minutes * 60L + seconds;
+        long maxSeconds = 720L * 3600L;
+        if (totalSeconds <= 0) {
+            session.setAttribute("flashError", "Thời gian escrow phải lớn hơn 0 giây.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (totalSeconds > maxSeconds) {
+            session.setAttribute("flashError", "Thời gian escrow không được vượt quá 720 giờ (2.592.000 giây).");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        boolean updated = systemConfigDAO.upsertValueByKey(
+                "escrow.hold.default.seconds",
+                Long.toString(totalSeconds)
+        );
+
+        if (updated) {
+            session.setAttribute(
+                    "flash",
+                    "Đã cập nhật thời gian giữ tiền escrow thành "
+                            + formatEscrowDuration(hours, minutes, seconds) + "."
             );
-
-            if (updated) {
-                session.setAttribute("flash", "Đã cập nhật thời gian giữ tiền escrow thành " + hours + " giờ.");
-            } else {
-                session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
-            }
-        } catch (NumberFormatException ex) {
-            session.setAttribute("flashError", "Thời gian escrow phải là số nguyên hợp lệ.");
+        } else {
+            session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
         }
 
         resp.sendRedirect(req.getContextPath() + "/admin/systems");
@@ -661,7 +715,6 @@ public class AdminViewServlet extends HttpServlet {
         }
 
         long escrowHoldSeconds = DEFAULT_ESCROW_HOLD_SECONDS;
-        int escrowHoldHours = (int) Math.max(DEFAULT_ESCROW_HOLD_SECONDS / 3600L, 1L);
         String configValue = systemConfigDAO.findValueByKey("escrow.hold.default.seconds").orElse(null);
         if (configValue != null) {
             String trimmed = configValue.trim();
@@ -670,12 +723,6 @@ public class AdminViewServlet extends HttpServlet {
                     long parsedSeconds = Long.parseLong(trimmed);
                     if (parsedSeconds > 0) {
                         escrowHoldSeconds = parsedSeconds;
-                        long hoursCeil = (parsedSeconds + 3599L) / 3600L;
-                        if (hoursCeil > Integer.MAX_VALUE) {
-                            escrowHoldHours = Integer.MAX_VALUE;
-                        } else {
-                            escrowHoldHours = (int) Math.max(hoursCeil, 1L);
-                        }
                     }
                 } catch (NumberFormatException ignore) {
                     // fallback về mặc định khi cấu hình không hợp lệ
@@ -683,8 +730,17 @@ public class AdminViewServlet extends HttpServlet {
             }
         }
 
-        req.setAttribute("escrowHoldHours", escrowHoldHours);
-        req.setAttribute("escrowHoldSeconds", escrowHoldSeconds);
+        int escrowHoldHoursPart = (int) Math.min(escrowHoldSeconds / 3600L, Integer.MAX_VALUE);
+        long remainder = escrowHoldSeconds % 3600L;
+        int escrowHoldMinutesPart = (int) (remainder / 60L);
+        int escrowHoldSecondsPart = (int) (remainder % 60L);
+
+        req.setAttribute("escrowHoldHoursPart", escrowHoldHoursPart);
+        req.setAttribute("escrowHoldMinutesPart", escrowHoldMinutesPart);
+        req.setAttribute("escrowHoldSecondsPart", escrowHoldSecondsPart);
+        req.setAttribute("escrowHoldDurationLabel",
+                formatEscrowDuration(escrowHoldHoursPart, escrowHoldMinutesPart, escrowHoldSecondsPart));
+        req.setAttribute("escrowHoldTotalSeconds", escrowHoldSeconds);
         req.setAttribute("pageTitle", "Cấu hình hệ thống");
         req.setAttribute("active", "systems");
         req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");

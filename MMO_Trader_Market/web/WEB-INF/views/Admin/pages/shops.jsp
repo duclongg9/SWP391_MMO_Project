@@ -1,11 +1,17 @@
-<%@ page contentType="text/html; charset=UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="false" %>
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"  %>
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ page import="java.time.LocalDate" %>
 
 <c:set var="base" value="${pageContext.request.contextPath}" />
 
-<!-- Biến phân trang & sort -->
+<%
+    String today = LocalDate.now().toString();
+    request.setAttribute("today", today);
+%>
+
+<!-- Phân trang & sort -->
 <c:set var="pageNow"  value="${pg_page  != null ? pg_page  : 1}" />
 <c:set var="pageSize" value="${pg_size  != null ? pg_size  : 8}" />
 <c:set var="total"    value="${pg_total != null ? pg_total : (shopList != null ? fn:length(shopList) : 0)}" />
@@ -14,14 +20,19 @@
 
 <div class="container-fluid">
     <h4 class="mb-4"><i class="bi bi-shop me-2"></i>Quản lý cửa hàng</h4>
+
     <c:if test="${not empty error}">
-        <div class="alert alert-danger shadow-sm">${error}</div>
+        <div class="alert alert-danger shadow-sm mb-3">${fn:escapeXml(error)}</div>
     </c:if>
 
-    <!-- ===== Bộ lọc (giống UX của KYC) ===== -->
+    <!-- ===== Bộ lọc ===== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form id="shopFilter" class="row g-2 align-items-end" action="${base}/admin/shops" method="get">
+            <form id="shopFilter"
+                  class="row g-2 align-items-end"
+                  action="${base}/admin/shops"
+                  method="get">
+
                 <input type="hidden" name="page" id="pageInput" value="${pageNow}">
                 <input type="hidden" name="size" value="${pageSize}">
                 <input type="hidden" name="sort" id="sort" value="${sort}"/>
@@ -32,36 +43,37 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input id="q" name="q" type="search" class="form-control"
-                               placeholder="Tên cửa hàng…" value="${fn:escapeXml(q)}">
+                               placeholder="Tên cửa hàng…"
+                               value="${fn:escapeXml(q)}">
                     </div>
                 </div>
 
                 <!-- Từ ngày -->
                 <div class="col-6 col-md-2">
-                    <label for="from" class="form-label mb-1">Từ ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                        <input id="from" name="from" type="date" class="form-control" value="${from}">
-                    </div>
+                    <label class="form-label mb-1" for="from">Từ ngày</label>
+                    <input id="from" name="from" type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(from)}"
+                           max="${today}">
                 </div>
 
                 <!-- Đến ngày -->
                 <div class="col-6 col-md-2">
-                    <label for="to" class="form-label mb-1">Đến ngày</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                        <input id="to" name="to" type="date" class="form-control" value="${to}">
-                    </div>
+                    <label class="form-label mb-1" for="to">Đến ngày</label>
+                    <input id="to" name="to" type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(to)}"
+                           max="${today}">
                 </div>
 
                 <!-- Trạng thái -->
                 <div class="col-12 col-md-2">
                     <label for="status" class="form-label mb-1">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
-                        <option value="all"      ${status == 'all'      ? 'selected' : ''}>Tất cả</option>
-                        <option value="Active"   ${status == 'Active'   ? 'selected' : ''}>Active</option>
-                        <option value="Pending"  ${status == 'Pending'  ? 'selected' : ''}>Pending</option>
-                        <option value="Rejected" ${status == 'Rejected' ? 'selected' : ''}>Rejected</option>
+                        <option value="all"        ${status == 'all'        ? 'selected' : ''}>Tất cả</option>
+                        <option value="Pending"    ${status == 'Pending'    ? 'selected' : ''}>Pending</option>
+                        <option value="Active"     ${status == 'Active'     ? 'selected' : ''}>Active</option>
+                        <option value="Suspended"  ${status == 'Suspended'  ? 'selected' : ''}>Suspended</option>
                     </select>
                 </div>
 
@@ -86,7 +98,7 @@
                         <th>Tên cửa hàng</th>
                         <th>Nội dung</th>
 
-                        <!-- Toggle sort theo trạng thái -->
+                        <!-- Sort trạng thái -->
                         <th>
                             <c:url var="uStatusSort" value="/admin/shops">
                                 <c:param name="q"      value="${q}" />
@@ -100,7 +112,7 @@
                             <a href="${uStatusSort}" class="text-decoration-none">Trạng thái</a>
                         </th>
 
-                        <!-- Toggle sort theo ngày tạo -->
+                        <!-- Sort ngày tạo -->
                         <th>
                             <c:url var="uDateSort" value="/admin/shops">
                                 <c:param name="q"      value="${q}" />
@@ -128,25 +140,31 @@
                                     <td class="fw-semibold">${fn:escapeXml(s.name)}</td>
                                     <td class="text-muted">
                                         <c:choose>
-                                            <c:when test="${empty s.description}"><span class="fst-italic">—</span></c:when>
+                                            <c:when test="${empty s.description}">
+                                                <span class="fst-italic">—</span>
+                                            </c:when>
                                             <c:otherwise>${fn:escapeXml(s.description)}</c:otherwise>
                                         </c:choose>
                                     </td>
 
+                                    <!-- Badge trạng thái -->
                                     <td>
-                    <span class="badge
-                      <c:choose>
-                        <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                        <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                        <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                        <c:otherwise>bg-secondary</c:otherwise>
-                      </c:choose>">
-                            ${fn:escapeXml(s.status)}
-                    </span>
+                                        <span class="badge
+                                            <c:choose>
+                                                <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                                                <c:when test='${s.status eq "Pending"}'>bg-secondary</c:when>
+                                                <c:when test='${s.status eq "Suspended"}'>bg-danger</c:when>
+                                                <c:otherwise>bg-secondary</c:otherwise>
+                                            </c:choose>
+                                        ">
+                                                ${fn:escapeXml(s.status)}
+                                        </span>
                                     </td>
 
+                                    <!-- Ngày tạo -->
                                     <td><fmt:formatDate value="${s.createdAt}" pattern="dd-MM-yyyy"/></td>
 
+                                    <!-- View detail -->
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-primary"
                                                 data-bs-toggle="modal"
@@ -164,7 +182,8 @@
                                                 <h5 class="modal-title">
                                                     Cửa hàng #${s.id} – ${fn:escapeXml(s.name)}
                                                 </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal"></button>
                                             </div>
 
                                             <div class="modal-body">
@@ -187,45 +206,73 @@
 
                                                     <div class="col-12">
                                                         <div class="small text-muted mb-1">Nội dung cửa hàng muốn bán</div>
-                                                        <div class="border rounded p-2 bg-light">${fn:escapeXml(s.description)}</div>
+                                                        <div class="border rounded p-2 bg-light">
+                                                            <c:out value="${s.description}" />
+                                                        </div>
                                                     </div>
 
                                                     <div class="col-12">
                                                         <div class="small text-muted mb-1">Trạng thái hiện tại</div>
                                                         <span class="badge
-                              <c:choose>
-                                <c:when test='${s.status eq "Active"}'>bg-success</c:when>
-                                <c:when test='${s.status eq "Banned"}'>bg-warning text-dark</c:when>
-                                <c:when test='${s.status eq "Rejected"}'>bg-danger</c:when>
-                                <c:otherwise>bg-secondary</c:otherwise>
-                              </c:choose> ">
+                                                            <c:choose>
+                                                                <c:when test='${s.status eq "Active"}'>bg-success</c:when>
+                                                                <c:when test='${s.status eq "Pending"}'>bg-secondary</c:when>
+                                                                <c:when test='${s.status eq "Suspended"}'>bg-danger</c:when>
+                                                                <c:otherwise>bg-secondary</c:otherwise>
+                                                            </c:choose>
+                                                        ">
                                                                 ${fn:escapeXml(s.status)}
                                                         </span>
                                                     </div>
 
                                                     <div class="col-12">
-                                                        <!-- Ẩn Accept/Reject nếu đã xử lý -->
-                                                        <c:choose>
-                                                            <c:when test='${s.status ne "Active" && s.status ne "Rejected"}'>
-                                                                <form action="${base}/admin/shops/status" method="post" class="d-flex gap-2">
-                                                                    <input type="hidden" name="id" value="${s.id}"/>
-                                                                    <button class="btn btn-success" name="action" value="accept">
-                                                                        <i class="bi bi-check-circle"></i> Accept
-                                                                    </button>
-                                                                    <button class="btn btn-danger" name="action" value="reject"
-                                                                            onclick="return confirm('Từ chối cửa hàng này?');">
-                                                                        <i class="bi bi-x-circle"></i> Reject
-                                                                    </button>
-                                                                    <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Đóng</button>
-                                                                </form>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <div class="d-flex w-100 align-items-center mt-2">
-                                                                    <span class="text-muted">Cửa hàng đã được xử lý.</span>
-                                                                    <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Đóng</button>
-                                                                </div>
-                                                            </c:otherwise>
-                                                        </c:choose>
+                                                        <form id="shopForm_${s.id}"
+                                                              action="${base}/admin/shops/status"
+                                                              method="post"
+                                                              class="d-flex flex-column gap-2">
+
+                                                            <input type="hidden" name="id" value="${s.id}"/>
+                                                            <input type="hidden" name="action" id="shopAction_${s.id}" value=""/>
+
+                                                            <textarea id="shopNote_${s.id}"
+                                                                      name="admin_note"
+                                                                      class="form-control"
+                                                                      rows="3">${fn:escapeXml(s.adminNote)}</textarea>
+                                                            <div id="shopNoteErr_${s.id}" class="text-danger small mt-1 d-none">
+                                                                ⚠️ Vui lòng nhập Admin note trước khi ban cửa hàng.
+                                                            </div>
+
+                                                            <div class="d-flex align-items-center gap-2 mt-3">
+                                                                <c:choose>
+                                                                    <c:when test='${s.status eq "Active"}'>
+                                                                        <button type="button"
+                                                                                class="btn btn-danger px-4"
+                                                                                onclick="onBanShop(${s.id});">
+                                                                            <i class="bi bi-slash-circle me-1"></i>Ban
+                                                                        </button>
+                                                                    </c:when>
+                                                                    <c:when test='${s.status eq "Suspended"}'>
+                                                                        <button type="button"
+                                                                                class="btn btn-success px-4"
+                                                                                onclick="onUnbanShop(${s.id});">
+                                                                            <i class="bi bi-unlock me-1"></i>Unban
+                                                                        </button>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                <span class="text-muted">
+                    Cửa hàng chưa Active, không thể Ban/Unban.
+                </span>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+
+                                                                <button type="button"
+                                                                        class="btn btn-outline-secondary ms-auto px-4"
+                                                                        data-bs-dismiss="modal">
+                                                                    Đóng
+                                                                </button>
+                                                            </div>
+                                                        </form>
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -233,11 +280,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- /Modal -->
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <tr><td colspan="7" class="text-center text-muted py-4">Không có cửa hàng nào</td></tr>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    Không có cửa hàng nào
+                                </td>
+                            </tr>
                         </c:otherwise>
                     </c:choose>
                     </tbody>
@@ -246,165 +296,184 @@
         </div>
     </div>
 
-    <!-- ===== Phân trang (cửa sổ) ===== -->
-
-
+    <c:url var="shopsPath" value="/admin/shops"/>
     <nav aria-label="Pagination">
         <ul class="pagination justify-content-center mt-3">
 
-            <!-- Prev -->
             <li class="page-item ${pageNow <= 1 ? 'disabled' : ''}">
-                <c:url var="uPrev" value="${usersPath}">
-                    <c:param name="q"    value="${param.q}" />
-                    <c:param name="role" value="${param.role}" />
-
-                    <c:param name="from" value="${param.from}" />
-                    <c:param name="to"   value="${param.to}" />
-                    <c:param name="size" value="${pageSize}" />
-                    <c:param name="page" value="${pageNow-1}" />
+                <c:url var="uPrev" value="${shopsPath}">
+                    <c:param name="q"      value="${q}" />
+                    <c:param name="from"   value="${from}" />
+                    <c:param name="to"     value="${to}" />
+                    <c:param name="status" value="${status}" />
+                    <c:param name="size"   value="${pageSize}" />
+                    <c:param name="page"   value="${pageNow-1}" />
+                    <c:param name="sort"   value="${sort}" />
                 </c:url>
                 <a class="page-link" href="${pageNow <= 1 ? '#' : uPrev}" aria-label="Previous">&laquo;</a>
             </li>
 
-            <!-- Page numbers: 1..pages -->
+            <!-- Pages -->
             <c:forEach var="i" begin="1" end="${pages}">
-                <c:url var="uI" value="${usersPath}">
-                    <c:param name="q"    value="${param.q}" />
-                    <c:param name="role" value="${param.role}" />
-                    <c:param name="from" value="${param.from}" />
-                    <c:param name="to"   value="${param.to}" />
-                    <c:param name="size" value="${pageSize}" />
-                    <c:param name="page" value="${i}" />
+                <c:url var="uI" value="${shopsPath}">
+                    <c:param name="q"      value="${q}" />
+                    <c:param name="from"   value="${from}" />
+                    <c:param name="to"     value="${to}" />
+                    <c:param name="status" value="${status}" />
+                    <c:param name="size"   value="${pageSize}" />
+                    <c:param name="page"   value="${i}" />
+                    <c:param name="sort"   value="${sort}" />
                 </c:url>
                 <li class="page-item ${i == pageNow ? 'active' : ''}">
                     <a class="page-link" href="${uI}">${i}</a>
                 </li>
             </c:forEach>
 
-            <!-- Next -->
             <li class="page-item ${pageNow >= pages ? 'disabled' : ''}">
-                <c:url var="uNext" value="${usersPath}">
-                    <c:param name="q"    value="${param.q}" />
-                    <c:param name="role" value="${param.role}" />
-                    <c:param name="from" value="${param.from}" />
-                    <c:param name="to"   value="${param.to}" />
-                    <c:param name="size" value="${pageSize}" />
-                    <c:param name="page" value="${pageNow+1}" />
+                <c:url var="uNext" value="${shopsPath}">
+                    <c:param name="q"      value="${q}" />
+                    <c:param name="from"   value="${from}" />
+                    <c:param name="to"     value="${to}" />
+                    <c:param name="status" value="${status}" />
+                    <c:param name="size"   value="${pageSize}" />
+                    <c:param name="page"   value="${pageNow+1}" />
+                    <c:param name="sort"   value="${sort}" />
                 </c:url>
                 <a class="page-link" href="${pageNow >= pages ? '#' : uNext}" aria-label="Next">&raquo;</a>
             </li>
-
         </ul>
     </nav>
 </div>
 
 <style>
-    .card{border-radius:12px}
-    .table td,.table th{vertical-align:middle}
-    .table thead th{white-space:nowrap}
-
-    #toastBox{
+    #toastBox {
         position: fixed;
-        bottom: 30px; right: 30px;
-        display: flex; align-items: flex-end; flex-direction: column;
-        overflow: hidden; padding: 20px; z-index: 9999;
+        bottom: 30px;
+        right: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 20px;
+        z-index: 9999;
     }
-
-    .mm-toast{
-        width: 400px; height: 80px; background: #fff;
-        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        display: flex; align-items: center; padding: 20px; position: relative;
+    .mm-toast {
+        width: 400px;
+        min-height: 60px;
+        background: #fff;
+        font-weight: 500;
+        margin: 10px 0;
+        box-shadow: 0 0 20px rgba(0,0,0,0.25);
+        display: flex;
+        align-items: center;
+        padding: 16px 18px;
+        position: relative;
         transform: translateX(100%);
-        animation: moveleft 0.5s linear forwards;
+        animation: moveleft 0.4s linear forwards;
+        border-left: 4px solid #28a745;
     }
-
-    .mm-toast i{
-        margin: 0 20px;
-        font-size: 35px;
-        color: green;
+    .mm-toast.error {
+        color: #dc3545;
+        border-left-color: #dc3545;
     }
-    .mm-toast::after{
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        height: 5px;
-        background: green;
+    .mm-toast::after {
+        content:'';
+        position:absolute;
+        left:0;
+        bottom:0;
+        width:100%;
+        height:4px;
+        background:#28a745;
         animation: anim 5s linear forwards;
     }
-    .mm-toast.error i{
-        color: red;
+    .mm-toast.error::after {
+        background:#dc3545;
     }
-    .mm-toast.error{
-        color: red;
-    }
-    .mm-toast.error::after{
-        background: red;
-    }
-    @keyframes anim {
-        100%{ width: 0; }
-    }
-    @keyframes moveleft {
-        100%{ transform: translateX(0); }
-    }
-
-
-
-
-
+    @keyframes anim { 100% { width:0; } }
+    @keyframes moveleft { 100% { transform: translateX(0); } }
 </style>
 
 <script>
-
-    const toastBox = document.getElementById('toastBox');
     function showToast(msg, type = 'success') {
-        const toast = document.createElement('div');
-        toast.classList.add('mm-toast');
-
-        if (type === 'error') {
-            toast.classList.add('error');
-        } else if (type === 'warning') {
-            toast.classList.add('warning');
-        }
-
-        toast.innerHTML = msg;
-        toastBox.appendChild(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, 5000);
+        const box = document.getElementById('toastBox');
+        if (!box) { alert(msg); return; }
+        const t = document.createElement('div');
+        t.className = 'mm-toast' + (type === 'error' ? ' error' : '');
+        t.innerHTML = msg;
+        box.appendChild(t);
+        setTimeout(() => t.remove(), 5000);
     }
 
 
+    function onBanShop(id) {
+        const form   = document.getElementById('shopForm_' + id);
+        const note   = document.getElementById('shopNote_' + id);
+        const errBox = document.getElementById('shopNoteErr_' + id);
+        const action = document.getElementById('shopAction_' + id);
 
+        if (!form || !note || !action) return false;
+
+        if (errBox) errBox.classList.add('d-none');
+        note.classList.remove('is-invalid');
+
+        if (!note.value.trim()) {
+            if (errBox) errBox.classList.remove('d-none');
+            note.classList.add('is-invalid');
+            note.focus();
+            return false;
+        }
+
+        if (!confirm('Bạn có chắc chắn muốn BAN cửa hàng này không?')) {
+            return false;
+        }
+
+        action.value = 'ban';
+        form.submit();
+        return true;
+    }
+
+    // Clear lỗi khi gõ lại admin_note
+    document.addEventListener('input', function (e) {
+        const m = e.target.id && e.target.id.match(/^shopNote_(\d+)$/);
+        if (!m) return;
+        const id = m[1];
+        const err = document.getElementById('shopNoteErr_' + id);
+        if (err) err.classList.add('d-none');
+        e.target.classList.remove('is-invalid');
+    });
+
+    function onUnbanShop(id) {
+        const form   = document.getElementById('shopForm_' + id);
+        const action = document.getElementById('shopAction_' + id);
+
+        if (!form || !action) return false;
+
+        if (!confirm('Bạn có chắc chắn muốn mở khóa (UNBAN) cửa hàng này không?')) {
+            return false;
+        }
+
+        action.value = 'unban';
+        form.submit();
+        return true;
+    }
+
+
+    // Filter logic + validate date + auto submit giống các trang khác
     window.addEventListener('DOMContentLoaded', () => {
-        // Tự ẩn flash
-        document.querySelectorAll('.alert').forEach(a => {
-            setTimeout(() => { a.classList.add('fade'); a.style.opacity = 0; }, 1800);
-            setTimeout(() => a.remove(), 2600);
-        });
-
         const form      = document.getElementById('shopFilter');
-        if (!form) return;
-
         const ipQ       = document.getElementById('q');
-        const fromEl   = document.getElementById('from');
+        const fromEl    = document.getElementById('from');
         const toEl      = document.getElementById('to');
         const ipStatus  = document.getElementById('status');
         const pageInput = document.getElementById('pageInput');
-        const today = new Date();
-        today.setHours(0,0,0,0);
 
+        const today = new Date(); today.setHours(0,0,0,0);
 
-        // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn (giống KYC)
+        if (!form) return;
+
         form.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target !== ipQ) {
-                e.preventDefault();
-            }
+            if (e.key === 'Enter' && e.target !== ipQ) e.preventDefault();
         });
 
-        // Enter trong ô q -> reset trang 1 rồi submit
         if (ipQ) {
             ipQ.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -414,7 +483,6 @@
             });
         }
 
-        // Đổi trạng thái -> reset trang 1 & submit
         if (ipStatus) {
             ipStatus.addEventListener('change', () => {
                 if (pageInput) pageInput.value = '1';
@@ -422,50 +490,47 @@
             });
         }
 
-        if(fromEl){
-            fromEl.addEventListener("change",function (){
-                const selected = new Date(this.value);
-                if(selected > today){
-                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!','error');
-                    this.value = "";
+        if (fromEl) {
+            fromEl.addEventListener('change', function () {
+                const d = new Date(this.value);
+                if (d > today) {
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = '';
+                } else if (pageInput) {
+                    pageInput.value = '1';
                 }
             });
         }
-        function resetPageToFirst() {
-            let pageHidden = form.querySelector('input[name="page"]');
-            if (!pageHidden) {
-                pageHidden = document.createElement('input');
-                pageHidden.type = 'hidden';
-                pageHidden.name = 'page';
-                form.appendChild(pageHidden);
-            }
-            pageHidden.value = '1';
-        }
 
-        // ✅ End date -> submit ngay
         if (toEl) {
-            toEl.addEventListener('change', function (){
-                const selected = new Date(this.value);
-                if(selected > today){
+            toEl.addEventListener('change', function () {
+                const d = new Date(this.value);
+                if (d > today) {
                     showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
-                    this.value = "";
-                }else{
-                    resetPageToFirst();
+                    this.value = '';
+                } else {
+                    if (pageInput) pageInput.value = '1';
                     form.submit();
                 }
             });
         }
     });
+
+
+
+
 </script>
+
 <c:if test="${not empty sessionScope.flash}">
     <script>
-        const msg = "${fn:escapeXml(sessionScope.flash)}";
-
-        const icon = msg.toLowerCase().includes("lỗi")
-            ? '<i class="fa fa-times-circle"></i>'
-            : '<i class="fa fa-check-circle"></i>';
-
-        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+        (function(){
+            const msg = "${fn:escapeXml(sessionScope.flash)}";
+            const lower = msg.toLowerCase();
+            const icon = lower.includes("lỗi")
+                ? '<i class="fa fa-times-circle"></i>'
+                : '<i class="fa fa-check-circle"></i>';
+            showToast(icon + " " + msg, lower.includes("lỗi") ? "error" : "success");
+        })();
     </script>
     <c:remove var="flash" scope="session"/>
 </c:if>

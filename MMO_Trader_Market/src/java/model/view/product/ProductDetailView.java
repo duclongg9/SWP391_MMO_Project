@@ -195,6 +195,15 @@ public class ProductDetailView {
         return shopName;
     }
 
+    /**
+     * Lấy mã shop đã được mã hóa phục vụ định tuyến thân thiện.
+     *
+     * @return chuỗi mã hóa ID shop.
+     */
+    public String getShopEncodedId() {
+        return IdObfuscator.encode(shopId);
+    }
+
     // Lấy ID chủ shop.
     public Integer getShopOwnerId() {
         return shopOwnerId;
