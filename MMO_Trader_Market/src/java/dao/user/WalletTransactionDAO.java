@@ -207,8 +207,8 @@ public class WalletTransactionDAO {
     }
 
     /**
-     * Tìm giao dịch mua hàng dựa trên {@code related_entity_id} trong trường hợp
-     * cột {@code payment_transaction_id} của đơn hàng chưa được gán.
+     * Tìm giao dịch mua hàng dựa trên {@code related_entity_id} trong trường
+     * hợp cột {@code payment_transaction_id} của đơn hàng chưa được gán.
      *
      * @param orderId mã đơn hàng cần truy vết giao dịch
      * @param userId mã người mua sở hữu ví bị trừ tiền
@@ -241,14 +241,7 @@ public class WalletTransactionDAO {
         return Optional.empty();
     }
 
-
-    public static void main(String[] args) {
-        WalletTransactionDAO wdao = new WalletTransactionDAO();
-        List<WalletTransactions> list = wdao.getListWalletTransactionPaging(1, 1, 5, null, null, null, null, null);
-        for (WalletTransactions walletTransactions : list) {
-            System.out.println(walletTransactions);
-        }
-    }
+    
 
     private WalletTransactions mapTransaction(ResultSet rs, boolean includeWallet) throws SQLException {
         WalletTransactions wt = new WalletTransactions();
@@ -313,5 +306,28 @@ public class WalletTransactionDAO {
             }
         }
         throw new SQLException("Không thể tạo giao dịch ví mới");
+    }
+
+    public int insertDepositWalletTransaction(int walletId,
+            BigDecimal amount,
+            BigDecimal balanceBefore,
+            BigDecimal balanceAfter) throws SQLException {
+        String sql = """
+        INSERT INTO mmo_schema.wallet_transactions
+        (wallet_id, transaction_type, amount, balance_before, balance_after, note)
+        VALUES (?,'Deposit',?,?,?,'Nạp tiền vào ví qua VNPay')
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, walletId);
+            ps.setBigDecimal(2, amount);
+            ps.setBigDecimal(3, balanceBefore);
+            ps.setBigDecimal(4, balanceAfter);
+            return ps.executeUpdate();
+        }
+    }
+    
+    public static void main(String[] args) {
+        WalletTransactionDAO wdao = new WalletTransactionDAO();
+        
     }
 }
