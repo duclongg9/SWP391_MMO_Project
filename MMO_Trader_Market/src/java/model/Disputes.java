@@ -14,7 +14,6 @@ public class Disputes {
     private Integer id;
     private Integer orderId;
     private String orderReferenceCode;
-    private Date escrowResolvedAt;   // map với escrow_resolved_at
     private String orderSnapshotJson; // map với order_snapshot_json
 
     private Integer reporterId;
@@ -69,13 +68,6 @@ public class Disputes {
 
     public void setOrderReferenceCode(String orderReferenceCode) {
         this.orderReferenceCode = orderReferenceCode;
-    }
-    public Date getEscrowResolvedAt() {
-        return escrowResolvedAt;
-    }
-
-    public void setEscrowResolvedAt(Date escrowResolvedAt) {
-        this.escrowResolvedAt = escrowResolvedAt;
     }
 
     public String getOrderSnapshotJson() {

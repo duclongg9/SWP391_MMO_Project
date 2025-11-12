@@ -91,7 +91,6 @@ public class ManageDisputeDAO {
 
                         // map đúng tên cột
                         d.setEscrowPausedAt(rs.getTimestamp("escrow_paused_at"));
-                        d.setEscrowResolvedAt(rs.getTimestamp("escrow_resolved_at"));
                         d.setResolutionNote(rs.getString("resolution_note"));
                         d.setCreatedAt(rs.getTimestamp("created_at"));
                         d.setUpdatedAt(rs.getTimestamp("updated_at"));
