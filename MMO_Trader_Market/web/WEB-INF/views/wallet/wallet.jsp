@@ -135,10 +135,10 @@
                             <option value="7d"    ${param.preset=='7d'   ?'selected':''}>7 ngày</option>
                             <option value="30d"   ${param.preset=='30d'  ?'selected':''}>30 ngày</option>
                         </select>
-                        <input type="date" name="start" class="form-control"
+                        <input type="date" id="start" name="start" class="form-control"
                                value="${fn:escapeXml(param.start)}" aria-label="Từ ngày">
                         <span class="amount-range__sep">–</span>
-                        <input type="date" name="end" class="form-control"
+                        <input type="date" id="end" name="end" class="form-control"
                                value="${fn:escapeXml(param.end)}" aria-label="Đến ngày">
                     </div>
                 </div>
@@ -245,3 +245,48 @@
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+
+<script>
+(() => {
+  const start = document.getElementById('start');
+  const end   = document.getElementById('end');
+
+  // yyyy-mm-dd hôm nay (sửa lệch múi giờ)
+  const todayISO = (() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,10);
+  })();
+
+  // Áp dụng chặn tương lai cho cả start và end
+  [start, end].forEach(input => {
+    if (!input) return;
+    input.max = todayISO;
+    input.addEventListener('input', () => {
+      if (input.value && input.value > input.max) input.value = input.max;
+    });
+  });
+
+  // Đồng bộ range: end >= start
+  const syncRange = () => {
+    if (!start || !end) return;
+
+    // không vượt quá hôm nay
+    start.max = todayISO;
+    end.max   = todayISO;
+
+    if (start.value) {
+      end.min = start.value;               // end không được nhỏ hơn start
+      if (end.value && end.value < start.value) {
+        end.value = start.value;           // tự kéo end lên bằng start
+      }
+    } else {
+      end.removeAttribute('min');          // bỏ min nếu chưa chọn start
+    }
+  };
+
+  start && start.addEventListener('change', syncRange);
+  end   && end.addEventListener('change',  syncRange);
+  syncRange(); // chạy lần đầu
+})();
+</script>

@@ -106,13 +106,13 @@ public class vnpayRefund extends HttpServlet {
             try {
                 int userId = dtdao.getUserIdBydeposit(depositId);
 
-                // 1) Lấy before TRƯỚC khi + tiền
+                //Lấy before TRƯỚC khi + tiền
                 BigDecimal before = wdao.getWalletBalanceByUserId(userId);
 
-                // 2) Cộng tiền
+                //Cộng tiền
                 wdao.increaseBalance(userId, amountVnd);
 
-                // 3) Tính after
+                //Tính after
                 BigDecimal after = before.add(amountVnd);
 
                 // 4) Lấy walletId để log correct

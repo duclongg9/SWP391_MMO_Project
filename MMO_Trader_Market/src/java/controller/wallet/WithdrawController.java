@@ -4,6 +4,7 @@
  */
 package controller.wallet;
 
+import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -32,6 +33,7 @@ public class WithdrawController extends HttpServlet {
     
     WithdrawService withdrawService = new WithdrawService();
     WalletsDAO wdao = new WalletsDAO();
+    WalletTransactionDAO wtdao = new WalletTransactionDAO();
     
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -146,6 +148,10 @@ public class WithdrawController extends HttpServlet {
         
         //Trừ tiền trong ví
         try {
+            int walletId = wdao.getUserWallet(user).getId();
+            BigDecimal balance = wdao.getWalletBalanceByUserId(user);
+            BigDecimal balanceAfter = balance.subtract(amount);
+            wtdao.insertWithdrawWalletTransaction(walletId, amount, balance, balanceAfter);
             wdao.decreaseBalance(user, amount);
             session.setAttribute("msg","Tạo yêu cầu thành công");
             response.sendRedirect(request.getContextPath() + "/withdraw");

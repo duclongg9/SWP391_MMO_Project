@@ -83,11 +83,9 @@ public class KYCRequestDAO {
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
-                int request = 0;
                 if (rs.next()) {
-                    request = rs.getInt(1);
+                    return rs.getInt(1);
                 }
-                return request;
             }
         } catch (SQLException e) {
             Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE, "Lỗi liên quan đến lấy dữ liệu từ DB", e);

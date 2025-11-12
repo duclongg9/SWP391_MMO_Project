@@ -18,8 +18,8 @@ import utils.ImageUtils;
  */
 public class KycRequestService {
 
-    private static final String RELATIVE_UPLOAD_DIR = AppConfig.get("upload.kyc.relative");
-    private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.kyc.absolute");
+    private static final String RELATIVE_UPLOAD_DIR = "/assets/images/kyc";
+    private static final String ABSOLUTE_UPLOAD_DIR = "D:/Chuyen_nganh/ky5/SWP391-2/SWP391_server/SWP391_MMO_Project/MMO_Trader_Market/web/assets/images/kyc";
     private static final KYCRequestDAO kdao = new KYCRequestDAO();
     
 //    private static final String RELATIVE_UPLOAD_DIR = "/assets/images/kyc";
