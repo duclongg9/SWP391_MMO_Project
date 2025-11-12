@@ -186,9 +186,7 @@ public class ShopDAO extends BaseDAO {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
         }
         Timestamp updatedAt = rs.getTimestamp("updated_at");
-        if (updatedAt != null) {
-            shop.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
-        }
+
         return shop;
     }
 
@@ -248,7 +246,6 @@ public class ShopDAO extends BaseDAO {
             s.setStatus("Active");
             java.util.Date now = new java.util.Date();
             s.setCreatedAt(now);
-            s.setUpdatedAt(now);
             return s;
         }
     }

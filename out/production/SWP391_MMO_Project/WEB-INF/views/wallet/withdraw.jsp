@@ -4,6 +4,7 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/components/kyc.css">
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/image-preview.css"/>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -71,7 +72,7 @@
           <div class="form-card__grid form-card__grid--two-cols">
             <!-- Họ tên chủ tài khoản -->
             <div class="form-card__field">
-              <label for="fullName" class="form-card__label">Tên chủ tài khoản</label>
+              <label for="fullName" class="form-card__label">Tên chủ tài khoản<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
               <input id="accountName" name="accountName" type="text" class="form-card__input"
                      placeholder="VD: Nguyen Van A" required maxlength="100">
               <p class="form-note">Tên hiển thị trên tài khoản ngân hàng.</p>
@@ -79,7 +80,7 @@
 
             <!-- Số tài khoản -->
             <div class="form-card__field">
-              <label for="accountNumber" class="form-card__label">Số tài khoản</label>
+              <label for="accountNumber" class="form-card__label">Số tài khoản<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
               <input id="accountNumber" name="accountNumber" inputmode="numeric" pattern="\d{6,20}"
                      title="Chỉ nhập số, từ 6 đến 20 ký tự"
                      class="form-card__input" placeholder="VD: 0123456789" required>
@@ -88,7 +89,7 @@
             </div>
             <!-- Ngân hàng (dropdown) -->
             <div class="form-card__field">
-            <label for="bankCode" class="form-card__label">Ngân hàng</label>
+            <label for="bankCode" class="form-card__label">Ngân hàng<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
             <select id="bankCode" name="bankCode" class="form-card__input" required>
               <option value="" disabled ${empty param.bankCode ? 'selected' : ''}>-- Chọn ngân hàng --</option>
               <c:forEach items="${banks}" var="b">
@@ -102,10 +103,10 @@
               
             <!-- Số tiền -->
             <div class="form-card__field">
-              <label for="amount" class="form-card__label">Số tiền cần chuyển (VND)</label>
-              <input id="amount" name="amount" type="number" min="1000" step="1000"
+              <label for="amount" class="form-card__label">Số tiền cần rút (VND)<span class="required-star" data-tooltip="Mục này là bắt buộc">*</span></label>
+              <input id="amount" name="amount" type="number" min="100000" step="1000"
                      class="form-card__input" placeholder="VD: 100000" required>
-              <p class="form-note">Tối thiểu 1.000 VND, bội số 1.000.</p>
+              <p class="form-note">Tối thiểu 100.000 VND.</p>
             </div>
 
             <!-- Nội dung chuyển khoản -->

@@ -638,8 +638,7 @@
                                             aria-label="Đóng">&times;</button>
                                     <h3 class="order-workflow-modal__title" id="orderWorkflowTitle">Quy trình xử lý đơn hàng</h3>
                                     <p class="order-workflow-modal__intro" id="orderWorkflowIntro">
-                                        Chúng tôi sẽ thông báo từng bước xử lý bằng ngôn ngữ dễ hiểu để bạn nắm rõ: khi nào khóa ví,
-                                        kiểm tra hàng, bàn giao tài khoản và hoàn tất thanh toán.
+                                        Chúng tôi sẽ thông báo các bước xử lý đơn hàng của bạn:
                                     </p>
                                     <div class="order-workflow-modal__content">
                                         <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">

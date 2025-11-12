@@ -50,6 +50,9 @@
                 <a href="${pageContext.request.contextPath}/admin/cashs" class="${active=='cashs'?'active':''}">
                     <i class="bi bi-cash-stack"></i><span>Nạp / Rút</span>
                 </a>
+        <a href="${pageContext.request.contextPath}/admin/disputes" class="${active=='disputes'?'active':''}">
+            <i class="bi bi-arrow-up-right-circle-fill"></i><span>Khiếu Nại</span>
+        </a>
                 <a href="${pageContext.request.contextPath}/admin/systems" class="${active=='systems'?'active':''}">
                     <i class="bi bi-gear"></i><span>Cấu hình hệ thống</span>
                 </a>
