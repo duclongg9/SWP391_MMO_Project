@@ -3,6 +3,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/notification.css"/>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/components/kyc.css">
 <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/image-preview.css"/>
 <%@ page import="java.util.List" %>
@@ -130,9 +131,47 @@
       </form>
     </section>
 
-
+ <div id="toastBox"></div> 
   </section>
 </main>
 
+              
+              
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+
+<script>
+     document.addEventListener('DOMContentLoaded', () => {
+            const toastBox = document.getElementById('toastBox');
+
+            function showToast(msg, type = 'success') {
+                if (!toastBox) return;
+                const toast = document.createElement('div');
+                toast.classList.add('mm-toast');
+                if (type === 'error') toast.classList.add('error');
+                toast.innerHTML = msg;
+                toastBox.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            }
+
+            // Lấy message từ request
+            const okMsg = "${fn:escapeXml(msg)}";
+            const errMsg = "${fn:escapeXml(emg)}";
+
+            if(errMsg) showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
+            if(okMsg) showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
+        });
+        </script>
+        
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

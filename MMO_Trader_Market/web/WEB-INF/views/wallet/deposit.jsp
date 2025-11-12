@@ -26,24 +26,22 @@
                         <span class="topup__meta-item" role="listitem"><i class="fas fa-receipt"></i> Có hoá đơn trong lịch sử ví</span>
                     </div>
 
-                    <form id="topup-form" class="form topup__form" novalidate>
+                    <form action="${pageContext.request.contextPath}/payment" method="post" class="form topup__form">
                         <div class="form__group">
                             <label for="amount" class="form__label">Số tiền</label>
-                            <input type="number" id="amount" name="amount" class="form-control" min="1000" max="50000000" step="1000" required aria-describedby="amount-help">
-                            <small id="amount-help" class="form__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch. VNPAY sẽ quy đổi sang đơn vị đồng ×100.</small>
+                            <input type="number" id="amount" name="amount" class="form-control" min="1000" max="50000000" step="1000" required>
+                            <small class="form__hint">Tối thiểu 1.000 VNĐ và tối đa 50.000.000 VNĐ cho mỗi giao dịch.</small>
                         </div>
 
                         <div class="form__group">
                             <label for="note" class="form__label">Ghi chú (tuỳ chọn)</label>
-                            <textarea id="note" name="note" class="form-control" rows="3" maxlength="120" placeholder="Ví dụ: Nạp cho gói Premium tháng 6"></textarea>
-                            <small class="form__hint">Ghi chú giúp bạn nhận diện giao dịch trong lịch sử ví (tối đa 120 ký tự, không xuống dòng).</small>
+                            <textarea id="note" name="note" class="form-control" rows="3" maxlength="120"></textarea>
+                            <small class="form__hint">Ghi chú giúp bạn nhận diện giao dịch (tối đa 120 ký tự).</small>
                         </div>
 
                         <div class="form__group form__actions">
-                            <button type="submit" class="btn btn--primary" data-loading-label="Đang tạo liên kết...">
-                                <span class="btn__spinner" aria-hidden="true"></span>
-                                <span class="btn__text">Tạo yêu cầu nạp</span>
-                            </button>
+                            <!-- Button bình thường, submit form -->
+                            <button type="submit" class="btn btn--primary">Tạo yêu cầu nạp</button>
                             <a href="${pageContext.request.contextPath}/wallet" class="btn btn--ghost">Quay lại ví</a>
                         </div>
                     </form>
@@ -88,115 +86,7 @@
     </section>
 </main>
 
-<script>
-    (function () {
-        const form = document.getElementById('topup-form');
-        const alertBox = document.getElementById('topup-alert');
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const submitLabel = submitBtn.querySelector('.btn__text');
-        const spinner = submitBtn.querySelector('.btn__spinner');
-        const defaultLabel = submitLabel.textContent;
-        const loadingLabel = submitBtn.dataset.loadingLabel || 'Đang xử lý...';
 
-        function showAlert(message, type) {
-            alertBox.textContent = message;
-            alertBox.className = 'alert alert--' + (type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success');
-            alertBox.style.display = 'block';
-            try {
-                alertBox.focus({ preventScroll: true });
-            } catch (focusError) {
-                alertBox.focus();
-            }
-        }
-
-        function hideAlert() {
-            alertBox.style.display = 'none';
-            alertBox.className = 'alert';
-            alertBox.textContent = '';
-        }
-
-        function setLoading(isLoading) {
-            if (isLoading) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('btn--loading');
-                submitLabel.textContent = loadingLabel;
-                spinner.setAttribute('aria-hidden', 'false');
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn--loading');
-                submitLabel.textContent = defaultLabel;
-                spinner.setAttribute('aria-hidden', 'true');
-            }
-        }
-
-        form.addEventListener('submit', async function (event) {
-            event.preventDefault();
-            hideAlert();
-
-            const amountInput = document.getElementById('amount');
-            const noteInput = document.getElementById('note');
-
-            const amountValue = parseInt(amountInput.value, 10);
-            if (Number.isNaN(amountValue) || amountValue <= 0) {
-                showAlert('Số tiền không hợp lệ.', 'error');
-                return;
-            }
-
-            if (amountValue < 1000) {
-                showAlert('Số tiền nạp tối thiểu là 1.000 VNĐ.', 'error');
-                return;
-            }
-
-            if (amountValue > 50000000) {
-                showAlert('Số tiền nạp tối đa mỗi giao dịch là 50.000.000 VNĐ.', 'error');
-                return;
-            }
-
-            const payload = { amount: amountValue };
-            const note = noteInput.value.trim();
-            if (note.length > 0) {
-                if (note.length > 120) {
-                    showAlert('Ghi chú tối đa 120 ký tự.', 'error');
-                    return;
-                }
-                payload.note = note;
-            }
-
-            try {
-                setLoading(true);
-                const response = await fetch('${pageContext.request.contextPath}/wallet/deposit/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                let data;
-                try {
-                    data = await response.json();
-                } catch (parseError) {
-                    throw new Error('Không thể đọc phản hồi từ máy chủ.');
-                }
-                if (!response.ok) {
-                    throw new Error(data.error || 'Không thể tạo yêu cầu nạp.');
-                }
-                if (data.paymentUrl) {
-                    window.location.href = data.paymentUrl;
-                } else {
-                    showAlert('Không nhận được đường dẫn thanh toán.', 'error');
-                }
-            } catch (error) {
-                showAlert(error.message, 'error');
-            } finally {
-                setLoading(false);
-            }
-        });
-
-        form.addEventListener('input', function () {
-            if (alertBox.style.display === 'block') {
-                hideAlert();
-            }
-        });
-    })();
-</script>
 
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

@@ -104,6 +104,8 @@
         <div class="panel__header">
             <h2 class="panel__title">Lịch sử giao dịch</h2>
         </div>
+ 
+
         <!-- Bộ lọc giao dịch -->
         <form class="filters filterbar" method="get"
               action="${pageContext.request.contextPath}/wallet">
@@ -220,12 +222,6 @@
                     <a href="${pageContext.request.contextPath}/wallet?index=${i}" class="pagination-item__link ${currentPage == i?"pagination__item--active":""} ">${i}</a>
                 </li>
             </c:forEach>
-            <li class="pagination__item">
-                <a>...</a>
-            </li>
-            <li class="pagination__item">
-                <a href="${pageContext.request.contextPath}/wallet?index=${endPage}" class="pagination-item__link">${endPage}</a>
-            </li>
             <c:if test="${currentPage < endPage}">
                 <li class="pagination__item">
                     <a href="${pageContext.request.contextPath}/wallet?index=${currentPage + 1}" class="pagination-item__link">
@@ -234,6 +230,12 @@
 
                 </li>
             </c:if>
+                <a>trang cuối :</a>
+         
+            <li class="pagination__item">
+                <a href="${pageContext.request.contextPath}/wallet?index=${endPage}" class="pagination-item__link">${endPage}</a>
+            </li>
+            
         </ul>
 
         <!--Pagination end-->

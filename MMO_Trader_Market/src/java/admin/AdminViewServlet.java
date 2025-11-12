@@ -437,7 +437,7 @@ public class AdminViewServlet extends HttpServlet {
     }
     // ================== /admin/users ==================
 
-    // ================== /admin/users ==================
+    // ================== /admin/dashboard ==================
     private void handleDashboard(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         LocalDate now = LocalDate.now();
