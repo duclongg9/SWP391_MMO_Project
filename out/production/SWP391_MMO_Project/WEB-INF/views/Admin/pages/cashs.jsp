@@ -32,7 +32,8 @@
 
                 <div class="col-sm-2">
                     <label class="form-label mb-1" for="typeSelect">Loại</label>
-                    <select class="form-select" name="type" id="typeSelect">
+                    <select class="form-select" name="type" id="typeSelect"
+                            onchange="onFilterChange()">
                         <option value="all"        ${f_type=='all'?'selected':''}>Tất cả</option>
                         <option value="Deposit"    ${f_type=='Deposit'?'selected':''}>Nạp tiền</option>
                         <option value="Withdrawal" ${f_type=='Withdrawal'?'selected':''}>Rút tiền</option>
@@ -49,7 +50,8 @@
 
                 <div class="col-sm-2">
                     <label class="form-label mb-1" for="statusSelect">Trạng thái</label>
-                    <select class="form-select" name="status" id="statusSelect">
+                    <select class="form-select" name="status" id="statusSelect"
+                            onchange="onFilterChange()">
                         <option value="all"       ${f_status=='all'?'selected':''}>Tất cả</option>
                         <option value="Pending"   ${f_status=='Pending'?'selected':''}>Pending</option>
                         <option value="Completed" ${f_status=='Completed'?'selected':''}>Completed</option>
@@ -677,6 +679,7 @@
 </style>
 
 <script>
+    /* ===== Toast ===== */
     function showToast(msg, type = 'success') {
         const box = document.getElementById('toastBox');
         if (!box) { alert(msg); return; }
@@ -687,7 +690,26 @@
         setTimeout(() => t.remove(), 5000);
     }
 
-    // === ACCEPT chung cho Deposit và Withdrawal ===
+    /* ===== Auto submit filter (type/status/date) ===== */
+    function onFilterChange() {
+        const form = document.getElementById('cashFilter');
+        if (!form) return;
+        // luôn về trang 1 khi đổi filter
+        let pageInput = document.getElementById('pageInput');
+        if (!pageInput) {
+            pageInput = document.createElement('input');
+            pageInput.type = 'hidden';
+            pageInput.name = 'page';
+            pageInput.id = 'pageInput';
+            form.appendChild(pageInput);
+        }
+        pageInput.value = '1';
+
+        if (typeof form.requestSubmit === 'function') form.requestSubmit();
+        else form.submit();
+    }
+
+    /* ===== Accept/Reject ===== */
     function onAcceptCash(id, txType) {
         const form = document.getElementById('cashForm_' + id);
         if (!form) return false;
@@ -696,40 +718,52 @@
         const note   = document.getElementById('cashNote_' + id);
         const proofInput = document.getElementById('adminFile_' + id);
         const preview    = document.getElementById('adminPreview_' + id);
-        const errNote = document.getElementById('cashError_' + id);
-        const errProof = document.getElementById('adminProofError_' + id);
+        const errNote    = document.getElementById('cashError_' + id);
+        const errProof   = document.getElementById('adminProofError_' + id);
 
         // reset lỗi
-        if (errNote) errNote.classList.add('d-none');
+        if (errNote)  errNote.classList.add('d-none');
         if (errProof) errProof.classList.add('d-none');
-        if (note) note.classList.remove('is-invalid');
-        if (proofInput) proofInput.classList.remove('is-invalid');
+        if (note)        note.classList.remove('is-invalid');
+        if (proofInput)  proofInput.classList.remove('is-invalid');
 
         const noteVal = note ? note.value.trim() : "";
 
-        // === Deposit: bắt buộc có ghi chú ===
+        // Deposit: bắt buộc có ghi chú
         if (txType === 'Deposit' && !noteVal) {
             if (errNote) {
                 errNote.textContent = "Vui lòng nhập ghi chú khi duyệt nạp tiền.";
                 errNote.classList.remove('d-none');
             }
             if (note) note.classList.add('is-invalid');
-            note.focus();
+            if (note) note.focus();
             return false;
         }
 
-        // === Withdrawal: bắt buộc có ảnh hoặc preview ===
+        // Withdrawal: bắt buộc có ảnh (file mới hoặc preview sẵn có)
         if (txType === 'Withdrawal') {
-            const hasExisting = preview && !preview.classList.contains('d-none') && !!preview.src;
-            const hasFile = proofInput && proofInput.files && proofInput.files.length > 0;
-            if (!hasExisting && !hasFile) {
-                if (errProof) errProof.classList.remove('d-none');
-                if (proofInput) proofInput.classList.add('is-invalid');
+            const hasExisting = preview && !preview.classList.contains('d-none') && preview.src ? true : false;
+            const hasFile     = proofInput && proofInput.files && proofInput.files.length > 0;
+            const hasImage = hasExisting || hasFile;
+            const hasNote = !!noteVal;
+
+            if (!hasImage || !hasNote) {
+                if (!hasImage) {
+                    if (errProof) errProof.classList.remove('d-none');
+                    if (proofInput) proofInput.classList.add('is-invalid');
+                }
+                if (!hasNote) {
+                    if (errNote) errNote.classList.remove('d-none');
+                    if (note) note.classList.add('is-invalid');
+                }
+                // focus vào field đầu tiên bị thiếu
+                if (!hasNote && note) note.focus();
+                else if (!hasImage && proofInput) proofInput.focus();
                 return false;
             }
         }
 
-        // === Confirm lần cuối ===
+        // Confirm
         const msg = `Bạn có chắc chắn muốn DUYỆT giao dịch #${id} (${txType}) không?`;
         if (!confirm(msg)) return false;
 
@@ -738,7 +772,6 @@
         return true;
     }
 
-    // === REJECT chung cho cả hai loại ===
     function onRejectCash(id) {
         const form   = document.getElementById('cashForm_' + id);
         const note   = document.getElementById('cashNote_' + id);
@@ -777,7 +810,7 @@
         e.target.classList.remove('is-invalid');
     });
 
-    // Preview ảnh admin (có hỗ trợ xóa lỗi thiếu ảnh)
+    /* ===== Preview ảnh admin ===== */
     function previewAdminProofById(input, imgId, emptyId, statusId, errorId) {
         const file = input.files && input.files[0];
         if (!file) return;
@@ -798,7 +831,7 @@
             img.src = url;
             img.classList.remove('d-none');
         }
-        if (empty) empty.classList.add('d-none');
+        if (empty)  empty.classList.add('d-none');
         if (status) {
             status.textContent = 'Đã chọn (chưa lưu)';
             status.className = 'badge bg-warning text-dark';
@@ -807,7 +840,7 @@
         input.classList.remove('is-invalid');
     }
 
-    // Giải mã & render ảnh chứng từ
+    /* ===== Render ảnh chứng từ ===== */
     function htmlUnescape(s) {
         if (!s) return "";
         return s.replace(/&quot;|&#34;/g, '"')
@@ -851,11 +884,60 @@
         container.appendChild(frag);
     }
 
+    /* ===== Init on DOM ready ===== */
     document.addEventListener('DOMContentLoaded', function () {
+        const form      = document.getElementById('cashFilter');
+        const qInput    = document.getElementById('q');
+        const selType   = document.getElementById('typeSelect');
+        const selStatus = document.getElementById('statusSelect');
+        const fromEl    = document.getElementById('from');
+        const toEl      = document.getElementById('to');
+
+        const today = new Date(); today.setHours(0,0,0,0);
+
+        // Chặn Enter ngoài ô tìm tên
+        if (form) {
+            form.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && e.target !== qInput) e.preventDefault();
+            });
+        }
+
+        // Ô tìm tên: Enter sẽ về trang 1 (submit mặc định)
+        if (qInput) {
+            qInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    const page = document.getElementById('pageInput');
+                    if (page) page.value = '1';
+                }
+            });
+        }
+
+        if (selType)   selType.addEventListener('change', onFilterChange);
+        if (selStatus) selStatus.addEventListener('change', onFilterChange);
+
+        // Không cho chọn ngày tương lai, và tự submit khi đổi ngày
+        function notFuture(input) {
+            if (!input.value) return true;
+            const d = new Date(input.value);
+            if (d > today) {
+                showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                input.value = '';
+                return false;
+            }
+            return true;
+        }
+        if (fromEl) fromEl.addEventListener('change', function () {
+            if (notFuture(this)) onFilterChange();
+        });
+        if (toEl) toEl.addEventListener('change', function () {
+            if (notFuture(this)) onFilterChange();
+        });
+
+        // Render ảnh chứng từ ban đầu
         document.querySelectorAll('.js-proof-images').forEach(renderProofImages);
     });
 
-    // Zoom ảnh dùng modal chung
+    /* ===== Zoom ảnh dùng modal chung ===== */
     document.addEventListener('click', function (e) {
         const img = e.target.closest('.js-zoomable');
         if (!img) return;
@@ -873,6 +955,7 @@
         }
     });
 </script>
+
 
 
 

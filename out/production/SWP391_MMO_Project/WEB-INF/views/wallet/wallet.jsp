@@ -58,44 +58,39 @@
 
         <table class="table table--interactive" role="presentation">
             <tbody>
-                <tr>
-                    <th scope="row">Số dư còn lại</th>
-                    <td style="
-                        font-size: 2.8rem;
-                        font-weight: 800;
-                        line-height: 1.05;
-                        padding: 0.9rem 1rem;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 4.8rem; /* đảm bảo chiều cao giống ~3 hàng */
-                        color: #005b96; /* màu xanh dương (hoặc đổi) */
-                        background: rgba(0,91,150,0.04);
-                        border-radius: 8px;
-                        "
-                        aria-label="Số dư hiện có">
-                        <fmt:formatNumber value="${wallet.balance}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
-                    </td>
-                </tr>
-                        <!-- Nút rút tiền -->
-        <tr>
-            <td></td>
-            <td colspan="1" style="text-align:right; padding-top: 1rem;">
-                <a href="${pageContext.request.contextPath}/withdraw" 
-                   class="button button--primary" 
-                   style="padding: 0.6rem 1.2rem; font-size: 1rem;">
-                   Rút tiền
-                </a>
-            </td>
-        </tr>
-                
+            <tr>
+                <th scope="row">Số dư còn lại</th>
+                <td style="
+                font-size: 2.8rem;
+                font-weight: 800;
+                line-height: 1.05;
+                padding: 0.9rem 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 4.8rem;
+                color: #005b96;
+                background: rgba(0,91,150,0.04);
+                border-radius: 8px;
+            " aria-label="Số dư hiện có">
+                    <fmt:formatNumber value="${wallet.balance}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                </td>
+            </tr>
+
+            <!-- Nút chuyển sang trang nạp/rút -->
+            <tr>
+                <td></td>
+                <td colspan="1" style="text-align:right; padding-top: 1rem;">
+                    <a href="${pageContext.request.contextPath}/wallet/cash"
+                       class="button button--primary"
+                       style="padding: 0.6rem 1.2rem; font-size: 1rem;">
+                        Xem nạp / rút của tôi
+                    </a>
+                </td>
+            </tr>
             </tbody>
         </table>
 
-        <div class="form__group" style="margin-top:1.6rem;">
-            <a class="btn btn--primary" href="${pageContext.request.contextPath}/wallet/deposit">Nạp tiền qua VNPAY</a>
-            <span class="form__hint">Thanh toán an toàn, số dư sẽ cập nhật sau khi IPN được xác nhận.</span>
-        </div>
 
 
         <!--Lịch sử ví -->

@@ -60,7 +60,7 @@
 
     <!-- Logout -->
     <div class="logout-section">
-        <a href="${pageContext.request.contextPath}/index.html" style="margin: 0;">
+        <a href="${logoutUrl}" style="margin: 0;" >
             <i class="bi bi-box-arrow-right me-2"></i><span>Đăng xuất</span>
         </a>
     </div>
