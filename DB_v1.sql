@@ -81,6 +81,7 @@ CREATE TABLE `shops` (
   `owner_id` int NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text,
+  `admin_note` text DEFAULT NULL,
   `status` enum('Pending','Active','Suspended') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -311,6 +312,7 @@ CREATE TABLE `withdrawal_requests` (
   `bank_account_info` text NOT NULL,
   `status` enum('Pending','Approved','Rejected','Completed') NOT NULL DEFAULT 'Pending',
   `admin_proof_url` varchar(255) DEFAULT NULL,
+  `admin_note` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `processed_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -521,8 +523,8 @@ INSERT INTO `kyc_requests` (`id`,`user_id`,`status_id`,`front_image_url`,`back_i
  (2,3,1,'https://cdn.mmo.local/kyc/buyer_front.jpg','https://cdn.mmo.local/kyc/buyer_back.jpg','https://cdn.mmo.local/kyc/buyer_selfie.jpg','092987654321',NULL,'2024-01-25 09:10:00',NULL);
 
 -- Shop
-INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`status`,`created_at`,`updated_at`) VALUES
- (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền','Active','2024-01-12 08:30:00','2024-01-20 09:30:00');
+INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`admin_note`,`status`,`created_at`,`updated_at`) VALUES
+ (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền',NULL,'Active','2024-01-12 08:30:00','2024-01-20 09:30:00');
 
 -- Products (6 sản phẩm mẫu, đủ loại/subtype; tiếng Việt, có biến thể JSON)
 INSERT INTO `products`
