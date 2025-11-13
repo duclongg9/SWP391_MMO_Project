@@ -103,7 +103,7 @@
                                     </div>
                                 </div>
                                 <div class="shop-card__actions">
-                                    <a class="button button--ghost" href="${cPath}/seller/shops/inventory?id=${shop.id}">Quản lý sản phẩm</a>
+                                    <a class="button button--ghost" href="${cPath}/seller/inventory">Quản lý sản phẩm</a>
                                     <a class="button button--ghost" href="${cPath}/seller/shops/edit?id=${shop.id}">Sửa shop</a>
                                     <a class="button button--ghost" href="${cPath}/seller/products/create?shopId=${shop.id}">Tạo sản phẩm</a>
                                     <c:choose>

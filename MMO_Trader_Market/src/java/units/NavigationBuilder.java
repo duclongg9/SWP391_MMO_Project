@@ -120,13 +120,13 @@ public final class NavigationBuilder {
         children.add(dashboardItem);
 
 
-        Map<String, Object> inventoryItem = new HashMap<>();
-        inventoryItem.put("href", contextPath + "/seller/inventory");
-        inventoryItem.put("text", "Danh sách shop");
-        inventoryItem.put("label", "Danh sách shop");
-        boolean inventoryActive = isActive(currentPath, "/seller/inventory");
-        inventoryItem.put("active", inventoryActive);
-        children.add(inventoryItem);
+        Map<String, Object> shopsItem = new HashMap<>();
+        shopsItem.put("href", contextPath + "/seller/shops");
+        shopsItem.put("text", "Danh sách shop");
+        shopsItem.put("label", "Danh sách shop");
+        boolean shopsActive = isActive(currentPath, "/seller/shops");
+        shopsItem.put("active", shopsActive);
+        children.add(shopsItem);
 
         Map<String, Object> disputesItem = new HashMap<>();
         disputesItem.put("href", contextPath + "/seller/disputes");
@@ -136,7 +136,6 @@ public final class NavigationBuilder {
         disputesItem.put("active", disputesActive);
         children.add(disputesItem);
 
-
         Map<String, Object> incomeItem = new HashMap<>();
         incomeItem.put("href", contextPath + "/seller/income");
         incomeItem.put("text", "Thu nhập");
@@ -145,7 +144,7 @@ public final class NavigationBuilder {
         incomeItem.put("active", incomeActive);
         children.add(incomeItem);
 
-        boolean active = dashboardActive || inventoryActive || disputesActive || incomeActive;
+        boolean active = dashboardActive || shopsActive || disputesActive || incomeActive;
         Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
         dropdown.put("dropdown", true);
         dropdown.put("children", children);
