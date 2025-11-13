@@ -173,7 +173,6 @@
                                         </button>
                                     </td>
                                 </tr>
-
                                 <!-- ========== MODAL CHI TIẾT ========== -->
                                 <div class="modal fade" id="kycModal_${k.id}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
