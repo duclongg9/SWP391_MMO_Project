@@ -31,6 +31,8 @@ public class ProductSummaryView {
     private final String productSubtype;
     // Nhãn phân loại con.
     private final String productSubtypeLabel;
+    // Mã shop đăng bán.
+    private final int shopId;
     // Tên shop đăng bán.
     private final String shopName;
     // Giá thấp nhất.
@@ -44,7 +46,8 @@ public class ProductSummaryView {
 
     public ProductSummaryView(int id, String name, String shortDescription, String primaryImageUrl,
             String productType, String productTypeLabel, String productSubtype, String productSubtypeLabel,
-            String shopName, BigDecimal minPrice, BigDecimal maxPrice, Integer inventoryCount, Integer soldCount) {
+            int shopId, String shopName, BigDecimal minPrice, BigDecimal maxPrice, Integer inventoryCount,
+            Integer soldCount) {
         this.id = id;
         this.name = Objects.requireNonNullElse(name, "");
         this.shortDescription = Objects.requireNonNullElse(shortDescription, "");
@@ -53,6 +56,7 @@ public class ProductSummaryView {
         this.productTypeLabel = productTypeLabel;
         this.productSubtype = productSubtype;
         this.productSubtypeLabel = productSubtypeLabel;
+        this.shopId = shopId;
         this.shopName = Objects.requireNonNullElse(shopName, "");
         this.minPrice = minPrice;
         this.maxPrice = maxPrice;
@@ -99,6 +103,11 @@ public class ProductSummaryView {
         return productSubtypeLabel;
     }
 
+    // Lấy mã shop.
+    public int getShopId() {
+        return shopId;
+    }
+
     // Lấy tên shop.
     public String getShopName() {
         return shopName;
@@ -127,6 +136,15 @@ public class ProductSummaryView {
     // Sinh token mã hóa ID để tạo đường dẫn thân thiện.
     public String getEncodedId() {
         return IdObfuscator.encode(id);
+    }
+
+    /**
+     * Sinh token mã hóa ID shop để tạo đường dẫn thân thiện đến trang shop.
+     *
+     * @return chuỗi token đã được mã hóa
+     */
+    public String getShopEncodedId() {
+        return IdObfuscator.encode(shopId);
     }
 
     /**

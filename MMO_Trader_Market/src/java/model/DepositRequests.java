@@ -15,6 +15,9 @@ public class DepositRequests {
     private Date createdAt;
     private String adminNote;
 
+    public DepositRequests() {
+    }
+
     public DepositRequests(Integer id, Integer userId, BigDecimal amount, String qrContent, String idempotencyKey, String status, Date expiresAt, Date createdAt, String adminNote) {
         this.id = id;
         this.userId = userId;

@@ -5,25 +5,24 @@ import dao.order.OrderDAO;
 import dao.product.ProductDAO;
 import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
-import model.OrderStatus;
-import model.Orders;
-import model.PaginatedResult;
-import model.Products;
-import model.TransactionType;
+import model.*;
 import model.product.ProductVariantOption;
 import model.view.OrderDetailView;
 import model.view.OrderRow;
 import model.view.OrderWalletEvent;
 import model.view.PurchasePreviewResult;
-import model.WalletTransactions;
-import model.Wallets;
 import queue.OrderQueueProducer;
 import queue.memory.InMemoryOrderQueue;
 import service.util.ProductVariantUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Duration;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -35,6 +34,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * <p>
@@ -57,6 +58,9 @@ public class OrderService {
     // Bảng ánh xạ trạng thái sang nhãn tiếng Việt.
     private static final Map<OrderStatus, String> STATUS_LABELS = buildStatusLabels();
     private static final Map<TransactionType, String> TRANSACTION_TYPE_LABELS = buildTransactionTypeLabels();
+
+    private static final Logger LOGGER = Logger.getLogger(OrderService.class.getName());
+    private static final int DEFAULT_ESCROW_RELEASE_BATCH_SIZE = 50;
 
     // DAO quản lý đơn hàng.
     private final OrderDAO orderDAO;
@@ -197,6 +201,10 @@ public class OrderService {
         // 2. Nạp thông tin sản phẩm kèm tồn kho tại thời điểm hiện tại.
         Products product = productDAO.findAvailableById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không khả dụng hoặc tồn kho không đủ."));
+        Optional<Integer> ownerIdOpt = productDAO.findShopOwnerIdByProductId(productId);
+        if (ownerIdOpt.filter(ownerId -> ownerId != null && ownerId == userId).isPresent()) {
+            throw new IllegalStateException("Bạn không thể mua sản phẩm trên gian hàng của mình.");
+        }
         Integer productInventory = product.getInventoryCount();
         List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
                 product.getVariantSchema(), product.getVariantsJson());
@@ -232,10 +240,11 @@ public class OrderService {
                 resolvedVariantCode = null;
             }
         }
+        String normalizedVariantForStorage = ProductVariantUtils.normalizeCode(resolvedVariantCode);
 
         // 3. Kiểm tra tồn kho credential trước khi cho phép đặt mua.
-        CredentialDAO.CredentialAvailability credentialAvailability = resolvedVariantCode != null
-                ? credentialDAO.fetchAvailability(productId, resolvedVariantCode)
+        CredentialDAO.CredentialAvailability credentialAvailability = normalizedVariantForStorage != null
+                ? credentialDAO.fetchAvailability(productId, normalizedVariantForStorage)
                 : credentialDAO.fetchAvailability(productId);
         if (credentialAvailability.available() < quantity) {
             if (resolvedVariantCode != null) {
@@ -258,8 +267,9 @@ public class OrderService {
             throw new IllegalStateException("Ví không đủ số dư để thanh toán đơn hàng.");
         }
         // 5. Tạo bản ghi đơn hàng Pending và đẩy vào hàng đợi bất đồng bộ.
-        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total, resolvedVariantCode, trimmedKey);
-        queueProducer.publish(orderId, trimmedKey, productId, quantity, resolvedVariantCode);
+        int orderId = orderDAO.createPending(userId, productId, quantity, unitPrice, total,
+                normalizedVariantForStorage, trimmedKey);
+        queueProducer.publish(orderId, trimmedKey, productId, quantity, normalizedVariantForStorage);
         return orderId;
     }
 
@@ -311,8 +321,8 @@ public class OrderService {
      * <ol>
      * <li>{@link OrderDAO#findByIdForUser} join bảng {@code orders} +
      * {@code products} để dựng {@link OrderDetailView}.</li>
-     * <li>Nếu trạng thái đã Completed thì truy vấn credential plaintext để show
-     * cho khách.</li>
+     * <li>Nếu trạng thái đã Completed hoặc đang tranh chấp (Disputed) thì truy
+     * vấn credential plaintext để show cho khách.</li>
      * <li>Trả về Optional để controller render hoặc trả lỗi 404.</li>
      * </ol>
      *
@@ -338,11 +348,124 @@ public class OrderService {
         return orderDAO.findByIdForUser(orderId, userId)
                 .map(detail -> {
                     List<String> credentials = List.of();
-                    if (includeCredentials && "Completed".equalsIgnoreCase(detail.order().getStatus())) {
+                    if (includeCredentials && isCredentialAccessibleStatus(detail.order().getStatus())) {
                         credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
                     }
                     return new OrderDetailView(detail.order(), detail.product(), credentials);
                 });
+    }
+
+    /**
+     * Kiểm tra và tự động giải ngân escrow cho đơn hàng nếu đã hết hạn và không có khiếu nại.
+     *
+     * @param order bản ghi đơn hàng cần kiểm tra
+     * @return {@link Optional} chứa kết quả giải ngân nếu phát sinh
+     */
+    public Optional<EscrowReleaseResult> releaseEscrowIfExpired(Orders order) {
+        if (order == null || order.getId() == null || order.getProductId() == null) {
+            return Optional.empty();
+        }
+        Date now = new Date();
+        if (!isEscrowReleaseEligible(order, now)) {
+            return Optional.empty();
+        }
+        BigDecimal payoutAmount = order.getTotalAmount();
+        if (payoutAmount == null || payoutAmount.signum() <= 0) {
+            return Optional.empty();
+        }
+        Optional<Integer> ownerIdOpt = productDAO.findShopOwnerIdByProductId(order.getProductId());
+        if (ownerIdOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        int sellerId = ownerIdOpt.get();
+        if (walletsDAO.ensureUserWallet(sellerId) == null) {
+            throw new IllegalStateException("Không thể khởi tạo ví cho người bán trước khi giải ngân");
+        }
+        Timestamp releasedAtTs = new Timestamp(now.getTime());
+        Timestamp scheduledRelease = order.getEscrowReleaseAt() == null ? null
+                : new Timestamp(order.getEscrowReleaseAt().getTime());
+        try (Connection connection = orderDAO.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Wallets lockedWallet = walletsDAO.lockWalletForUpdate(connection, sellerId);
+                if (lockedWallet == null) {
+                    rollbackQuietly(connection);
+                    throw new IllegalStateException("Không thể khóa ví người bán để giải ngân");
+                }
+                BigDecimal currentBalance = lockedWallet.getBalance() == null
+                        ? BigDecimal.ZERO : lockedWallet.getBalance();
+                BigDecimal newBalance = currentBalance.add(payoutAmount);
+                if (!walletsDAO.updateBalance(connection, lockedWallet.getId(), newBalance)) {
+                    rollbackQuietly(connection);
+                    throw new IllegalStateException("Không thể cập nhật số dư ví người bán");
+                }
+                int payoutTxId = walletTransactionDAO.insertTransaction(connection, lockedWallet.getId(), order.getId(),
+                        TransactionType.PAYOUT, payoutAmount, currentBalance, newBalance,
+                        String.format("Giải ngân đơn #%d sau khi hết thời gian escrow", order.getId()));
+                if (!orderDAO.markEscrowReleased(connection, order.getId(), releasedAtTs)) {
+                    rollbackQuietly(connection);
+                    return Optional.empty();
+                }
+                orderDAO.insertEscrowReleasedEvent(connection, order.getId(), scheduledRelease, releasedAtTs,
+                        "{\"reason\":\"Auto release after escrow timeout\"}");
+                connection.commit();
+                Date releasedAt = new Date(releasedAtTs.getTime());
+                order.setEscrowStatus("Released");
+                order.setEscrowRemainingSeconds(0);
+                order.setEscrowReleasedAtActual(releasedAt);
+                order.setUpdatedAt(releasedAt);
+                return Optional.of(new EscrowReleaseResult(order.getId(), payoutAmount, newBalance, payoutTxId, releasedAt));
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    ex.addSuppressed(rollbackEx);
+                }
+                throw ex;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không thể giải ngân escrow cho đơn hàng", ex);
+        }
+    }
+
+    /**
+     * Thực thi auto-release escrow cho một lô đơn hàng đã hết hạn.
+     *
+     * @return số lượng đơn hàng giải ngân thành công
+     */
+    public int releaseExpiredEscrows() {
+        return releaseExpiredEscrows(DEFAULT_ESCROW_RELEASE_BATCH_SIZE);
+    }
+
+    /**
+     * Thực thi auto-release escrow cho một lô đơn hàng đã hết hạn với kích thước tùy chỉnh.
+     *
+     * @param batchSize số lượng tối đa đơn hàng xử lý trong một lần chạy job
+     * @return số lượng đơn hàng giải ngân thành công
+     */
+    public int releaseExpiredEscrows(int batchSize) {
+        if (batchSize <= 0) {
+            return 0;
+        }
+        List<Orders> candidates = orderDAO.findEscrowReleaseCandidates(batchSize);
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+        int releasedCount = 0;
+        for (Orders candidate : candidates) {
+            try {
+                Optional<EscrowReleaseResult> result = releaseEscrowIfExpired(candidate);
+                if (result.isPresent()) {
+                    releasedCount++;
+                }
+            } catch (RuntimeException ex) {
+                Integer orderId = candidate == null ? null : candidate.getId();
+                LOGGER.log(Level.WARNING, "Không thể auto-release escrow cho đơn hàng {0}: {1}",
+                        new Object[]{orderId, ex.getMessage()});
+                LOGGER.log(Level.FINE, "Chi tiết lỗi auto-release escrow cho đơn hàng " + orderId, ex);
+            }
+        }
+        return releasedCount;
     }
 
     /**
@@ -353,15 +476,42 @@ public class OrderService {
     }
 
     /**
+     * Kiểm tra đơn hàng có đủ điều kiện mở form báo cáo hay không.
+     */
+    public boolean canReportOrder(Orders order) {
+        if (order == null) {
+            return false;
+        }
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return false;
+        }
+        String escrowStatus = order.getEscrowStatus();
+        if (escrowStatus == null || !"Scheduled".equalsIgnoreCase(escrowStatus)) {
+            return false;
+        }
+        Date now = new Date();
+        Date releaseAt = order.getEscrowReleaseAt();
+        if (releaseAt != null) {
+            return releaseAt.after(now);
+        }
+        Integer remainingSeconds = order.getEscrowRemainingSeconds();
+        if (remainingSeconds != null && remainingSeconds > 0) {
+            return true;
+        }
+        Integer holdSeconds = order.getEscrowHoldSeconds();
+        return holdSeconds != null && holdSeconds > 0;
+    }
+
+    /**
      * Ghi nhận hành động mở khóa credential và chỉ cho phép hiển thị plaintext
-     * khi đơn đã hoàn thành.
+     * khi đơn đã hoàn thành hoặc đang tranh chấp.
      * <p>
      * Luồng xử lý:</p>
      * <ol>
      * <li>Kiểm tra quyền sở hữu đơn hàng thông qua
      * {@link OrderDAO#findByIdForUser(int, int)}.</li>
-     * <li>Đảm bảo trạng thái đơn là Completed và đã có credential được worker
-     * gán.</li>
+     * <li>Đảm bảo trạng thái đơn là Completed/Disputed và đã có credential được
+     * worker gán.</li>
      * <li>Insert log vào bảng {@code credential_view_logs} trước khi trả về kết
      * quả.</li>
      * </ol>
@@ -372,8 +522,8 @@ public class OrderService {
     public CredentialUnlockResult unlockCredentials(int orderId, int userId, String viewerIp) {
         OrderDetailView detail = orderDAO.findByIdForUser(orderId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng hoặc không thuộc sở hữu của bạn."));
-        if (!"Completed".equalsIgnoreCase(detail.order().getStatus())) {
-            throw new IllegalStateException("Đơn hàng chưa hoàn thành, chưa thể mở khóa thông tin bàn giao.");
+        if (!isCredentialAccessibleStatus(detail.order().getStatus())) {
+            throw new IllegalStateException("Chỉ có thể mở khóa thông tin bàn giao khi đơn đã hoàn tất hoặc đang được xử lý tranh chấp.");
         }
         List<String> credentials = credentialDAO.findPlainCredentialsByOrder(orderId);
         if (credentials.isEmpty()) {
@@ -411,6 +561,19 @@ public class OrderService {
     }
 
     /**
+     * Kiểm tra trạng thái đơn có cho phép hiển thị credential hay không.
+     *
+     * @param status trạng thái hiện tại của đơn hàng
+     * @return {@code true} nếu người mua vẫn được phép xem thông tin bàn giao
+     */
+    private boolean isCredentialAccessibleStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        return "Completed".equalsIgnoreCase(status) || "Disputed".equalsIgnoreCase(status);
+    }
+
+    /**
      * Lấy thông tin giao dịch thanh toán gắn với đơn hàng (nếu có).
      *
      * @param order bản ghi đơn hàng cần tra cứu
@@ -420,12 +583,28 @@ public class OrderService {
         if (order == null) {
             return Optional.empty();
         }
-        Integer txId = order.getPaymentTransactionId();
+        
         Integer buyerId = order.getBuyerId();
-        if (txId == null || buyerId == null) {
+        if (buyerId == null) {
             return Optional.empty();
         }
-        return walletTransactionDAO.findByIdForUser(txId, buyerId);
+        Integer txId = order.getPaymentTransactionId();
+        if (txId != null) {
+            return walletTransactionDAO.findByIdForUser(txId, buyerId);
+        }
+        Integer orderId = order.getId();
+        if (orderId == null) {
+            return Optional.empty();
+        }
+        Optional<WalletTransactions> fallback = walletTransactionDAO.findPurchaseByOrderForUser(orderId, buyerId);
+        if (fallback.isPresent()) {
+            WalletTransactions transaction = fallback.get();
+            Integer resolvedId = transaction.getId();
+            if (resolvedId != null && orderDAO.assignPaymentTransaction(orderId, resolvedId)) {
+                order.setPaymentTransactionId(resolvedId);
+            }
+        }
+        return fallback;
     }
 
     /**
@@ -433,20 +612,28 @@ public class OrderService {
      *
      * @param order bản ghi đơn cần hiển thị
      * @param paymentTxOpt giao dịch ví thực tế (nếu đã ghi nhận)
+     * @param disputeOpt thông tin khiếu nại gắn với đơn (nếu đã được tạo)
      * @return danh sách sự kiện theo thứ tự thời gian
      */
-    public List<OrderWalletEvent> buildWalletTimeline(Orders order, Optional<WalletTransactions> paymentTxOpt) {
+    public List<OrderWalletEvent> buildWalletTimeline(Orders order, Optional<WalletTransactions> paymentTxOpt,
+            Optional<Disputes> disputeOpt) {
         if (order == null) {
             return Collections.emptyList();
         }
         List<OrderWalletEvent> events = new ArrayList<>();
         Date createdAt = copyDate(order.getCreatedAt());
         Integer orderId = order.getId();
-        // Bỏ qua sự kiện hàng đợi để giao diện không hiển thị bước này nhưng vẫn giữ nguyên luồng API.
-        Date walletStepTime = copyDate(order.getUpdatedAt());
-        if (walletStepTime == null) {
-            walletStepTime = createdAt;
-        }
+        events.add(new OrderWalletEvent(
+                "ORDER_ENQUEUED",
+                "Đưa vào hàng đợi",
+                "Hệ thống ghi nhận yêu cầu mua và đưa vào worker bất đồng bộ để tiếp tục xử lý.",
+                createdAt,
+                null,
+                null,
+                buildSyntheticReference("Q", orderId, events.size() + 1),
+                false));
+        final Date walletStepTime = Optional.ofNullable(copyDate(order.getUpdatedAt()))
+                .orElse(createdAt);
         StringBuilder walletDesc = new StringBuilder("Worker khóa ví người mua, kiểm tra trạng thái hoạt động và số dư trước khi trừ tiền.");
         BigDecimal totalAmount = order.getTotalAmount();
         if (totalAmount != null) {
@@ -460,7 +647,7 @@ public class OrderService {
                 walletStepTime,
                 totalAmount,
                 null,
-                buildSyntheticReference("V", orderId, 1),
+                buildSyntheticReference("V", orderId, events.size() + 1),
                 false));
 
         if (paymentTxOpt.isPresent()) {
@@ -509,6 +696,154 @@ public class OrderService {
                     null,
                     null,
                     buildSyntheticReference("S", orderId, events.size() + 1),
+                    false));
+        }
+
+        disputeOpt.ifPresent(dispute -> {
+            Date disputeCreated = copyDate(dispute.getCreatedAt());
+            if (disputeCreated == null) {
+                disputeCreated = copyDate(dispute.getEscrowPausedAt());
+            }
+            if (disputeCreated == null) {
+                disputeCreated = walletStepTime;
+            }
+            String disputeDescription = buildDisputeCreatedDescription(dispute);
+            String reference = dispute.getOrderReferenceCode();
+            if (reference == null || reference.isBlank()) {
+                reference = buildSyntheticReference("D", orderId, events.size() + 1);
+            }
+            events.add(new OrderWalletEvent(
+                    "DISPUTE_CREATED",
+                    "Khiếu nại được tạo",
+                    disputeDescription,
+                    disputeCreated,
+                    null,
+                    null,
+                    reference,
+                    false));
+            Date resolvedAt = copyDate(dispute.getResolvedAt());
+            if (resolvedAt != null) {
+                String resolvedDescription = buildDisputeResolvedDescription(dispute);
+                events.add(new OrderWalletEvent(
+                        "DISPUTE_RESOLVED",
+                        "Khiếu nại được xử lý",
+                        resolvedDescription,
+                        resolvedAt,
+                        null,
+                        null,
+                        buildSyntheticReference("DR", orderId, events.size() + 1),
+                        false));
+            }
+        });
+
+        String escrowStatus = order.getEscrowStatus();
+        boolean hasEscrowHold = order.getEscrowHoldSeconds() != null
+                || order.getEscrowReleaseAt() != null
+                || order.getEscrowOriginalReleaseAt() != null
+                || (escrowStatus != null && !escrowStatus.isBlank());
+        if (hasEscrowHold) {
+            Date scheduledAt = copyDate(order.getEscrowResumedAt());
+            if (scheduledAt == null) {
+                scheduledAt = copyDate(order.getUpdatedAt());
+            }
+            if (scheduledAt == null) {
+                scheduledAt = createdAt;
+            }
+            Date releaseAt = copyDate(Optional.ofNullable(order.getEscrowReleaseAt())
+                    .orElse(order.getEscrowOriginalReleaseAt()));
+            String releaseLabel = releaseAt == null ? "theo lịch cấu hình" : formatDateTime(releaseAt);
+            String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+            String desc = String.format(
+                    "Hệ thống đang giữ tiền escrow %s và sẽ tự động giải ngân vào %s nếu không phát sinh khiếu nại.",
+                    holdDescription,
+                    releaseLabel);
+            events.add(new OrderWalletEvent(
+                    "ESCROW_SCHEDULED",
+                    "Giữ tiền escrow",
+                    desc,
+                    scheduledAt,
+                    null,
+                    null,
+                    buildSyntheticReference("ES", orderId, events.size() + 1),
+                    false));
+        }
+
+        Integer escrowRemainingSeconds = resolveEscrowRemainingSeconds(order, disputeOpt);
+        if ("Paused".equalsIgnoreCase(escrowStatus)) {
+            Date pausedAt = copyDate(Optional.ofNullable(order.getEscrowPausedAt())
+                    .orElseGet(() -> disputeOpt.map(Disputes::getEscrowPausedAt).orElse(null)));
+            String desc;
+            if (escrowRemainingSeconds != null && escrowRemainingSeconds > 0) {
+                String remaining = describeEscrowRemaining(escrowRemainingSeconds);
+                desc = String.format(
+                        "Escrow bị tạm dừng do khiếu nại. Hệ thống bảo lưu thời gian còn lại (%s) cho tới khi tranh chấp được xử lý.",
+                        remaining);
+            } else {
+                String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+                desc = String.format(
+                        "Escrow bị tạm dừng do khiếu nại. Thời gian giải ngân sẽ được tính lại %s sau khi tranh chấp kết thúc.",
+                        holdDescription);
+            }
+            events.add(new OrderWalletEvent(
+                    "ESCROW_PAUSED",
+                    "Tạm dừng escrow",
+                    desc,
+                    pausedAt,
+                    null,
+                    null,
+                    buildSyntheticReference("EP", orderId, events.size() + 1),
+                    false));
+        }
+
+        Date resumedAt = copyDate(order.getEscrowResumedAt());
+        if (resumedAt != null && (escrowStatus == null || "Scheduled".equalsIgnoreCase(escrowStatus))) {
+            String desc;
+            if (escrowRemainingSeconds != null && escrowRemainingSeconds > 0) {
+                String remaining = describeEscrowRemaining(escrowRemainingSeconds);
+                desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và tiếp tục đếm thời gian còn lại "
+                        + "(" + remaining + ").";
+            } else {
+                String holdDescription = describeEscrowHold(order.getEscrowHoldSeconds());
+                desc = "Escrow được kích hoạt lại sau khi xử lý tranh chấp và sẽ tiếp tục đếm "
+                        + holdDescription + '.';
+            }
+            events.add(new OrderWalletEvent(
+                    "ESCROW_RESUMED",
+                    "Tiếp tục giữ escrow",
+                    desc,
+                    resumedAt,
+                    null,
+                    null,
+                    buildSyntheticReference("ER", orderId, events.size() + 1),
+                    false));
+        }
+
+        if ("Released".equalsIgnoreCase(escrowStatus)) {
+            Date payoutTime = copyDate(order.getEscrowReleasedAtActual());
+            if (payoutTime == null) {
+                payoutTime = copyDate(order.getEscrowReleaseAt());
+            }
+            String desc = "Hệ thống đã giải ngân tiền cho người bán sau khi hết thời gian escrow.";
+            events.add(new OrderWalletEvent(
+                    "ESCROW_RELEASED",
+                    "Giải ngân cho người bán",
+                    desc,
+                    payoutTime,
+                    order.getTotalAmount(),
+                    null,
+                    buildSyntheticReference("E", orderId, events.size() + 1),
+                    false));
+        } else if ("Cancelled".equalsIgnoreCase(escrowStatus)) {
+            Date cancelledAt = copyDate(order.getUpdatedAt());
+            String desc = "Escrow bị hủy do đơn hàng không còn đủ điều kiện giải ngân (ví dụ hoàn tiền).";
+            events.add(new OrderWalletEvent(
+                    "ESCROW_CANCELLED",
+                    "Hủy escrow",
+                    desc,
+                    cancelledAt,
+                    null,
+                    null,
+                    buildSyntheticReference("EC", orderId, events.size() + 1),
                     false));
         }
 
@@ -677,6 +1012,144 @@ public class OrderService {
         return input == null ? null : new Date(input.getTime());
     }
 
+    /**
+     * Xây dựng mô tả ngắn gọn cho sự kiện khiếu nại được tạo để timeline dễ đọc.
+     */
+    private static String buildDisputeCreatedDescription(Disputes dispute) {
+        StringBuilder builder = new StringBuilder("Người mua tạo đơn khiếu nại");
+        String issueTitle = firstNonBlank(dispute.getCustomIssueTitle(), dispute.getIssueType());
+        if (issueTitle != null && !issueTitle.isBlank()) {
+            builder.append(' ').append("về \"").append(issueTitle.trim()).append('\"');
+        }
+        builder.append('.');
+        if (dispute.getStatus() != null && !dispute.getStatus().isBlank()) {
+            builder.append(' ').append("Trạng thái hiện tại: ")
+                    .append(dispute.getStatus().trim()).append('.');
+        }
+        String reason = truncateWithEllipsis(dispute.getReason(), 180);
+        if (reason != null && !reason.isBlank()) {
+            builder.append(' ').append("Lý do: ").append(reason);
+            if (!reason.endsWith(".")) {
+                builder.append('.');
+            }
+        }
+        return builder.toString();
+    }
+
+    /**
+     * Sinh mô tả cho sự kiện khiếu nại được giải quyết (nếu có) dựa trên ghi chú của admin.
+     */
+    private static String buildDisputeResolvedDescription(Disputes dispute) {
+        StringBuilder builder = new StringBuilder("Admin đã xử lý khiếu nại.");
+        if (dispute.getStatus() != null && !dispute.getStatus().isBlank()) {
+            builder.append(' ').append("Trạng thái cuối: ")
+                    .append(dispute.getStatus().trim()).append('.');
+        }
+        String note = truncateWithEllipsis(dispute.getResolutionNote(), 180);
+        if (note != null && !note.isBlank()) {
+            builder.append(' ').append("Ghi chú: ").append(note);
+            if (!note.endsWith(".")) {
+                builder.append('.');
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static String truncateWithEllipsis(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() <= maxLength) {
+            return trimmed;
+        }
+        int safeLength = Math.max(0, maxLength - 1);
+        return trimmed.substring(0, safeLength).trim() + "…";
+    }
+
+    /**
+     * Định dạng thời gian theo mẫu {@code dd/MM/yyyy HH:mm} phục vụ hiển thị timeline.
+     */
+    private static String formatDateTime(Date date) {
+        if (date == null) {
+            return "theo lịch cấu hình";
+        }
+        return new SimpleDateFormat("dd/MM/yyyy HH:mm").format(date);
+    }
+
+    /**
+     * Chuyển đổi tổng thời gian giữ tiền escrow thành câu tiếng Việt dễ đọc.
+     */
+    private static String describeEscrowHold(Integer holdSeconds) {
+        String phrase = describeDuration(holdSeconds);
+        return phrase == null ? "theo cấu hình hiện hành" : "trong " + phrase;
+    }
+
+    /**
+     * Mô tả phần thời gian escrow còn lại khi bị tạm dừng/resume.
+     */
+    private static String describeEscrowRemaining(Integer remainingSeconds) {
+        String phrase = describeDuration(remainingSeconds);
+        return phrase == null ? "0 giây" : phrase;
+    }
+
+    private static String describeDuration(Integer seconds) {
+        if (seconds == null || seconds <= 0) {
+            return null;
+        }
+        Duration duration = Duration.ofSeconds(seconds.longValue());
+        long days = duration.toDays();
+        duration = duration.minusDays(days);
+        long hours = duration.toHours();
+        duration = duration.minusHours(hours);
+        long minutes = duration.toMinutes();
+        List<String> parts = new ArrayList<>();
+        if (days > 0) {
+            parts.add(days + " ngày");
+        }
+        if (hours > 0) {
+            parts.add(hours + " giờ");
+        }
+        if (minutes > 0) {
+            parts.add(minutes + " phút");
+        }
+        if (parts.isEmpty()) {
+            parts.add("dưới 1 phút");
+        }
+        return String.join(" ", parts);
+    }
+
+    /**
+     * Trích xuất số giây escrow còn lại dựa trên bản ghi đơn hoặc dispute đính kèm.
+     */
+    private static Integer resolveEscrowRemainingSeconds(Orders order, Optional<Disputes> disputeOpt) {
+        if (order == null) {
+            return null;
+        }
+        Integer remaining = order.getEscrowRemainingSeconds();
+        if (remaining != null && remaining > 0) {
+            return remaining;
+        }
+        return disputeOpt.map(Disputes::getEscrowRemainingSeconds)
+                .filter(value -> value != null && value > 0)
+                .orElse(null);
+    }
+
     private static String buildSyntheticReference(String prefix, Integer orderId, int step) {
         if (prefix == null || orderId == null) {
             return null;
@@ -710,5 +1183,48 @@ public class OrderService {
      */
     public record CredentialUnlockResult(boolean firstView) {
 
+    }
+
+    /**
+     * Thông tin trả về sau khi giải ngân escrow thành công.
+     *
+     * @param orderId mã đơn hàng
+     * @param amount số tiền giải ngân
+     * @param sellerBalanceAfter số dư ví người bán sau khi cộng tiền
+     * @param walletTransactionId mã giao dịch ví được ghi nhận
+     * @param releasedAt thời điểm giải ngân thực tế
+     */
+    public record EscrowReleaseResult(int orderId, BigDecimal amount, BigDecimal sellerBalanceAfter,
+            int walletTransactionId, Date releasedAt) {
+
+    }
+
+    private boolean isEscrowReleaseEligible(Orders order, Date now) {
+        if (!"Completed".equalsIgnoreCase(order.getStatus())) {
+            return false;
+        }
+        if (!"Scheduled".equalsIgnoreCase(order.getEscrowStatus())) {
+            return false;
+        }
+        Date releaseAt = order.getEscrowReleaseAt();
+        if (releaseAt != null) {
+            return !releaseAt.after(now);
+        }
+        Integer remainingSeconds = order.getEscrowRemainingSeconds();
+        return remainingSeconds != null && remainingSeconds <= 0;
+    }
+
+    /**
+     * Thực hiện rollback transaction và bỏ qua lỗi phát sinh trong quá trình rollback.
+     */
+    private void rollbackQuietly(Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.rollback();
+        } catch (SQLException ex) {
+            // Bỏ qua lỗi rollback để không che khuất ngoại lệ chính.
+        }
     }
 }

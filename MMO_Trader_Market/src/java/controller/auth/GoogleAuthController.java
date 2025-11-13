@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,8 +38,12 @@ public class GoogleAuthController extends BaseController {
             startAuthentication(request, response); // Sinh state ngẫu nhiên, lưu vào session, ủy quyền
             return;
         }
-        // Có mã và state => xử lý callback từ Google.
-        handleCallback(request, response, code, state);
+        try {
+            // Có mã và state => xử lý callback từ Google.
+            handleCallback(request, response, code, state);
+        } catch (SQLException ex) {
+            Logger.getLogger(GoogleAuthController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 
@@ -51,7 +56,7 @@ public class GoogleAuthController extends BaseController {
 
    
     private void handleCallback(HttpServletRequest request, HttpServletResponse response, String code, String state)
-            throws IOException {
+            throws IOException, SQLException {
         HttpSession session = request.getSession(false);
         String expectedState = session == null ? null : (String) session.getAttribute(SESSION_STATE);
         if (expectedState == null || !expectedState.equals(state)) {

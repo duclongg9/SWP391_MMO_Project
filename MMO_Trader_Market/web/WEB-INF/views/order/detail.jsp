@@ -113,9 +113,225 @@
     <section class="panel">
         <div class="panel__header">
             <h2 class="panel__title">Chi tiết đơn hàng #<c:out value="${order.id}" /></h2>
+            <div class="panel__actions">
+                <%-- Nút bật pop-up giúp người mua đọc nhanh tiến độ xử lý đơn theo ngôn ngữ thông thường. --%>
+                <button type="button" class="button button--ghost" id="orderWorkflowTrigger">Trạng thái xử lý</button>
+                <c:if test="${canReportOrder}">
+                    <button type="button" class="button button--danger" id="openReportModal"
+                            data-eligibility-url="<c:url value='/orders/detail/${orderToken}/report-eligibility' />">Báo cáo đơn hàng</button>
+                </c:if>
+                <c:if test="${not canReportOrder and not empty existingDispute}">
+                    <span class="panel__badge panel__badge--warning">Đơn đang trong thời gian khiếu nại</span>
+                </c:if>
+            </div>
         </div>
         <div class="panel__body">
             <style>
+                .panel__header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                }
+
+                .panel__actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                }
+
+                .panel__badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    padding: 0.4rem 0.75rem;
+                    border-radius: 999px;
+                    background: #f1f5f9;
+                    color: #0f172a;
+                }
+
+                .panel__badge--warning {
+                    background: rgba(249, 115, 22, 0.15);
+                    color: #c2410c;
+                }
+
+                .alert {
+                    border-radius: 12px;
+                    padding: 1rem 1.25rem;
+                    margin-bottom: 1.25rem;
+                    border: 1px solid transparent;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .alert--success {
+                    background: #ecfdf5;
+                    border-color: #34d399;
+                    color: #047857;
+                }
+
+                .alert--danger {
+                    background: #fef2f2;
+                    border-color: #fca5a5;
+                    color: #b91c1c;
+                }
+
+                .alert ul {
+                    margin: 0;
+                    padding-left: 1.1rem;
+                }
+
+                .order-report__eligibility-alert {
+                    margin-top: 1rem;
+                }
+
+                .order-report__summary {
+                    border: 1px solid #f97316;
+                    border-radius: 16px;
+                    padding: 1.25rem;
+                    margin-bottom: 1.75rem;
+                    background: rgba(249, 115, 22, 0.08);
+                }
+
+                .order-report__summary h3 {
+                    margin: 0 0 0.75rem;
+                    font-size: 1.05rem;
+                    font-weight: 600;
+                    color: #9a3412;
+                }
+
+                .order-report__meta {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 0.75rem;
+                    margin-bottom: 1rem;
+                }
+
+                .order-report__meta-item {
+                    font-size: 0.95rem;
+                    color: #7c2d12;
+                }
+
+                .order-report__evidences {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                }
+
+                .order-report__evidence {
+                    border-radius: 12px;
+                    background: #fff7ed;
+                    border: 1px solid rgba(249, 115, 22, 0.35);
+                    padding: 0.5rem;
+                    max-width: 160px;
+                }
+
+                .order-report__evidence a {
+                    display: block;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+
+                .order-report__evidence img {
+                    display: block;
+                    width: 100%;
+                    height: 120px;
+                    object-fit: cover;
+                }
+
+                .order-report-modal {
+                    position: fixed;
+                    inset: 0;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1500;
+                    background: rgba(15, 23, 42, 0.45);
+                    padding: 1rem;
+                }
+
+                .order-report-modal.is-visible {
+                    display: flex;
+                }
+
+                .order-report-modal__dialog {
+                    position: relative;
+                    width: min(520px, 100%);
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 2rem;
+                    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.25);
+                }
+
+                .order-report-modal__close {
+                    position: absolute;
+                    top: 0.75rem;
+                    right: 0.75rem;
+                    background: none;
+                    border: none;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    color: #475569;
+                }
+
+                .order-report-modal__form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .order-report-modal__form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .order-report-modal__form-group label {
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-report-modal__form-group select,
+                .order-report-modal__form-group input,
+                .order-report-modal__form-group textarea {
+                    border: 1px solid #cbd5f5;
+                    border-radius: 10px;
+                    padding: 0.65rem 0.75rem;
+                    font-size: 0.95rem;
+                }
+
+                .order-report-modal__form-group textarea {
+                    height: 120px;
+                    max-height: 260px;
+                    overflow-y: auto;
+                    resize: vertical;
+                }
+
+                .order-report-modal__error {
+                    font-size: 0.85rem;
+                    color: #b91c1c;
+                }
+
+                .order-report-modal__hint {
+                    font-size: 0.85rem;
+                    color: #64748b;
+                }
+
+                .order-report-modal__actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 0.75rem;
+                    margin-top: 0.5rem;
+                }
+
+                .is-hidden {
+                    display: none !important;
+                }
+
                 .order-detail__info-grid {
                     display: flex;
                     flex-wrap: wrap;
@@ -144,6 +360,67 @@
                     font-size: 1rem;
                     font-weight: 600;
                     color: #0f172a;
+                }
+
+                .order-workflow-modal {
+                    position: fixed;
+                    inset: 0;
+                    display: none;
+                    align-items: flex-end;
+                    justify-content: flex-end;
+                    padding: 1.5rem;
+                    z-index: 1200;
+                    background: rgba(15, 23, 42, 0.25);
+                }
+
+                .order-workflow-modal.is-visible {
+                    display: flex;
+                }
+
+                .order-workflow-modal__dialog {
+                    position: relative;
+                    width: min(420px, 100%);
+                    max-height: calc(100vh - 3rem);
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 1.75rem;
+                    box-shadow: 0 25px 55px rgba(15, 23, 42, 0.25);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                }
+
+                .order-workflow-modal__close {
+                    position: absolute;
+                    top: 0.75rem;
+                    right: 0.75rem;
+                    border: none;
+                    background: none;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    color: #475569;
+                    cursor: pointer;
+                }
+
+                .order-workflow-modal__title {
+                    margin: 0;
+                    font-size: 1.15rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .order-workflow-modal__intro {
+                    margin: 0;
+                    color: #475569;
+                    line-height: 1.6;
+                }
+
+                .order-workflow-modal__content {
+                    overflow-y: auto;
+                    padding-right: 0.25rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
                 }
 
                 .wallet-events {
@@ -270,6 +547,62 @@
                     }
                 }
             </style>
+            <div id="order-report"></div>
+            <c:if test="${not empty orderReportSuccess}">
+                <div class="alert alert--success">
+                    <strong>Gửi báo cáo thành công.</strong>
+                    <span><c:out value="${orderReportSuccess}" /></span>
+                </div>
+            </c:if>
+            <c:if test="${not empty orderReportErrors}">
+                <div class="alert alert--danger">
+                    <strong>Không thể gửi báo cáo.</strong>
+                    <ul>
+                        <c:forEach var="error" items="${orderReportErrors}">
+                            <li><c:out value="${error}" /></li>
+                        </c:forEach>
+                    </ul>
+                </div>
+            </c:if>
+            <div class="alert alert--danger order-report__eligibility-alert is-hidden" id="orderReportEligibilityAlert"
+                 role="alert">
+                <strong>Hết thời gian báo cáo.</strong>
+                <span class="order-report__eligibility-message"></span>
+            </div>
+            <c:if test="${not empty existingDispute}">
+                <section class="order-report__summary">
+                    <h3>Tình trạng báo cáo hiện tại</h3>
+                    <div class="order-report__meta">
+                        <div class="order-report__meta-item"><strong>Mã dispute:</strong> <c:out value="${existingDispute.orderReferenceCode}" /></div>
+                        <div class="order-report__meta-item"><strong>Loại vấn đề:</strong> <c:out value="${reportIssueOptions[existingDispute.issueType]}" /></div>
+                        <c:if test="${not empty existingDispute.customIssueTitle}">
+                            <div class="order-report__meta-item"><strong>Tiêu đề tùy chỉnh:</strong> <c:out value="${existingDispute.customIssueTitle}" /></div>
+                        </c:if>
+                        <div class="order-report__meta-item"><strong>Trạng thái:</strong> <c:out value="${existingDispute.status}" /></div>
+                        <c:if test="${not empty existingDispute.escrowPausedAt}">
+                            <div class="order-report__meta-item"><strong>Đã tạm dừng escrow:</strong> <fmt:formatDate value="${existingDispute.escrowPausedAt}" pattern="dd/MM/yyyy HH:mm" /></div>
+                        </c:if>
+                    </div>
+                    <p><c:out value="${existingDispute.reason}" /></p>
+                    <c:if test="${not empty existingDisputeAttachments}">
+                        <div class="order-report__evidences">
+                            <c:forEach var="attachment" items="${existingDisputeAttachments}">
+                                <c:set var="attachmentWebPath" value="${attachment.webPath}" />
+                                <c:if test="${not empty attachmentWebPath}">
+                                    <c:url var="attachmentUrl" value="${attachmentWebPath}" />
+                                    <div class="order-report__evidence">
+                                        <a href="${attachmentUrl}" target="_blank" rel="noopener">
+                                            <img src="${attachmentUrl}"
+                                                 alt="Ảnh bằng chứng liên quan đến báo cáo"
+                                                 loading="lazy" />
+                                        </a>
+                                    </div>
+                                </c:if>
+                            </c:forEach>
+                        </div>
+                    </c:if>
+                </section>
+            </c:if>
             <div class="grid grid--two-columns">
                 <div class="card">
                     <h3 class="card__title">Thông tin đơn</h3>
@@ -302,11 +635,22 @@
                         <div class="order-detail__info-column order-detail__info-column--wallet">
                             <h4 class="order-detail__info-title">Giao dịch ví</h4>
                             <c:url var="walletEventsUrl" value="/orders/detail/${orderToken}/wallet-events" />
-                            <%--
-                            <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
-                                <div class="wallet-events__placeholder">Đang tải dữ liệu giao dịch ví...</div>
+                            <div class="order-workflow-modal" id="orderWorkflowModal" aria-hidden="true">
+                                <div class="order-workflow-modal__dialog" role="dialog" aria-modal="true"
+                                     aria-labelledby="orderWorkflowTitle" aria-describedby="orderWorkflowIntro">
+                                    <button type="button" class="order-workflow-modal__close" data-close-workflow
+                                            aria-label="Đóng">&times;</button>
+                                    <h3 class="order-workflow-modal__title" id="orderWorkflowTitle">Quy trình xử lý đơn hàng</h3>
+                                    <p class="order-workflow-modal__intro" id="orderWorkflowIntro">
+                                        Chúng tôi sẽ thông báo các bước xử lý đơn hàng của bạn:
+                                    </p>
+                                    <div class="order-workflow-modal__content">
+                                        <div class="wallet-events" id="walletEvents" data-endpoint="${walletEventsUrl}">
+                                            <div class="wallet-events__placeholder">Đang tải tiến độ đơn hàng...</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            --%>
                             <c:if test="${not empty paymentTransaction}">
                                 <h5 class="order-detail__info-subtitle">Chi tiết giao dịch</h5>
                                 <ul class="definition-list">
@@ -420,9 +764,9 @@
                             line-height: 1.6;
                         }
                     </style>
-                    <%-- Nếu đơn đã hoàn thành, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
+                    <%-- Nếu đơn đã hoàn thành hoặc đang tranh chấp, credential được worker mark sold và OrderService nạp kèm để hiển thị. --%>
                     <c:choose>
-                        <c:when test="${order.status eq 'Completed'}">
+                        <c:when test="${order.status eq 'Completed' or order.status eq 'Disputed'}">
                             <c:choose>
                                 <c:when test="${credentialsUnlocked and not empty credentials}">
                                     <ul class="list">
@@ -432,7 +776,7 @@
                                     </ul>
                                 </c:when>
                                 <c:when test="${credentialsUnlocked and empty credentials}">
-                                    <p class="empty">Đơn hàng đã hoàn thành nhưng chưa có dữ liệu bàn giao.</p>
+                                    <p class="empty">Đơn hàng hiện chưa có dữ liệu bàn giao để hiển thị.</p>
                                 </c:when>
                                 <c:otherwise>
                                     <p class="credential-unlock__helper">
@@ -502,8 +846,240 @@
         </div>
     </section>
 </main>
+<div class="order-report-modal" id="orderReportModal" aria-hidden="true" data-open-on-load="${not empty orderReportErrors}">
+    <div class="order-report-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="orderReportTitle">
+        <button type="button" class="order-report-modal__close" data-close-modal aria-label="Đóng">&times;</button>
+        <h3 id="orderReportTitle">Báo cáo đơn hàng</h3>
+        <p class="order-report-modal__hint">Sau khi gửi, hệ thống sẽ tạm dừng thời gian escrow cho tới khi admin xử lý.</p>
+        <form class="order-report-modal__form" action="<c:url value='/orders/report' />" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="orderToken" value="${orderToken}" />
+            <div class="order-report-modal__form-group">
+                <label for="reportIssueType">Loại vấn đề</label>
+                <select id="reportIssueType" name="issueType" required>
+                    <option value="">-- Chọn vấn đề gặp phải --</option>
+                    <c:forEach var="entry" items="${reportIssueOptions}">
+                        <option value="${entry.key}" <c:if test="${entry.key == orderReportFormValues.issueType}">selected</c:if>><c:out value="${entry.value}" /></option>
+                    </c:forEach>
+                </select>
+            </div>
+            <div class="order-report-modal__form-group ${orderReportFormValues.issueType == 'OTHER' ? '' : 'is-hidden'}" id="customIssueGroup">
+                <label for="reportCustomIssue">Tiêu đề tùy chỉnh</label>
+                <input id="reportCustomIssue" name="customIssueTitle" type="text" value="${orderReportFormValues.customIssueTitle}" placeholder="Ví dụ: Nhận tài khoản sai định dạng" />
+            </div>
+            <div class="order-report-modal__form-group">
+                <label for="reportDescription">Nội dung chi tiết</label>
+                <textarea id="reportDescription" name="description" required>${orderReportFormValues.description}</textarea>
+                <p class="order-report-modal__hint">Mô tả rõ lỗi gặp phải và mong muốn xử lý. Ảnh bằng chứng cần chụp trước khi mở khóa tài khoản.</p>
+            </div>
+            <div class="order-report-modal__form-group">
+                <label for="reportEvidence">Ảnh bằng chứng (tối đa <c:out value="${maxEvidenceFiles}" /> ảnh)</label>
+                <input id="reportEvidence" type="file" name="evidenceImages" accept="image/*" multiple required
+                       data-max-files="${maxEvidenceFiles}" aria-describedby="reportEvidenceHint reportEvidenceError" />
+                <p class="order-report-modal__error is-hidden" id="reportEvidenceError" role="alert"></p>
+                <p class="order-report-modal__hint" id="reportEvidenceHint">Hỗ trợ định dạng JPG, PNG, GIF, WEBP. Dung lượng tối đa <c:out value="${maxEvidenceFileSizeMb}" />MB mỗi ảnh, tổng cộng <c:out value="${maxEvidenceTotalSizeMb}" />MB cho toàn bộ yêu cầu.</p>
+            </div>
+            <div class="order-report-modal__actions">
+                <button type="button" class="button button--ghost" data-close-modal>Hủy</button>
+                <button type="submit" class="button button--primary">Gửi báo cáo</button>
+            </div>
+        </form>
+    </div>
+</div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('orderReportModal');
+        const openButton = document.getElementById('openReportModal');
+        const eligibilityAlert = document.getElementById('orderReportEligibilityAlert');
+        const eligibilityMessage = eligibilityAlert ? eligibilityAlert.querySelector('.order-report__eligibility-message') : null;
+        const hideEligibilityAlert = function () {
+            if (eligibilityAlert) {
+                eligibilityAlert.classList.add('is-hidden');
+            }
+        };
+        const showEligibilityAlert = function (message) {
+            if (eligibilityAlert && eligibilityMessage) {
+                eligibilityMessage.textContent = message;
+                eligibilityAlert.classList.remove('is-hidden');
+            } else {
+                alert(message);
+            }
+        };
+        if (modal) {
+            const closeTargets = modal.querySelectorAll('[data-close-modal]');
+            function openModal() {
+                modal.classList.add('is-visible');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeModal() {
+                modal.classList.remove('is-visible');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            if (openButton) {
+                const eligibilityUrl = openButton.getAttribute('data-eligibility-url');
+                let checkingEligibility = false;
+                openButton.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    if (!eligibilityUrl) {
+                        hideEligibilityAlert();
+                        openModal();
+                        return;
+                    }
+                    if (checkingEligibility) {
+                        return;
+                    }
+                    checkingEligibility = true;
+                    hideEligibilityAlert();
+                    let keepDisabled = false;
+                    openButton.disabled = true;
+                    // Kiểm tra lại điều kiện escrow trước khi hiển thị modal báo cáo.
+                    fetch(eligibilityUrl, {headers: {'Accept': 'application/json'}})
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Eligibility check failed');
+                            }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (data && data.canReport) {
+                                keepDisabled = false;
+                                openModal();
+                            } else {
+                                keepDisabled = true;
+                                const message = data && typeof data.message === 'string' && data.message.trim().length > 0
+                                        ? data.message
+                                        : 'Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.';
+                                showEligibilityAlert(message);
+                            }
+                        })
+                        .catch(function () {
+                            keepDisabled = false;
+                            showEligibilityAlert('Không thể kiểm tra trạng thái đơn hàng. Vui lòng tải lại trang và thử lại.');
+                        })
+                        .finally(function () {
+                            checkingEligibility = false;
+                            openButton.disabled = keepDisabled;
+                        });
+                });
+            }
+
+            closeTargets.forEach(function (btn) {
+                btn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    closeModal();
+                });
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            if (modal.dataset.openOnLoad === 'true') {
+                openModal();
+            }
+        }
+
+        const issueSelect = document.getElementById('reportIssueType');
+        const customGroup = document.getElementById('customIssueGroup');
+        if (issueSelect && customGroup) {
+            const toggleCustom = function () {
+                if (issueSelect.value === 'OTHER') {
+                    customGroup.classList.remove('is-hidden');
+                } else {
+                    customGroup.classList.add('is-hidden');
+                }
+            };
+            issueSelect.addEventListener('change', toggleCustom);
+            toggleCustom();
+        }
+
+        const evidenceInput = document.getElementById('reportEvidence');
+        const evidenceError = document.getElementById('reportEvidenceError');
+        if (evidenceInput && evidenceError) {
+            const maxFiles = parseInt(evidenceInput.dataset.maxFiles, 10);
+
+            const updateEvidenceError = function (message) {
+                if (message) {
+                    evidenceError.textContent = message;
+                    evidenceError.classList.remove('is-hidden');
+                } else {
+                    evidenceError.textContent = '';
+                    evidenceError.classList.add('is-hidden');
+                }
+            };
+
+            /**
+             * Kiểm tra số lượng ảnh bằng chứng được chọn và hiển thị lỗi ngay trên giao diện.
+             */
+            const handleEvidenceChange = function () {
+                updateEvidenceError('');
+                evidenceInput.setCustomValidity('');
+
+                if (Number.isNaN(maxFiles) || maxFiles <= 0) {
+                    return;
+                }
+
+                const { files } = evidenceInput;
+                if (files && files.length > maxFiles) {
+                    const message = `Bạn chỉ có thể chọn tối đa ${maxFiles} ảnh bằng chứng.`;
+                    updateEvidenceError(message);
+                    evidenceInput.value = '';
+                    evidenceInput.setCustomValidity(message);
+                    evidenceInput.reportValidity();
+                }
+            };
+
+            evidenceInput.addEventListener('change', handleEvidenceChange);
+            handleEvidenceChange();
+        }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const workflowTrigger = document.getElementById('orderWorkflowTrigger');
+        const workflowModal = document.getElementById('orderWorkflowModal');
+        const workflowCloseButtons = workflowModal ? workflowModal.querySelectorAll('[data-close-workflow]') : [];
+
+        /**
+         * Hiển thị hoặc đóng pop-up diễn giải workflow bằng câu chữ thân thiện.
+         */
+        const toggleWorkflowModal = function (show) {
+            if (!workflowModal) {
+                return;
+            }
+            workflowModal.classList.toggle('is-visible', show);
+            workflowModal.setAttribute('aria-hidden', show ? 'false' : 'true');
+        };
+
+        if (workflowTrigger && workflowModal) {
+            workflowTrigger.addEventListener('click', function (event) {
+                event.preventDefault();
+                toggleWorkflowModal(true);
+            });
+
+            workflowModal.addEventListener('click', function (event) {
+                if (event.target === workflowModal) {
+                    toggleWorkflowModal(false);
+                }
+            });
+        }
+
+        workflowCloseButtons.forEach(function (btn) {
+            btn.addEventListener('click', function (event) {
+                event.preventDefault();
+                toggleWorkflowModal(false);
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && workflowModal && workflowModal.classList.contains('is-visible')) {
+                toggleWorkflowModal(false);
+            }
+        });
+
         const container = document.getElementById('walletEvents');
         if (!container) {
             return;

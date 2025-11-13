@@ -29,6 +29,8 @@ Tài liệu này mô tả chi tiết các bước từ khi người dùng bấm 
 5. `chargeWallet`: trừ tiền ví, ghi log bằng `dao.user.WalletTransactionDAO#insertTransaction` và gắn `payment_transaction_id` cho đơn.
 6. `finalizeFulfillment`: trừ tồn kho, đánh dấu credential đã bán, ghi log tồn kho.
 7. Cập nhật trạng thái đơn sang `Completed` và commit transaction.
+8. Worker đọc cấu hình `escrow.hold.default.seconds` từ bảng `system_configs` để đặt `orders.escrow_release_at`, ghi log sự kiện
+   vào `order_escrow_events` và chuẩn bị cho việc giải ngân tự động khi không có khiếu nại.
 
 Nếu có lỗi nghiệp vụ/SQL, worker rollback và đánh dấu đơn `Failed` thông qua `OrderDAO#setStatus`.
 
@@ -37,7 +39,7 @@ Nếu có lỗi nghiệp vụ/SQL, worker rollback và đánh dấu đơn `Faile
   - Hàm kiểm tra quyền sở hữu, nạp `OrderDetailView` qua `OrderService#getDetail`.
   - Nếu người dùng đã mở khóa credential, service trả về danh sách plaintext để JSP hiển thị.
 - Giao diện `order/detail.jsp` gọi AJAX `/orders/detail/{token}/wallet-events` (do `OrderController#handleWalletEventsApi` cung cấp).
-  - API trả về danh sách sự kiện ví được dựng bởi `OrderService#buildWalletTimeline`, mô tả các bước: kiểm tra ví, trừ tiền, chờ giao dịch và trạng thái đơn.
+  - API trả về danh sách sự kiện ví được dựng bởi `OrderService#buildWalletTimeline`, mô tả các bước từ lúc thông điệp được đưa vào queue, worker khóa ví, ghi nhận giao dịch, cho tới khiếu nại và vòng đời escrow.
 
 ## 6. Mở khóa thông tin bàn giao
 - Khi đơn ở trạng thái `Completed`, người dùng bấm nút mở khóa.

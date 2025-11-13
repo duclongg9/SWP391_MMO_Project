@@ -61,10 +61,9 @@ public class ManageUserDAO {
 
         // 🔸 Tìm theo keyword (name/email LIKE %keyword%)
         if (keyword != null && !keyword.isEmpty()) {
-            sb.append(" AND (LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ?) ");
+            sb.append(" AND LOWER(u.name) LIKE ? ");
             String like = "%" + keyword.toLowerCase() + "%";
             params.add(like);
-
         }
 
         // 🔸 Lọc theo role

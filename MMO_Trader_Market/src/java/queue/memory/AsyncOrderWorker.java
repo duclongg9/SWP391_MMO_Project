@@ -3,6 +3,7 @@ package queue.memory;
 import dao.order.CredentialDAO;
 import dao.order.OrderDAO;
 import dao.product.ProductDAO;
+import dao.system.SystemConfigDAO;
 import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
 import model.OrderStatus;
@@ -17,6 +18,8 @@ import service.util.ProductVariantUtils;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -33,12 +36,15 @@ public class AsyncOrderWorker implements OrderWorker {
 
     private static final Logger LOGGER = Logger.getLogger(AsyncOrderWorker.class.getName());
     private static final int[] RETRY_DELAYS = {5, 15, 30};
+    private static final String ESCROW_HOLD_CONFIG_KEY = "escrow.hold.default.seconds";
+    private static final int DEFAULT_ESCROW_HOLD_SECONDS = 259200;
 
     private final OrderDAO orderDAO;
     private final ProductDAO productDAO;
     private final CredentialDAO credentialDAO;
     private final WalletsDAO walletsDAO;
     private final WalletTransactionDAO walletTransactionDAO;
+    private final SystemConfigDAO systemConfigDAO;
 
     public AsyncOrderWorker(OrderDAO orderDAO, ProductDAO productDAO, CredentialDAO credentialDAO,
             WalletsDAO walletsDAO, WalletTransactionDAO walletTransactionDAO) {
@@ -47,6 +53,7 @@ public class AsyncOrderWorker implements OrderWorker {
         this.credentialDAO = credentialDAO;
         this.walletsDAO = walletsDAO;
         this.walletTransactionDAO = walletTransactionDAO;
+        this.systemConfigDAO = new SystemConfigDAO();
     }
 
     /**
@@ -108,6 +115,15 @@ public class AsyncOrderWorker implements OrderWorker {
                 finalizeFulfillment(connection, context);
                 // B6: Hoàn tất đơn hàng và commit transaction.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
+                try {
+                    // Một số môi trường chưa nâng cấp schema escrow -> không chặn đơn khi lỗi SQL phát sinh.
+                    applyEscrowScheduling(connection, context);
+                } catch (SQLException escrowEx) {
+                    LOGGER.log(Level.WARNING,
+                            "Không thể lên lịch escrow cho đơn hàng {0}, bỏ qua và tiếp tục hoàn tất.",
+                            msg.orderId());
+                    LOGGER.log(Level.FINE, "Chi tiết lỗi khi lên lịch escrow", escrowEx);
+                }
                 // Mọi thao tác thành công -> chốt giao dịch để ghi xuống DB.
                 connection.commit();
             } catch (SQLException ex) {
@@ -231,6 +247,65 @@ public class AsyncOrderWorker implements OrderWorker {
         boolean updated = orderDAO.setStatus(orderId, OrderStatus.FAILED.toDatabaseValue());
         if (!updated) {
             LOGGER.log(Level.SEVERE, "Không thể đánh dấu đơn hàng {0} thất bại", orderId);
+        }
+    }
+
+    /**
+     * Áp dụng chính sách giữ tiền escrow sau khi đơn hàng được hoàn tất.
+     *
+     * @param connection kết nối giao dịch hiện tại
+     * @param context ngữ cảnh xử lý đơn hàng
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    private void applyEscrowScheduling(Connection connection, OrderProcessingContext context) throws SQLException {
+        int holdSeconds = resolveEscrowHoldSeconds();
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        long offsetMillis = Math.max(holdSeconds, 0L) * 1000L;
+        Timestamp releaseAt = new Timestamp(now.getTime() + offsetMillis);
+        boolean scheduled = orderDAO.scheduleEscrowRelease(connection, context.order().getId(), releaseAt, holdSeconds);
+        if (!scheduled) {
+            throw new SQLException("Không thể lên lịch escrow cho đơn hàng " + context.order().getId());
+        }
+        orderDAO.insertEscrowScheduledEvent(connection, context.order().getId(), releaseAt, holdSeconds);
+        Date releaseDate = new Date(releaseAt.getTime());
+        context.order().setEscrowHoldSeconds(Math.max(holdSeconds, 0));
+        context.order().setEscrowOriginalReleaseAt(releaseDate);
+        context.order().setEscrowReleaseAt(releaseDate);
+        context.order().setEscrowStatus("Scheduled");
+        context.order().setEscrowPausedAt(null);
+        context.order().setEscrowRemainingSeconds(null);
+        context.order().setEscrowResumedAt(null);
+        context.order().setUpdatedAt(new Date(now.getTime()));
+    }
+
+    /**
+     * Đọc cấu hình thời gian giữ tiền escrow từ bảng cấu hình hệ thống.
+     *
+     * @return số giây giữ tiền hợp lệ (>=0)
+     */
+    private int resolveEscrowHoldSeconds() {
+        Optional<String> configured = systemConfigDAO.findValueByKey(ESCROW_HOLD_CONFIG_KEY);
+        if (configured.isEmpty()) {
+            return DEFAULT_ESCROW_HOLD_SECONDS;
+        }
+        String raw = configured.get();
+        if (raw == null) {
+            return DEFAULT_ESCROW_HOLD_SECONDS;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return DEFAULT_ESCROW_HOLD_SECONDS;
+        }
+        try {
+            int parsed = Integer.parseInt(trimmed);
+            if (parsed < 0) {
+                LOGGER.log(Level.WARNING, "Giá trị escrow.hold.default.seconds âm: {0}", parsed);
+                return DEFAULT_ESCROW_HOLD_SECONDS;
+            }
+            return parsed;
+        } catch (NumberFormatException ex) {
+            LOGGER.log(Level.WARNING, "Không thể phân tích cấu hình escrow.hold.default.seconds: {0}", trimmed);
+            return DEFAULT_ESCROW_HOLD_SECONDS;
         }
     }
 

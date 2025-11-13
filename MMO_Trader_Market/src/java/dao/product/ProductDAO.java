@@ -73,7 +73,7 @@ public class ProductDAO extends BaseDAO {
      * @return danh sách sản phẩm kèm thông tin shop
      */
     public List<ProductListRow> findAvailableByType(String productType, List<String> productSubtypes,
-            String keyword, int limit, int offset) {
+            String keyword, String sortOrder, int limit, int offset) {
         StringBuilder sql = new StringBuilder(LIST_SELECT)
                 .append(" WHERE p.status = 'Available' AND p.inventory_count > 0");
         List<Object> params = new ArrayList<>();
@@ -96,7 +96,13 @@ public class ProductDAO extends BaseDAO {
             params.add(pattern);
             params.add(pattern);
         }
-        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
+        sql.append(" ORDER BY ");
+        if ("best_seller".equals(sortOrder)) {
+            sql.append("COALESCE(ps.sold_count, 0) DESC, p.created_at DESC");
+        } else {
+            sql.append("p.created_at DESC");
+        }
+        sql.append(" LIMIT ? OFFSET ?");
         params.add(limit);
         params.add(offset);
 
@@ -161,6 +167,186 @@ public class ProductDAO extends BaseDAO {
         return 0;
     }
 
+    /**
+     * Đếm số sản phẩm đang mở bán của một shop với các bộ lọc tùy chọn.
+     *
+     * @param shopId        mã shop
+     * @param productType   mã loại sản phẩm cần lọc (có thể null)
+     * @param productSubtypes danh sách phân loại con (có thể rỗng)
+     * @param keyword       từ khóa tìm kiếm (có thể null)
+     * @return tổng số sản phẩm thỏa điều kiện
+     */
+    public long countAvailableByShop(int shopId, String productType, List<String> productSubtypes, String keyword) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (")
+                .append(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        sql.append(") AS shop_available_products");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo shop", ex);
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách sản phẩm khả dụng của shop theo trang và bộ lọc.
+     *
+     * @param shopId          mã shop
+     * @param productType     mã loại sản phẩm (có thể null)
+     * @param productSubtypes danh sách phân loại con (có thể rỗng)
+     * @param keyword         từ khóa tìm kiếm (có thể null)
+     * @param sortOrder       cách sắp xếp ("best_seller" hoặc mặc định mới nhất)
+     * @param limit           số bản ghi mỗi trang
+     * @param offset          vị trí bắt đầu lấy dữ liệu
+     * @return danh sách sản phẩm kèm thông tin shop
+     */
+    public List<ProductListRow> findAvailableByShop(int shopId, String productType, List<String> productSubtypes,
+            String keyword, String sortOrder, int limit, int offset) {
+        StringBuilder sql = new StringBuilder(LIST_SELECT)
+                .append(" WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        if (productSubtypes != null && !productSubtypes.isEmpty()) {
+            sql.append(" AND p.product_subtype IN (");
+            sql.append(String.join(", ", Collections.nCopies(productSubtypes.size(), "?")));
+            sql.append(')');
+            params.addAll(productSubtypes);
+        }
+        if (hasText(keyword)) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (")
+                    .append("LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(s.name) LIKE ?")
+                    .append(')');
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        sql.append(" ORDER BY ");
+        if ("best_seller".equals(sortOrder)) {
+            sql.append("COALESCE(ps.sold_count, 0) DESC, p.created_at DESC");
+        } else {
+            sql.append("p.created_at DESC");
+        }
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<ProductListRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(mapListRow(rs));
+                }
+            }
+            return rows;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm khả dụng theo shop", ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Truy vấn danh sách mã loại sản phẩm mà shop đang bán (trạng thái khả dụng).
+     *
+     * @param shopId mã shop
+     * @return danh sách mã loại sắp xếp theo alphabet
+     */
+    public List<String> findAvailableTypeCodesByShop(int shopId) {
+        final String sql = "SELECT DISTINCT p.product_type FROM products p "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ? ORDER BY p.product_type";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, shopId);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_type");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code.trim().toUpperCase(Locale.ROOT));
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải loại sản phẩm theo shop", ex);
+            return List.of();
+        }
+    }
+
+    /**
+     * Truy vấn danh sách mã phân loại con mà shop đang bán (theo loại).
+     *
+     * @param shopId      mã shop
+     * @param productType mã loại sản phẩm
+     * @return danh sách mã phân loại con
+     */
+    public List<String> findAvailableSubtypeCodesByShop(int shopId, String productType) {
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.product_subtype FROM products p "
+                + "JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.status = 'Available' AND p.inventory_count > 0 AND s.id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(shopId);
+        if (hasText(productType)) {
+            sql.append(" AND p.product_type = ?");
+            params.add(productType);
+        }
+        sql.append(" ORDER BY p.product_subtype");
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<String> codes = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String code = rs.getString("product_subtype");
+                    if (code != null && !code.isBlank()) {
+                        codes.add(code);
+                    }
+                }
+            }
+            return codes;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải phân loại sản phẩm theo shop", ex);
+            return List.of();
+        }
+    }
+
     public List<String> findAvailableSubtypeCodes(String productType) {
         StringBuilder sql = new StringBuilder("SELECT DISTINCT p.product_subtype FROM products p "
                 + "WHERE p.status = 'Available' AND p.inventory_count > 0");
@@ -210,29 +396,25 @@ public class ProductDAO extends BaseDAO {
     }
 
     /**
-     * Cập nhật trạng thái cho toàn bộ sản phẩm của một shop nhất định.
-     * Cho phép truyền thêm trạng thái hiện tại để giới hạn phạm vi cập nhật (ví dụ: chỉ đổi từ Unlisted sang Available).
+     * Tra cứu nhanh chủ sở hữu shop dựa trên mã sản phẩm.
      *
-     * @param shopId           mã shop cần cập nhật sản phẩm
-     * @param newStatus        trạng thái đích cần áp dụng
-     * @param onlyWhenStatus   nếu khác null và không rỗng thì chỉ cập nhật các bản ghi có status hiện tại trùng khớp
-     * @throws SQLException    nếu xảy ra lỗi khi thao tác với cơ sở dữ liệu
+     * @param productId mã sản phẩm cần tra cứu
+     * @return {@link Optional} chứa {@code owner_id} nếu tìm thấy
      */
-    public void updateStatusByShop(int shopId, String newStatus, String onlyWhenStatus) throws SQLException {
-        StringBuilder sql = new StringBuilder("UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?");
-        boolean filterByCurrentStatus = onlyWhenStatus != null && !onlyWhenStatus.isBlank();
-        if (filterByCurrentStatus) {
-            sql.append(" AND status = ?");
-        }
-
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            statement.setString(1, newStatus);
-            statement.setInt(2, shopId);
-            if (filterByCurrentStatus) {
-                statement.setString(3, onlyWhenStatus);
+    public Optional<Integer> findShopOwnerIdByProductId(int productId) {
+        final String sql = "SELECT s.owner_id FROM products p JOIN shops s ON s.id = p.shop_id "
+                + "WHERE p.id = ? LIMIT 1";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, productId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getInt("owner_id"));
+                }
             }
-            statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể truy vấn owner của sản phẩm", ex);
         }
+        return Optional.empty();
     }
 
     /**
@@ -431,8 +613,10 @@ public class ProductDAO extends BaseDAO {
      * @throws SQLException khi câu lệnh SQL lỗi
      */
     public boolean decrementInventory(Connection connection, int productId, int qty) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = inventory_count - ?, updated_at = CURRENT_TIMESTAMP "
-                + "WHERE id = ? AND inventory_count >= ?";
+        final String sql = "UPDATE products SET inventory_count = CASE "
+                + "WHEN inventory_count IS NULL THEN inventory_count "
+                + "ELSE inventory_count - ? END, updated_at = CURRENT_TIMESTAMP "
+                + "WHERE id = ? AND (inventory_count IS NULL OR inventory_count >= ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, qty);
             statement.setInt(2, productId);
@@ -893,11 +1077,9 @@ public class ProductDAO extends BaseDAO {
      * @return true nếu cập nhật thành công
      */
     public boolean incrementInventoryCount(int productId) {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        try (Connection connection = getConnection(); 
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
-            return statement.executeUpdate() > 0;
+        try (Connection connection = getConnection()) {
+            incrementInventoryCount(connection, productId, 1);
+            return true;
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tăng số lượng tồn kho cho product_id=" + productId, ex);
             return false;
@@ -908,57 +1090,82 @@ public class ProductDAO extends BaseDAO {
      * Tăng số lượng tồn kho của sản phẩm trong transaction.
      */
     public void incrementInventoryCount(Connection connection, int productId) throws SQLException {
-        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        incrementInventoryCount(connection, productId, 1);
+    }
+
+    /**
+     * Tăng số lượng tồn kho của sản phẩm trong transaction với số lượng tùy chỉnh.
+     *
+     * @param connection kết nối cơ sở dữ liệu đang mở
+     * @param productId  mã sản phẩm cần cập nhật
+     * @param quantity   số lượng cần cộng thêm
+     * @throws SQLException khi thao tác SQL thất bại
+     */
+    public void incrementInventoryCount(Connection connection, int productId, int quantity) throws SQLException {
+        if (quantity <= 0) {
+            return;
+        }
+        final String sql = "UPDATE products SET inventory_count = COALESCE(inventory_count, 0) + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, productId);
+            statement.setInt(1, quantity);
+            statement.setInt(2, productId);
             statement.executeUpdate();
         }
     }
 
     /**
      * Tăng số lượng tồn kho của sản phẩm và cập nhật inventory_count trong variants_json nếu có variant.
-     * 
+     *
      * @param connection database connection
      * @param productId ID sản phẩm
      * @param variantCode mã biến thể (có thể null nếu không có variant)
      * @throws SQLException nếu có lỗi database
      */
     public void incrementInventoryWithVariant(Connection connection, int productId, String variantCode) throws SQLException {
-        // 1. Khóa và lấy thông tin sản phẩm mới nhất từ database
+        incrementInventoryWithVariant(connection, productId, variantCode, 1);
+    }
+
+    /**
+     * Tăng tồn kho sản phẩm/biến thể theo số lượng chỉ định.
+     *
+     * @param connection kết nối hiện hành
+     * @param productId  mã sản phẩm
+     * @param variantCode mã biến thể (có thể {@code null})
+     * @param quantity   số lượng cần hoàn trả vào kho
+     * @throws SQLException nếu thao tác cập nhật thất bại
+     */
+    public void incrementInventoryWithVariant(Connection connection, int productId, String variantCode, int quantity)
+            throws SQLException {
+        if (quantity <= 0) {
+            return;
+        }
+
         ProductInventoryLock lock = lockProductForUpdate(connection, productId);
-        
-        // 2. Tăng inventory_count trong bảng products
-        incrementInventoryCount(connection, productId);
-        
-        // 3. Nếu có variant, cập nhật inventory_count trong variants_json
-        if (variantCode != null && !variantCode.trim().isEmpty() && 
-            ProductVariantUtils.hasVariants(lock.variantSchema()) && 
-            lock.variantsJson() != null && !lock.variantsJson().trim().isEmpty()) {
-            
-            // Parse variants từ JSON mới nhất từ database
+
+        incrementInventoryCount(connection, productId, quantity);
+
+        if (variantCode != null && !variantCode.trim().isEmpty()
+                && ProductVariantUtils.hasVariants(lock.variantSchema())
+                && lock.variantsJson() != null && !lock.variantsJson().trim().isEmpty()) {
+
             List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
-                lock.variantSchema(), 
-                lock.variantsJson()
-            );
-            
-            // Tìm variant tương ứng và tăng inventory_count
+                    lock.variantSchema(), lock.variantsJson());
+
             String normalizedCode = ProductVariantUtils.normalizeCode(variantCode);
             Optional<ProductVariantOption> variantOpt = ProductVariantUtils.findVariant(variants, normalizedCode);
-            
+
             if (variantOpt.isPresent()) {
                 ProductVariantOption variant = variantOpt.get();
-                Integer currentInventory = variant.getInventoryCount();
-                variant.setInventoryCount((currentInventory == null ? 0 : currentInventory) + 1);
-                
-                // Cập nhật lại variants_json
+                ProductVariantUtils.increaseInventory(variant, quantity);
+
                 String updatedVariantsJson = ProductVariantUtils.toJson(variants);
                 updateVariantsJson(connection, productId, updatedVariantsJson);
             } else {
-                // Log warning nếu không tìm thấy variant
-                LOGGER.log(Level.WARNING, "Không tìm thấy variant với code '{0}' cho product_id={1}. Variants có sẵn: {2}", 
-                    new Object[]{normalizedCode, productId, variants.stream()
-                        .map(ProductVariantOption::getVariantCode)
-                        .collect(Collectors.joining(", "))});
+                LOGGER.log(Level.WARNING,
+                        "Không tìm thấy variant với code '{0}' cho product_id={1}. Variants có sẵn: {2}",
+                        new Object[]{normalizedCode, productId, variants.stream()
+                                .map(ProductVariantOption::getVariantCode)
+                                .collect(Collectors.joining(", "))});
             }
         }
     }
@@ -1030,18 +1237,48 @@ public class ProductDAO extends BaseDAO {
      */
     public boolean updateStatus(int productId, String status) {
         final String sql = "UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection connection = getConnection(); 
+
+        try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            
+
             statement.setString(1, status);
             statement.setInt(2, productId);
-            
+
             return statement.executeUpdate() > 0;
-            
+
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm", ex);
             return false;
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái cho toàn bộ sản phẩm của một shop.
+     * Sử dụng khi shop bị ẩn/khôi phục để đảm bảo đồng bộ trạng thái sản phẩm.
+     *
+     * @param shopId                mã shop cần cập nhật sản phẩm
+     * @param newStatus             trạng thái mới sẽ áp dụng cho các sản phẩm
+     * @param expectedCurrentStatus trạng thái hiện tại cần khớp (có thể null để bỏ qua điều kiện)
+     * @return số lượng bản ghi được cập nhật
+     */
+    public int updateStatusByShop(int shopId, String newStatus, String expectedCurrentStatus) {
+        StringBuilder sql = new StringBuilder("UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE shop_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(newStatus);
+        params.add(shopId);
+
+        if (expectedCurrentStatus != null) {
+            sql.append(" AND status = ?");
+            params.add(expectedCurrentStatus);
+        }
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            return statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái sản phẩm theo shop_id=" + shopId, ex);
+            return 0;
         }
     }
 

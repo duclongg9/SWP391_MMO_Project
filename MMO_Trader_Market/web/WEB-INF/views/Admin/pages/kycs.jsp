@@ -2,10 +2,13 @@
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"  %>
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
-
+<%@ page import="java.time.LocalDate" %>
+<%
+    String today = LocalDate.now().toString();
+    request.setAttribute("today", today);
+%>
 <c:set var="base" value="${pageContext.request.contextPath}" />
 
-<!-- Nhận biến từ Servlet (đã tính sẵn) -->
 <c:set var="pageNow"     value="${requestScope.pg_page}" />
 <c:set var="pageSize"    value="${requestScope.pg_size}" />
 <c:set var="total"       value="${requestScope.pg_total}" />
@@ -14,38 +17,58 @@
 <c:set var="isLast"      value="${requestScope.pg_isLast}" />
 <c:set var="singlePage"  value="${requestScope.pg_single}" />
 
-
 <div class="container-fluid">
-    <h4 class="mb-4"><i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt</h4>
+    <h4 class="mb-4">
+        <i class="bi bi-shield-check me-2"></i>Danh sách KYC cần duyệt
+    </h4>
+
     <c:if test="${not empty error}">
         <div class="alert alert-danger">${error}</div>
     </c:if>
+
+    <!-- ========== BỘ LỌC ========== -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form id="kycFilterForm" class="row g-2 align-items-end" action="<c:url value='/admin/kycs'/>" method="get">
+            <form id="kycFilterForm"
+                  class="row g-2 align-items-end"
+                  action="<c:url value='/admin/kycs'/>"
+                  method="get">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="size" value="${pageSize}">
                 <input type="hidden" name="sort" value="${sort}"/>
 
+                <!-- Tìm kiếm -->
                 <div class="col-12 col-md-3">
                     <label class="form-label mb-1" for="q">Tìm kiếm</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
                         <input id="q" name="q" type="search" class="form-control"
-                               placeholder="Tên người dùng…" value="${fn:escapeXml(q)}" />
+                               placeholder="Tên người dùng…"
+                               value="${fn:escapeXml(q)}" />
                     </div>
                 </div>
 
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="from">Từ ngày</label>
-                    <input id="from" name="from" type="date" lang="vi" class="form-control" placeholder="DD-MM-YYYY" value="${fn:escapeXml(from)}">
+                    <input id="from" name="from"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(from)}"
+                           max="${today}">
                 </div>
 
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" for="to">Đến ngày</label>
-                    <input id="to" name="to" type="date" lang="vi" class="form-control" placeholder="DD-MM-YYYY" value="${fn:escapeXml(to)}">
+                    <input id="to" name="to"
+                           type="date"
+                           class="form-control"
+                           value="${fn:escapeXml(to)}"
+                           max="${today}">
                 </div>
 
+                <!-- Trạng thái -->
                 <div class="col-12 col-md-2">
                     <label class="form-label mb-1" for="status">Trạng thái</label>
                     <select id="status" name="status" class="form-select">
@@ -59,12 +82,13 @@
                 <div class="col-12 col-md-2 d-grid">
                     <a class="btn btn-outline-secondary" href="<c:url value='/admin/kycs'/>">Xóa lọc</a>
                 </div>
-
             </form>
+
             <div id="toastBox"></div>
         </div>
     </div>
-    <!-- ===== Bảng danh sách ===== -->
+
+    <!-- ========== BẢNG DANH SÁCH ========== -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -77,88 +101,47 @@
                         <th class="text-center">Mặt sau</th>
                         <th class="text-center">Selfie</th>
                         <th>Số giấy tờ</th>
-
-                        <!-- Cột Ngày gửi (đảo sort không dùng JS) -->
-                        <th>
-                            <c:url var="uDate" value="/admin/kycs">
-                                <c:param name="q"      value="${q}" />
-                                <c:param name="from"   value="${from}" />
-                                <c:param name="to"     value="${to}" />
-                                <c:param name="status" value="${status}" />
-                                <c:param name="size"   value="${pageSize}" />
-                                <c:param name="page"   value="1" />
-                                <c:param name="sort"   value="${sort eq 'date_desc' ? 'date_asc' : 'date_desc'}" />
-                            </c:url>
-                            <a href="${uDate}" class="text-decoration-none">Ngày gửi</a>
-                        </th>
-
-                        <!-- Cột Trạng thái (đảo sort không dùng JS) -->
-                        <th>
-                            <c:url var="uStatus" value="/admin/kycs">
-                                <c:param name="q"      value="${q}" />
-                                <c:param name="from"   value="${from}" />
-                                <c:param name="to"     value="${to}" />
-                                <c:param name="status" value="${status}" />
-                                <c:param name="size"   value="${pageSize}" />
-                                <c:param name="page"   value="1" />
-                                <c:param name="sort"   value="${sort eq 'status_asc' ? 'status_desc' : 'status_asc'}" />
-                            </c:url>
-                            <a href="${uStatus}" class="text-decoration-none">Trạng thái</a>
-                        </th>
-
+                        <th>Admin Feedback</th>
+                        <th>Ngày gửi</th>
+                        <th>Trạng thái</th>
                         <th class="text-center" style="width:140px">Hành động</th>
                     </tr>
                     </thead>
-
                     <tbody>
                     <c:choose>
                         <c:when test="${not empty kycList}">
                             <c:forEach var="k" items="${kycList}" varStatus="st">
+
+                                <!-- Chuẩn hóa src -->
                                 <c:set var="frontSrc"  value="${k.frontImageUrl}" />
                                 <c:set var="backSrc"   value="${k.backImageUrl}" />
                                 <c:set var="selfieSrc" value="${k.selfieImageUrl}" />
 
-                                <c:if test="${not empty frontSrc and not fn:startsWith(frontSrc,'http')}">
-                                    <c:if test="${not fn:startsWith(frontSrc,'/')}">
-                                        <c:set var="frontSrc" value="/${frontSrc}" />
-                                    </c:if>
-                                    <c:set var="frontSrc" value="${base}${frontSrc}" />
-                                </c:if>
-                                <c:if test="${not empty backSrc and not fn:startsWith(backSrc,'http')}">
-                                    <c:if test="${not fn:startsWith(backSrc,'/')}">
-                                        <c:set var="backSrc" value="/${backSrc}" />
-                                    </c:if>
-                                    <c:set var="backSrc" value="${base}${backSrc}" />
-                                </c:if>
-                                <c:if test="${not empty selfieSrc and not fn:startsWith(selfieSrc,'http')}">
-                                    <c:if test="${not fn:startsWith(selfieSrc,'/')}">
-                                        <c:set var="selfieSrc" value="/${selfieSrc}" />
-                                    </c:if>
-                                    <c:set var="selfieSrc" value="${base}${selfieSrc}" />
-                                </c:if>
-
                                 <tr>
                                     <td>${(pageNow-1)*pageSize + st.index + 1}</td>
-
                                     <td>
                                         <div class="fw-semibold">${k.userName}</div>
                                         <div class="text-muted small">${k.userEmail}</div>
                                     </td>
 
                                     <td class="text-center">
-                                        <img src="${frontSrc}" alt="front" class="img-thumbnail"
-                                             style="width:80px;height:56px;object-fit:cover;">
+                                        <a href="#" class="zoom-link" data-full="${frontSrc}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                            <img src="${frontSrc}" class="img-thumbnail kyc-thumb" style="width:80px;height:56px;object-fit:cover;">
+                                        </a>
                                     </td>
                                     <td class="text-center">
-                                        <img src="${backSrc}" alt="back" class="img-thumbnail"
-                                             style="width:80px;height:56px;object-fit:cover;">
+                                        <a href="#" class="zoom-link" data-full="${backSrc}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                            <img src="${backSrc}" class="img-thumbnail kyc-thumb" style="width:80px;height:56px;object-fit:cover;">
+                                        </a>
                                     </td>
                                     <td class="text-center">
-                                        <img src="${selfieSrc}" alt="selfie" class="img-thumbnail"
-                                             style="width:80px;height:56px;object-fit:cover;">
+                                        <a href="#" class="zoom-link" data-full="${selfieSrc}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
+                                            <img src="${selfieSrc}" class="img-thumbnail kyc-thumb" style="width:80px;height:56px;object-fit:cover;">
+                                        </a>
                                     </td>
 
                                     <td>${k.idNumber}</td>
+                                    <td>${k.adminFeedback}</td>
                                     <td><fmt:formatDate value="${k.createdAt}" pattern="dd-MM-yyyy"/></td>
 
                                     <td>
@@ -172,23 +155,25 @@
                                             </c:choose>
                                         </c:set>
                                         <span class="badge
-                      <c:choose>
-                        <c:when test='${k.statusId == 1}'>bg-warning text-dark</c:when>
-                        <c:when test='${k.statusId == 2}'>bg-success</c:when>
-                        <c:when test='${k.statusId == 3}'>bg-danger</c:when>
-                        <c:otherwise>bg-secondary</c:otherwise>
-                      </c:choose>">
+                                            <c:choose>
+                                                <c:when test='${k.statusId == 1}'>bg-warning text-dark</c:when>
+                                                <c:when test='${k.statusId == 2}'>bg-success</c:when>
+                                                <c:when test='${k.statusId == 3}'>bg-danger</c:when>
+                                                <c:otherwise>bg-secondary</c:otherwise>
+                                            </c:choose>">
                                                 ${statusText}
                                         </span>
                                     </td>
 
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#kycModal_${k.id}">
+                                        <button class="btn btn-sm btn-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#kycModal_${k.id}">
                                             <i class="bi bi-eye"></i> Xem chi tiết
                                         </button>
                                     </td>
                                 </tr>
-
+                                <!-- ========== MODAL CHI TIẾT ========== -->
                                 <div class="modal fade" id="kycModal_${k.id}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -196,7 +181,6 @@
                                                 <h5 class="modal-title">KYC #${k.id} – ${k.userName}</h5>
                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                             </div>
-
                                             <div class="modal-body">
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
@@ -210,72 +194,93 @@
 
                                                     <div class="col-12"><hr/></div>
 
-                                                    <!-- Ảnh: chỉ 1 modal zoom dùng chung, mỗi ảnh có data-full -->
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Mặt trước</div>
-                                                        <a href="#" class="zoom-link" data-full="${k.frontImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
-                                                            <img src="${k.frontImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="front"
-                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.frontImageUrl}'">
+                                                        <a href="#" class="zoom-link" data-full="${frontSrc}">
+                                                            <img src="${frontSrc}" class="img-fluid rounded shadow-sm kyc-thumb">
                                                         </a>
                                                     </div>
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Mặt sau</div>
-                                                        <a href="#" class="zoom-link" data-full="${k.backImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
-                                                            <img src="${k.backImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
-                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.backImageUrl}'">
+                                                        <a href="#" class="zoom-link" data-full="${backSrc}">
+                                                            <img src="${backSrc}" class="img-fluid rounded shadow-sm kyc-thumb">
                                                         </a>
                                                     </div>
                                                     <div class="col-md-4 text-center">
                                                         <div class="small text-muted mb-2">Selfie</div>
-                                                        <a href="#" class="zoom-link" data-full="${k.selfieImageUrl}" data-bs-toggle="modal" data-bs-target="#imgZoomModal">
-                                                            <img src="${k.selfieImageUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="selfie"
-                                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${k.selfieImageUrl}'">
+                                                        <a href="#" class="zoom-link" data-full="${selfieSrc}">
+                                                            <img src="${selfieSrc}" class="img-fluid rounded shadow-sm kyc-thumb">
                                                         </a>
                                                     </div>
 
+                                                    <!-- Form duyệt -->
                                                     <div class="col-12 mt-3">
                                                         <div class="small text-muted mb-1">Ghi chú/Phản hồi quản trị</div>
-                                                        <form action="${base}/admin/kycs/status" method="post" onsubmit="return handleApproveSubmit(event, ${k.id});">
-                                                            <input type="hidden" name="id" value="${k.id}"/>
-                                                            <textarea name="feedback" class="form-control" rows="3"
-                                                                      placeholder="Ghi chú cho người dùng (bắt buộc khi từ chối)"
-                                                                      <c:if test="${k.statusId != 1}">disabled</c:if>>${k.adminFeedback}</textarea>
+
+                                                        <form id="kycForm_${k.id}"
+                                                              action="${base}/admin/kycs/status"
+                                                              method="post">
+                                                            <input type="hidden" name="id" value="${k.id}">
+                                                            <!-- action sẽ set bằng JS: approve / reject -->
+                                                            <input type="hidden" name="action" id="kycAction_${k.id}" value="">
+
+                                                            <textarea id="kycFeedback_${k.id}"
+                                                                      name="feedback"
+                                                                      rows="3"
+                                                                      class="form-control"
+                                                                      placeholder="Ghi chú cho người dùng (bắt buộc khi từ chối)">${k.adminFeedback}</textarea>
+
+                                                            <div id="kycError_${k.id}"
+                                                                 class="text-danger small mt-1 d-none">
+                                                                ⚠️ Vui lòng nhập lý do từ chối KYC.
+                                                            </div>
 
                                                             <div class="d-flex gap-2 mt-3">
                                                                 <c:choose>
                                                                     <c:when test="${k.statusId == 1}">
-                                                                        <!-- Nút Accept -->
-                                                                        <button type="submit" class="btn btn-success" name="action" value="approve">
+                                                                        <!-- Accept: submit thẳng -->
+                                                                        <button type="submit"
+                                                                                class="btn btn-success"
+                                                                                onclick="document.getElementById('kycAction_${k.id}').value='approve';">
                                                                             <i class="bi bi-check-circle"></i> Accept
                                                                         </button>
-                                                                        <!-- Nút Reject -->
-                                                                        <button class="btn btn-danger" name="action" value="reject"
-                                                                                onclick="return confirm('Từ chối KYC này?');">
+
+                                                                        <!-- Reject: JS kiểm tra rồi submit -->
+                                                                        <button type="button"
+                                                                                class="btn btn-danger"
+                                                                                onclick="onRejectKyc(${k.id});">
                                                                             <i class="bi bi-x-circle"></i> Reject
                                                                         </button>
                                                                     </c:when>
                                                                     <c:otherwise>
-                                                                        <span class="text-muted align-self-center">Hồ sơ đã xử lý.</span>
+                                                                        <span class="text-muted align-self-center">
+                                                                            Hồ sơ đã xử lý.
+                                                                        </span>
                                                                     </c:otherwise>
                                                                 </c:choose>
 
-                                                                <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Đóng</button>
+                                                                <button type="button"
+                                                                        class="btn btn-secondary ms-auto"
+                                                                        data-bs-dismiss="modal">
+                                                                    Đóng
+                                                                </button>
                                                             </div>
                                                         </form>
                                                     </div>
-
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-
-
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <tr><td colspan="9" class="text-center text-muted py-4">Không có hồ sơ KYC.</td></tr>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">
+                                    Không có hồ sơ KYC.
+                                </td>
+                            </tr>
                         </c:otherwise>
                     </c:choose>
                     </tbody>
@@ -284,7 +289,6 @@
         </div>
     </div>
 
-    <!-- ===== Phân trang ===== -->
     <nav aria-label="Pagination">
         <ul class="pagination justify-content-center mt-3">
 
@@ -333,227 +337,200 @@
         </ul>
     </nav>
 
+</div>
 
-
-    <div style="position:fixed;bottom:6px;left:6px;font:12px/1 monospace;background:#f6f8fa;border:1px solid #ddd;padding:6px 8px;border-radius:6px;z-index:9999">
-        pageNow=${pageNow}, pages=${pages}, total=${total}, size=${pageSize},
-        isFirst=${isFirst}, isLast=${isLast}, singlePage=${singlePage}
-    </div>
-
-    <div class="modal fade" id="imgZoomModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-center">
-                <img id="zoomImg" src="" alt="Preview" class="img-fluid">
-            </div>
+<!-- Modal zoom ảnh -->
+<div class="modal fade" id="imgZoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-center">
+            <img id="zoomImg" src="" alt="Preview" class="img-fluid">
         </div>
     </div>
-
-
 </div>
 
 <style>
-    .table td,.table th{ vertical-align:middle }
-
-    .kyc-thumb {
-        cursor: zoom-in;
-        transition: transform 0.2s ease;
+    .table td, .table th { vertical-align: middle; }
+    .kyc-thumb { cursor: zoom-in; transition: transform 0.2s ease; }
+    .kyc-thumb:hover { transform: scale(1.05); }
+    #imgZoomModal img { width: 50%; max-width: 50%; border-radius: 8px; margin: 0 auto; }
+    #toastBox {
+        position: fixed; bottom: 30px; right: 30px;
+        display: flex; flex-direction: column; align-items: flex-end;
+        padding: 20px; z-index: 9999;
     }
-    .kyc-thumb:hover {
-        transform: scale(1.05);
-    }
-
-    #imgZoomModal img {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-    }
-
-    #toastBox{
-        position: fixed;
-        bottom: 30px; right: 30px;
-        display: flex; align-items: flex-end; flex-direction: column;
-        overflow: hidden; padding: 20px; z-index: 9999;
-    }
-
-    .mm-toast{
+    .mm-toast {
         width: 400px; height: 80px; background: #fff;
-        font-weight: 500; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        display: flex; align-items: center; padding: 20px; position: relative;
+        font-weight: 500; margin: 15px 0;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        display: flex; align-items: center;
+        padding: 20px; position: relative;
         transform: translateX(100%);
         animation: moveleft 0.5s linear forwards;
     }
-
-    .mm-toast i{
-        margin: 0 20px;
-        font-size: 35px;
-        color: green;
+    .mm-toast.error { color: red; }
+    .mm-toast::after {
+        content:''; position:absolute; left:0; bottom:0; width:100%; height:5px;
+        background: green; animation: anim 5s linear forwards;
     }
-    .mm-toast.error i{
-        color: red;
-    }
-    .mm-toast.error{
-        color: red;
-    }
-    .mm-toast.error::after{
-        background: red;
-    }
-    .mm-toast::after{
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        height: 5px;
-        background: green;
-        animation: anim 5s linear forwards;
-    }
-
-    @keyframes anim {
-        100%{ width: 0; }
-    }
-    @keyframes moveleft {
-        100%{ transform: translateX(0); }
-    }
-
-
-
+    .mm-toast.error::after { background:red; }
+    @keyframes anim { 100% { width:0; } }
+    @keyframes moveleft { 100% { transform: translateX(0); } }
 </style>
 
 <script>
-    const toastBox = document.getElementById('toastBox');
-
     function showToast(msg, type = 'success') {
+        const box = document.getElementById('toastBox');
+        if (!box) return;
         const toast = document.createElement('div');
         toast.classList.add('mm-toast');
+        if (type === 'error') toast.classList.add('error');
+        toast.innerHTML = msg;
+        box.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
 
-        if (type === 'error') {
-            toast.classList.add('error');
-        } else if (type === 'warning') {
-            toast.classList.add('warning');
+    // Reject KYC: dùng id -> không phụ thuộc closest()
+    function onRejectKyc(id) {
+        console.log('onRejectKyc clicked', id);
+
+        const form   = document.getElementById('kycForm_' + id);
+        const fb     = document.getElementById('kycFeedback_' + id);
+        const errBox = document.getElementById('kycError_' + id);
+        const action = document.getElementById('kycAction_' + id);
+
+        if (!form || !fb || !action) {
+            console.error('Thiếu phần tử form/feedback/action cho KYC', id);
+            return false;
         }
 
-        toast.innerHTML = msg;
-        toastBox.appendChild(toast);
+        // clear lỗi cũ
+        if (errBox) errBox.classList.add('d-none');
+        fb.classList.remove('is-invalid');
 
-        setTimeout(() => {
-            toast.remove();
-        }, 5000);
+        if (!fb.value.trim()) {
+            // thiếu feedback
+            if (errBox) errBox.classList.remove('d-none');
+            fb.classList.add('is-invalid');
+            fb.focus();
+            console.log('Reject: thiếu feedback');
+            return false;
+        }
+
+        // confirm
+        if (!confirm('Bạn có chắc chắn muốn TỪ CHỐI hồ sơ KYC này không?')) {
+            console.log('Reject: user cancel');
+            return false;
+        }
+
+        action.value = 'reject';
+        console.log('Reject: submit form', id);
+        form.submit();
+        return true;
     }
-    document.addEventListener('DOMContentLoaded', function () {
-        // =============================
-        // ✅ PHẦN 1: AUTO FILTER (trừ ô q)
-        // =============================
-        const form   = document.getElementById('kycFilterForm');
-        if (!form) return; // an toàn
 
+    // Ẩn lỗi khi gõ lại feedback
+    document.addEventListener('input', function (e) {
+        const idMatch = e.target.id && e.target.id.match(/^kycFeedback_(\d+)$/);
+        if (!idMatch) return;
+        const id = idMatch[1];
+        const err = document.getElementById('kycError_' + id);
+        if (err) err.classList.add('d-none');
+        e.target.classList.remove('is-invalid');
+    });
+
+    // Filter + ngày + zoom (rút gọn, giữ logic như trước)
+    document.addEventListener('DOMContentLoaded', function () {
+        const form   = document.getElementById('kycFilterForm');
         const qInput = document.getElementById('q');
         const selStt = document.getElementById('status');
         const fromEl = document.getElementById('from');
         const toEl   = document.getElementById('to');
+        const today  = new Date(); today.setHours(0,0,0,0);
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        // Reset về trang 1 trước khi lọc
         function resetPageToFirst() {
-            let pageHidden = form.querySelector('input[name="page"]');
-            if (!pageHidden) {
-                pageHidden = document.createElement('input');
-                pageHidden.type = 'hidden';
-                pageHidden.name = 'page';
-                form.appendChild(pageHidden);
+            if (!form) return;
+            let p = form.querySelector('input[name="page"]');
+            if (!p) {
+                p = document.createElement('input');
+                p.type = 'hidden';
+                p.name = 'page';
+                form.appendChild(p);
             }
-            pageHidden.value = '1';
+            p.value = '1';
         }
 
-
-
-
-        // Chỉ cho phép Enter submit ở ô q; các ô khác bị chặn
-        form.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target !== qInput) {
-                e.preventDefault();
-            }
-        });
-
-
-        // Nếu muốn chắc chắn reset page khi Enter ở q:
+        if (form) {
+            form.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && e.target !== qInput) e.preventDefault();
+            });
+        }
         if (qInput) {
-            qInput.addEventListener('keydown', (e) => {
+            qInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') resetPageToFirst();
             });
         }
-
-        // ✅ Đổi trạng thái -> submit ngay
         if (selStt) {
-            selStt.addEventListener('change', () => {
+            selStt.addEventListener('change', function () {
                 resetPageToFirst();
                 form.submit();
             });
         }
-
-        if(fromEl){
-            fromEl.addEventListener("change",function (){
-                const selected = new Date(this.value);
-                if(selected > today){
-                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!','error');
-                    this.value = "";
+        if (fromEl) {
+            fromEl.addEventListener('change', function () {
+                const d = new Date(this.value);
+                if (d > today) {
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = '';
+                }
+            });
+        }
+        if (toEl) {
+            toEl.addEventListener('change', function () {
+                const d = new Date(this.value);
+                if (d > today) {
+                    showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
+                    this.value = '';
+                } else {
+                    resetPageToFirst();
+                    form.submit();
                 }
             });
         }
 
-
-        // ✅ End date -> submit ngay
-        if (toEl) {
-            toEl.addEventListener('change', function (){
-                const selected = new Date(this.value);
-                    if(selected > today){
-                        showToast('<i class="fa fa-times-circle"></i> Không được chọn ngày trong tương lai!', 'error');
-                        this.value = "";
-                    }else{
-                        resetPageToFirst();
-                        form.submit();
-                    }
-            });
-        }
-
-
-        // ============================= Room Image
+        // zoom ảnh
         const zoomModal = document.getElementById('imgZoomModal');
-        if (zoomModal) {
-            let lastDetailModal = null;
-
-            document.addEventListener('click', function(e) {
+        const zoomImg   = document.getElementById('zoomImg');
+        if (zoomModal && zoomImg && window.bootstrap) {
+            let lastModal = null;
+            document.addEventListener('click', function (e) {
                 const link = e.target.closest('.zoom-link');
                 if (!link) return;
                 e.preventDefault();
-
-                lastDetailModal = e.target.closest('.modal');
+                lastModal = e.target.closest('.modal');
                 const full = link.getAttribute('data-full') || link.querySelector('img')?.src;
-                const img = document.getElementById('zoomImg');
-                if (img) img.src = full;
-
+                zoomImg.src = full || '';
                 new bootstrap.Modal(zoomModal).show();
             });
-
-            zoomModal.addEventListener('hidden.bs.modal', function() {
-                if (lastDetailModal) {
-                    new bootstrap.Modal(lastDetailModal).show();
-                    lastDetailModal = null;
+            zoomModal.addEventListener('hidden.bs.modal', function () {
+                if (lastModal) {
+                    new bootstrap.Modal(lastModal).show();
+                    lastModal = null;
                 }
             });
         }
     });
 </script>
+
 <c:if test="${not empty sessionScope.flash}">
     <script>
-        const msg = "${fn:escapeXml(sessionScope.flash)}";
-
-        const icon = msg.toLowerCase().includes("lỗi")
-            ? '<i class="fa fa-times-circle"></i>'
-            : '<i class="fa fa-check-circle"></i>';
-
-        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+        (function(){
+            const msg = "${fn:escapeXml(sessionScope.flash)}";
+            const lower = msg.toLowerCase();
+            const icon = lower.includes("lỗi")
+                ? '<i class="fa fa-times-circle"></i>'
+                : '<i class="fa fa-check-circle"></i>';
+            showToast(icon + " " + msg, lower.includes("lỗi") ? "error" : "success");
+        })();
     </script>
     <c:remove var="flash" scope="session"/>
 </c:if>

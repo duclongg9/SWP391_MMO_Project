@@ -22,8 +22,10 @@ public class ProductListController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_SIZE = 5;
-    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(5, 10, 20, 40);
+    private static final int DEFAULT_SIZE = 4;
+    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(4, 8, 12, 16);
+    private static final String SORT_NEWEST = "newest";
+    private static final String SORT_BEST_SELLER = "best_seller";
 
     private final ProductService productService = new ProductService();
 
@@ -61,8 +63,11 @@ public class ProductListController extends BaseController {
                 request.getParameterValues("subtype"));
         Set<String> selectedSubtypeSet = new LinkedHashSet<>(subtypeFilters);
 //Gọi service lấy kết quả trang (items, page, size, total, totalPages).
+        String sortOrder = normalizeSort(request.getParameter("sort"));
+        String serviceSort = SORT_BEST_SELLER.equals(sortOrder) ? SORT_BEST_SELLER : null;
+
         PagedResult<ProductSummaryView> result = productService.browseByType(normalizedType, subtypeFilters,
-                normalizedKeyword, page, size);
+                normalizedKeyword, serviceSort, page, size);
         List<ProductSubtypeOption> subtypeOptions = normalizedType == null
                 ? List.of()
                 : productService.getSubtypeOptions(normalizedType);
@@ -85,6 +90,7 @@ public class ProductListController extends BaseController {
         request.setAttribute("selectedType", normalizedType == null ? "" : normalizedType);
         request.setAttribute("selectedSubtypes", selectedSubtypeSet);
         request.setAttribute("keyword", normalizedKeyword == null ? "" : normalizedKeyword);
+        request.setAttribute("sortOrder", sortOrder == null ? SORT_NEWEST : sortOrder);
         request.setAttribute("typeOptions", typeOptions);
         request.setAttribute("subtypeOptions", subtypeOptions);
         request.setAttribute("currentTypeLabel", currentTypeLabel);
@@ -112,5 +118,28 @@ public class ProductListController extends BaseController {
             return pageSizeParam;
         }
         return request.getParameter("size");
+    }
+
+    /**
+     * Chuẩn hóa tham số sắp xếp từ query string để tránh giá trị không hợp lệ.
+     *
+     * @param sortParam giá trị raw từ request
+     * @return mã sắp xếp hợp lệ hoặc {@code null} nếu mặc định
+     */
+    private String normalizeSort(String sortParam) {
+        if (sortParam == null) {
+            return null;
+        }
+        String normalized = sortParam.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (SORT_BEST_SELLER.equals(normalized) || "best-seller".equals(normalized) || "bestseller".equals(normalized)) {
+            return SORT_BEST_SELLER;
+        }
+        if (SORT_NEWEST.equals(normalized) || "latest".equals(normalized)) {
+            return SORT_NEWEST;
+        }
+        return null;
     }
 }

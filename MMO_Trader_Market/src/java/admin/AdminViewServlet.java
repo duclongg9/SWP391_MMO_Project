@@ -13,6 +13,12 @@ import model.KycRequests;
 import model.Shops;
 import model.Users;
 
+import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.*;
+import dao.admin.ManageUserDAO;
+import dao.system.SystemConfigDAO;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -46,6 +52,10 @@ public class AdminViewServlet extends HttpServlet {
             .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
             .toFormatter();
 
+    private static final long DEFAULT_ESCROW_HOLD_SECONDS = 72L * 3600L;
+
+    private final SystemConfigDAO systemConfigDAO = new SystemConfigDAO();
+
     private static LocalDate tryParseDate(String s) {
         if (s == null) {
             return null;
@@ -76,6 +86,29 @@ public class AdminViewServlet extends HttpServlet {
         } catch (Exception e) {
             return dft;
         }
+    }
+
+    /**
+     * Tạo chuỗi mô tả thời lượng escrow dựa trên ba thành phần giờ, phút, giây.
+     */
+    private static String formatEscrowDuration(int hours, int minutes, int seconds) {
+        StringBuilder label = new StringBuilder();
+        if (hours > 0) {
+            label.append(hours).append(" giờ");
+        }
+        if (minutes > 0) {
+            if (label.length() > 0) {
+                label.append(' ');
+            }
+            label.append(minutes).append(" phút");
+        }
+        if (seconds > 0 || label.length() == 0) {
+            if (label.length() > 0) {
+                label.append(' ');
+            }
+            label.append(seconds).append(" giây");
+        }
+        return label.toString();
     }
 
     // ------ Pagination helpers ------ 20 , 8
@@ -129,6 +162,9 @@ public class AdminViewServlet extends HttpServlet {
                 return;
             case "/shops/status":
                 handleShopStatus(req, resp);
+                return;
+            case "/systems/escrow":
+                handleUpdateEscrowConfig(req, resp);
                 return;
             default:
                 resp.sendError(404);
@@ -217,6 +253,79 @@ public class AdminViewServlet extends HttpServlet {
             e.printStackTrace();
             resp.sendError(500, e.getMessage());
         }
+    }
+
+    /**
+     * Cập nhật cấu hình thời gian giữ escrow dựa trên giá trị giờ-phút-giây được gửi từ form.
+     */
+    private void handleUpdateEscrowConfig(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+
+        req.setCharacterEncoding("UTF-8");
+        String hoursParam = safe(req.getParameter("escrowHoldHours"));
+        String minutesParam = safe(req.getParameter("escrowHoldMinutes"));
+        String secondsParam = safe(req.getParameter("escrowHoldSeconds"));
+        HttpSession session = req.getSession();
+
+        int hours;
+        int minutes;
+        int seconds;
+
+        try {
+            hours = hoursParam == null ? 0 : Integer.parseInt(hoursParam);
+            minutes = minutesParam == null ? 0 : Integer.parseInt(minutesParam);
+            seconds = secondsParam == null ? 0 : Integer.parseInt(secondsParam);
+        } catch (NumberFormatException ex) {
+            session.setAttribute("flashError", "Vui lòng nhập giá trị số hợp lệ cho giờ, phút và giây.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        if (hours < 0 || hours > 720) {
+            session.setAttribute("flashError", "Giá trị giờ phải nằm trong khoảng 0 - 720.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (minutes < 0 || minutes >= 60) {
+            session.setAttribute("flashError", "Giá trị phút phải nằm trong khoảng 0 - 59.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (seconds < 0 || seconds >= 60) {
+            session.setAttribute("flashError", "Giá trị giây phải nằm trong khoảng 0 - 59.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        long totalSeconds = hours * 3600L + minutes * 60L + seconds;
+        long maxSeconds = 720L * 3600L;
+        if (totalSeconds <= 0) {
+            session.setAttribute("flashError", "Thời gian escrow phải lớn hơn 0 giây.");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+        if (totalSeconds > maxSeconds) {
+            session.setAttribute("flashError", "Thời gian escrow không được vượt quá 720 giờ (2.592.000 giây).");
+            resp.sendRedirect(req.getContextPath() + "/admin/systems");
+            return;
+        }
+
+        boolean updated = systemConfigDAO.upsertValueByKey(
+                "escrow.hold.default.seconds",
+                Long.toString(totalSeconds)
+        );
+
+        if (updated) {
+            session.setAttribute(
+                    "flash",
+                    "Đã cập nhật thời gian giữ tiền escrow thành "
+                            + formatEscrowDuration(hours, minutes, seconds) + "."
+            );
+        } else {
+            session.setAttribute("flashError", "Không thể lưu cấu hình thời gian escrow. Vui lòng thử lại sau.");
+        }
+
+        resp.sendRedirect(req.getContextPath() + "/admin/systems");
     }
 
     // ================== Tạo user: báo lỗi trong popup (không JS) ==================
@@ -368,12 +477,8 @@ public class AdminViewServlet extends HttpServlet {
                     handleShops(req, resp);
                 case "/kycs" ->
                     handleKycs(req, resp);
-                case "/systems" -> {
-                    req.setAttribute("pageTitle", "Quản lí hệ thống");
-                    req.setAttribute("active", "systems");
-                    req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
-                    req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
-                }
+                case "/systems" ->
+                    handleSystems(req, resp);
                 default -> {
                     // Nếu path không hợp lệ, redirect về dashboard
                     resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
@@ -386,7 +491,7 @@ public class AdminViewServlet extends HttpServlet {
     }
     // ================== /admin/users ==================
 
-    // ================== /admin/users ==================
+    // ================== /admin/dashboard ==================
     private void handleDashboard(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         LocalDate now = LocalDate.now();
@@ -552,11 +657,11 @@ public class AdminViewServlet extends HttpServlet {
             if (size <= 0) {
                 size = DEFAULT_SIZE;
             }
-            // total = 20, size = 8, pages = 3; page = (1,3), fromIdx =(0,
 
             int total = list.size();
             int pages = ceilDiv(total, size);
             page = clampPage(page, pages);
+
             int fromIdx = Math.max(0, (page - 1) * size);
             int toIdx = Math.min(total, fromIdx + size);
             List<Users> pageList = list.subList(fromIdx, toIdx);
@@ -586,6 +691,59 @@ public class AdminViewServlet extends HttpServlet {
         req.setAttribute("pageTitle", "Quản lý người dùng");
         req.setAttribute("active", "users");
         req.setAttribute("content", "/WEB-INF/views/Admin/pages/users.jsp");
+        req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
+    }
+
+    /**
+     * Hiển thị trang cấu hình hệ thống và nạp thông tin cấu hình escrow hiện tại.
+     */
+    private void handleSystems(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        HttpSession session = req.getSession(false);
+        if (session != null) {
+            Object flash = session.getAttribute("flash");
+            if (flash != null) {
+                req.setAttribute("flash", flash);
+                session.removeAttribute("flash");
+            }
+            Object flashError = session.getAttribute("flashError");
+            if (flashError != null) {
+                req.setAttribute("flashError", flashError);
+                session.removeAttribute("flashError");
+            }
+        }
+
+        long escrowHoldSeconds = DEFAULT_ESCROW_HOLD_SECONDS;
+        String configValue = systemConfigDAO.findValueByKey("escrow.hold.default.seconds").orElse(null);
+        if (configValue != null) {
+            String trimmed = configValue.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    long parsedSeconds = Long.parseLong(trimmed);
+                    if (parsedSeconds > 0) {
+                        escrowHoldSeconds = parsedSeconds;
+                    }
+                } catch (NumberFormatException ignore) {
+                    // fallback về mặc định khi cấu hình không hợp lệ
+                }
+            }
+        }
+
+        int escrowHoldHoursPart = (int) Math.min(escrowHoldSeconds / 3600L, Integer.MAX_VALUE);
+        long remainder = escrowHoldSeconds % 3600L;
+        int escrowHoldMinutesPart = (int) (remainder / 60L);
+        int escrowHoldSecondsPart = (int) (remainder % 60L);
+
+        req.setAttribute("escrowHoldHoursPart", escrowHoldHoursPart);
+        req.setAttribute("escrowHoldMinutesPart", escrowHoldMinutesPart);
+        req.setAttribute("escrowHoldSecondsPart", escrowHoldSecondsPart);
+        req.setAttribute("escrowHoldDurationLabel",
+                formatEscrowDuration(escrowHoldHoursPart, escrowHoldMinutesPart, escrowHoldSecondsPart));
+        req.setAttribute("escrowHoldTotalSeconds", escrowHoldSeconds);
+        req.setAttribute("pageTitle", "Cấu hình hệ thống");
+        req.setAttribute("active", "systems");
+        req.setAttribute("content", "/WEB-INF/views/Admin/pages/systems.jsp");
         req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
     }
 
@@ -681,7 +839,6 @@ public class AdminViewServlet extends HttpServlet {
         if (size <= 0) {
             size = DEFAULT_SIZE;
         }
-
         LocalDate fromD = tryParseDate(from);
         LocalDate toD = tryParseDate(to);
         Timestamp fromAt = (fromD == null) ? null : Timestamp.valueOf(fromD.atStartOfDay());

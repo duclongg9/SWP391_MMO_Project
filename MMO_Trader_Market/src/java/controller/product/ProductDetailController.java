@@ -72,7 +72,10 @@ public class ProductDetailController extends BaseController {
             List<ProductSummaryView> similarProducts = productService.findSimilarProducts(
                     product.getProductType(), product.getId());
             HttpSession session = request.getSession(false);
-            boolean isAuthenticated = session != null && session.getAttribute("userId") != null;
+            Integer currentUserId = session == null ? null : (Integer) session.getAttribute("userId");
+            boolean isAuthenticated = currentUserId != null;
+            Integer shopOwnerId = product.getShopOwnerId();
+            boolean isProductOwner = shopOwnerId != null && shopOwnerId.equals(currentUserId);
 
             if (session != null) {
                 String purchaseError = (String) session.getAttribute("purchaseError");
@@ -85,9 +88,18 @@ public class ProductDetailController extends BaseController {
                 }
             }
 
-            boolean canBuy = isAuthenticated && product.isAvailable() //Kiểm tra người dùng đã đăng nhập chưa 
-                    // Chỉ cho phép mua khi sản phẩm còn khả dụng và có dữ liệu bàn giao.
-                    && productService.hasDeliverableCredentials(product.getId(), product.getVariants());
+            boolean hasDeliverableCredentials = productService.hasDeliverableCredentials(product.getId(), product.getVariants());
+            boolean canBuy = isAuthenticated && product.isAvailable() //Kiểm tra người dùng đã đăng nhập chưa
+                    // Chỉ cho phép mua khi sản phẩm còn khả dụng, có dữ liệu bàn giao và không thuộc sở hữu người mua.
+                    && hasDeliverableCredentials && !isProductOwner;
+            String purchaseDisabledReason = null;
+            if (isAuthenticated && !canBuy) {
+                if (isProductOwner) {
+                    purchaseDisabledReason = "Bạn không thể mua sản phẩm từ gian hàng của mình.";
+                } else if (!product.isAvailable() || !hasDeliverableCredentials) {
+                    purchaseDisabledReason = "Sản phẩm tạm hết hàng hoặc chưa có đủ dữ liệu bàn giao.";
+                }
+            }
 
             request.setAttribute("headerSubtitle", "Thông tin chi tiết sản phẩm");
             request.setAttribute("product", product);
@@ -100,6 +112,8 @@ public class ProductDetailController extends BaseController {
             request.setAttribute("similarProducts", similarProducts);
             request.setAttribute("canBuy", canBuy);
             request.setAttribute("isAuthenticated", isAuthenticated);
+            request.setAttribute("isProductOwner", isProductOwner);
+            request.setAttribute("purchaseDisabledReason", purchaseDisabledReason);
             request.setAttribute("productToken", IdObfuscator.encode(product.getId()));
             forward(request, response, "product/detail");
         } catch (IllegalArgumentException ex) {

@@ -23,6 +23,7 @@
                 <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                 <input type="hidden" name="page" value="1" />
                 <input type="hidden" name="pageSize" value="${pageSize}" />
+                <input type="hidden" name="sort" value="${sortOrder}" />
                 <c:forEach var="code" items="${selectedSubtypes}">
                     <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
                 </c:forEach>
@@ -40,6 +41,7 @@
                     <input type="hidden" name="page" value="1" />
                     <input type="hidden" name="pageSize" value="${pageSize}" />
                     <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
+                    <input type="hidden" name="sort" value="${sortOrder}" />
                     <h3 class="product-filter-sidebar__title">Bộ Lọc</h3>
                     <div class="product-filter-sidebar__group">
                         <c:choose>
@@ -69,10 +71,25 @@
                         <span>Tổng <strong>${totalItems}</strong> sản phẩm khả dụng.</span>
                         <span>Trang ${page} / ${totalPages}</span>
                     </div>
+                    <form class="product-list__sort" method="get" action="${cPath}/products">
+                        <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
+                        <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
+                        <input type="hidden" name="page" value="1" />
+                        <input type="hidden" name="pageSize" value="${pageSize}" />
+                        <c:forEach var="code" items="${selectedSubtypes}">
+                            <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
+                        </c:forEach>
+                        <label class="product-list__page-size-label" for="product-sort">Sắp xếp</label>
+                        <select class="select" name="sort" id="product-sort" onchange="this.form.submit()">
+                            <option value="newest" <c:if test="${sortOrder == 'newest'}">selected</c:if>>Mới nhất</option>
+                            <option value="best_seller" <c:if test="${sortOrder == 'best_seller'}">selected</c:if>>Bán chạy</option>
+                        </select>
+                    </form>
                     <form class="product-list__page-size" method="get" action="${cPath}/products">
                         <input type="hidden" name="type" value="${fn:escapeXml(type)}" />
                         <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}" />
                         <input type="hidden" name="page" value="1" />
+                        <input type="hidden" name="sort" value="${sortOrder}" />
                         <c:forEach var="code" items="${selectedSubtypes}">
                             <input type="hidden" name="subtype" value="${fn:escapeXml(code)}" />
                         </c:forEach>
@@ -116,7 +133,7 @@
                                         <h3 class="product-card__title clamp-2"><c:out value="${p.name}" /></h3>
                                         <p class="product-card__meta">
                                             <span><c:out value="${p.productTypeLabel}" /> • <c:out value="${p.productSubtypeLabel}" /></span>
-                                            <span>Shop: <strong><c:out value="${p.shopName}" /></strong></span>
+                                            <span>Shop: <strong><a class="product-card__shop" href="${cPath}/shops/${p.shopEncodedId}"><c:out value="${p.shopName}" /></a></strong></span>
                                         </p>
                                         <p class="product-card__description"><c:out value="${p.shortDescription}" /></p>
                                         <p class="product-card__price">
@@ -167,6 +184,9 @@
                                         <c:param name="subtype" value="${s}" />
                                     </c:forEach>
                                     <c:param name="pageSize" value="${pageSize}" />
+                                    <c:if test="${sortOrder != 'newest'}">
+                                        <c:param name="sort" value="${sortOrder}" />
+                                    </c:if>
                                     <c:param name="page" value="${page - 1}" />
                                 </c:url>
                                 <a class="pagination__item" href="${prevUrl}">«</a>
@@ -182,6 +202,9 @@
                                     <c:param name="subtype" value="${s}" />
                                 </c:forEach>
                                 <c:param name="pageSize" value="${pageSize}" />
+                                <c:if test="${sortOrder != 'newest'}">
+                                    <c:param name="sort" value="${sortOrder}" />
+                                </c:if>
                                 <c:param name="page" value="${pageNumber}" />
                             </c:url>
                             <c:choose>
@@ -207,6 +230,9 @@
                                         <c:param name="subtype" value="${s}" />
                                     </c:forEach>
                                     <c:param name="pageSize" value="${pageSize}" />
+                                    <c:if test="${sortOrder != 'newest'}">
+                                        <c:param name="sort" value="${sortOrder}" />
+                                    </c:if>
                                     <c:param name="page" value="${page + 1}" />
                                 </c:url>
                                 <a class="pagination__item" href="${nextUrl}">»</a>

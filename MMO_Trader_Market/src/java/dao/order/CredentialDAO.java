@@ -327,6 +327,37 @@ public class CredentialDAO extends BaseDAO {
         }
     }
 
+    /**
+     * Hoàn trả toàn bộ credential đã gắn với đơn hàng về trạng thái chưa bán.
+     *
+     * @param orderId mã đơn hàng cần hoàn trả
+     * @return số credential được cập nhật
+     */
+    public int releaseCredentialsForOrder(int orderId) {
+        try (Connection connection = getConnection()) {
+            return releaseCredentialsForOrder(connection, orderId);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể hoàn trả credential của đơn hàng", ex);
+            return 0;
+        }
+    }
+
+    /**
+     * Hoàn trả credential của đơn hàng trong transaction hiện tại.
+     *
+     * @param connection kết nối đang mở
+     * @param orderId    mã đơn hàng cần hoàn trả
+     * @return số credential được cập nhật
+     * @throws SQLException nếu câu lệnh SQL lỗi
+     */
+    public int releaseCredentialsForOrder(Connection connection, int orderId) throws SQLException {
+        final String sql = "UPDATE product_credentials SET is_sold = 0, order_id = NULL WHERE order_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            return statement.executeUpdate();
+        }
+    }
+
     public List<String> findPlainCredentialsByOrder(int orderId) {
         final String sql = "SELECT encrypted_value FROM product_credentials WHERE order_id = ? ORDER BY id ASC";
         List<String> results = new ArrayList<>();
