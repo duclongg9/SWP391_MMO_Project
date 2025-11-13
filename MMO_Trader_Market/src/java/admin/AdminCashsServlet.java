@@ -36,52 +36,89 @@ public class AdminCashsServlet extends AbstractAdminServlet {
         }
     }
 
-    // ===== GET: list =====
-
+    // ===== GET: list + filter + sort + paging =====
     private void handleListCashs(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
+        // Tham số khớp với JSP
         String type   = clean(req.getParameter("type"));   // all | Deposit | Withdrawal
-        String q      = clean(req.getParameter("q"));      // userName
+        String q      = clean(req.getParameter("q"));      // userName (search)
         String status = clean(req.getParameter("status")); // all | Pending | Completed | Rejected
-        String order  = clean(req.getParameter("order"));  // newest | oldest
+        String sort   = clean(req.getParameter("sort"));   // date_asc|date_desc|status_asc|status_desc
+        String fromS  = clean(req.getParameter("from"));   // yyyy-MM-dd
+        String toS    = clean(req.getParameter("to"));     // yyyy-MM-dd
 
         final int DEFAULT_SIZE = 8;
         int size = parseIntOrDefault(req.getParameter("size"), DEFAULT_SIZE);
         int page = parseIntOrDefault(req.getParameter("page"), 1);
         if (size <= 0) size = DEFAULT_SIZE;
 
+        // Parse khoảng ngày (createdAt). toS được +1 ngày để inclusive
+        java.util.Date fromDate = null, toDate = null;
+        try {
+            if (fromS != null && !fromS.isBlank()) {
+                java.time.LocalDate d = java.time.LocalDate.parse(fromS);
+                fromDate = java.util.Date.from(d.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+            }
+            if (toS != null && !toS.isBlank()) {
+                java.time.LocalDate d = java.time.LocalDate.parse(toS).plusDays(1); // inclusive
+                toDate = java.util.Date.from(d.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+            }
+        } catch (Exception ignored) {}
+
         try (Connection con = DBConnect.getConnection()) {
             CashDAO dao = new CashDAO(con);
-            List<CashTxn> txns = dao.listAll(); // có thể đổi sang paging sau
+            List<CashTxn> txns = dao.listAll(); // tụi mình sẽ lọc/sort trên memory, sau có thể chuyển về SQL
 
+            // Lọc loại
             if (type != null && !"all".equalsIgnoreCase(type)) {
                 String t = type;
-                txns = txns.stream()
-                        .filter(x -> t.equalsIgnoreCase(x.getType()))
-                        .toList();
+                txns = txns.stream().filter(x -> t.equalsIgnoreCase(x.getType())).toList();
             }
-            if (q != null && !q.isEmpty()) {
+
+            // Lọc tên
+            if (q != null && !q.isBlank()) {
                 String qLower = q.toLowerCase();
                 txns = txns.stream()
-                        .filter(x -> x.getUserName() != null &&
-                                x.getUserName().toLowerCase().contains(qLower))
+                        .filter(x -> x.getUserName() != null && x.getUserName().toLowerCase().contains(qLower))
                         .toList();
             }
+
+            // Lọc trạng thái
             if (status != null && !"all".equalsIgnoreCase(status)) {
                 String s = status;
+                txns = txns.stream().filter(x -> s.equalsIgnoreCase(x.getStatus())).toList();
+            }
+
+            // Lọc theo khoảng ngày (createdAt)
+            if (fromDate != null) {
+                java.util.Date fd = fromDate;
                 txns = txns.stream()
-                        .filter(x -> s.equalsIgnoreCase(x.getStatus()))
+                        .filter(x -> x.getCreatedAt() != null && !x.getCreatedAt().before(fd))
+                        .toList();
+            }
+            if (toDate != null) {
+                java.util.Date td = toDate; // exclusive (đã +1 ngày)
+                txns = txns.stream()
+                        .filter(x -> x.getCreatedAt() != null && x.getCreatedAt().before(td))
                         .toList();
             }
 
-            Comparator<CashTxn> cmp = Comparator.comparing(
+            // Sắp xếp
+            String effSort = (sort == null || sort.isBlank()) ? "date_desc" : sort;
+            Comparator<CashTxn> byDate = Comparator.comparing(
                     x -> x.getCreatedAt() == null ? new java.util.Date(0) : x.getCreatedAt());
-            boolean newestFirst = (order == null || "newest".equalsIgnoreCase(order));
-            txns = newestFirst
-                    ? txns.stream().sorted(cmp.reversed()).toList()
-                    : txns.stream().sorted(cmp).toList();
+            Comparator<CashTxn> byStatus = Comparator.comparing(
+                    x -> x.getStatus() == null ? "" : x.getStatus(), String.CASE_INSENSITIVE_ORDER);
 
+            switch (effSort) {
+                case "date_asc"    -> txns = txns.stream().sorted(byDate).toList();
+                case "status_asc"  -> txns = txns.stream().sorted(byStatus.thenComparing(byDate.reversed())).toList();
+                case "status_desc" -> txns = txns.stream().sorted(byStatus.reversed().thenComparing(byDate.reversed())).toList();
+                default /* date_desc */ -> txns = txns.stream().sorted(byDate.reversed()).toList();
+            }
+
+            // Paging
             int total = txns.size();
             int pages = ceilDiv(total, size);
             page = clampPage(page, pages);
@@ -90,10 +127,12 @@ public class AdminCashsServlet extends AbstractAdminServlet {
             int to   = Math.min(total, from + size);
             List<CashTxn> pageList = txns.subList(from, to);
 
+            // Data cho JSP
             req.setAttribute("txList", pageList);
             req.setAttribute("pg_total", total);
             req.setAttribute("pg_page",  page);
             req.setAttribute("pg_size",  size);
+            // pg_pages/pg_isFirst/pg_isLast/pg_single là optional với JSP hiện tại, có cũng không sao
             req.setAttribute("pg_pages", pages);
             req.setAttribute("pg_isFirst", page <= 1);
             req.setAttribute("pg_isLast",  page >= pages);
@@ -103,19 +142,22 @@ public class AdminCashsServlet extends AbstractAdminServlet {
             throw new ServletException("Lỗi tải giao dịch: " + e.getMessage(), e);
         }
 
-        req.setAttribute("f_type",   type   == null ? "all"    : type);
-        req.setAttribute("f_q",      q      == null ? ""       : q);
-        req.setAttribute("f_status", status == null ? "all"    : status);
-        req.setAttribute("f_order",  order  == null ? "newest" : order);
+        // Trả lại filter state đúng tên để form giữ giá trị
+        req.setAttribute("f_type",   type   == null ? "all"      : type);
+        req.setAttribute("f_q",      q      == null ? ""         : q);
+        req.setAttribute("f_status", status == null ? "all"      : status);
+        req.setAttribute("sort",     (sort == null || sort.isBlank()) ? "date_desc" : sort);
+        req.setAttribute("from",     fromS == null ? ""          : fromS);
+        req.setAttribute("to",       toS   == null ? ""          : toS);
 
+        // Layout
         req.setAttribute("pageTitle", "Nạp / Rút");
         req.setAttribute("active", "cashs");
         req.setAttribute("content", "/WEB-INF/views/Admin/pages/cashs.jsp");
         req.getRequestDispatcher("/WEB-INF/views/Admin/_layout.jsp").forward(req, resp);
     }
 
-    // ===== POST: xử lý trạng thái =====
-
+    // ===== POST: xử lý trạng thái (giữ nguyên cấu trúc, chỉ chỉnh rất nhỏ về flash/message nếu cần) =====
     private void handleCashsStatus(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
@@ -156,7 +198,6 @@ public class AdminCashsServlet extends AbstractAdminServlet {
             return;
         }
 
-        // Upload chứng từ admin_proof_url (nếu có)
         String adminProofUrl = null;
         try {
             String ct = req.getContentType();
