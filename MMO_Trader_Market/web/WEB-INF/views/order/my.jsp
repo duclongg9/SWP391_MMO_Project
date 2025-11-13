@@ -93,7 +93,7 @@
                                     </td>
                                     <td><c:out value="${statusLabels[item.status]}" /></td>
                                     <td>
-                                        <fmt:formatDate value="${item.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                        <fmt:formatDate value="${item.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" />
                                     </td>
                                     <td class="table__actions">
                                         <c:url var="detailUrl" value="/orders/detail/${item.encodedId}" />
