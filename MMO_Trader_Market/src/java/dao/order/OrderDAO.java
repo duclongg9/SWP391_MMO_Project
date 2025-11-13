@@ -212,8 +212,43 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Truy vấn các đơn hàng đã hết thời gian escrow và cần giải ngân tự động.
+     *
+     * <p>
+     * Job nền sẽ gọi phương thức này để lấy danh sách giới hạn theo {@code limit}
+     * và xử lý lần lượt nhằm tránh khóa quá nhiều bản ghi trong một lần chạy.</p>
+     *
+     * @param limit số lượng tối đa đơn hàng cần truy vấn
+     * @return danh sách đơn cần auto-release escrow (có thể rỗng)
+     */
+    public List<Orders> findEscrowReleaseCandidates(int limit) {
+        List<Orders> orders = new ArrayList<>();
+        if (limit <= 0) {
+            return orders;
+        }
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status, "
+                + "variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at, "
+                + "escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + "created_at, updated_at FROM orders WHERE status = 'Completed' AND escrow_status = 'Scheduled' "
+                + "AND ((escrow_release_at IS NOT NULL AND escrow_release_at <= NOW()) "
+                + "OR (escrow_release_at IS NULL AND escrow_remaining_seconds IS NOT NULL AND escrow_remaining_seconds <= 0)) "
+                + "ORDER BY (escrow_release_at IS NULL), escrow_release_at, id LIMIT ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, limit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapOrder(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể truy vấn danh sách đơn cần giải ngân escrow", ex);
+        }
+        return orders;
+    }
+
+    /**
      * Tìm đơn hàng thông qua khóa idempotency.
-     * 
+     *
      * Dịch vụ gọi phương thức này để phát hiện các lần submit lặp lại từ
      * client.
      *
@@ -611,6 +646,30 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Gán mã giao dịch thanh toán cho đơn hàng sử dụng kết nối độc lập.
+     * <p>
+     * Phương thức này hỗ trợ các luồng hậu kiểm (ví dụ tự động khôi phục dữ
+     * liệu) khi phát hiện đơn hàng đã trừ tiền nhưng cột
+     * {@code payment_transaction_id} chưa được cập nhật. DAO sẽ tự mở kết nối,
+     * ủy quyền cho {@link #assignPaymentTransaction(Connection, int, Integer)}
+     * và log lỗi nếu thao tác thất bại.</p>
+     *
+     * @param orderId mã đơn hàng cần cập nhật
+     * @param paymentTransactionId mã giao dịch ví cần gắn
+     * @return {@code true} nếu cập nhật thành công, {@code false} nếu có lỗi SQL
+     */
+    public boolean assignPaymentTransaction(int orderId, Integer paymentTransactionId) {
+        try (Connection connection = getConnection()) {
+            assignPaymentTransaction(connection, orderId, paymentTransactionId);
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể gán mã giao dịch thanh toán ngoài transaction", ex);
+            return false;
+        }
+    }
+
+
+    /**
      * Ghi nhận lịch sử thay đổi tồn kho liên quan tới đơn hàng.
      *
      * @param connection kết nối giao dịch
@@ -641,6 +700,161 @@ public class OrderDAO extends BaseDAO {
      */
     public Connection openConnection() throws SQLException {
         return getConnection();
+    }
+
+    /**
+     * Tìm đơn hàng và khóa bản ghi để đảm bảo nhất quán khi cập nhật.
+     *
+     * @param connection kết nối đang sử dụng trong transaction
+     * @param orderId    mã đơn hàng cần khóa
+     * @return {@link Optional} chứa bản ghi đơn hàng nếu tìm thấy
+     * @throws SQLException nếu truy vấn thất bại
+     */
+    public Optional<Orders> findByIdForUpdate(Connection connection, int orderId) throws SQLException {
+        final String sql = "SELECT id, buyer_id, product_id, quantity, unit_price, payment_transaction_id, total_amount, status," 
+                + " variant_code, idempotency_key, hold_until, escrow_hold_seconds, escrow_original_release_at, escrow_release_at" 
+                + ", escrow_status, escrow_paused_at, escrow_remaining_seconds, escrow_resumed_at, escrow_released_at_actual, "
+                + " created_at, updated_at FROM orders WHERE id = ? FOR UPDATE";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapOrder(rs));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Khôi phục trạng thái escrow sau khi admin từ chối khiếu nại.
+     *
+     * @param connection  kết nối đang mở trong transaction xử lý khiếu nại
+     * @param orderId     mã đơn hàng cần cập nhật
+     * @param resumedAt   thời điểm tiếp tục escrow (có thể {@code null})
+     * @param releaseAt   thời điểm dự kiến giải phóng escrow (có thể {@code null})
+     * @return {@code true} nếu bản ghi được cập nhật
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public boolean resumeEscrowAfterDispute(Connection connection, int orderId, Timestamp resumedAt, Timestamp releaseAt)
+            throws SQLException {
+        final String sql = "UPDATE orders SET status = 'Completed', escrow_status = 'Scheduled', escrow_resumed_at = ?, "
+                + "escrow_release_at = ?, escrow_remaining_seconds = NULL, updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (resumedAt == null) {
+                statement.setNull(1, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(1, resumedAt);
+            }
+            if (releaseAt == null) {
+                statement.setNull(2, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(2, releaseAt);
+            }
+            statement.setInt(3, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log việc khôi phục escrow do admin xử lý tranh chấp.
+     *
+     * @param connection       kết nối hiện hành
+     * @param orderId          mã đơn hàng liên quan
+     * @param resumedAt        thời điểm escrow được tiếp tục (có thể {@code null})
+     * @param releaseAt        thời điểm giải phóng dự kiến (có thể {@code null})
+     * @param remainingSeconds số giây còn lại của escrow tại thời điểm tiếp tục
+     * @param adminId          admin thực hiện thao tác (có thể {@code null})
+     * @param disputeId        mã khiếu nại liên quan (có thể {@code null})
+     * @param metadataJson     metadata bổ sung dạng JSON (có thể rỗng)
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public void insertEscrowResumedEvent(Connection connection, int orderId, Timestamp resumedAt, Timestamp releaseAt,
+            Integer remainingSeconds, Integer adminId, Integer disputeId, String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, actor_admin_id, related_dispute_id, "
+                + "release_at_snapshot, remaining_seconds_snapshot, metadata, created_at) "
+                + "VALUES (?, 'RESUMED', 'ADMIN', ?, ?, ?, ?, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (adminId == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, adminId);
+            }
+            if (disputeId == null) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, disputeId);
+            }
+            if (releaseAt == null) {
+                statement.setNull(4, java.sql.Types.TIMESTAMP);
+            } else {
+                statement.setTimestamp(4, releaseAt);
+            }
+            if (remainingSeconds == null) {
+                statement.setNull(5, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(5, remainingSeconds);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(6, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(6, metadataJson);
+            }
+        }
+    }
+
+    /**
+     * Hủy escrow khi hoàn tiền cho người mua do khiếu nại được chấp nhận.
+     *
+     * @param connection kết nối đang mở trong transaction
+     * @param orderId    mã đơn hàng cần cập nhật
+     * @return {@code true} nếu bản ghi được cập nhật
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public boolean cancelEscrowForRefund(Connection connection, int orderId) throws SQLException {
+        final String sql = "UPDATE orders SET status = 'Refunded', escrow_status = 'Cancelled', escrow_remaining_seconds = NULL, "
+                + "escrow_resumed_at = NULL, escrow_release_at = NULL, escrow_paused_at = NULL, escrow_released_at_actual = NULL, "
+                + "updated_at = NOW() WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Ghi log sự kiện escrow bị hủy.
+     *
+     * @param connection   kết nối hiện hành
+     * @param orderId      mã đơn hàng liên quan
+     * @param adminId      admin thực hiện thao tác (có thể {@code null})
+     * @param disputeId    mã khiếu nại liên quan (có thể {@code null})
+     * @param metadataJson metadata bổ sung dạng JSON (có thể rỗng)
+     * @throws SQLException nếu thao tác SQL thất bại
+     */
+    public void insertEscrowCancelledEvent(Connection connection, int orderId, Integer adminId, Integer disputeId,
+            String metadataJson) throws SQLException {
+        final String sql = "INSERT INTO order_escrow_events (order_id, event_type, actor_type, actor_admin_id, related_dispute_id, "
+                + "release_at_snapshot, remaining_seconds_snapshot, metadata, created_at) "
+                + "VALUES (?, 'CANCELLED', 'ADMIN', ?, ?, NULL, NULL, ?, NOW())";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, orderId);
+            if (adminId == null) {
+                statement.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(2, adminId);
+            }
+            if (disputeId == null) {
+                statement.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(3, disputeId);
+            }
+            if (metadataJson == null || metadataJson.isBlank()) {
+                statement.setNull(4, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(4, metadataJson);
+            }
+        }
     }
 
     /**

@@ -115,7 +115,15 @@ public class AsyncOrderWorker implements OrderWorker {
                 finalizeFulfillment(connection, context);
                 // B6: Hoàn tất đơn hàng và commit transaction.
                 orderDAO.updateStatus(connection, msg.orderId(), OrderStatus.COMPLETED);
-                applyEscrowScheduling(connection, context);
+                try {
+                    // Một số môi trường chưa nâng cấp schema escrow -> không chặn đơn khi lỗi SQL phát sinh.
+                    applyEscrowScheduling(connection, context);
+                } catch (SQLException escrowEx) {
+                    LOGGER.log(Level.WARNING,
+                            "Không thể lên lịch escrow cho đơn hàng {0}, bỏ qua và tiếp tục hoàn tất.",
+                            msg.orderId());
+                    LOGGER.log(Level.FINE, "Chi tiết lỗi khi lên lịch escrow", escrowEx);
+                }
                 // Mọi thao tác thành công -> chốt giao dịch để ghi xuống DB.
                 connection.commit();
             } catch (SQLException ex) {

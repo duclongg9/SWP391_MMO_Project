@@ -206,13 +206,42 @@ public class WalletTransactionDAO {
         return Optional.empty();
     }
 
-    public static void main(String[] args) {
-        WalletTransactionDAO wdao = new WalletTransactionDAO();
-        List<WalletTransactions> list = wdao.getListWalletTransactionPaging(1, 1, 5, null, null, null, null, null);
-        for (WalletTransactions walletTransactions : list) {
-            System.out.println(walletTransactions);
+    /**
+     * Tìm giao dịch mua hàng dựa trên {@code related_entity_id} trong trường
+     * hợp cột {@code payment_transaction_id} của đơn hàng chưa được gán.
+     *
+     * @param orderId mã đơn hàng cần truy vết giao dịch
+     * @param userId mã người mua sở hữu ví bị trừ tiền
+     * @return {@link Optional} chứa giao dịch nếu tìm thấy
+     */
+    public Optional<WalletTransactions> findPurchaseByOrderForUser(int orderId, int userId) {
+        String sql = """
+              SELECT wt.*
+              FROM wallet_transactions AS wt
+              JOIN wallets AS w ON w.id = wt.wallet_id
+              WHERE wt.related_entity_id = ?
+                AND w.user_id = ?
+                AND wt.transaction_type = ?
+              ORDER BY wt.id DESC
+              LIMIT 1
+              """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            ps.setInt(2, userId);
+            ps.setString(3, TransactionType.PURCHASE.getDbValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapTransaction(rs, false));
+                }
+            }
+        } catch (SQLException e) {
+            Logger.getLogger(WalletTransactionDAO.class.getName()).log(Level.SEVERE,
+                    "Lỗi truy vấn giao dịch mua hàng theo đơn", e);
         }
+        return Optional.empty();
     }
+
+    
 
     private WalletTransactions mapTransaction(ResultSet rs, boolean includeWallet) throws SQLException {
         WalletTransactions wt = new WalletTransactions();
@@ -277,5 +306,28 @@ public class WalletTransactionDAO {
             }
         }
         throw new SQLException("Không thể tạo giao dịch ví mới");
+    }
+
+    public int insertDepositWalletTransaction(int walletId,
+            BigDecimal amount,
+            BigDecimal balanceBefore,
+            BigDecimal balanceAfter) throws SQLException {
+        String sql = """
+        INSERT INTO mmo_schema.wallet_transactions
+        (wallet_id, transaction_type, amount, balance_before, balance_after, note)
+        VALUES (?,'Deposit',?,?,?,'Nạp tiền vào ví qua VNPay')
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, walletId);
+            ps.setBigDecimal(2, amount);
+            ps.setBigDecimal(3, balanceBefore);
+            ps.setBigDecimal(4, balanceAfter);
+            return ps.executeUpdate();
+        }
+    }
+    
+    public static void main(String[] args) {
+        WalletTransactionDAO wdao = new WalletTransactionDAO();
+        
     }
 }

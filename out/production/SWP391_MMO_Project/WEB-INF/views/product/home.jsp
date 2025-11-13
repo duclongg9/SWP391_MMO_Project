@@ -9,7 +9,15 @@
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
 
-    <section class="panel landing__filters">
+
+
+    <section class="panel landing__hero" id="home-summary" data-fragment-url="${fragmentBase}/summary">
+        <div class="fragment fragment--loading">
+            <p>Đang tải dữ liệu tổng quan...</p>
+        </div>
+    </section>
+
+            <section class="panel landing__filters">
         <div class="panel__header">
             <div class="panel__header-text">
                 <h3 class="panel__title">Khám phá sản phẩm</h3>
@@ -24,13 +32,6 @@
             <%@ include file="/WEB-INF/views/product/fragments/filter-form.jspf" %>
         </div>
     </section>
-
-    <section class="panel landing__hero" id="home-summary" data-fragment-url="${fragmentBase}/summary">
-        <div class="fragment fragment--loading">
-            <p>Đang tải dữ liệu tổng quan...</p>
-        </div>
-    </section>
-
 
     <section class="panel landing__section" id="home-featured" data-fragment-url="${fragmentBase}/featured">
         <div class="fragment fragment--loading">

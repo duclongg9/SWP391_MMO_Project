@@ -187,6 +187,81 @@
                 .product-detail__availability-meta {
                     font-size: 0.95rem;
                 }
+
+                .modal {
+                    position: fixed;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                }
+
+                .modal[hidden] {
+                    display: none;
+                }
+
+                .modal__backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.55);
+                }
+
+                .modal__dialog {
+                    position: relative;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    padding: 1.5rem;
+                    width: min(420px, 90vw);
+                    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    z-index: 1;
+                }
+
+                .modal__header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .modal__title {
+                    font-size: 1.25rem;
+                    margin: 0;
+                }
+
+                .modal__close {
+                    border: none;
+                    background: transparent;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    color: #475569;
+                }
+
+                .modal__body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    color: #1e293b;
+                }
+
+                .modal__summary {
+                    margin: 0;
+                    font-size: 1rem;
+                }
+
+                .modal__actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 0.75rem;
+                }
+
+                body.modal-open {
+                    overflow: hidden;
+                }
             </style>
             <form class="product-detail__form" method="post" action="${cPath}/order/buy-now" data-check-endpoint="${purchaseCheckUrl}">
                 <input type="hidden" name="productId" value="${product.encodedId}" />
@@ -339,6 +414,26 @@
         </section>
     </c:if>
 
+    <!-- Modal xác nhận mua hàng -->
+    <div class="modal" id="purchaseConfirmModal" role="dialog" aria-modal="true" aria-labelledby="purchaseConfirmTitle" hidden>
+        <div class="modal__backdrop" data-modal-dismiss></div>
+        <div class="modal__dialog" role="document">
+            <header class="modal__header">
+                <h3 class="modal__title" id="purchaseConfirmTitle">Xác nhận đơn hàng</h3>
+                <button class="modal__close" type="button" aria-label="Đóng" data-modal-dismiss>&times;</button>
+            </header>
+            <div class="modal__body">
+                <p class="modal__summary"><strong>Tên sản phẩm:</strong> <span id="modalProductName"></span></p>
+                <p class="modal__summary"><strong>Số lượng:</strong> <span id="modalProductQuantity"></span></p>
+                <p class="modal__summary"><strong>Tổng tiền:</strong> <span id="modalProductTotal"></span></p>
+            </div>
+            <footer class="modal__actions">
+                <button class="button button--ghost" type="button" data-modal-dismiss>Hủy</button>
+                <button class="button button--primary" type="button" id="confirmPurchaseButton">Xác nhận mua hàng</button>
+            </footer>
+        </div>
+    </div>
+
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
@@ -364,8 +459,50 @@
         const thumbnails = document.querySelectorAll('.product-detail__thumbnail');
         const mainImage = document.getElementById('mainImage');
         const totalInventory = inventoryDisplay ? parseInt(inventoryDisplay.textContent || '0', 10) : 0;
+        const modal = document.getElementById('purchaseConfirmModal');
+        const confirmButton = document.getElementById('confirmPurchaseButton');
+        const modalProductName = document.getElementById('modalProductName');
+        const modalProductQuantity = document.getElementById('modalProductQuantity');
+        const modalProductTotal = document.getElementById('modalProductTotal');
+        const productTitle = document.querySelector('.product-detail__header h2');
         let inventoryAllowsPurchase = true;
         let walletAllowsPurchase = true;
+        let lastPreviewData = null;
+
+        /**
+         * Hiển thị modal xác nhận mua hàng với thông tin mới nhất.
+         */
+        function openConfirmModal() {
+            if (!modal) {
+                purchaseForm.submit();
+                return;
+            }
+            if (modalProductName) {
+                modalProductName.textContent = productTitle ? productTitle.textContent.trim() : '';
+            }
+            if (modalProductQuantity && qtyInput) {
+                modalProductQuantity.textContent = qtyInput.value;
+            }
+            if (modalProductTotal) {
+                const totalPrice = lastPreviewData && Number.isFinite(Number(lastPreviewData.totalPrice))
+                        ? Number(lastPreviewData.totalPrice)
+                        : null;
+                modalProductTotal.textContent = totalPrice !== null ? formatter.format(totalPrice) : priceDisplay.textContent.trim();
+            }
+            modal.hidden = false;
+            document.body.classList.add('modal-open');
+        }
+
+        /**
+         * Đóng modal xác nhận mua hàng và khôi phục trạng thái trang.
+         */
+        function closeConfirmModal() {
+            if (!modal) {
+                return;
+            }
+            modal.hidden = true;
+            document.body.classList.remove('modal-open');
+        }
 
         function normalizeUrl(url) {
             if (!url) {
@@ -569,6 +706,7 @@
                 }
             }
             availabilityContainer.appendChild(wrapper);
+            lastPreviewData = payload;
         }
 
         function requestPurchasePreview(selectedVariantCode) {
@@ -640,6 +778,43 @@
             });
             setActiveThumbnail(mainImage ? mainImage.src : '');
         }
+
+        if (purchaseForm && buyButton) {
+            purchaseForm.addEventListener('submit', (event) => {
+                if (!modal || modal.hidden === false) {
+                    return;
+                }
+                event.preventDefault();
+                openConfirmModal();
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) {
+                    return;
+                }
+                if (target.dataset && target.dataset.modalDismiss !== undefined) {
+                    closeConfirmModal();
+                }
+            });
+        }
+
+        if (confirmButton) {
+            confirmButton.addEventListener('click', () => {
+                closeConfirmModal();
+                if (purchaseForm) {
+                    purchaseForm.submit();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal && !modal.hidden) {
+                closeConfirmModal();
+            }
+        });
 
         initializeVariants();
         initGallery();

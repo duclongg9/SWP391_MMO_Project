@@ -3,6 +3,7 @@ package service;
 import dao.order.OrderDAO;
 import dao.support.DisputeDAO;
 import model.DisputeAttachment;
+import model.DisputeStatus;
 import model.Disputes;
 import model.Orders;
 
@@ -72,7 +73,16 @@ public class DisputeService {
             throw new IllegalStateException("Đơn hàng hiện không nằm trong giai đoạn escrow để tạo báo cáo");
         }
         Timestamp now = new Timestamp(System.currentTimeMillis());
+        /*
+         * Đảm bảo đơn hàng vẫn đang trong giai đoạn escrow tại thời điểm người
+         * dùng gửi báo cáo. Khi người mua giữ lại trang mà không tải lại, thời
+         * gian escrow có thể đã hết nên chúng ta cần kiểm tra lại trước khi tạo
+         * dispute mới.
+         */
         int remainingSeconds = computeRemainingEscrowSeconds(order, now);
+        if (remainingSeconds <= 0) {
+            throw new IllegalStateException("Đơn hàng đã hết thời gian escrow hoặc đang được xử lý khiếu nại.");
+        }
         Disputes dispute = new Disputes();
         dispute.setOrderId(order.getId());
         dispute.setOrderReferenceCode(buildOrderReferenceCode(order.getId()));
@@ -80,7 +90,7 @@ public class DisputeService {
         dispute.setIssueType(issueType);
         dispute.setCustomIssueTitle(customIssueTitle);
         dispute.setReason(reason);
-        dispute.setStatus("Open");
+        dispute.setStatus(DisputeStatus.OPEN.getDatabaseValue());
         dispute.setEscrowPausedAt(new Date(now.getTime()));
         dispute.setEscrowRemainingSeconds(remainingSeconds);
 

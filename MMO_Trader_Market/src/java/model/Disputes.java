@@ -1,31 +1,58 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
- * POJO ánh xạ bảng {@code disputes} lưu báo cáo đơn hàng của người mua.
+ * POJO ánh xạ bảng disputes (khiếu nại đơn hàng).
+ * Kèm thêm thông tin hiển thị (reporterName, reporterEmail, resolvedByAdminName)
+ * và danh sách ảnh đính kèm (DisputeAttachment).
  */
 public class Disputes {
 
     private Integer id;
     private Integer orderId;
     private String orderReferenceCode;
+    private String orderSnapshotJson; // map với order_snapshot_json
+
     private Integer reporterId;
+    private String reporterName;
+    private String reporterEmail;
+
     private Integer resolvedByAdminId;
-    private String issueType;
-    private String customIssueTitle;
-    private String reason;
-    private String status;
+    private String resolvedByAdminName;
+
+    private Integer productId;
+    private String productName;
+    private Integer shopId;
+    private String shopName;
+
+    private Integer orderQuantity;
+    private String orderStatus;
+
+    private String issueType;          // ACCOUNT_NOT_WORKING / OTHER / ...
+    private String customIssueTitle;   // tiêu đề tùy chọn khi chọn OTHER
+
+    private String reason;             // nội dung khiếu nại của user
+    private String status;             // Open / InReview / Resolved... / Closed...
+
     private Date escrowPausedAt;
     private Integer escrowRemainingSeconds;
+
     private Date resolvedAt;
     private String resolutionNote;
+
     private Date createdAt;
     private Date updatedAt;
+
+    // Danh sách ảnh đính kèm (từ bảng dispute_attachments)
+    private List<DisputeAttachment> attachments = new ArrayList<>();
 
     public Disputes() {
     }
 
+    // ===== ID =====
     public Integer getId() {
         return id;
     }
@@ -34,6 +61,7 @@ public class Disputes {
         this.id = id;
     }
 
+    // ===== Order =====
     public Integer getOrderId() {
         return orderId;
     }
@@ -50,6 +78,15 @@ public class Disputes {
         this.orderReferenceCode = orderReferenceCode;
     }
 
+    public String getOrderSnapshotJson() {
+        return orderSnapshotJson;
+    }
+
+    public void setOrderSnapshotJson(String orderSnapshotJson) {
+        this.orderSnapshotJson = orderSnapshotJson;
+    }
+
+    // ===== Reporter =====
     public Integer getReporterId() {
         return reporterId;
     }
@@ -58,6 +95,23 @@ public class Disputes {
         this.reporterId = reporterId;
     }
 
+    public String getReporterName() {
+        return reporterName;
+    }
+
+    public void setReporterName(String reporterName) {
+        this.reporterName = reporterName;
+    }
+
+    public String getReporterEmail() {
+        return reporterEmail;
+    }
+
+    public void setReporterEmail(String reporterEmail) {
+        this.reporterEmail = reporterEmail;
+    }
+
+    // ===== Admin xử lý =====
     public Integer getResolvedByAdminId() {
         return resolvedByAdminId;
     }
@@ -66,6 +120,63 @@ public class Disputes {
         this.resolvedByAdminId = resolvedByAdminId;
     }
 
+    public String getResolvedByAdminName() {
+        return resolvedByAdminName;
+    }
+
+    public void setResolvedByAdminName(String resolvedByAdminName) {
+        this.resolvedByAdminName = resolvedByAdminName;
+    }
+
+    public Integer getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Integer productId) {
+        this.productId = productId;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public Integer getShopId() {
+        return shopId;
+    }
+
+    public void setShopId(Integer shopId) {
+        this.shopId = shopId;
+    }
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public void setShopName(String shopName) {
+        this.shopName = shopName;
+    }
+
+    public Integer getOrderQuantity() {
+        return orderQuantity;
+    }
+
+    public void setOrderQuantity(Integer orderQuantity) {
+        this.orderQuantity = orderQuantity;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    // ===== Issue / Reason / Status =====
     public String getIssueType() {
         return issueType;
     }
@@ -98,6 +209,7 @@ public class Disputes {
         this.status = status;
     }
 
+    // ===== Escrow =====
     public Date getEscrowPausedAt() {
         return escrowPausedAt;
     }
@@ -114,6 +226,7 @@ public class Disputes {
         this.escrowRemainingSeconds = escrowRemainingSeconds;
     }
 
+    // ===== Resolve info =====
     public Date getResolvedAt() {
         return resolvedAt;
     }
@@ -130,6 +243,7 @@ public class Disputes {
         this.resolutionNote = resolutionNote;
     }
 
+    // ===== Timestamps =====
     public Date getCreatedAt() {
         return createdAt;
     }
@@ -145,4 +259,24 @@ public class Disputes {
     public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    // ===== Attachments =====
+    public List<DisputeAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<DisputeAttachment> attachments) {
+        this.attachments = (attachments != null) ? attachments : new ArrayList<>();
+    }
+
+    public void addAttachment(DisputeAttachment att) {
+        if (att != null) {
+            if (this.attachments == null) {
+                this.attachments = new ArrayList<>();
+            }
+            this.attachments.add(att);
+        }
+    }
+
+
 }

@@ -4,6 +4,7 @@ import dao.user.EmailVerificationTokenDAO;
 import conf.AppConfig;
 import dao.user.PasswordResetTokenDAO;
 import dao.user.UserDAO;
+import dao.user.WalletsDAO;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +37,7 @@ public class UserService {
     private final UserDAO userDAO;
     private final PasswordResetTokenDAO passwordResetTokenDAO;
     private final EmailVerificationTokenDAO emailVerificationTokenDAO;
+    private final WalletsDAO wdao = new WalletsDAO();
 
     public UserService(UserDAO userDAO) {
         this(userDAO, new PasswordResetTokenDAO(), new EmailVerificationTokenDAO());
@@ -71,8 +73,12 @@ public class UserService {
             String hashedPassword = HashPassword.toSHA1(rawPassword);
             Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID,
                     2);
+            int result = wdao.createWallet(created.getId());
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
+            }
+            if(result<1){
+                throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
             }
             String verificationCode = createAndStoreVerificationCode(created.getId()); //Tạo mã xác thực email duy nhất
             sendVerificationEmail(created.getEmail(), created.getName(), verificationCode); // gửi mail kèm code 
@@ -504,12 +510,23 @@ public class UserService {
         return existingEmailUser;
     }
 
+    /**
+     * Khởi tạo người dùng mới thông qua Google SSO và bảo đảm có ví khả dụng.
+     */
     private Users createGoogleAccount(String email, String name, String googleId) throws SQLException {
         ensureEmailAvailable(email);
         String fallbackHash = HashPassword.toSHA1(generateRandomSecret());
         Users created = userDAO.createUserWithGoogle(email, name, googleId, fallbackHash, DEFAULT_ROLE_ID);
         if (created == null) {
             throw new IllegalStateException("Không thể tạo tài khoản Google mới");
+        }
+        int createdWallet = wdao.createWallet(created.getId());
+        if (createdWallet < 1) {
+            /*
+             * Đảm bảo tài khoản Google mới có ví hoạt động ngay sau khi khởi tạo.
+             * Nếu thao tác này thất bại, trả lỗi để caller có thể hiển thị thông báo phù hợp.
+             */
+            throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
         }
         return created;
     }
