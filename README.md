@@ -2,6 +2,8 @@
 
 This repository contains a NetBeans (Ant) web application skeleton for the MMO Trader Market system. It follows a classic MVC layering with Servlets, JSP and a service/DAO structure. The project also includes PlantUML sources for package, UI flow and overall architecture diagrams so you can quickly generate design documentation from the provided `.puml` files.
 
+For a release-level snapshot of actors, data flows, and operational scope, see [`docs/release-1.0-context.md`](docs/release-1.0-context.md).
+
 ## Project layout
 
 ```
