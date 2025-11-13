@@ -119,19 +119,11 @@ public final class NavigationBuilder {
         dashboardItem.put("active", dashboardActive);
         children.add(dashboardItem);
 
-        // "Tạo sản phẩm" đã được di chuyển vào trang Quản lý kho, không còn trong dropdown menu
-        // Map<String, Object> createProductItem = new HashMap<>();
-        // createProductItem.put("href", contextPath + "/seller/products/create");
-        // createProductItem.put("text", "Tạo sản phẩm");
-        // createProductItem.put("label", "Tạo sản phẩm");
-        // boolean createActive = isActive(currentPath, "/seller/products/create");
-        // createProductItem.put("active", createActive);
-        // children.add(createProductItem);
 
         Map<String, Object> inventoryItem = new HashMap<>();
         inventoryItem.put("href", contextPath + "/seller/inventory");
-        inventoryItem.put("text", "Quản lý kho");
-        inventoryItem.put("label", "Quản lý kho");
+        inventoryItem.put("text", "Danh sách shop");
+        inventoryItem.put("label", "Danh sách shop");
         boolean inventoryActive = isActive(currentPath, "/seller/inventory");
         inventoryItem.put("active", inventoryActive);
         children.add(inventoryItem);
@@ -144,13 +136,6 @@ public final class NavigationBuilder {
         disputesItem.put("active", disputesActive);
         children.add(disputesItem);
 
-        Map<String, Object> buyerOrdersItem = new HashMap<>();
-        buyerOrdersItem.put("href", contextPath + "/orders/my");
-        buyerOrdersItem.put("text", "Đơn đã mua & khiếu nại");
-        buyerOrdersItem.put("label", "Đơn đã mua & khiếu nại");
-        boolean ordersActive = isActive(currentPath, "/orders");
-        buyerOrdersItem.put("active", ordersActive);
-        children.add(buyerOrdersItem);
 
         Map<String, Object> incomeItem = new HashMap<>();
         incomeItem.put("href", contextPath + "/seller/income");
@@ -160,7 +145,7 @@ public final class NavigationBuilder {
         incomeItem.put("active", incomeActive);
         children.add(incomeItem);
 
-        boolean active = dashboardActive || inventoryActive || disputesActive || incomeActive || ordersActive;
+        boolean active = dashboardActive || inventoryActive || disputesActive || incomeActive;
         Map<String, Object> dropdown = createNavItem(contextPath + "/dashboard", "Quản lý cửa hàng", active);
         dropdown.put("dropdown", true);
         dropdown.put("children", children);

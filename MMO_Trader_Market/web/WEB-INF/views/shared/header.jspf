@@ -174,9 +174,6 @@
                                     <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${pageContext.request.contextPath}/seller/shops">
                                         Danh sách shop
                                     </a>
-                                    <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${pageContext.request.contextPath}/seller/shops/create">
-                                        Tạo shop
-                                    </a>
                                 </c:if>
                                 <a class="menu__dropdown-item site-header__user-link" role="menuitem" href="${profileUrl}">
                                     Quản lý tài khoản
