@@ -58,22 +58,6 @@ CREATE TABLE `password_reset_tokens` (
   KEY `idx_password_reset_user` (`user_id`)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `remember_me_tokens`;
-CREATE TABLE `remember_me_tokens` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int NOT NULL,
-  `selector` varchar(255) NOT NULL UNIQUE,
-  `hashed_validator` varchar(255) NOT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `last_used_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_remember_me_selector` (`selector`),
-  KEY `idx_remember_me_user_id` (`user_id`),
-  KEY `idx_remember_me_expires_at` (`expires_at`),
-  CONSTRAINT `fk_remember_me_tokens_user_id`
-    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `shops`;
 CREATE TABLE `shops` (
@@ -369,31 +353,6 @@ CREATE TABLE `dispute_attachments` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `conversations`;
-CREATE TABLE `conversations` (
-    `id` int NOT NULL AUTO_INCREMENT,
-    `related_order_id` int DEFAULT NULL,
-    `related_product_id` int DEFAULT NULL,
-    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `conversation_participants`;
-CREATE TABLE `conversation_participants` (
-    `conversation_id` int NOT NULL,
-    `user_id` int NOT NULL,
-    PRIMARY KEY (`conversation_id`, `user_id`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `messages`;
-CREATE TABLE `messages` (
-    `id` bigint NOT NULL AUTO_INCREMENT,
-    `conversation_id` int NOT NULL,
-    `sender_id` int NOT NULL,
-    `content` text NOT NULL,
-    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
 
 -- =================================================================
 -- Section 5: Auditing & System
@@ -466,13 +425,6 @@ ALTER TABLE `withdrawal_requests` ADD CONSTRAINT `fk_withdrawals_user_id` FOREIG
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_request_id` FOREIGN KEY (`request_id`) REFERENCES `withdrawal_requests` (`id`);
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_reason_id` FOREIGN KEY (`reason_id`) REFERENCES `withdrawal_rejection_reasons` (`id`);
 
-ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`);
-ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`);
-ALTER TABLE `conversation_participants` ADD CONSTRAINT `fk_participants_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`);
-ALTER TABLE `conversation_participants` ADD CONSTRAINT `fk_participants_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_order_id` FOREIGN KEY (`related_order_id`) REFERENCES `orders` (`id`);
-ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_product_id` FOREIGN KEY (`related_product_id`) REFERENCES `products` (`id`);
-
 ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_order_id` FOREIGN KEY (`related_order_id`) REFERENCES `orders` (`id`);
 
@@ -498,7 +450,7 @@ CREATE INDEX `idx_wallet_transactions_wallet_id` ON `wallet_transactions`(`walle
 CREATE INDEX `idx_wallet_transactions_type` ON `wallet_transactions`(`transaction_type`);
 CREATE INDEX `idx_deposit_requests_status` ON `deposit_requests`(`status`);
 CREATE INDEX `idx_withdrawal_requests_status` ON `withdrawal_requests`(`status`);
-CREATE INDEX `idx_messages_conversation_id` ON `messages`(`conversation_id`);
+
 
 -- =================================================================
 -- Section 8: Seed Data (Vietnamese)
@@ -510,232 +462,232 @@ INSERT INTO `roles` (`id`,`name`) VALUES
 
 -- Users (hash minh hoạ)
 INSERT INTO `users` (`id`,`role_id`,`email`,`name`,`avatar_url`,`hashed_password`,`google_id`,`status`,`created_at`,`updated_at`) VALUES
- (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'mNy+OfwBVzPj9442CM86ANCQGd0=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','uiDM8xbTll23hMnK00khkszc0xk=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
- (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','TgmCHMtVdyWoZp4cTH7vvEBfrQA=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
+ (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'mNy+OfwBVzPj9442CM86ANCQGd0=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00');
+ -- (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','uiDM8xbTll23hMnK00khkszc0xk=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
+--  (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','TgmCHMtVdyWoZp4cTH7vvEBfrQA=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
 
 -- KYC statuses
 INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
  (1,'Đang chờ'),(2,'Đã duyệt'),(3,'Từ chối');
 
-INSERT INTO `kyc_requests` (`id`,`user_id`,`status_id`,`front_image_url`,`back_image_url`,`selfie_image_url`,`id_number`,`admin_feedback`,`created_at`,`reviewed_at`) VALUES
- (1,2,2,'https://cdn.mmo.local/kyc/seller_front.jpg','https://cdn.mmo.local/kyc/seller_back.jpg','https://cdn.mmo.local/kyc/seller_selfie.jpg','079123456789','Hồ sơ hợp lệ','2024-01-13 10:30:00','2024-01-15 10:00:00'),
- (2,3,1,'https://cdn.mmo.local/kyc/buyer_front.jpg','https://cdn.mmo.local/kyc/buyer_back.jpg','https://cdn.mmo.local/kyc/buyer_selfie.jpg','092987654321',NULL,'2024-01-25 09:10:00',NULL);
+-- INSERT INTO `kyc_requests` (`id`,`user_id`,`status_id`,`front_image_url`,`back_image_url`,`selfie_image_url`,`id_number`,`admin_feedback`,`created_at`,`reviewed_at`) VALUES
+--  (1,2,2,'https://cdn.mmo.local/kyc/seller_front.jpg','https://cdn.mmo.local/kyc/seller_back.jpg','https://cdn.mmo.local/kyc/seller_selfie.jpg','079123456789','Hồ sơ hợp lệ','2024-01-13 10:30:00','2024-01-15 10:00:00'),
+--  (2,3,1,'https://cdn.mmo.local/kyc/buyer_front.jpg','https://cdn.mmo.local/kyc/buyer_back.jpg','https://cdn.mmo.local/kyc/buyer_selfie.jpg','092987654321',NULL,'2024-01-25 09:10:00',NULL);
 
--- Shop
-INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`admin_note`,`status`,`created_at`,`updated_at`) VALUES
- (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền',NULL,'Active','2024-01-12 08:30:00','2024-01-20 09:30:00');
+-- -- Shop
+-- INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`admin_note`,`status`,`created_at`,`updated_at`) VALUES
+--  (1,2,'Cửa hàng Cyber Gear','Chuyên cung cấp tài khoản game và phần mềm bản quyền',NULL,'Active','2024-01-12 08:30:00','2024-01-20 09:30:00');
 
--- Products (6 sản phẩm mẫu, đủ loại/subtype; tiếng Việt, có biến thể JSON)
-INSERT INTO `products`
-(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
-VALUES
--- 1001: EMAIL/GMAIL
-(1001,1,'EMAIL','GMAIL',
- 'Gmail Doanh nghiệp 50GB',
- 'Email doanh nghiệp 50GB, bảo hành, hỗ trợ đổi mật khẩu.',
- 'Tài khoản Gmail Doanh nghiệp 50GB. Bạn nhận được email và mật khẩu kèm hướng dẫn đổi bảo mật 2 lớp.',
- 250000.0000,
-  'gmail.png',
-  JSON_ARRAY('gmail2.jpg','mailedu.png'),
- 19,128,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','gmail-basic-1m','attributes', JSON_OBJECT('service','gmail','plan','basic','duration','1m'),'price',250000.0000,'inventory_count',10,'image_url','gmail.png','status','Available'),
-   JSON_OBJECT('variant_code','gmail-premium-12m','attributes', JSON_OBJECT('service','gmail','plan','premium','duration','12m'),'price',1200000.0000,'inventory_count',9,'image_url','gmail2.jpg','status','Available')
- ),
- '2024-01-14 11:00:00','2024-01-20 12:00:00'),
+-- -- Products (6 sản phẩm mẫu, đủ loại/subtype; tiếng Việt, có biến thể JSON)
+-- INSERT INTO `products`
+-- (`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
+-- VALUES
+-- -- 1001: EMAIL/GMAIL
+-- (1001,1,'EMAIL','GMAIL',
+--  'Gmail Doanh nghiệp 50GB',
+--  'Email doanh nghiệp 50GB, bảo hành, hỗ trợ đổi mật khẩu.',
+--  'Tài khoản Gmail Doanh nghiệp 50GB. Bạn nhận được email và mật khẩu kèm hướng dẫn đổi bảo mật 2 lớp.',
+--  250000.0000,
+--   'gmail.png',
+--   JSON_ARRAY('gmail2.jpg','mailedu.png'),
+--  19,128,'Available','DURATION_PLAN',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','gmail-basic-1m','attributes', JSON_OBJECT('service','gmail','plan','basic','duration','1m'),'price',250000.0000,'inventory_count',10,'image_url','gmail.png','status','Available'),
+--    JSON_OBJECT('variant_code','gmail-premium-12m','attributes', JSON_OBJECT('service','gmail','plan','premium','duration','12m'),'price',1200000.0000,'inventory_count',9,'image_url','gmail2.jpg','status','Available')
+--  ),
+--  '2024-01-14 11:00:00','2024-01-20 12:00:00'),
 
--- 1002: SOFTWARE/OTHER (Spotify)
-(1002,1,'SOFTWARE','OTHER',
- 'Spotify Premium 12 tháng',
- 'Gia hạn Spotify Premium 12 tháng, tài khoản chính chủ.',
- 'Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày. Hỗ trợ kích hoạt nhanh.',
- 80000.0000,
-  'spotify.png',
-  JSON_ARRAY('telegram.png'),
- 27,256,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','sp-1m','attributes', JSON_OBJECT('service','spotify','duration','1m'),'price',80000.0000,'inventory_count',20,'image_url','spotify.png','status','Available'),
-   JSON_OBJECT('variant_code','sp-12m','attributes', JSON_OBJECT('service','spotify','duration','12m'),'price',185000.0000,'inventory_count',7,'image_url','telegram.png','status','Available')
- ),
- '2024-01-18 09:15:00','2024-01-26 08:30:00'),
+-- -- 1002: SOFTWARE/OTHER (Spotify)
+-- (1002,1,'SOFTWARE','OTHER',
+--  'Spotify Premium 12 tháng',
+--  'Gia hạn Spotify Premium 12 tháng, tài khoản chính chủ.',
+--  'Gia hạn Spotify Premium tài khoản chính chủ, bảo hành 30 ngày. Hỗ trợ kích hoạt nhanh.',
+--  80000.0000,
+--   'spotify.png',
+--   JSON_ARRAY('telegram.png'),
+--  27,256,'Available','DURATION_PLAN',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','sp-1m','attributes', JSON_OBJECT('service','spotify','duration','1m'),'price',80000.0000,'inventory_count',20,'image_url','spotify.png','status','Available'),
+--    JSON_OBJECT('variant_code','sp-12m','attributes', JSON_OBJECT('service','spotify','duration','12m'),'price',185000.0000,'inventory_count',7,'image_url','telegram.png','status','Available')
+--  ),
+--  '2024-01-18 09:15:00','2024-01-26 08:30:00'),
 
--- 1003: SOFTWARE/OTHER (Windows key) - Unlisted
-(1003,1,'SOFTWARE','OTHER',
- 'Key Windows 11 Pro',
- 'Key bản quyền Windows 11 Pro, kích hoạt online.',
- 'Khóa bản quyền Windows 11 Pro, kích hoạt online trọn đời. Lưu ý: sản phẩm hiện đang ẩn khỏi gian hàng.',
- 390000.0000,
- 'win11.jpg',
- JSON_ARRAY('office.jpg'),
- 50,42,'Unlisted','EDITION_LICENSE',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',50,'image_url','win11.jpg','status','Unlisted')
- ),
- '2024-01-19 15:45:00','2024-01-19 15:45:00'),
+-- -- 1003: SOFTWARE/OTHER (Windows key) - Unlisted
+-- (1003,1,'SOFTWARE','OTHER',
+--  'Key Windows 11 Pro',
+--  'Key bản quyền Windows 11 Pro, kích hoạt online.',
+--  'Khóa bản quyền Windows 11 Pro, kích hoạt online trọn đời. Lưu ý: sản phẩm hiện đang ẩn khỏi gian hàng.',
+--  390000.0000,
+--  'win11.jpg',
+--  JSON_ARRAY('office.jpg'),
+--  50,42,'Unlisted','EDITION_LICENSE',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',50,'image_url','win11.jpg','status','Unlisted')
+--  ),
+--  '2024-01-19 15:45:00','2024-01-19 15:45:00'),
 
--- 1004: SOCIAL/FACEBOOK
-(1004,1,'SOCIAL','FACEBOOK',
- 'Tài khoản Facebook cổ 2009+',
- 'Facebook cổ năm 2009+, bảo hành đổi pass.',
- 'Tài khoản Facebook cổ (năm tạo 2009–2012), có bảo hành đổi mật khẩu. Dùng cho chạy quảng cáo & seeding.',
- 150000.0000,
-  'facebook.png',
-  JSON_ARRAY('fb2.png'),
- 30,73,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','fb-2009','attributes', JSON_OBJECT('age','2009'),'price',180000.0000,'inventory_count',10,'image_url','facebook.png','status','Available'),
-   JSON_OBJECT('variant_code','fb-2012','attributes', JSON_OBJECT('age','2012'),'price',150000.0000,'inventory_count',20,'image_url','fb2.png','status','Available')
- ),
- NOW(),NOW()),
+-- -- 1004: SOCIAL/FACEBOOK
+-- (1004,1,'SOCIAL','FACEBOOK',
+--  'Tài khoản Facebook cổ 2009+',
+--  'Facebook cổ năm 2009+, bảo hành đổi pass.',
+--  'Tài khoản Facebook cổ (năm tạo 2009–2012), có bảo hành đổi mật khẩu. Dùng cho chạy quảng cáo & seeding.',
+--  150000.0000,
+--   'facebook.png',
+--   JSON_ARRAY('fb2.png'),
+--  30,73,'Available','CUSTOM',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','fb-2009','attributes', JSON_OBJECT('age','2009'),'price',180000.0000,'inventory_count',10,'image_url','facebook.png','status','Available'),
+--    JSON_OBJECT('variant_code','fb-2012','attributes', JSON_OBJECT('age','2012'),'price',150000.0000,'inventory_count',20,'image_url','fb2.png','status','Available')
+--  ),
+--  NOW(),NOW()),
 
--- 1005: SOCIAL/TIKTOK
-(1005,1,'SOCIAL','TIKTOK',
- 'Tài khoản TikTok Pro',
- 'Tài khoản TikTok Pro, bảo hành đăng nhập.',
- 'Tài khoản TikTok Pro, dùng quay và đăng video với analytics nâng cao.',
- 99000.0000,
-  'tiktok.png',
-  JSON_ARRAY('tiktok2.png','tiktoklive.png'),
- 40,58,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','tt-pro','attributes', JSON_OBJECT('tier','pro'),'price',99000.0000,'inventory_count',40,'image_url','tiktok.png','status','Available')
- ),
- NOW(),NOW()),
+-- -- 1005: SOCIAL/TIKTOK
+-- (1005,1,'SOCIAL','TIKTOK',
+--  'Tài khoản TikTok Pro',
+--  'Tài khoản TikTok Pro, bảo hành đăng nhập.',
+--  'Tài khoản TikTok Pro, dùng quay và đăng video với analytics nâng cao.',
+--  99000.0000,
+--   'tiktok.png',
+--   JSON_ARRAY('tiktok2.png','tiktoklive.png'),
+--  40,58,'Available','CUSTOM',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','tt-pro','attributes', JSON_OBJECT('tier','pro'),'price',99000.0000,'inventory_count',40,'image_url','tiktok.png','status','Available')
+--  ),
+--  NOW(),NOW()),
 
--- 1006: GAME/VALORANT
-(1006,1,'GAME','VALORANT',
- 'Valorant VP (top-up)',
- 'Nạp Valorant Points nhanh, giá tốt.',
- 'Dịch vụ nạp Valorant Points (VP) nhiều mệnh giá, xử lý trong 5–10 phút.',
- 95000.0000,
-  'valorant.png',
-  JSON_ARRAY('varo.png'),
- 100,121,'Available','CUSTOM',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','vp-470','attributes', JSON_OBJECT('amount','470VP'),'price',95000.0000,'inventory_count',50,'image_url','valorant.png','status','Available'),
-   JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375VP'),'price',270000.0000,'inventory_count',50,'image_url','varo.png','status','Available')
- ),
- NOW(),NOW()),
+-- -- 1006: GAME/VALORANT
+-- (1006,1,'GAME','VALORANT',
+--  'Valorant VP (top-up)',
+--  'Nạp Valorant Points nhanh, giá tốt.',
+--  'Dịch vụ nạp Valorant Points (VP) nhiều mệnh giá, xử lý trong 5–10 phút.',
+--  95000.0000,
+--   'valorant.png',
+--   JSON_ARRAY('varo.png'),
+--  100,121,'Available','CUSTOM',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','vp-470','attributes', JSON_OBJECT('amount','470VP'),'price',95000.0000,'inventory_count',50,'image_url','valorant.png','status','Available'),
+--    JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375VP'),'price',270000.0000,'inventory_count',50,'image_url','varo.png','status','Available')
+--  ),
+--  NOW(),NOW()),
 
--- 1007: SOFTWARE/CANVA
-(1007,1,'SOFTWARE','CANVA',
- 'Canva Pro chính chủ',
- 'Canva Pro bản quyền 12 tháng, kích hoạt trực tiếp.',
- 'Cung cấp tài khoản Canva Pro chính chủ, kích hoạt ngay sau khi thanh toán, bảo hành 30 ngày.',
- 90000.0000,
-  'canva.jpg',
-  JSON_ARRAY('canva2.png'),
- 60,187,'Available','DURATION_PLAN',
- JSON_ARRAY(
-   JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',40,'image_url','canva.jpg','status','Available'),
-   JSON_OBJECT('variant_code','canva-12m','attributes',JSON_OBJECT('duration','12m'),'price',750000.0000,'inventory_count',20,'image_url','canva2.png','status','Available')
- ),
- '2024-01-18 10:00:00','2024-01-28 08:00:00');
+-- -- 1007: SOFTWARE/CANVA
+-- (1007,1,'SOFTWARE','CANVA',
+--  'Canva Pro chính chủ',
+--  'Canva Pro bản quyền 12 tháng, kích hoạt trực tiếp.',
+--  'Cung cấp tài khoản Canva Pro chính chủ, kích hoạt ngay sau khi thanh toán, bảo hành 30 ngày.',
+--  90000.0000,
+--   'canva.jpg',
+--   JSON_ARRAY('canva2.png'),
+--  60,187,'Available','DURATION_PLAN',
+--  JSON_ARRAY(
+--    JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',40,'image_url','canva.jpg','status','Available'),
+--    JSON_OBJECT('variant_code','canva-12m','attributes',JSON_OBJECT('duration','12m'),'price',750000.0000,'inventory_count',20,'image_url','canva2.png','status','Available')
+--  ),
+--  '2024-01-18 10:00:00','2024-01-28 08:00:00');
 
-INSERT INTO `products`
-(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
-VALUES
-(1008,1,'EMAIL','GMAIL','Gmail Doanh nghiệp 100GB','Gmail 100GB, bảo hành, hướng dẫn 2FA.','Tài khoản Gmail dung lượng 100GB, hỗ trợ bảo mật 2 lớp và khôi phục.',350000.0000,'gmail.png',JSON_ARRAY('gmail2.jpg','mailedu.png'),20,95,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','gmail-100g-1m','attributes', JSON_OBJECT('service','gmail','plan','100GB','duration','1m'),'price',350000.0000,'inventory_count',10,'image_url','gmail.png','status','Available'),
-  JSON_OBJECT('variant_code','gmail-100g-12m','attributes', JSON_OBJECT('service','gmail','plan','100GB','duration','12m'),'price',1800000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available')
-),NOW(),NOW()),
-(1009,1,'SOCIAL','FACEBOOK','Facebook cổ 2013+ (Mail+Pass)','Tài khoản Facebook cổ, có mail & pass.','Tài khoản Facebook năm 2013–2015, dành cho marketing hợp lệ theo chính sách.',180000.0000,'facebook.png',JSON_ARRAY('fb2.png'),25,210,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','fb-2013','attributes', JSON_OBJECT('year','2013','verify','mail+pass'),'price',180000.0000,'inventory_count',15,'image_url','facebook.png','status','Available'),
-  JSON_OBJECT('variant_code','fb-2015','attributes', JSON_OBJECT('year','2015','verify','mail+pass'),'price',160000.0000,'inventory_count',10,'image_url','fb2.png','status','Available')
-),NOW(),NOW()),
-(1010,1,'SOCIAL','TIKTOK','TikTok Shop – Seller Pro','Thiết lập & tối ưu TikTok Shop.','Dịch vụ tạo TikTok Shop cho người bán mới, kèm tài liệu vận hành.',300000.0000,'tiktok.png',JSON_ARRAY('tiktok2.png','tiktoklive.png'),20,74,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','ttshop-basic-1m','attributes', JSON_OBJECT('service','tiktok_shop','plan','basic','duration','1m'),'price',300000.0000,'inventory_count',12,'image_url','tiktok.png','status','Available'),
-  JSON_OBJECT('variant_code','ttshop-pro-3m','attributes', JSON_OBJECT('service','tiktok_shop','plan','pro','duration','3m'),'price',700000.0000,'inventory_count',8,'image_url','tiktok2.png','status','Available')
-),NOW(),NOW()),
-(1011,1,'SOFTWARE','CANVA','Canva Pro 1 tháng','Cấp quyền Canva Pro 1 tháng.','Tài khoản Canva Pro 1 tháng, dùng thiết kế không giới hạn mẫu.',90000.0000,'canva.jpg',JSON_ARRAY('canva2.png'),40,320,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','canva-1m','attributes', JSON_OBJECT('service','canva','plan','pro','duration','1m'),'price',90000.0000,'inventory_count',25,'image_url','canva.jpg','status','Available'),
-  JSON_OBJECT('variant_code','canva-12m','attributes', JSON_OBJECT('service','canva','plan','pro','duration','12m'),'price',850000.0000,'inventory_count',15,'image_url','canva2.png','status','Available')
-),NOW(),NOW()),
-(1012,1,'SOFTWARE','CANVA','Canva Team 5 người','Nhóm Canva Pro 5 seats.','Canva Pro cho nhóm 5 người, chia sẻ brand kit & thư viện.',250000.0000,'canva2.png',JSON_ARRAY('canva.jpg'),18,96,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','canvateam5-1m','attributes', JSON_OBJECT('service','canva','seats',5,'duration','1m'),'price',250000.0000,'inventory_count',10,'image_url','canva2.png','status','Available'),
-  JSON_OBJECT('variant_code','canvateam5-12m','attributes', JSON_OBJECT('service','canva','seats',5,'duration','12m'),'price',2400000.0000,'inventory_count',8,'image_url','canva.jpg','status','Available')
-),NOW(),NOW()),
-(1013,1,'SOFTWARE','OTHER','Windows 11 Pro (Key Retail)','Key kích hoạt Windows 11 Pro bản quyền.','Cung cấp key Windows 11 Pro loại Retail, hướng dẫn active hợp lệ.',450000.0000,'win11.jpg',JSON_ARRAY('office.jpg'),30,190,'Available','EDITION_LICENSE',JSON_ARRAY(
-  JSON_OBJECT('variant_code','win11pro-retail','attributes', JSON_OBJECT('edition','Pro','activation','Retail'),'price',450000.0000,'inventory_count',30,'image_url','win11.jpg','status','Available')
-),NOW(),NOW()),
-(1014,1,'EMAIL','OTHER','Outlook 50GB','Hộp thư Outlook 50GB, bảo mật.','Tài khoản Outlook dung lượng 50GB, kèm hướng dẫn bảo mật & khôi phục.',200000.0000,'mailedu.png',JSON_ARRAY('gmail2.jpg','gmail.png'),14,57,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','outlook-1m','attributes', JSON_OBJECT('service','outlook','plan','standard','duration','1m'),'price',200000.0000,'inventory_count',8,'image_url','mailedu.png','status','Available'),
-  JSON_OBJECT('variant_code','outlook-12m','attributes', JSON_OBJECT('service','outlook','plan','standard','duration','12m'),'price',1200000.0000,'inventory_count',6,'image_url','gmail2.jpg','status','Available')
-),NOW(),NOW()),
-(1015,1,'GAME','VALORANT','Valorant Account – Rank Silver/Gold','Tài khoản Valorant rank Silver/Gold.','Tài khoản Valorant, vùng AP/SEA, bảo hành đăng nhập.',400000.0000,'valorant.png',JSON_ARRAY('varo.png'),12,45,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','valo-silver','attributes', JSON_OBJECT('rank','Silver','region','AP'),'price',400000.0000,'inventory_count',7,'image_url','valorant.png','status','Available'),
-  JSON_OBJECT('variant_code','valo-gold','attributes', JSON_OBJECT('rank','Gold','region','AP'),'price',550000.0000,'inventory_count',5,'image_url','varo.png','status','Available')
-),NOW(),NOW()),
-(1016,1,'GAME','VALORANT','Nạp Valorant VP','Gói nạp VP chính chủ.','Dịch vụ nạp Valorant Points (VP) theo mệnh giá, giao nhanh.',160000.0000,'valorant.png',JSON_ARRAY('varo.png'),50,260,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','vp-475','attributes', JSON_OBJECT('amount','475'),'price',160000.0000,'inventory_count',20,'image_url','valorant.png','status','Available'),
-  JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375'),'price',430000.0000,'inventory_count',20,'image_url','varo.png','status','Available'),
-  JSON_OBJECT('variant_code','vp-2400','attributes', JSON_OBJECT('amount','2400'),'price',720000.0000,'inventory_count',10,'image_url','valorant.png','status','Available')
-),NOW(),NOW()),
-(1017,1,'SOCIAL','FACEBOOK','Business Manager (BM) gói hỗ trợ','Tư vấn & cấu hình BM.','Thiết lập BM, hướng dẫn bảo mật & phân quyền đúng chính sách.',220000.0000,'facebook.png',JSON_ARRAY('fb2.png'),22,81,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','bm-basic','attributes', JSON_OBJECT('package','basic','support','7d'),'price',220000.0000,'inventory_count',12,'image_url','facebook.png','status','Available'),
-  JSON_OBJECT('variant_code','bm-pro','attributes', JSON_OBJECT('package','pro','support','30d'),'price',480000.0000,'inventory_count',10,'image_url','fb2.png','status','Available')
-),NOW(),NOW()),
-(1018,1,'SOCIAL','TIKTOK','TikTok Live – Setup & Coaching','Thiết lập Live + coaching.','Cài đặt TikTok Live Studio, cấu hình cảnh & âm thanh, huấn luyện vận hành.',350000.0000,'tiktoklive.png',JSON_ARRAY('tiktok.png','tiktok2.png'),18,69,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','ttlive-basic','attributes', JSON_OBJECT('package','basic','sessions',1),'price',350000.0000,'inventory_count',10,'image_url','tiktoklive.png','status','Available'),
-  JSON_OBJECT('variant_code','ttlive-pro','attributes', JSON_OBJECT('package','pro','sessions',3),'price',900000.0000,'inventory_count',8,'image_url','tiktok2.png','status','Available')
-),NOW(),NOW()),
-(1019,1,'EMAIL','GMAIL','Gmail gói bảo hành 3 tháng','Gmail bảo hành 3 tháng, hỗ trợ bảo mật.','Tài khoản Gmail mới, hỗ trợ kỹ thuật trong 3 tháng.',270000.0000,'gmail.png',JSON_ARRAY('gmail2.jpg','mailedu.png'),20,102,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','gmail-3m','attributes', JSON_OBJECT('service','gmail','plan','standard','duration','3m'),'price',270000.0000,'inventory_count',12,'image_url','gmail.png','status','Available'),
-  JSON_OBJECT('variant_code','gmail-12m','attributes', JSON_OBJECT('service','gmail','plan','standard','duration','12m'),'price',1000000.0000,'inventory_count',8,'image_url','mailedu.png','status','Available')
-),NOW(),NOW()),
-(1020,1,'SOFTWARE','OTHER','Office 365 Family 12 tháng (6 người)','Chia sẻ Office 365 Family hợp lệ.','Gói Office 365 Family 12 tháng cho 6 tài khoản, hướng dẫn kích hoạt.',890000.0000,'office.jpg',JSON_ARRAY('win11.jpg'),16,130,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','o365family-12m','attributes', JSON_OBJECT('seats',6,'duration','12m'),'price',890000.0000,'inventory_count',16,'image_url','office.jpg','status','Available')
-),NOW(),NOW()),
-(1021,1,'SOFTWARE','OTHER','Adobe Photoshop (Key 12 tháng)','Key kích hoạt Photoshop 12 tháng.','Cung cấp key Adobe Photoshop dùng 12 tháng cho cá nhân.',1500000.0000,'adope.jpg',JSON_ARRAY('canva2.png'),10,41,'Available','EDITION_LICENSE',JSON_ARRAY(
-  JSON_OBJECT('variant_code','ps-12m','attributes', JSON_OBJECT('product','Photoshop','term','12m'),'price',1500000.0000,'inventory_count',10,'image_url','adope.jpg','status','Available')
-),NOW(),NOW()),
-(1022,1,'GAME','OTHER','Steam Wallet Code (VN)','Mã nạp Steam mệnh giá VN.','Cung cấp mã Steam Wallet Code theo mệnh giá phổ biến.',500000.0000,'steam.png',JSON_ARRAY('valorant.png','varo.png'),35,220,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','steam-100k','attributes', JSON_OBJECT('amount','100000'),'price',105000.0000,'inventory_count',15,'image_url','steam.png','status','Available'),
-  JSON_OBJECT('variant_code','steam-200k','attributes', JSON_OBJECT('amount','200000'),'price',205000.0000,'inventory_count',10,'image_url','valorant.png','status','Available'),
-  JSON_OBJECT('variant_code','steam-500k','attributes', JSON_OBJECT('amount','500000'),'price',500000.0000,'inventory_count',10,'image_url','varo.png','status','Available')
-),NOW(),NOW()),
-(1023,1,'GAME','VALORANT','Valorant – Skin Bundle Random','Account có skin bundle ngẫu nhiên.','Tài khoản Valorant unranked, sở hữu skin random; bảo hành đăng nhập.',350000.0000,'varo.png',JSON_ARRAY('valorant.png'),9,33,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','valo-skin-rand','attributes', JSON_OBJECT('rank','Unranked','skin_bundle','random'),'price',350000.0000,'inventory_count',9,'image_url','varo.png','status','Available')
-),NOW(),NOW()),
-(1024,1,'SOCIAL','OTHER','Discord Nitro','Gói Discord Nitro theo thời hạn.','Discord Nitro hỗ trợ upload lớn, emoji & perks.',95000.0000,'telegram.png',JSON_ARRAY('tiktok2.png'),28,175,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','nitro-1m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','1m'),'price',95000.0000,'inventory_count',18,'image_url','telegram.png','status','Available'),
-  JSON_OBJECT('variant_code','nitro-3m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','3m'),'price',270000.0000,'inventory_count',10,'image_url','tiktok.png','status','Available'),
-  JSON_OBJECT('variant_code','nitro-12m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','12m'),'price',980000.0000,'inventory_count',5,'image_url','tiktok2.png','status','Available')
-),NOW(),NOW()),
-(1025,1,'SOCIAL','FACEBOOK','Fanpage Template & Hướng dẫn','Bộ template + hướng dẫn vận hành fanpage.','Tài nguyên số cho fanpage: template bài viết, checklist, lịch đăng.',120000.0000,'facebook.png',JSON_ARRAY('fb2.png'),40,95,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','fp-template-basic','attributes', JSON_OBJECT('package','basic'),'price',120000.0000,'inventory_count',25,'image_url','facebook.png','status','Available'),
-  JSON_OBJECT('variant_code','fp-template-pro','attributes', JSON_OBJECT('package','pro'),'price',240000.0000,'inventory_count',15,'image_url','fb2.png','status','Available')
-),NOW(),NOW()),
-(1026,1,'SOCIAL','TIKTOK','TikTok Shop – Gói đào tạo','Đào tạo vận hành TikTok Shop.','Khoá đào tạo 1:1/nhóm về vận hành TikTok Shop.',650000.0000,'tiktok2.png',JSON_ARRAY('tiktok.png'),12,58,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','tttrain-1s','attributes', JSON_OBJECT('sessions',1,'duration','2h'),'price',650000.0000,'inventory_count',7,'image_url','tiktok2.png','status','Available'),
-  JSON_OBJECT('variant_code','tttrain-3s','attributes', JSON_OBJECT('sessions',3,'duration','6h'),'price',1800000.0000,'inventory_count',5,'image_url','tiktok.png','status','Available')
-),NOW(),NOW()),
-(1027,1,'EMAIL','GMAIL','Gmail – Cài đặt Forward & Filter','Thiết lập chuyển tiếp, bộ lọc, nhãn chuyên nghiệp.','Dịch vụ thiết kế hệ thống hộp thư: forward, filter, nhãn, auto-reply.',170000.0000,'gmail2.jpg',JSON_ARRAY('gmail.png','mailedu.png'),25,60,'Available','CUSTOM',JSON_ARRAY(
-  JSON_OBJECT('variant_code','gmail-setup-basic','attributes', JSON_OBJECT('package','basic'),'price',170000.0000,'inventory_count',15,'image_url','gmail2.jpg','status','Available'),
-  JSON_OBJECT('variant_code','gmail-setup-pro','attributes', JSON_OBJECT('package','pro'),'price',320000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available')
-),NOW(),NOW()),
-(1028,1,'SOFTWARE','CANVA','Canva Pro – Gia hạn 36 tháng','Gia hạn Canva Pro 24–36 tháng.','Dịch vụ gia hạn Canva Pro dài hạn tiết kiệm.',2300000.0000,'canva2.png',JSON_ARRAY('canva.jpg'),6,22,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','canva-24m','attributes', JSON_OBJECT('service','canva','duration','24m'),'price',1600000.0000,'inventory_count',3,'image_url','canva2.png','status','Available'),
-  JSON_OBJECT('variant_code','canva-36m','attributes', JSON_OBJECT('service','canva','duration','36m'),'price',2300000.0000,'inventory_count',3,'image_url','canva.jpg','status','Available')
-),NOW(),NOW()),
-(1029,1,'EMAIL','GMAIL','Gmail Edu (tuỳ trường)','Gmail Edu dung lượng lớn, dùng cho học tập.','Tài khoản Gmail Edu (tuỳ trường), kèm hướng dẫn bảo mật & sử dụng.',300000.0000,'mailedu.png',JSON_ARRAY('gmail.png','gmail2.jpg'),18,70,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','gmail-edu-6m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','6m'),'price',300000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available'),
-  JSON_OBJECT('variant_code','gmail-edu-12m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','12m'),'price',520000.0000,'inventory_count',8,'image_url','gmail2.jpg','status','Available')
-),NOW(),NOW()),
-(1030,1,'SOCIAL','OTHER','Telegram Premium','Nâng cấp Telegram Premium theo kỳ hạn.','Tính năng Premium: upload lớn, chuyển giọng nói sang text, sticker/emoji nâng cao.',115000.0000,'telegram.png',JSON_ARRAY(),26,110,'Available','DURATION_PLAN',JSON_ARRAY(
-  JSON_OBJECT('variant_code','tg-prem-1m','attributes', JSON_OBJECT('service','telegram','duration','1m'),'price',115000.0000,'inventory_count',16,'image_url','telegram.png','status','Available'),
-  JSON_OBJECT('variant_code','tg-prem-12m','attributes', JSON_OBJECT('service','telegram','duration','12m'),'price',1150000.0000,'inventory_count',10,'image_url','tiktok.png','status','Available')
-),NOW(),NOW());
+-- INSERT INTO `products`
+-- (`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
+-- VALUES
+-- (1008,1,'EMAIL','GMAIL','Gmail Doanh nghiệp 100GB','Gmail 100GB, bảo hành, hướng dẫn 2FA.','Tài khoản Gmail dung lượng 100GB, hỗ trợ bảo mật 2 lớp và khôi phục.',350000.0000,'gmail.png',JSON_ARRAY('gmail2.jpg','mailedu.png'),20,95,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','gmail-100g-1m','attributes', JSON_OBJECT('service','gmail','plan','100GB','duration','1m'),'price',350000.0000,'inventory_count',10,'image_url','gmail.png','status','Available'),
+--   JSON_OBJECT('variant_code','gmail-100g-12m','attributes', JSON_OBJECT('service','gmail','plan','100GB','duration','12m'),'price',1800000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1009,1,'SOCIAL','FACEBOOK','Facebook cổ 2013+ (Mail+Pass)','Tài khoản Facebook cổ, có mail & pass.','Tài khoản Facebook năm 2013–2015, dành cho marketing hợp lệ theo chính sách.',180000.0000,'facebook.png',JSON_ARRAY('fb2.png'),25,210,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','fb-2013','attributes', JSON_OBJECT('year','2013','verify','mail+pass'),'price',180000.0000,'inventory_count',15,'image_url','facebook.png','status','Available'),
+--   JSON_OBJECT('variant_code','fb-2015','attributes', JSON_OBJECT('year','2015','verify','mail+pass'),'price',160000.0000,'inventory_count',10,'image_url','fb2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1010,1,'SOCIAL','TIKTOK','TikTok Shop – Seller Pro','Thiết lập & tối ưu TikTok Shop.','Dịch vụ tạo TikTok Shop cho người bán mới, kèm tài liệu vận hành.',300000.0000,'tiktok.png',JSON_ARRAY('tiktok2.png','tiktoklive.png'),20,74,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','ttshop-basic-1m','attributes', JSON_OBJECT('service','tiktok_shop','plan','basic','duration','1m'),'price',300000.0000,'inventory_count',12,'image_url','tiktok.png','status','Available'),
+--   JSON_OBJECT('variant_code','ttshop-pro-3m','attributes', JSON_OBJECT('service','tiktok_shop','plan','pro','duration','3m'),'price',700000.0000,'inventory_count',8,'image_url','tiktok2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1011,1,'SOFTWARE','CANVA','Canva Pro 1 tháng','Cấp quyền Canva Pro 1 tháng.','Tài khoản Canva Pro 1 tháng, dùng thiết kế không giới hạn mẫu.',90000.0000,'canva.jpg',JSON_ARRAY('canva2.png'),40,320,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','canva-1m','attributes', JSON_OBJECT('service','canva','plan','pro','duration','1m'),'price',90000.0000,'inventory_count',25,'image_url','canva.jpg','status','Available'),
+--   JSON_OBJECT('variant_code','canva-12m','attributes', JSON_OBJECT('service','canva','plan','pro','duration','12m'),'price',850000.0000,'inventory_count',15,'image_url','canva2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1012,1,'SOFTWARE','CANVA','Canva Team 5 người','Nhóm Canva Pro 5 seats.','Canva Pro cho nhóm 5 người, chia sẻ brand kit & thư viện.',250000.0000,'canva2.png',JSON_ARRAY('canva.jpg'),18,96,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','canvateam5-1m','attributes', JSON_OBJECT('service','canva','seats',5,'duration','1m'),'price',250000.0000,'inventory_count',10,'image_url','canva2.png','status','Available'),
+--   JSON_OBJECT('variant_code','canvateam5-12m','attributes', JSON_OBJECT('service','canva','seats',5,'duration','12m'),'price',2400000.0000,'inventory_count',8,'image_url','canva.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1013,1,'SOFTWARE','OTHER','Windows 11 Pro (Key Retail)','Key kích hoạt Windows 11 Pro bản quyền.','Cung cấp key Windows 11 Pro loại Retail, hướng dẫn active hợp lệ.',450000.0000,'win11.jpg',JSON_ARRAY('office.jpg'),30,190,'Available','EDITION_LICENSE',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','win11pro-retail','attributes', JSON_OBJECT('edition','Pro','activation','Retail'),'price',450000.0000,'inventory_count',30,'image_url','win11.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1014,1,'EMAIL','OTHER','Outlook 50GB','Hộp thư Outlook 50GB, bảo mật.','Tài khoản Outlook dung lượng 50GB, kèm hướng dẫn bảo mật & khôi phục.',200000.0000,'mailedu.png',JSON_ARRAY('gmail2.jpg','gmail.png'),14,57,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','outlook-1m','attributes', JSON_OBJECT('service','outlook','plan','standard','duration','1m'),'price',200000.0000,'inventory_count',8,'image_url','mailedu.png','status','Available'),
+--   JSON_OBJECT('variant_code','outlook-12m','attributes', JSON_OBJECT('service','outlook','plan','standard','duration','12m'),'price',1200000.0000,'inventory_count',6,'image_url','gmail2.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1015,1,'GAME','VALORANT','Valorant Account – Rank Silver/Gold','Tài khoản Valorant rank Silver/Gold.','Tài khoản Valorant, vùng AP/SEA, bảo hành đăng nhập.',400000.0000,'valorant.png',JSON_ARRAY('varo.png'),12,45,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','valo-silver','attributes', JSON_OBJECT('rank','Silver','region','AP'),'price',400000.0000,'inventory_count',7,'image_url','valorant.png','status','Available'),
+--   JSON_OBJECT('variant_code','valo-gold','attributes', JSON_OBJECT('rank','Gold','region','AP'),'price',550000.0000,'inventory_count',5,'image_url','varo.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1016,1,'GAME','VALORANT','Nạp Valorant VP','Gói nạp VP chính chủ.','Dịch vụ nạp Valorant Points (VP) theo mệnh giá, giao nhanh.',160000.0000,'valorant.png',JSON_ARRAY('varo.png'),50,260,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','vp-475','attributes', JSON_OBJECT('amount','475'),'price',160000.0000,'inventory_count',20,'image_url','valorant.png','status','Available'),
+--   JSON_OBJECT('variant_code','vp-1375','attributes', JSON_OBJECT('amount','1375'),'price',430000.0000,'inventory_count',20,'image_url','varo.png','status','Available'),
+--   JSON_OBJECT('variant_code','vp-2400','attributes', JSON_OBJECT('amount','2400'),'price',720000.0000,'inventory_count',10,'image_url','valorant.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1017,1,'SOCIAL','FACEBOOK','Business Manager (BM) gói hỗ trợ','Tư vấn & cấu hình BM.','Thiết lập BM, hướng dẫn bảo mật & phân quyền đúng chính sách.',220000.0000,'facebook.png',JSON_ARRAY('fb2.png'),22,81,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','bm-basic','attributes', JSON_OBJECT('package','basic','support','7d'),'price',220000.0000,'inventory_count',12,'image_url','facebook.png','status','Available'),
+--   JSON_OBJECT('variant_code','bm-pro','attributes', JSON_OBJECT('package','pro','support','30d'),'price',480000.0000,'inventory_count',10,'image_url','fb2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1018,1,'SOCIAL','TIKTOK','TikTok Live – Setup & Coaching','Thiết lập Live + coaching.','Cài đặt TikTok Live Studio, cấu hình cảnh & âm thanh, huấn luyện vận hành.',350000.0000,'tiktoklive.png',JSON_ARRAY('tiktok.png','tiktok2.png'),18,69,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','ttlive-basic','attributes', JSON_OBJECT('package','basic','sessions',1),'price',350000.0000,'inventory_count',10,'image_url','tiktoklive.png','status','Available'),
+--   JSON_OBJECT('variant_code','ttlive-pro','attributes', JSON_OBJECT('package','pro','sessions',3),'price',900000.0000,'inventory_count',8,'image_url','tiktok2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1019,1,'EMAIL','GMAIL','Gmail gói bảo hành 3 tháng','Gmail bảo hành 3 tháng, hỗ trợ bảo mật.','Tài khoản Gmail mới, hỗ trợ kỹ thuật trong 3 tháng.',270000.0000,'gmail.png',JSON_ARRAY('gmail2.jpg','mailedu.png'),20,102,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','gmail-3m','attributes', JSON_OBJECT('service','gmail','plan','standard','duration','3m'),'price',270000.0000,'inventory_count',12,'image_url','gmail.png','status','Available'),
+--   JSON_OBJECT('variant_code','gmail-12m','attributes', JSON_OBJECT('service','gmail','plan','standard','duration','12m'),'price',1000000.0000,'inventory_count',8,'image_url','mailedu.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1020,1,'SOFTWARE','OTHER','Office 365 Family 12 tháng (6 người)','Chia sẻ Office 365 Family hợp lệ.','Gói Office 365 Family 12 tháng cho 6 tài khoản, hướng dẫn kích hoạt.',890000.0000,'office.jpg',JSON_ARRAY('win11.jpg'),16,130,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','o365family-12m','attributes', JSON_OBJECT('seats',6,'duration','12m'),'price',890000.0000,'inventory_count',16,'image_url','office.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1021,1,'SOFTWARE','OTHER','Adobe Photoshop (Key 12 tháng)','Key kích hoạt Photoshop 12 tháng.','Cung cấp key Adobe Photoshop dùng 12 tháng cho cá nhân.',1500000.0000,'adope.jpg',JSON_ARRAY('canva2.png'),10,41,'Available','EDITION_LICENSE',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','ps-12m','attributes', JSON_OBJECT('product','Photoshop','term','12m'),'price',1500000.0000,'inventory_count',10,'image_url','adope.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1022,1,'GAME','OTHER','Steam Wallet Code (VN)','Mã nạp Steam mệnh giá VN.','Cung cấp mã Steam Wallet Code theo mệnh giá phổ biến.',500000.0000,'steam.png',JSON_ARRAY('valorant.png','varo.png'),35,220,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','steam-100k','attributes', JSON_OBJECT('amount','100000'),'price',105000.0000,'inventory_count',15,'image_url','steam.png','status','Available'),
+--   JSON_OBJECT('variant_code','steam-200k','attributes', JSON_OBJECT('amount','200000'),'price',205000.0000,'inventory_count',10,'image_url','valorant.png','status','Available'),
+--   JSON_OBJECT('variant_code','steam-500k','attributes', JSON_OBJECT('amount','500000'),'price',500000.0000,'inventory_count',10,'image_url','varo.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1023,1,'GAME','VALORANT','Valorant – Skin Bundle Random','Account có skin bundle ngẫu nhiên.','Tài khoản Valorant unranked, sở hữu skin random; bảo hành đăng nhập.',350000.0000,'varo.png',JSON_ARRAY('valorant.png'),9,33,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','valo-skin-rand','attributes', JSON_OBJECT('rank','Unranked','skin_bundle','random'),'price',350000.0000,'inventory_count',9,'image_url','varo.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1024,1,'SOCIAL','OTHER','Discord Nitro','Gói Discord Nitro theo thời hạn.','Discord Nitro hỗ trợ upload lớn, emoji & perks.',95000.0000,'telegram.png',JSON_ARRAY('tiktok2.png'),28,175,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','nitro-1m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','1m'),'price',95000.0000,'inventory_count',18,'image_url','telegram.png','status','Available'),
+--   JSON_OBJECT('variant_code','nitro-3m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','3m'),'price',270000.0000,'inventory_count',10,'image_url','tiktok.png','status','Available'),
+--   JSON_OBJECT('variant_code','nitro-12m','attributes', JSON_OBJECT('service','discord','plan','nitro','duration','12m'),'price',980000.0000,'inventory_count',5,'image_url','tiktok2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1025,1,'SOCIAL','FACEBOOK','Fanpage Template & Hướng dẫn','Bộ template + hướng dẫn vận hành fanpage.','Tài nguyên số cho fanpage: template bài viết, checklist, lịch đăng.',120000.0000,'facebook.png',JSON_ARRAY('fb2.png'),40,95,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','fp-template-basic','attributes', JSON_OBJECT('package','basic'),'price',120000.0000,'inventory_count',25,'image_url','facebook.png','status','Available'),
+--   JSON_OBJECT('variant_code','fp-template-pro','attributes', JSON_OBJECT('package','pro'),'price',240000.0000,'inventory_count',15,'image_url','fb2.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1026,1,'SOCIAL','TIKTOK','TikTok Shop – Gói đào tạo','Đào tạo vận hành TikTok Shop.','Khoá đào tạo 1:1/nhóm về vận hành TikTok Shop.',650000.0000,'tiktok2.png',JSON_ARRAY('tiktok.png'),12,58,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','tttrain-1s','attributes', JSON_OBJECT('sessions',1,'duration','2h'),'price',650000.0000,'inventory_count',7,'image_url','tiktok2.png','status','Available'),
+--   JSON_OBJECT('variant_code','tttrain-3s','attributes', JSON_OBJECT('sessions',3,'duration','6h'),'price',1800000.0000,'inventory_count',5,'image_url','tiktok.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1027,1,'EMAIL','GMAIL','Gmail – Cài đặt Forward & Filter','Thiết lập chuyển tiếp, bộ lọc, nhãn chuyên nghiệp.','Dịch vụ thiết kế hệ thống hộp thư: forward, filter, nhãn, auto-reply.',170000.0000,'gmail2.jpg',JSON_ARRAY('gmail.png','mailedu.png'),25,60,'Available','CUSTOM',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','gmail-setup-basic','attributes', JSON_OBJECT('package','basic'),'price',170000.0000,'inventory_count',15,'image_url','gmail2.jpg','status','Available'),
+--   JSON_OBJECT('variant_code','gmail-setup-pro','attributes', JSON_OBJECT('package','pro'),'price',320000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available')
+-- ),NOW(),NOW()),
+-- (1028,1,'SOFTWARE','CANVA','Canva Pro – Gia hạn 36 tháng','Gia hạn Canva Pro 24–36 tháng.','Dịch vụ gia hạn Canva Pro dài hạn tiết kiệm.',2300000.0000,'canva2.png',JSON_ARRAY('canva.jpg'),6,22,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','canva-24m','attributes', JSON_OBJECT('service','canva','duration','24m'),'price',1600000.0000,'inventory_count',3,'image_url','canva2.png','status','Available'),
+--   JSON_OBJECT('variant_code','canva-36m','attributes', JSON_OBJECT('service','canva','duration','36m'),'price',2300000.0000,'inventory_count',3,'image_url','canva.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1029,1,'EMAIL','GMAIL','Gmail Edu (tuỳ trường)','Gmail Edu dung lượng lớn, dùng cho học tập.','Tài khoản Gmail Edu (tuỳ trường), kèm hướng dẫn bảo mật & sử dụng.',300000.0000,'mailedu.png',JSON_ARRAY('gmail.png','gmail2.jpg'),18,70,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','gmail-edu-6m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','6m'),'price',300000.0000,'inventory_count',10,'image_url','mailedu.png','status','Available'),
+--   JSON_OBJECT('variant_code','gmail-edu-12m','attributes', JSON_OBJECT('service','gmail','segment','edu','duration','12m'),'price',520000.0000,'inventory_count',8,'image_url','gmail2.jpg','status','Available')
+-- ),NOW(),NOW()),
+-- (1030,1,'SOCIAL','OTHER','Telegram Premium','Nâng cấp Telegram Premium theo kỳ hạn.','Tính năng Premium: upload lớn, chuyển giọng nói sang text, sticker/emoji nâng cao.',115000.0000,'telegram.png',JSON_ARRAY(),26,110,'Available','DURATION_PLAN',JSON_ARRAY(
+--   JSON_OBJECT('variant_code','tg-prem-1m','attributes', JSON_OBJECT('service','telegram','duration','1m'),'price',115000.0000,'inventory_count',16,'image_url','telegram.png','status','Available'),
+--   JSON_OBJECT('variant_code','tg-prem-12m','attributes', JSON_OBJECT('service','telegram','duration','12m'),'price',1150000.0000,'inventory_count',10,'image_url','tiktok.png','status','Available')
+-- ),NOW(),NOW());
 
 
 
--- Credentials (ví dụ ràng buộc với đơn)
-INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
- (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
- (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
- (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00'),
- (4,1002,5003,'ENCRYPTED-CODE-202','sp-12m',1,'2024-01-31 09:10:00');
+-- -- Credentials (ví dụ ràng buộc với đơn)
+-- INSERT INTO `product_credentials` (`id`,`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+--  (1,1001,5001,'ENCRYPTED-CODE-001','gmail-basic-1m',1,'2024-01-20 12:05:00'),
+--  (2,1001,NULL,'ENCRYPTED-CODE-002','gmail-premium-12m',0,'2024-01-21 10:20:00'),
+--  (3,1002,NULL,'ENCRYPTED-CODE-201','sp-12m',0,'2024-01-26 08:30:00'),
+--  (4,1002,5003,'ENCRYPTED-CODE-202','sp-12m',1,'2024-01-31 09:10:00');
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
@@ -743,85 +695,71 @@ INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_a
  (2,2,33000000.0000,1,'2024-01-12 08:40:00','2024-01-26 09:45:00'),
  (3,3,5000000.0000,1,'2024-01-15 08:00:00','2024-01-20 12:10:00');
 
-INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
- (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
- (2,3,150000.0000,'VietQR|MMO|INV-20240127','DEPOSIT-UUID-2','Pending','2024-01-27 12:00:00',NULL,'2024-01-27 09:00:00'),
- (3,3,200000.0000,'VietQR|MMO|INV-20240131','DEPOSIT-UUID-3','Completed','2024-01-31 12:00:00','Bổ sung số dư chuẩn bị mua gói mới','2024-01-31 08:55:00');
+-- INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
+--  (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
+--  (2,3,150000.0000,'VietQR|MMO|INV-20240127','DEPOSIT-UUID-2','Pending','2024-01-27 12:00:00',NULL,'2024-01-27 09:00:00'),
+--  (3,3,200000.0000,'VietQR|MMO|INV-20240131','DEPOSIT-UUID-3','Completed','2024-01-31 12:00:00','Bổ sung số dư chuẩn bị mua gói mới','2024-01-31 08:55:00');
 
-INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transaction_type`,`amount`,`balance_before`,`balance_after`,`note`,`created_at`) VALUES
- (1,3,1,'Deposit',300000.0000,0.0000,300000.0000,'Nạp tiền qua VietQR','2024-01-20 10:16:00'),
- (2,3,5001,'Purchase',-250000.0000,300000.0000,50000.0000,'Thanh toán đơn hàng #5001','2024-01-20 12:00:00'),
- (3,2,5001,'Payout',250000.0000,200000.0000,450000.0000,'Doanh thu đơn #5001','2024-01-20 12:01:00'),
- (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00'),
- (5,3,3,'Deposit',200000.0000,50000.0000,250000.0000,'Nạp tiền chuẩn bị mua gói Spotify khác','2024-01-31 09:00:00'),
- (6,3,5003,'Purchase',-185000.0000,250000.0000,65000.0000,'Thanh toán đơn hàng #5003','2024-01-31 09:05:00'),
- (7,2,5003,'Payout',185000.0000,330000.0000,515000.0000,'Giải ngân đơn #5003 sau khi đóng report','2024-02-02 10:00:00');
+-- INSERT INTO `wallet_transactions` (`id`,`wallet_id`,`related_entity_id`,`transaction_type`,`amount`,`balance_before`,`balance_after`,`note`,`created_at`) VALUES
+--  (1,3,1,'Deposit',300000.0000,0.0000,300000.0000,'Nạp tiền qua VietQR','2024-01-20 10:16:00'),
+--  (2,3,5001,'Purchase',-250000.0000,300000.0000,50000.0000,'Thanh toán đơn hàng #5001','2024-01-20 12:00:00'),
+--  (3,2,5001,'Payout',250000.0000,200000.0000,450000.0000,'Doanh thu đơn #5001','2024-01-20 12:01:00'),
+--  (4,2,1,'Withdrawal',-120000.0000,450000.0000,330000.0000,'Rút tiền về Vietcombank','2024-01-26 09:40:00'),
+--  (5,3,3,'Deposit',200000.0000,50000.0000,250000.0000,'Nạp tiền chuẩn bị mua gói Spotify khác','2024-01-31 09:00:00'),
+--  (6,3,5003,'Purchase',-185000.0000,250000.0000,65000.0000,'Thanh toán đơn hàng #5003','2024-01-31 09:05:00'),
+--  (7,2,5003,'Payout',185000.0000,330000.0000,515000.0000,'Giải ngân đơn #5003 sau khi đóng report','2024-02-02 10:00:00');
 
--- Đơn hàng mẫu minh họa trạng thái Completed và Disputed
-INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`escrow_hold_seconds`,`escrow_original_release_at`,`escrow_release_at`,`escrow_status`,`escrow_paused_at`,`escrow_remaining_seconds`,`escrow_resumed_at`,`escrow_released_at_actual`,`created_at`,`updated_at`) VALUES
-(5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00',259200,'2024-01-23 12:00:00','2024-01-23 12:00:00','Released',NULL,NULL,NULL,'2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
-(5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00',432000,'2024-02-01 00:00:00','2024-02-01 00:00:00','Paused','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-26 09:00:00','2024-01-27 08:10:00'),
-(5003,3,1002,1,185000.0000,6,185000.0000,'Completed','sp-12m','ORDER-5003-KEY','2024-02-02 10:00:00',176400,'2024-02-02 10:00:00','2024-02-02 10:00:00','Released','2024-02-02 09:30:00',1800,'2024-02-02 09:45:00','2024-02-02 10:00:00','2024-01-31 09:00:00','2024-02-02 10:00:00');
+-- -- Đơn hàng mẫu minh họa trạng thái Completed và Disputed
+-- INSERT INTO `orders` (`id`,`buyer_id`,`product_id`,`quantity`,`unit_price`,`payment_transaction_id`,`total_amount`,`status`,`variant_code`,`idempotency_key`,`hold_until`,`escrow_hold_seconds`,`escrow_original_release_at`,`escrow_release_at`,`escrow_status`,`escrow_paused_at`,`escrow_remaining_seconds`,`escrow_resumed_at`,`escrow_released_at_actual`,`created_at`,`updated_at`) VALUES
+-- (5001,3,1001,1,250000.0000,2,250000.0000,'Completed','gmail-basic-1m','ORDER-5001-KEY','2024-01-23 12:00:00',259200,'2024-01-23 12:00:00','2024-01-23 12:00:00','Released',NULL,NULL,NULL,'2024-01-23 12:00:00','2024-01-20 10:45:00','2024-01-20 12:05:00'),
+-- (5002,3,1002,1,185000.0000,NULL,185000.0000,'Disputed','sp-12m','ORDER-5002-KEY','2024-02-01 00:00:00',432000,'2024-02-01 00:00:00','2024-02-01 00:00:00','Paused','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-26 09:00:00','2024-01-27 08:10:00'),
+-- (5003,3,1002,1,185000.0000,6,185000.0000,'Completed','sp-12m','ORDER-5003-KEY','2024-02-02 10:00:00',176400,'2024-02-02 10:00:00','2024-02-02 10:00:00','Released','2024-02-02 09:30:00',1800,'2024-02-02 09:45:00','2024-02-02 10:00:00','2024-01-31 09:00:00','2024-02-02 10:00:00');
 
--- Withdrawals
-INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES
- (1,'ACCOUNT_ERROR','Thông tin tài khoản ngân hàng không khớp',1),
- (2,'SUSPICIOUS_ACTIVITY','Giao dịch có dấu hiệu bất thường, cần xác minh thêm',1);
+-- -- Withdrawals
+-- INSERT INTO `withdrawal_rejection_reasons` (`id`,`reason_code`,`description`,`is_active`) VALUES
+--  (1,'ACCOUNT_ERROR','Thông tin tài khoản ngân hàng không khớp',1),
+--  (2,'SUSPICIOUS_ACTIVITY','Giao dịch có dấu hiệu bất thường, cần xác minh thêm',1);
 
-INSERT INTO `withdrawal_requests` (`id`,`user_id`,`amount`,`bank_account_info`,`status`,`admin_proof_url`,`created_at`,`processed_at`) VALUES
- (1,2,120000.0000,'{\"bank\":\"VCB\",\"account\":\"0123456789\",\"name\":\"Trần Văn Seller\"}','Completed','https://cdn.mmo.local/withdrawals/receipt-1.png','2024-01-26 09:00:00','2024-01-26 09:45:00'),
- (2,2,80000.0000,'{\"bank\":\"ACB\",\"account\":\"9876543210\",\"name\":\"Trần Văn Seller\"}','Rejected',NULL,'2024-02-03 09:00:00','2024-02-03 10:00:00');
+-- INSERT INTO `withdrawal_requests` (`id`,`user_id`,`amount`,`bank_account_info`,`status`,`admin_proof_url`,`created_at`,`processed_at`) VALUES
+--  (1,2,120000.0000,'{\"bank\":\"VCB\",\"account\":\"0123456789\",\"name\":\"Trần Văn Seller\"}','Completed','https://cdn.mmo.local/withdrawals/receipt-1.png','2024-01-26 09:00:00','2024-01-26 09:45:00'),
+--  (2,2,80000.0000,'{\"bank\":\"ACB\",\"account\":\"9876543210\",\"name\":\"Trần Văn Seller\"}','Rejected',NULL,'2024-02-03 09:00:00','2024-02-03 10:00:00');
 
-INSERT INTO `withdrawal_request_reasons_map` (`request_id`,`reason_id`) VALUES (2,2);
+-- INSERT INTO `withdrawal_request_reasons_map` (`request_id`,`reason_id`) VALUES (2,2);
 
--- Support / Chat
-INSERT INTO `disputes` (`id`,`order_id`,`order_reference_code`,`reporter_id`,`resolved_by_admin_id`,`issue_type`,`custom_issue_title`,`reason`,`status`,`escrow_paused_at`,`escrow_remaining_seconds`,`resolved_at`,`resolution_note`,`created_at`,`updated_at`) VALUES
- (1,5002,'ORD-5002',3,NULL,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify không hoạt động','Open','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-27 08:10:00','2024-01-27 08:10:00'),
- (2,5003,'ORD-5003',3,1,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify báo lỗi nhưng đã hoạt động lại sau khi xác minh','Closed','2024-02-02 09:30:00',1200,'2024-02-02 09:45:00','Admin xác nhận tài khoản hoạt động bình thường, mở lại escrow','2024-02-02 09:30:00','2024-02-02 09:45:00');
+-- -- Support / Chat
+-- INSERT INTO `disputes` (`id`,`order_id`,`order_reference_code`,`reporter_id`,`resolved_by_admin_id`,`issue_type`,`custom_issue_title`,`reason`,`status`,`escrow_paused_at`,`escrow_remaining_seconds`,`resolved_at`,`resolution_note`,`created_at`,`updated_at`) VALUES
+--  (1,5002,'ORD-5002',3,NULL,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify không hoạt động','Open','2024-01-27 08:10:00',402600,NULL,NULL,'2024-01-27 08:10:00','2024-01-27 08:10:00'),
+--  (2,5003,'ORD-5003',3,1,'ACCOUNT_NOT_WORKING',NULL,'Tài khoản Spotify báo lỗi nhưng đã hoạt động lại sau khi xác minh','Closed','2024-02-02 09:30:00',1200,'2024-02-02 09:45:00','Admin xác nhận tài khoản hoạt động bình thường, mở lại escrow','2024-02-02 09:30:00','2024-02-02 09:45:00');
 
-INSERT INTO `dispute_attachments` (`id`,`dispute_id`,`file_path`,`created_at`) VALUES
- (1,1,'https://cdn.mmo.local/disputes/5002/proof-1.png','2024-01-27 08:11:00'),
- (2,1,'https://cdn.mmo.local/disputes/5002/proof-2.png','2024-01-27 08:11:30'),
- (3,2,'https://cdn.mmo.local/disputes/5003/proof-1.png','2024-02-02 09:32:00');
+-- INSERT INTO `dispute_attachments` (`id`,`dispute_id`,`file_path`,`created_at`) VALUES
+--  (1,1,'https://cdn.mmo.local/disputes/5002/proof-1.png','2024-01-27 08:11:00'),
+--  (2,1,'https://cdn.mmo.local/disputes/5002/proof-2.png','2024-01-27 08:11:30'),
+--  (3,2,'https://cdn.mmo.local/disputes/5003/proof-1.png','2024-02-02 09:32:00');
 
-INSERT INTO `order_escrow_events` (`id`,`order_id`,`event_type`,`actor_type`,`actor_admin_id`,`related_dispute_id`,`release_at_snapshot`,`remaining_seconds_snapshot`,`metadata`,`created_at`) VALUES
- (1,5002,'CREATED','SYSTEM',NULL,NULL,'2024-02-01 00:00:00',432000,JSON_OBJECT('source','checkout'),'2024-01-26 09:00:00'),
- (2,5002,'PAUSED','SYSTEM',NULL,1,'2024-02-01 00:00:00',402600,JSON_OBJECT('dispute_id',1,'reason','Buyer report mở khi escrow còn 4d16h'),'2024-01-27 08:10:00'),
- (3,5002,'ADJUSTED','ADMIN',1,1,'2024-02-03 12:00:00',432000,JSON_OBJECT('change','extend','delta_seconds',172800),'2024-01-27 08:12:00'),
- (4,5003,'CREATED','SYSTEM',NULL,NULL,'2024-02-02 10:00:00',176400,JSON_OBJECT('source','checkout'),'2024-01-31 09:00:00'),
- (5,5003,'PAUSED','SYSTEM',NULL,2,'2024-02-02 10:00:00',1800,JSON_OBJECT('dispute_id',2,'reason','Buyer báo lỗi trước khi hết escrow'),'2024-02-02 09:30:00'),
- (6,5003,'RESUMED','ADMIN',1,2,'2024-02-02 10:00:00',900,JSON_OBJECT('action','resume_after_validation'),'2024-02-02 09:45:00'),
- (7,5003,'RELEASED','SYSTEM',NULL,2,'2024-02-02 10:00:00',0,JSON_OBJECT('action','auto_release_after_resume'),'2024-02-02 10:00:00');
+-- INSERT INTO `order_escrow_events` (`id`,`order_id`,`event_type`,`actor_type`,`actor_admin_id`,`related_dispute_id`,`release_at_snapshot`,`remaining_seconds_snapshot`,`metadata`,`created_at`) VALUES
+--  (1,5002,'CREATED','SYSTEM',NULL,NULL,'2024-02-01 00:00:00',432000,JSON_OBJECT('source','checkout'),'2024-01-26 09:00:00'),
+--  (2,5002,'PAUSED','SYSTEM',NULL,1,'2024-02-01 00:00:00',402600,JSON_OBJECT('dispute_id',1,'reason','Buyer report mở khi escrow còn 4d16h'),'2024-01-27 08:10:00'),
+--  (3,5002,'ADJUSTED','ADMIN',1,1,'2024-02-03 12:00:00',432000,JSON_OBJECT('change','extend','delta_seconds',172800),'2024-01-27 08:12:00'),
+--  (4,5003,'CREATED','SYSTEM',NULL,NULL,'2024-02-02 10:00:00',176400,JSON_OBJECT('source','checkout'),'2024-01-31 09:00:00'),
+--  (5,5003,'PAUSED','SYSTEM',NULL,2,'2024-02-02 10:00:00',1800,JSON_OBJECT('dispute_id',2,'reason','Buyer báo lỗi trước khi hết escrow'),'2024-02-02 09:30:00'),
+--  (6,5003,'RESUMED','ADMIN',1,2,'2024-02-02 10:00:00',900,JSON_OBJECT('action','resume_after_validation'),'2024-02-02 09:45:00'),
+--  (7,5003,'RELEASED','SYSTEM',NULL,2,'2024-02-02 10:00:00',0,JSON_OBJECT('action','auto_release_after_resume'),'2024-02-02 10:00:00');
 
-INSERT INTO `order_escrow_adjustments` (`id`,`order_id`,`event_id`,`admin_id`,`related_dispute_id`,`previous_release_at`,`previous_remaining_seconds`,`new_release_at`,`new_remaining_seconds`,`note`,`created_at`) VALUES
- (1,5002,3,1,1,'2024-02-01 00:00:00',259200,'2024-02-03 12:00:00',432000,'Gia hạn thêm 2 ngày để xử lý khiếu nại','2024-01-27 08:12:00');
+-- INSERT INTO `order_escrow_adjustments` (`id`,`order_id`,`event_id`,`admin_id`,`related_dispute_id`,`previous_release_at`,`previous_remaining_seconds`,`new_release_at`,`new_remaining_seconds`,`note`,`created_at`) VALUES
+--  (1,5002,3,1,1,'2024-02-01 00:00:00',259200,'2024-02-03 12:00:00',432000,'Gia hạn thêm 2 ngày để xử lý khiếu nại','2024-01-27 08:12:00');
 
-INSERT INTO `conversations` (`id`,`related_order_id`,`related_product_id`,`created_at`) VALUES
- (1,5002,1002,'2024-01-27 08:00:00'),
- (2,5003,1002,'2024-02-02 09:28:00');
 
-INSERT INTO `conversation_participants` (`conversation_id`,`user_id`) VALUES (1,2),(1,3),(2,2),(2,3);
-
-INSERT INTO `messages` (`id`,`conversation_id`,`sender_id`,`content`,`created_at`) VALUES
- (1,1,3,'Shop ơi, tài khoản Spotify không hoạt động.','2024-01-27 08:05:00'),
- (2,1,2,'Bên mình đang kiểm tra lại thông tin giúp bạn.','2024-01-27 08:07:00'),
- (3,2,3,'Mình không đăng nhập được, shop hỗ trợ giúp với!','2024-02-02 09:29:00'),
- (4,2,2,'Shop đã reset lại mật khẩu, bạn thử lại xem nhé.','2024-02-02 09:40:00'),
- (5,2,3,'Đã đăng nhập lại được rồi cảm ơn shop.','2024-02-02 09:44:00');
-
--- Inventory logs
-INSERT INTO `inventory_logs` (`id`,`product_id`,`related_order_id`,`change_amount`,`reason`,`created_at`) VALUES
- (1,1001,5001,-1,'Sale','2024-01-20 12:00:00'),
- (2,1002,5002,-1,'Sale','2024-01-26 09:05:00'),
- (3,1002,NULL,5,'ManualRestock','2024-01-29 10:00:00'),
- (4,1002,5003,-1,'Sale','2024-01-31 09:05:00');
+-- -- Inventory logs
+-- INSERT INTO `inventory_logs` (`id`,`product_id`,`related_order_id`,`change_amount`,`reason`,`created_at`) VALUES
+--  (1,1001,5001,-1,'Sale','2024-01-20 12:00:00'),
+--  (2,1002,5002,-1,'Sale','2024-01-26 09:05:00'),
+--  (3,1002,NULL,5,'ManualRestock','2024-01-29 10:00:00'),
+--  (4,1002,5003,-1,'Sale','2024-01-31 09:05:00');
 
 -- System configs
 INSERT INTO `system_configs` (`id`,`config_key`,`config_value`,`description`,`created_at`,`updated_at`) VALUES
  (1,'escrow.hold.default.seconds','259200','Thời lượng giữ tiền mặc định (giây) trước khi giải ngân auto','2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,'escrow.hold.admin.max.seconds','604800','Giới hạn tối đa admin có thể gia hạn (giây)','2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (3,'escrow.hold.admin.min.seconds','86400','Giới hạn tối thiểu admin có thể rút ngắn (giây)','2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (4,'support.email','support@mmo.local','Email bộ phận hỗ trợ khách hàng','2024-01-10 09:00:00','2024-01-10 09:00:00');
+ (2,'support.email','support@mmo.local','Email bộ phận hỗ trợ khách hàng','2024-01-10 09:00:00','2024-01-10 09:00:00');
 
 -- =================================================================
 SET FOREIGN_KEY_CHECKS = 1;
