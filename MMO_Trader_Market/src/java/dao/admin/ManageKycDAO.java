@@ -18,8 +18,8 @@ public class ManageKycDAO {
         List<KycRequests> list = new ArrayList<>();
         String sql = """
         SELECT
-            kr.id,                                  -- id KYC (== id user)
-            kr.user_id,                             -- ở DB này bạn dùng như role_id
+            kr.id,                                  
+            kr.user_id,
             kr.status_id,
             kr.front_image_url, kr.back_image_url, kr.selfie_image_url,
             kr.id_number,
@@ -28,7 +28,7 @@ public class ManageKycDAO {
             u.email AS user_email,
             krs.status_name AS status_name
         FROM mmo_schema.kyc_requests kr
-        LEFT JOIN mmo_schema.users u  ON u.id = kr.id 
+        LEFT JOIN mmo_schema.users u  ON u.id = kr.user_id
         LEFT JOIN mmo_schema.kyc_request_statuses krs ON krs.id = kr.status_id
         ORDER BY kr.created_at DESC
     """;
@@ -66,17 +66,20 @@ public class ManageKycDAO {
         return list;
     }
 
-
     public int approveKycAndPromote(int kycId, String feedback) throws SQLException {
         boolean oldAuto = con.getAutoCommit();
         con.setAutoCommit(false);
         try {
-            // 1) KYC: status 1 -> 2 + user_id 3 -> 2
+            Integer userId = findPendingKycOwner(kycId);
+            if (userId == null) {
+                con.rollback();
+                return 0;
+            }
             int updatedKyc;
             try (PreparedStatement p = con.prepareStatement(
                     "UPDATE mmo_schema.kyc_requests "
-                            + "SET status_id = 2, user_id = 2, reviewed_at = NOW(), admin_feedback = ? "
-                            + "WHERE id = ? AND status_id = 1"
+                    + "SET status_id = 2, reviewed_at = NOW(), admin_feedback = ? "
+                    + "WHERE id = ? AND status_id = 1"
             )) {
                 p.setString(1, feedback);
                 p.setInt(2, kycId);
@@ -88,10 +91,10 @@ public class ManageKycDAO {
             if (updatedKyc > 0) {
                 try (PreparedStatement p = con.prepareStatement(
                         "UPDATE mmo_schema.users "
-                                + "SET role_id = 2, updated_at = NOW() "
-                                + "WHERE id = ? AND role_id = 3"
+                        + "SET role_id = 2, updated_at = NOW() "
+                        + "WHERE id = ? AND role_id = 3"
                 )) {
-                    p.setInt(1, kycId);
+                    p.setInt(1, userId);
                     updatedUser = p.executeUpdate();
                 }
             }
@@ -105,15 +108,33 @@ public class ManageKycDAO {
             con.setAutoCommit(oldAuto);
         }
     }
-
+    /**
+     * Tìm ID người dùng gắn với yêu cầu KYC đang ở trạng thái chờ duyệt. Việc
+     * khoá bản ghi tại đây giúp đảm bảo tính nhất quán khi cập nhật role sau
+     * khi duyệt.
+     */
+    private Integer findPendingKycOwner(int kycId) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(
+                "SELECT user_id FROM mmo_schema.kyc_requests "
+                + "WHERE id = ? AND status_id = 1 FOR UPDATE"
+        )) {
+            ps.setInt(1, kycId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("user_id");
+                }
+            }
+        }
+        return null;
+    }
     /**
      * Reject KYC
      */
     public int rejectKyc(int kycId, String feedback) throws SQLException {
         try (PreparedStatement ps = con.prepareStatement(
                 "UPDATE mmo_schema.kyc_requests "
-                        + "SET status_id=3, reviewed_at=NOW(), admin_feedback=? "
-                        + "WHERE id=? AND status_id=1")) {
+                + "SET status_id=3, reviewed_at=NOW(), admin_feedback=? "
+                + "WHERE id=? AND status_id=1")) {
             ps.setString(1, feedback);
             ps.setInt(2, kycId);
             return ps.executeUpdate();
