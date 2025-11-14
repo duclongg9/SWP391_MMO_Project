@@ -58,22 +58,6 @@ CREATE TABLE `password_reset_tokens` (
   KEY `idx_password_reset_user` (`user_id`)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `remember_me_tokens`;
-CREATE TABLE `remember_me_tokens` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int NOT NULL,
-  `selector` varchar(255) NOT NULL UNIQUE,
-  `hashed_validator` varchar(255) NOT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `last_used_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_remember_me_selector` (`selector`),
-  KEY `idx_remember_me_user_id` (`user_id`),
-  KEY `idx_remember_me_expires_at` (`expires_at`),
-  CONSTRAINT `fk_remember_me_tokens_user_id`
-    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `shops`;
 CREATE TABLE `shops` (
@@ -369,31 +353,6 @@ CREATE TABLE `dispute_attachments` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `conversations`;
-CREATE TABLE `conversations` (
-    `id` int NOT NULL AUTO_INCREMENT,
-    `related_order_id` int DEFAULT NULL,
-    `related_product_id` int DEFAULT NULL,
-    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `conversation_participants`;
-CREATE TABLE `conversation_participants` (
-    `conversation_id` int NOT NULL,
-    `user_id` int NOT NULL,
-    PRIMARY KEY (`conversation_id`, `user_id`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `messages`;
-CREATE TABLE `messages` (
-    `id` bigint NOT NULL AUTO_INCREMENT,
-    `conversation_id` int NOT NULL,
-    `sender_id` int NOT NULL,
-    `content` text NOT NULL,
-    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
 
 -- =================================================================
 -- Section 5: Auditing & System
@@ -466,13 +425,6 @@ ALTER TABLE `withdrawal_requests` ADD CONSTRAINT `fk_withdrawals_user_id` FOREIG
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_request_id` FOREIGN KEY (`request_id`) REFERENCES `withdrawal_requests` (`id`);
 ALTER TABLE `withdrawal_request_reasons_map` ADD CONSTRAINT `fk_map_reason_id` FOREIGN KEY (`reason_id`) REFERENCES `withdrawal_rejection_reasons` (`id`);
 
-ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`);
-ALTER TABLE `messages` ADD CONSTRAINT `fk_messages_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`);
-ALTER TABLE `conversation_participants` ADD CONSTRAINT `fk_participants_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`);
-ALTER TABLE `conversation_participants` ADD CONSTRAINT `fk_participants_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_order_id` FOREIGN KEY (`related_order_id`) REFERENCES `orders` (`id`);
-ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_product_id` FOREIGN KEY (`related_product_id`) REFERENCES `products` (`id`);
-
 ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`);
 ALTER TABLE `inventory_logs` ADD CONSTRAINT `fk_inventory_order_id` FOREIGN KEY (`related_order_id`) REFERENCES `orders` (`id`);
 
@@ -498,7 +450,7 @@ CREATE INDEX `idx_wallet_transactions_wallet_id` ON `wallet_transactions`(`walle
 CREATE INDEX `idx_wallet_transactions_type` ON `wallet_transactions`(`transaction_type`);
 CREATE INDEX `idx_deposit_requests_status` ON `deposit_requests`(`status`);
 CREATE INDEX `idx_withdrawal_requests_status` ON `withdrawal_requests`(`status`);
-CREATE INDEX `idx_messages_conversation_id` ON `messages`(`conversation_id`);
+
 
 -- =================================================================
 -- Section 8: Seed Data (Vietnamese)
@@ -796,18 +748,6 @@ INSERT INTO `order_escrow_events` (`id`,`order_id`,`event_type`,`actor_type`,`ac
 INSERT INTO `order_escrow_adjustments` (`id`,`order_id`,`event_id`,`admin_id`,`related_dispute_id`,`previous_release_at`,`previous_remaining_seconds`,`new_release_at`,`new_remaining_seconds`,`note`,`created_at`) VALUES
  (1,5002,3,1,1,'2024-02-01 00:00:00',259200,'2024-02-03 12:00:00',432000,'Gia hạn thêm 2 ngày để xử lý khiếu nại','2024-01-27 08:12:00');
 
-INSERT INTO `conversations` (`id`,`related_order_id`,`related_product_id`,`created_at`) VALUES
- (1,5002,1002,'2024-01-27 08:00:00'),
- (2,5003,1002,'2024-02-02 09:28:00');
-
-INSERT INTO `conversation_participants` (`conversation_id`,`user_id`) VALUES (1,2),(1,3),(2,2),(2,3);
-
-INSERT INTO `messages` (`id`,`conversation_id`,`sender_id`,`content`,`created_at`) VALUES
- (1,1,3,'Shop ơi, tài khoản Spotify không hoạt động.','2024-01-27 08:05:00'),
- (2,1,2,'Bên mình đang kiểm tra lại thông tin giúp bạn.','2024-01-27 08:07:00'),
- (3,2,3,'Mình không đăng nhập được, shop hỗ trợ giúp với!','2024-02-02 09:29:00'),
- (4,2,2,'Shop đã reset lại mật khẩu, bạn thử lại xem nhé.','2024-02-02 09:40:00'),
- (5,2,3,'Đã đăng nhập lại được rồi cảm ơn shop.','2024-02-02 09:44:00');
 
 -- Inventory logs
 INSERT INTO `inventory_logs` (`id`,`product_id`,`related_order_id`,`change_amount`,`reason`,`created_at`) VALUES
