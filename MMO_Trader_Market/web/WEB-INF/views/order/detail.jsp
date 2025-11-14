@@ -580,7 +580,7 @@
                         </c:if>
                         <div class="order-report__meta-item"><strong>Trạng thái:</strong> <c:out value="${existingDispute.status}" /></div>
                         <c:if test="${not empty existingDispute.escrowPausedAt}">
-                            <div class="order-report__meta-item"><strong>Đã tạm dừng escrow:</strong> <fmt:formatDate value="${existingDispute.escrowPausedAt}" pattern="dd/MM/yyyy HH:mm" /></div>
+                            <div class="order-report__meta-item"><strong>Đã tạm dừng escrow:</strong> <fmt:formatDate value="${existingDispute.escrowPausedAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" /></div>
                         </c:if>
                     </div>
                     <p><c:out value="${existingDispute.reason}" /></p>
@@ -628,7 +628,7 @@
                                 </li>
                                 <li><span>Trạng thái:</span> <c:out value="${statusLabel}" /></li>
                                 <li><span>Ngày tạo:</span>
-                                    <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                    <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" />
                                 </li>
                             </ul>
                         </div>
@@ -676,7 +676,7 @@
                                         <fmt:formatNumber value="${paymentTransaction.balanceAfter}" type="currency" currencySymbol="" /> đ
                                     </li>
                                     <li><span>Thời gian thanh toán:</span>
-                                        <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                        <fmt:formatDate value="${paymentTransaction.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" />
                                     </li>
                                     <c:if test="${not empty paymentTransaction.note}">
                                         <li><span>Ghi chú:</span> <c:out value="${paymentTransaction.note}" /></li>
