@@ -11,7 +11,6 @@ import model.Shops;
 import model.statistics.BestSellerProduct;
 import model.statistics.QuarterRevenue;
 import model.view.shop.ShopPublicSummary;
-import java.util.regex.Pattern;
 
 /**
  * Service xử lý logic nghiệp vụ liên quan đến quản lý shop cho seller.
@@ -19,11 +18,7 @@ import java.util.regex.Pattern;
  */
 public class ShopService {
 
-    private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\s]+$");
-    private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
-    private static final Pattern SPECIAL_CHARACTER_PATTERN = Pattern.compile(".*[^\\p{L}\\s].*");
-    private static final Pattern EXTRA_WHITESPACE_PATTERN = Pattern.compile(".*[\\t\\n\\r].*");
-    private static final int NAME_MIN_LENGTH = 8;
+    private static final int NAME_MIN_LENGTH = 2;
     private static final int NAME_MAX_LENGTH = 50;
     private static final int DESCRIPTION_MIN_LENGTH = 8;
     private static final int DESCRIPTION_MAX_LENGTH = 50;
@@ -47,8 +42,8 @@ public class ShopService {
 
 	/**
 	 * Tạo shop mới cho seller.
-         * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (8-50 ký tự, không chỉ khoảng trắng),
-	 * và tự động set status = 'Active', created_at = NOW().
+         * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (từ 2 đến 50 ký tự, không chỉ khoảng trắng),
+         * và tự động set status = 'Active', created_at = NOW().
 	 *
 	 * @param ownerId ID của seller (chủ sở hữu shop)
 	 * @param name Tên shop (sẽ được trim và validate)
@@ -245,8 +240,7 @@ public class ShopService {
         }
 
         /**
-         * Đảm bảo tên shop đáp ứng yêu cầu nghiệp vụ: đủ độ dài, không chứa số/ký tự đặc biệt,
-         * và chỉ bao gồm chữ cái cùng khoảng trắng hợp lệ.
+         * Đảm bảo tên shop đáp ứng yêu cầu nghiệp vụ về độ dài.
          *
          * @param value tên shop đã được normalize
          * @throws BusinessException nếu dữ liệu không hợp lệ
@@ -261,18 +255,6 @@ public class ShopService {
                 }
                 if (length > NAME_MAX_LENGTH) {
                         throw new BusinessException("Tên shop không được vượt quá " + NAME_MAX_LENGTH + " ký tự.");
-                }
-                if (DIGIT_PATTERN.matcher(value).find()) {
-                        throw new BusinessException("Tên shop không được chứa chữ số.");
-                }
-                if (SPECIAL_CHARACTER_PATTERN.matcher(value).find()) {
-                        throw new BusinessException("Tên shop không được chứa ký tự đặc biệt.");
-                }
-                if (EXTRA_WHITESPACE_PATTERN.matcher(value).find()) {
-                        throw new BusinessException("Tên shop không được chứa khoảng trắng không hợp lệ.");
-                }
-                if (!BASIC_TEXT_PATTERN.matcher(value).matches()) {
-                        throw new BusinessException("Tên shop chỉ được chứa chữ cái.");
                 }
         }
 
