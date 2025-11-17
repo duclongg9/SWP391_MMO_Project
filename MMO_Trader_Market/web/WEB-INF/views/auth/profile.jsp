@@ -14,6 +14,16 @@
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerModifier", "layout__header--split");
+
+    List<Map<String, String>> navItems = new ArrayList<>();
+    String contextPath = request.getContextPath();
+
+    Map<String, String> homeLink = new HashMap<>();
+    homeLink.put("href", contextPath + "/home");
+    homeLink.put("label", "Trở về trang chủ");
+    navItems.add(homeLink);
+
+    request.setAttribute("navItems", navItems);
 %>
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
@@ -51,8 +61,8 @@
                         <th scope="row"><label>Ảnh đại diện</label></th>
                         <td>
                             <img src="${pageContext.request.contextPath}${myProfile.avatarUrl}" 
-                                alt="Ảnh đại diện" class="avatar" style="width:80px;height:80px;border-radius:50%;">
-                           
+                                 alt="Ảnh đại diện" class="avatar" style="width:80px;height:80px;border-radius:50%;">
+
                         </td>
                     </tr>
 
@@ -78,10 +88,10 @@
                     <tr>
                         <th scope="row"><label for="email">Chọn ảnh đại diện:</label></th>
                         <td scope="row">
-                        <div class="form-card__field">
-                            <input id="avatar" name="avatar" type="file" accept="image/*" class="form-control" >
-                         </div>
-                         </td>  
+                            <div class="form-card__field">
+                                <input id="avatar" name="avatar" type="file" accept="image/*" class="form-control" >
+                            </div>
+                        </td>  
                     </tr>
 
                     <tr>
@@ -120,7 +130,7 @@
                         <td><input id="newPass" name="newPass" type="password" required
                                    autocomplete="new-password" minlength="8"
                                    pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" aria-describedby="pwdHelp" placeholder = "Tối thiểu 8 ký tự, có chữ và số."><br>
-                     
+
                         </td>
 
                     </tr>
@@ -128,12 +138,12 @@
                         <th scope="row"><label for="confirmPass">Nhập lại mật khẩu</label></th>
                         <td><input id="confirmPass" name="confirmPassword" type="password" required
                                    autocomplete="new-password" oninput="validatePass()"><br>
-                        <div class="alert-wrapper">
-                            <div class="alert alert--error" id="errMsg" style="display:none;"></div>
-                            <div class="alert alert--success" id="msg" style="display:none;"></div>
-                        </div>
+                            <div class="alert-wrapper">
+                                <div class="alert alert--error" id="errMsg" style="display:none;"></div>
+                                <div class="alert alert--success" id="msg" style="display:none;"></div>
+                            </div>
                         </td>
-                
+
 
                     </tr>
                     <tr>
@@ -145,62 +155,66 @@
                 </tbody>
             </table>
         </form>
-                 <div id="toastBox"></div>             
-    
+        <div id="toastBox"></div>             
+
 
 
     </section>
 
 </main>
-                           
-                       
+
+
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
- <script>
-     document.addEventListener('DOMContentLoaded', () => {
-            const toastBox = document.getElementById('toastBox');
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toastBox = document.getElementById('toastBox');
 
-            function showToast(msg, type = 'success') {
-                if (!toastBox) return;
-                const toast = document.createElement('div');
-                toast.classList.add('mm-toast');
-                if (type === 'error') toast.classList.add('error');
-                toast.innerHTML = msg;
-                toastBox.appendChild(toast);
-                setTimeout(() => toast.remove(), 5000);
-            }
+        function showToast(msg, type = 'success') {
+            if (!toastBox)
+                return;
+            const toast = document.createElement('div');
+            toast.classList.add('mm-toast');
+            if (type === 'error')
+                toast.classList.add('error');
+            toast.innerHTML = msg;
+            toastBox.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
 
-            // Lấy message từ request
-            const okMsg = "${fn:escapeXml(msg)}";
-            const errMsg = "${fn:escapeXml(emg)}";
+        // Lấy message từ request
+        const okMsg = "${fn:escapeXml(msg)}";
+        const errMsg = "${fn:escapeXml(emg)}";
 
-            if(errMsg) showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
-            if(okMsg) showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
-        });
-     
-function validatePass() {
-    const newPass = document.getElementById("newPass").value.trim();
-    const confirmPass = document.getElementById("confirmPass").value.trim();
-    const errMsg = document.getElementById("errMsg");
-    const msg = document.getElementById("msg");
+        if (errMsg)
+            showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
+        if (okMsg)
+            showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
+    });
 
-    errMsg.style.display = "none";
-    msg.style.display = "none";
+    function validatePass() {
+        const newPass = document.getElementById("newPass").value.trim();
+        const confirmPass = document.getElementById("confirmPass").value.trim();
+        const errMsg = document.getElementById("errMsg");
+        const msg = document.getElementById("msg");
 
-    if (newPass && confirmPass && newPass !== confirmPass) {
-        errMsg.textContent = "Nhập lại mật khẩu không khớp!";
-        errMsg.style.display = "block";
-        return false;
-    }
+        errMsg.style.display = "none";
+        msg.style.display = "none";
 
-    if (newPass && confirmPass && newPass === confirmPass) {
-        msg.textContent = "Mật khẩu khớp!";
-        msg.style.display = "block";
+        if (newPass && confirmPass && newPass !== confirmPass) {
+            errMsg.textContent = "Nhập lại mật khẩu không khớp!";
+            errMsg.style.display = "block";
+            return false;
+        }
+
+        if (newPass && confirmPass && newPass === confirmPass) {
+            msg.textContent = "Mật khẩu khớp!";
+            msg.style.display = "block";
+            return true;
+        }
+
         return true;
     }
-
-    return true;
-}
 
 
 </script>
@@ -209,8 +223,8 @@ function validatePass() {
         const msg = "${fn:escapeXml(sessionScope.flash)}";
 
         const icon = msg.toLowerCase().includes("lỗi")
-            ? '<i class="fa fa-times-circle"></i>'
-            : '<i class="fa fa-check-circle"></i>';
+                ? '<i class="fa fa-times-circle"></i>'
+                : '<i class="fa fa-check-circle"></i>';
 
         showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
     </script>
