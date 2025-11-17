@@ -45,6 +45,32 @@ public class PasswordResetTokenDAO {
         return null;
     }
 
+    /**
+     * Lấy yêu cầu đặt lại mật khẩu gần nhất chưa sử dụng của người dùng.
+     *
+     * @param userId ID người dùng
+     * @return {@link PasswordResetToken} nếu tồn tại, null nếu không có
+     * @throws SQLException nếu truy vấn thất bại
+     */
+    public PasswordResetToken findLatestActiveByUser(int userId) throws SQLException {
+        final String sql = """
+                SELECT id, user_id, token, expires_at, used_at, created_at
+                FROM password_reset_tokens
+                WHERE user_id = ? AND used_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        }
+        return null;
+    }
+
     public int markUsed(int id) throws SQLException {
         final String sql = """
                 UPDATE password_reset_tokens

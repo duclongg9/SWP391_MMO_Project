@@ -19,14 +19,14 @@ import java.util.regex.Pattern;
  */
 public class ShopService {
 
-        private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\s]+$");
-        private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
-        private static final Pattern SPECIAL_CHARACTER_PATTERN = Pattern.compile(".*[^\\p{L}\\s].*");
-        private static final Pattern EXTRA_WHITESPACE_PATTERN = Pattern.compile(".*[\\t\\n\\r].*");
-        private static final int NAME_MIN_LENGTH = 8;
-        private static final int NAME_MAX_LENGTH = 50;
-        private static final int DESCRIPTION_MIN_LENGTH = 8;
-        private static final int DESCRIPTION_MAX_LENGTH = 50;
+    private static final Pattern BASIC_TEXT_PATTERN = Pattern.compile("^[\\p{L}\\s]+$");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
+    private static final Pattern SPECIAL_CHARACTER_PATTERN = Pattern.compile(".*[^\\p{L}\\s].*");
+    private static final Pattern EXTRA_WHITESPACE_PATTERN = Pattern.compile(".*[\\t\\n\\r].*");
+    private static final int NAME_MIN_LENGTH = 8;
+    private static final int NAME_MAX_LENGTH = 50;
+    private static final int DESCRIPTION_MIN_LENGTH = 8;
+    private static final int DESCRIPTION_MAX_LENGTH = 50;
 
         private final ShopDAO shopDAO = new ShopDAO();
         private final ProductDAO productDAO = new ProductDAO();
@@ -56,16 +56,17 @@ public class ShopService {
 	 * @throws BusinessException nếu vượt quá 5 shop hoặc tên không hợp lệ
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public void createShop(int ownerId, String name, String description) throws BusinessException, SQLException {
-		// Kiểm tra giới hạn tối đa 5 shop
-		if (shopDAO.countByOwner(ownerId) >= 5) {
-			throw new BusinessException("Bạn chỉ được tạo tối đa 5 shop.");
-		}
-		// Chuẩn hóa và validate tên shop
+        public void createShop(int ownerId, String name, String description) throws BusinessException, SQLException {
+                // Kiểm tra giới hạn tối đa 5 shop
+                if (shopDAO.countByOwner(ownerId) >= 5) {
+                        throw new BusinessException("Bạn chỉ được tạo tối đa 5 shop.");
+                }
+                // Chuẩn hóa và validate tên shop
                 String normalizedName = normalize(name);
-                ensureValidText(normalizedName, "Tên shop", NAME_MIN_LENGTH, NAME_MAX_LENGTH);
+                ensureValidName(normalizedName);
+                ensureUniqueName(normalizedName, null);
                 String desc = normalize(description);
-                ensureValidText(desc, "Mô tả shop", DESCRIPTION_MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+                ensureValidDescription(desc);
                 // Gọi DAO để tạo shop (status = 'Active', created_at = NOW())
                 shopDAO.create(ownerId, normalizedName, desc);
         }
@@ -81,12 +82,13 @@ public class ShopService {
 	 * @throws BusinessException nếu tên không hợp lệ hoặc không tìm thấy shop/không có quyền
 	 * @throws SQLException nếu có lỗi khi truy vấn database
 	 */
-	public void updateShop(int id, int ownerId, String name, String description) throws BusinessException, SQLException {
-		// Chuẩn hóa và validate tên shop (giống như tạo mới)
+        public void updateShop(int id, int ownerId, String name, String description) throws BusinessException, SQLException {
+                // Chuẩn hóa và validate tên shop (giống như tạo mới)
                 String normalizedName = normalize(name);
-                ensureValidText(normalizedName, "Tên shop", NAME_MIN_LENGTH, NAME_MAX_LENGTH);
+                ensureValidName(normalizedName);
+                ensureUniqueName(normalizedName, id);
                 String desc = normalize(description);
-                ensureValidText(desc, "Mô tả shop", DESCRIPTION_MIN_LENGTH, DESCRIPTION_MAX_LENGTH);
+                ensureValidDescription(desc);
                 // Cập nhật shop (DAO sẽ kiểm tra owner_id trong WHERE clause)
                 boolean ok = shopDAO.update(id, ownerId, normalizedName, desc);
                 if (!ok) {
@@ -243,43 +245,59 @@ public class ShopService {
         }
 
         /**
-         * Kiểm tra chuỗi nhập liệu của shop theo yêu cầu nghiệp vụ của seller.
-         * Ràng buộc: không rỗng, độ dài trong khoảng cho phép, không chứa ký tự đặc biệt.
+         * Đảm bảo tên shop đáp ứng yêu cầu nghiệp vụ: đủ độ dài, không chứa số/ký tự đặc biệt,
+         * và chỉ bao gồm chữ cái cùng khoảng trắng hợp lệ.
          *
-         * @param value chuỗi cần kiểm tra (đã normalize)
-         * @param fieldLabel tên trường để hiển thị lỗi cho người dùng
-         * @param minLength độ dài tối thiểu
-         * @param maxLength độ dài tối đa
+         * @param value tên shop đã được normalize
          * @throws BusinessException nếu dữ liệu không hợp lệ
          */
-        private void ensureValidText(String value, String fieldLabel, int minLength, int maxLength) throws BusinessException {
+        private void ensureValidName(String value) throws BusinessException {
                 if (value == null || value.isBlank()) {
-                        throw new BusinessException(fieldLabel + " không được để trống.");
+                        throw new BusinessException("Tên shop không được để trống.");
                 }
                 int length = value.length();
-                if (length < minLength) {
-                        throw new BusinessException(fieldLabel + " phải có tối thiểu " + minLength + " ký tự.");
+                if (length < NAME_MIN_LENGTH) {
+                        throw new BusinessException("Tên shop phải có tối thiểu " + NAME_MIN_LENGTH + " ký tự.");
                 }
-                if (length > maxLength) {
-                        throw new BusinessException(fieldLabel + " không được vượt quá " + maxLength + " ký tự.");
+                if (length > NAME_MAX_LENGTH) {
+                        throw new BusinessException("Tên shop không được vượt quá " + NAME_MAX_LENGTH + " ký tự.");
                 }
-                                /*
-                 * Kiểm tra bổ sung dành cho nghiệp vụ tạo shop:
-                 * - Không cho phép chữ số.
-                 * - Không cho phép ký tự đặc biệt (bao gồm dấu câu).
-                 * - Không cho phép khoảng trắng không chuẩn (tab, xuống dòng).
-                 */
                 if (DIGIT_PATTERN.matcher(value).find()) {
-                        throw new BusinessException(fieldLabel + " không được chứa chữ số.");
+                        throw new BusinessException("Tên shop không được chứa chữ số.");
                 }
                 if (SPECIAL_CHARACTER_PATTERN.matcher(value).find()) {
-                        throw new BusinessException(fieldLabel + " không được chứa ký tự đặc biệt.");
+                        throw new BusinessException("Tên shop không được chứa ký tự đặc biệt.");
                 }
                 if (EXTRA_WHITESPACE_PATTERN.matcher(value).find()) {
-                        throw new BusinessException(fieldLabel + " không được chứa khoảng trắng không hợp lệ.");
+                        throw new BusinessException("Tên shop không được chứa khoảng trắng không hợp lệ.");
                 }
                 if (!BASIC_TEXT_PATTERN.matcher(value).matches()) {
-                        throw new BusinessException(fieldLabel + " chỉ được chứa chữ cái.");
+                        throw new BusinessException("Tên shop chỉ được chứa chữ cái.");
+                }
+        }
+
+        /**
+         * Kiểm tra độ dài mô tả shop, cho phép ký tự đặc biệt và số.
+         *
+         * @param value mô tả đã được normalize
+         * @throws BusinessException nếu dữ liệu không hợp lệ
+         */
+        private void ensureValidDescription(String value) throws BusinessException {
+                if (value == null || value.isBlank()) {
+                        throw new BusinessException("Mô tả shop không được để trống.");
+                }
+                int length = value.length();
+                if (length < DESCRIPTION_MIN_LENGTH) {
+                        throw new BusinessException("Mô tả shop phải có tối thiểu " + DESCRIPTION_MIN_LENGTH + " ký tự.");
+                }
+                if (length > DESCRIPTION_MAX_LENGTH) {
+                        throw new BusinessException("Mô tả shop không được vượt quá " + DESCRIPTION_MAX_LENGTH + " ký tự.");
+                }
+        }
+
+        private void ensureUniqueName(String value, Integer excludeId) throws BusinessException, SQLException {
+                if (shopDAO.existsByName(value, excludeId)) {
+                        throw new BusinessException("Tên shop đã tồn tại. Vui lòng chọn tên khác.");
                 }
         }
 }

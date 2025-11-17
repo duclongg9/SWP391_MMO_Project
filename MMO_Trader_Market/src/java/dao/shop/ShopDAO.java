@@ -214,6 +214,31 @@ public class ShopDAO extends BaseDAO {
     }
 
     /**
+     * Kiểm tra tên shop đã tồn tại hay chưa (không phân biệt hoa thường).
+     *
+     * @param name      tên shop cần kiểm tra
+     * @param excludeId ID shop cần loại trừ (dùng khi cập nhật), có thể null
+     * @return true nếu đã tồn tại tên trùng, false nếu chưa
+     * @throws SQLException nếu truy vấn thất bại
+     */
+    public boolean existsByName(String name, Integer excludeId) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT 1 FROM shops WHERE LOWER(name) = LOWER(?)");
+        if (excludeId != null) {
+            sql.append(" AND id <> ?");
+        }
+        sql.append(" LIMIT 1");
+        try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+            stmt.setString(1, name);
+            if (excludeId != null) {
+                stmt.setInt(2, excludeId);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /**
      * Tạo shop mới với trạng thái Active và thời điểm hiện tại. Shop được tạo
      * sẽ tự động có status = 'Active' và created_at = NOW().
      *
