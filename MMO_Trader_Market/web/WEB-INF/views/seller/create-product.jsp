@@ -23,7 +23,7 @@
         </div>
     </c:if>
 
-    <form action="${pageContext.request.contextPath}/seller/products/create" method="post" enctype="multipart/form-data">
+    <form id="create-product-form" action="${pageContext.request.contextPath}/seller/products/create" method="post" enctype="multipart/form-data">
         <c:if test="${not empty selectedShopId}">
             <input type="hidden" name="shopId" value="${selectedShopId}" />
         </c:if>
@@ -679,8 +679,46 @@
         });
     }
     
-    // Create first variant by default
-    createVariantForm();
+    // Khôi phục dữ liệu variants nếu có lỗi validation
+    var savedVariantsJson = '${savedVariantsJson}';
+    if (savedVariantsJson && savedVariantsJson.trim() !== '') {
+        try {
+            var savedVariants = JSON.parse(savedVariantsJson);
+            if (savedVariants && savedVariants.length > 0) {
+                // Tạo các variant form với dữ liệu đã lưu
+                for (var i = 0; i < savedVariants.length; i++) {
+                    var savedVariant = savedVariants[i];
+                    createVariantForm();
+                    
+                    // Điền dữ liệu vào variant form vừa tạo
+                    var variantItems = variantsContainer.querySelectorAll('.variant-item');
+                    var currentVariant = variantItems[variantItems.length - 1];
+                    
+                    if (currentVariant) {
+                        var nameInput = currentVariant.querySelector('.variant-name');
+                        var priceInput = currentVariant.querySelector('.variant-price');
+                        
+                        if (nameInput && savedVariant.name) {
+                            nameInput.value = savedVariant.name;
+                        }
+                        if (priceInput && savedVariant.price) {
+                            priceInput.value = savedVariant.price;
+                        }
+                    }
+                }
+            } else {
+                // Tạo variant mặc định nếu không có dữ liệu
+                createVariantForm();
+            }
+        } catch (e) {
+            console.error('Error parsing saved variants:', e);
+            // Tạo variant mặc định nếu có lỗi parse
+            createVariantForm();
+        }
+    } else {
+        // Tạo variant mặc định
+        createVariantForm();
+    }
 })();
 </script>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>

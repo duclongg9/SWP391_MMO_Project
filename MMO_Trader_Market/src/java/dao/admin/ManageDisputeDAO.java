@@ -124,10 +124,13 @@ public class ManageDisputeDAO {
                         d.setResolutionNote(rs.getString("resolution_note"));
                         d.setCreatedAt(rs.getTimestamp("created_at"));
                         d.setUpdatedAt(rs.getTimestamp("updated_at"));
-                        Timestamp resolvedAt = rs.getTimestamp("resolved_at");
-                        if (resolvedAt != null) {
-                            // Theo hướng dẫn người dùng: đảm bảo map trường hoàn tất để cột "Hoàn tất" hiển thị đúng.
-                            d.setResolvedAt(new java.util.Date(resolvedAt.getTime()));
+                        // Kiểm tra cột resolved_at có tồn tại không
+                        if (columnLabels.contains("resolved_at")) {
+                            Timestamp resolvedAt = rs.getTimestamp("resolved_at");
+                            if (resolvedAt != null) {
+                                // Theo hướng dẫn người dùng: đảm bảo map trường hoàn tất để cột "Hoàn tất" hiển thị đúng.
+                                d.setResolvedAt(new java.util.Date(resolvedAt.getTime()));
+                            }
                         }
                         if (columnLabels.contains("order_snapshot_json")) {
                             d.setOrderSnapshotJson(rs.getString("order_snapshot_json"));

@@ -220,7 +220,8 @@ public class SellerAddCredentialController extends SellerBaseController {
                 connection.commit();
                 
                 session.setAttribute("successMessage", "Đã thêm sản phẩm thành công! Số lượng tồn kho đã tăng lên 1.");
-                response.sendRedirect(request.getContextPath() + "/seller/inventory");
+                // Redirect về trang view inventory để xem kết quả
+                response.sendRedirect(request.getContextPath() + "/seller/inventory/view?productId=" + productId);
                 
             } catch (SQLException e) {
                 // Rollback nếu có lỗi

@@ -168,22 +168,33 @@ public class SellerCreateProductController extends SellerBaseController {
                         errors.add("Biến thể \"" + variantMeta.get("name") + "\" phải có ít nhất 1 ảnh");
                     } else if (variantImages.size() > 3) {
                         errors.add("Biến thể \"" + variantMeta.get("name") + "\" chỉ được tối đa 3 ảnh");
-                    } else {
-                        // Add images to variant
-                        variantMeta.put("images", variantImages);
+                    }
+                    
+                    // Vẫn giữ variant trong danh sách để hiển thị lại khi có lỗi
+                    variantMeta.put("images", variantImages);
+                    if (!variantImages.isEmpty()) {
                         variantMeta.put("image_url", variantImages.get(0)); // Ảnh đầu tiên làm ảnh chính
-                        variants.add(variantMeta);
-
                         // Add to gallery (ảnh đầu tiên của variant đầu tiên làm primary)
-                        if (primaryImageUrl == null && i == 0 && !variantImages.isEmpty()) {
+                        if (primaryImageUrl == null && i == 0) {
                             primaryImageUrl = variantImages.get(0);
                         }
                         galleryImages.addAll(variantImages);
                     }
+                    variants.add(variantMeta);
                 }
 
-                if (variants.isEmpty()) {
-                    errors.add("Vui lòng thêm ít nhất một biến thể sản phẩm với ảnh");
+                // Kiểm tra xem có biến thể nào có ảnh hợp lệ không
+                boolean hasValidVariant = false;
+                for (Map<String, Object> v : variants) {
+                    List<?> imgs = (List<?>) v.get("images");
+                    if (imgs != null && !imgs.isEmpty()) {
+                        hasValidVariant = true;
+                        break;
+                    }
+                }
+                
+                if (!hasValidVariant && errors.isEmpty()) {
+                    errors.add("Mỗi biến thể cần ít nhất 1 ảnh");
                 }
 
             } catch (Exception e) {
@@ -225,7 +236,12 @@ public class SellerCreateProductController extends SellerBaseController {
             request.setAttribute("primaryImageUrl", primaryImageUrl);
             request.setAttribute("shop", shop);
             request.setAttribute("selectedShopId", shop.getId());
-            doGet(request, response);
+            // Giữ lại dữ liệu variants để hiển thị lại
+            if (!variants.isEmpty()) {
+                Gson gson = new Gson();
+                request.setAttribute("savedVariantsJson", gson.toJson(variants));
+            }
+            forward(request, response, "seller/create-product");
             return;
         }
 

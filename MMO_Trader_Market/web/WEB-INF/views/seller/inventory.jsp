@@ -28,10 +28,14 @@
         </div>
         <div class="panel__body">
             <c:if test="${not empty flashSuccess}">
-                <div class="alert alert--success" role="status">${flashSuccess}</div>
+                <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; color: #155724;">
+                    ${flashSuccess}
+                </div>
             </c:if>
             <c:if test="${not empty flashError}">
-                <div class="alert alert--danger" role="alert">${flashError}</div>
+                <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; color: #721c24;">
+                    ${flashError}
+                </div>
             </c:if>
             <form method="post" action="${pageContext.request.contextPath}/seller/credentials/generate"
                   style="display:flex;flex-direction:column;gap:12px;max-width:560px;">
@@ -76,7 +80,18 @@
             <c:choose>
                 <c:when test="${empty products}">
                     <p style="text-align: center; padding: 2rem; color: #666;">
-                        Chưa có sản phẩm nào. <a href="${pageContext.request.contextPath}/seller/products/create">Thêm sản phẩm đầu tiên</a>
+                        <c:choose>
+                            <c:when test="${not empty keyword}">
+                                Chưa có sản phẩm trùng khớp với từ khóa>${fn:escapeXml(keyword)}</strong>".
+                                <br>
+                                <a href="${pageContext.request.contextPath}/seller/inventory" style="margin-top: 0.5rem; display: inline-block;">Xem tất cả sản phẩm</a>
+                                hoặc
+                                <a href="${pageContext.request.contextPath}/seller/products/create">Tạo sản phẩm mới</a>
+                            </c:when>
+                            <c:otherwise>
+                                Chưa có sản phẩm nào. <a href="${pageContext.request.contextPath}/seller/products/create">Thêm sản phẩm đầu tiên</a>
+                            </c:otherwise>
+                        </c:choose>
                     </p>
                 </c:when>
                 <c:otherwise>
@@ -127,9 +142,9 @@
                                                style="padding: 0.25rem 0.75rem; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
                                                 Sửa
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/seller/products/add-credential?productId=${product.id}" 
+                                            <a href="${pageContext.request.contextPath}/seller/inventory/view?productId=${product.id}" 
                                                style="padding: 0.25rem 0.75rem; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
-                                                ➕ Thêm sản phẩm
+                                                📦 Hàng tồn kho
                                             </a>
                                             <c:choose>
                                                 <c:when test="${product.status == 'Available'}">

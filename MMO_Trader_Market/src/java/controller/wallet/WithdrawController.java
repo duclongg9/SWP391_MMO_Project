@@ -28,7 +28,7 @@ import java.sql.SQLException;
 @WebServlet(name = "WithdrawController", urlPatterns = {"/withdraw"})
 public class WithdrawController extends HttpServlet {
     
-    String ABSOLUTE_PATH = "D:/Chuyen_nganh/ky5/SWP391-2/SWP391_server/SWP391_MMO_Project/MMO_Trader_Market/web/assets/images/QRcode";
+    String ABSOLUTE_PATH = "D:\\DH_FPT\\Ky_7\\SWP391_MMO_Project\\MMO_Trader_Market\\web\\assets\\images\\QRcode";
     
     WithdrawService withdrawService = new WithdrawService();
     WalletsDAO wdao = new WalletsDAO();

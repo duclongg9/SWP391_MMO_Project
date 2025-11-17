@@ -15,6 +15,10 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import model.product.ProductVariantOption;
 import service.util.ProductVariantUtils;
 
@@ -27,6 +31,7 @@ public class CredentialDAO extends BaseDAO {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final char[] ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".toCharArray();
     private static final char[] PASSWORD_SYMBOLS = "!@#$%&*-_".toCharArray();
+    private static final Gson GSON = new Gson();
 
     public List<Integer> pickFreeCredentialIds(int productId, int qty) {
         return pickFreeCredentialIds(productId, qty, null);
@@ -635,5 +640,208 @@ public class CredentialDAO extends BaseDAO {
 
     private record ProductSeedRow(int id, Integer inventoryCount, String variantSchema, String variantsJson) {
 
+    }
+
+    /**
+     * Class để lưu thông tin credential với username và password đã parse.
+     * Sử dụng class thay vì record để JSP EL có thể truy cập được.
+     */
+    public static class CredentialInfo {
+        private final int id;
+        private final int productId;
+        private final String variantCode;
+        private final boolean isSold;
+        private final String username;
+        private final String password;
+        private final java.util.Date createdAt;
+        
+        public CredentialInfo(int id, int productId, String variantCode, boolean isSold, 
+                             String username, String password, java.util.Date createdAt) {
+            this.id = id;
+            this.productId = productId;
+            this.variantCode = variantCode;
+            this.isSold = isSold;
+            this.username = username != null ? username : "";
+            this.password = password != null ? password : "";
+            this.createdAt = createdAt;
+        }
+        
+        public int getId() {
+            return id;
+        }
+        
+        public int getProductId() {
+            return productId;
+        }
+        
+        public String getVariantCode() {
+            return variantCode;
+        }
+        
+        public boolean isSold() {
+            return isSold;
+        }
+        
+        public String getUsername() {
+            return username;
+        }
+        
+        public String getPassword() {
+            return password;
+        }
+        
+        public java.util.Date getCreatedAt() {
+            return createdAt;
+        }
+    }
+
+    /**
+     * Lấy tất cả credentials của sản phẩm, có thể filter theo variant code.
+     * Trả về danh sách credentials với username và password đã được parse từ JSON.
+     * 
+     * @param productId mã sản phẩm
+     * @param variantCode mã biến thể (có thể null để lấy tất cả)
+     * @param includeSold true nếu muốn bao gồm cả credentials đã bán
+     * @return danh sách credentials
+     */
+    public List<CredentialInfo> findAllCredentials(int productId, String variantCode, boolean includeSold) {
+        try (Connection connection = getConnection()) {
+            return findAllCredentials(connection, productId, variantCode, includeSold);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể lấy danh sách credentials", ex);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Lấy tất cả credentials của sản phẩm trong connection.
+     */
+    public List<CredentialInfo> findAllCredentials(Connection connection, int productId, String variantCode, boolean includeSold) 
+            throws SQLException {
+        String normalized = normalizeVariantCode(variantCode);
+        StringBuilder sql = new StringBuilder(
+            "SELECT id, product_id, variant_code, is_sold, encrypted_value, created_at " +
+            "FROM product_credentials WHERE product_id = ?"
+        );
+        
+        if (!includeSold) {
+            sql.append(" AND is_sold = 0");
+        }
+        
+        if (normalized == null) {
+            sql.append(" AND (variant_code IS NULL OR TRIM(variant_code) = '')");
+        } else {
+            sql.append(" AND LOWER(TRIM(variant_code)) = ?");
+        }
+        
+        sql.append(" ORDER BY created_at DESC, id DESC");
+        
+        List<CredentialInfo> results = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            statement.setInt(index++, productId);
+            if (normalized != null) {
+                statement.setString(index++, normalized);
+            }
+            
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String encryptedValue = rs.getString("encrypted_value");
+                    String username = null;
+                    String password = null;
+                    
+                    // Parse JSON để lấy username và password
+                    if (encryptedValue != null && !encryptedValue.trim().isEmpty()) {
+                        try {
+                            // Parse JSON: {"username":"...","password":"..."}
+                            encryptedValue = encryptedValue.trim();
+                            if (encryptedValue.startsWith("{") && encryptedValue.endsWith("}")) {
+                                JsonObject jsonObject = JsonParser.parseString(encryptedValue).getAsJsonObject();
+                                if (jsonObject.has("username")) {
+                                    username = jsonObject.get("username").getAsString();
+                                }
+                                if (jsonObject.has("password")) {
+                                    password = jsonObject.get("password").getAsString();
+                                }
+                            }
+                        } catch (Exception e) {
+                            LOGGER.log(Level.WARNING, "Không thể parse credential JSON: " + encryptedValue, e);
+                        }
+                    }
+                    
+                    results.add(new CredentialInfo(
+                        rs.getInt("id"),
+                        rs.getInt("product_id"),
+                        rs.getString("variant_code"),
+                        rs.getBoolean("is_sold"),
+                        username != null ? username : "",
+                        password != null ? password : "",
+                        rs.getTimestamp("created_at")
+                    ));
+                }
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Cập nhật credential (username, password và variant code) theo ID.
+     * 
+     * @param credentialId ID của credential cần cập nhật
+     * @param username tên đăng nhập mới
+     * @param password mật khẩu mới
+     * @param variantCode mã biến thể mới (có thể null)
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateCredential(int credentialId, String username, String password, String variantCode) {
+        try (Connection connection = getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                updateCredential(connection, credentialId, username, password, variantCode);
+                connection.commit();
+                return true;
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
+                }
+                LOGGER.log(Level.SEVERE, "Không thể cập nhật credential", ex);
+                return false;
+            } finally {
+                restoreAutoCommit(connection, previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật credential", ex);
+            return false;
+        }
+    }
+
+    /**
+     * Cập nhật credential trong transaction.
+     */
+    public void updateCredential(Connection connection, int credentialId, String username, String password, String variantCode) throws SQLException {
+        String credentialJson = String.format(Locale.ROOT, "{\"username\":\"%s\",\"password\":\"%s\"}", 
+                username != null ? username.replace("\"", "\\\"") : "", 
+                password != null ? password.replace("\"", "\\\"") : "");
+        
+        String normalized = normalizeVariantCode(variantCode);
+        
+        final String sql = "UPDATE product_credentials SET encrypted_value = ?, variant_code = ? WHERE id = ? AND is_sold = 0";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, credentialJson);
+            if (normalized == null) {
+                statement.setNull(2, Types.VARCHAR);
+            } else {
+                statement.setString(2, normalized);
+            }
+            statement.setInt(3, credentialId);
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new SQLException("Không tìm thấy credential hoặc credential đã được bán");
+            }
+        }
+        LOGGER.log(Level.INFO, "Đã cập nhật credential {0}", credentialId);
     }
 }
