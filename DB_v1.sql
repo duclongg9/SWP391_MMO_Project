@@ -693,7 +693,6 @@ INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
  (1,1,0.0000,1,'2024-01-11 09:00:00','2024-01-11 09:00:00');
 
-
 -- INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
 --  (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
 --  (2,3,150000.0000,'VietQR|MMO|INV-20240127','DEPOSIT-UUID-2','Pending','2024-01-27 12:00:00',NULL,'2024-01-27 09:00:00'),

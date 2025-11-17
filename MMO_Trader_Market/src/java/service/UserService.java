@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import model.EmailVerificationToken;
 import model.PasswordResetToken;
 import model.Users;
 import units.HashPassword;
@@ -33,6 +34,7 @@ public class UserService {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("(?=.*[A-Za-z])(?=.*\\d).{8,}");
     private static final int DEFAULT_ROLE_ID = 3;
     private static final int RESET_TOKEN_EXPIRY_MINUTES = 1440;
+    private static final int VERIFICATION_TOKEN_EXPIRY_MINUTES = 15;
     private static final SecureRandom RANDOM = new SecureRandom();
     private final UserDAO userDAO;
     private final PasswordResetTokenDAO passwordResetTokenDAO;
@@ -139,8 +141,15 @@ public class UserService {
         }
     }
 
-    public void requestPasswordReset(String email, String resetBaseUrl) {
-        String normalizedEmail = normalizeEmail(email); 
+    /**
+     * Tạo yêu cầu đặt lại mật khẩu và gửi email nếu chưa có yêu cầu hợp lệ trong 24 giờ qua.
+     *
+     * @param email       email người dùng
+     * @param resetBaseUrl đường dẫn cơ sở để ghép link đặt lại mật khẩu
+     * @return true nếu đã gửi email mới, false nếu đã tồn tại yêu cầu hợp lệ và chỉ thông báo lại
+     */
+    public boolean requestPasswordReset(String email, String resetBaseUrl) {
+        String normalizedEmail = normalizeEmail(email);
         validateEmail(normalizedEmail);
         if (resetBaseUrl == null || resetBaseUrl.isBlank()) {
             throw new IllegalArgumentException("Thiếu đường dẫn reset mật khẩu");
@@ -151,11 +160,17 @@ public class UserService {
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            String token = UUID.randomUUID().toString().replace("-", ""); 
+            PasswordResetToken existing = passwordResetTokenDAO.findLatestActiveByUser(user.getId());
+            if (existing != null && existing.getExpiresAt() != null
+                    && existing.getExpiresAt().toInstant().isAfter(Instant.now())) {
+                return false;
+            }
+            String token = UUID.randomUUID().toString().replace("-", "");
             Timestamp expiresAt = Timestamp.from(Instant.now().plusSeconds(RESET_TOKEN_EXPIRY_MINUTES * 60L)); //hời điểm hết hạn
             passwordResetTokenDAO.createToken(user.getId(), token, expiresAt);
             String resetLink = resetBaseUrl + "?token=" + token; //Tạo URL đầy đủ, bấm trong email.
-            sendResetMail(user.getEmail(), user.getName(), resetLink); 
+            sendResetMail(user.getEmail(), user.getName(), resetLink);
+            return true;
         } catch (SQLException e) {
             throw new IllegalStateException("Không thể tạo yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
@@ -172,10 +187,7 @@ public class UserService {
             if (Boolean.TRUE.equals(user.getStatus())) {
                 return;
             }
-            String code = emailVerificationTokenDAO.findCodeByUserId(user.getId());
-            if (code == null || code.isBlank()) {
-                throw new IllegalStateException("Không tìm thấy mã xác thực cho tài khoản này");
-            }
+            String code = createAndStoreVerificationCode(user.getId());
             sendVerificationEmail(user.getEmail(), user.getName(), code);
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi gửi lại mã xác thực", e);
@@ -187,19 +199,24 @@ public class UserService {
         validateEmail(normalizedEmail);
         String normalizedCode = requireText(code, "Vui lòng nhập mã xác thực");
         try {
-            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail); 
+            Users user = userDAO.getUserByEmailAnyStatus(normalizedEmail);
             if (user == null) {
                 throw new IllegalArgumentException("Email không tồn tại trong hệ thống");
             }
-            if (Boolean.TRUE.equals(user.getStatus())) { 
+            if (Boolean.TRUE.equals(user.getStatus())) {
                 return false;
             }
-            String storedCode = emailVerificationTokenDAO.findCodeByUserId(user.getId());  
-            if (storedCode == null || storedCode.isBlank()) {
+            EmailVerificationToken token = emailVerificationTokenDAO.findTokenByUserId(user.getId());
+            if (token == null || token.getCode() == null || token.getCode().isBlank()) {
                 throw new IllegalStateException("Tài khoản này không có mã xác thực hợp lệ");
             }
-            if (!storedCode.equals(normalizedCode)) { 
-                throw new IllegalArgumentException("Mã xác thực không chính xác");
+            if (token.getCreatedAt() == null || token.getCreatedAt().toInstant()
+                    .plusSeconds(VERIFICATION_TOKEN_EXPIRY_MINUTES * 60L)
+                    .isBefore(Instant.now())) {
+                throw new IllegalArgumentException("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.");
+            }
+            if (!token.getCode().equals(normalizedCode)) {
+                throw new IllegalArgumentException("Mã xác thực không chính xác hoặc đã được thay thế");
             }
             int updated = userDAO.activateUser(user.getId()); //kích hoạt tài khoản
             if (updated == 2) {
@@ -450,8 +467,8 @@ public class UserService {
         String body = "Xin chào " + displayName + ",\n\n"
                 + "Cảm ơn bạn đã đăng ký tài khoản tại MMO Trader Market. "
                 + "Mã xác thực email của bạn là: " + code + "\n\n"
-                + "Vui lòng nhập mã này trên trang đăng nhập để kích hoạt tài khoản. "
-                + "Mã sẽ không thay đổi cho tới khi bạn kích hoạt thành công.\n\n"
+                + "Vui lòng nhập mã này trên trang đăng nhập để kích hoạt tài khoản trong vòng "
+                + VERIFICATION_TOKEN_EXPIRY_MINUTES + " phút. Mỗi lần yêu cầu lại, hệ thống sẽ tạo mã mới.\n\n"
                 + "Nếu bạn không yêu cầu tạo tài khoản, hãy bỏ qua email này.\n\n"
                 + "Trân trọng,\nĐội ngũ MMO Trader Market";
         AsyncEmailSender.send(email, subject, body);
@@ -476,7 +493,7 @@ public class UserService {
         for (int attempt = 0; attempt < 5; attempt++) {
             String code = generateVerificationCode(); //// 1) Sinh mã ngẫu nhiên (OTP/token)
             try {
-                emailVerificationTokenDAO.createToken(userId, code);
+                emailVerificationTokenDAO.upsertToken(userId, code);
                 return code; // // 3) Thành công → trả mã
             } catch (SQLException e) {
                 if (isDuplicateCode(e) && attempt < 4) {

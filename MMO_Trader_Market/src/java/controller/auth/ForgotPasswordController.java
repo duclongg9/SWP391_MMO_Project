@@ -32,8 +32,12 @@ public class ForgotPasswordController extends BaseController {
         String email = request.getParameter("email");
         try {
             String resetBaseUrl = buildResetBaseUrl(request); // tạo dd
-            userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
-            request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            boolean emailSent = userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
+            if (emailSent) {
+                request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
+            } else {
+                request.setAttribute("success", "Bạn đã yêu cầu đặt lại mật khẩu trong 24 giờ qua. Vui lòng kiểm tra email hoặc thử lại sau khi liên kết hết hạn.");
+            }
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.setAttribute("error", e.getMessage());
         } catch (RuntimeException e) {
