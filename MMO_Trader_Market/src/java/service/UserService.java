@@ -116,7 +116,7 @@ public class UserService {
             throw new IllegalStateException("Tài khoản của bạn đang bị khóa");
         }
         return user;
-    }
+    }   
 
     public Users loginWithGoogle(String googleId, String email, String displayName) {
         String normalizedGoogleId = requireText(googleId, "Google ID không hợp lệ"); // ép ggid k null, rỗng-> ném lỗi
@@ -403,7 +403,7 @@ public class UserService {
             throw new RuntimeException("DB gặp sự cố khi cập nhật mật khẩu người dùng", e);
         }
     }
-
+// trim khoảng trắng, chuyển về lowercase, nếu null thì trả null
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase();
     }
@@ -416,7 +416,7 @@ public class UserService {
             throw new IllegalArgumentException("Email không hợp lệ");
         }
     }
-
+// password không được null/rỗng/toàn khoảng trắng.
     private String requireText(String value, String message) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(message);
@@ -443,11 +443,6 @@ public class UserService {
         }
     }
 
-    private String generateRandomSecret() {
-        byte[] random = new byte[32];
-        RANDOM.nextBytes(random);
-        return UUID.nameUUIDFromBytes(random).toString();
-    }
 
     private void sendResetMail(String email, String name, String resetLink) {
         String subject = "Đặt lại mật khẩu MMO Trader Market";
@@ -532,8 +527,7 @@ public class UserService {
      */
     private Users createGoogleAccount(String email, String name, String googleId) throws SQLException {
         ensureEmailAvailable(email);
-        String fallbackHash = HashPassword.toSHA1(generateRandomSecret());
-        Users created = userDAO.createUserWithGoogle(email, name, googleId, fallbackHash, DEFAULT_ROLE_ID);
+        Users created = userDAO.createUserWithGoogle(email, name, googleId, DEFAULT_ROLE_ID);
         if (created == null) {
             throw new IllegalStateException("Không thể tạo tài khoản Google mới");
         }
