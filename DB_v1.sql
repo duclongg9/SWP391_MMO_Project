@@ -27,7 +27,7 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL UNIQUE,
   `name` varchar(100) NOT NULL,
   `avatar_url` varchar(255) DEFAULT NULL,
-  `hashed_password` varchar(255) NOT NULL,
+  `hashed_password` varchar(255) DEFAULT NULL COMMENT 'NULL đối với tài khoản đăng nhập qua SSO',
   `google_id` varchar(255) DEFAULT NULL UNIQUE,
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1: Active, 0: Inactive , 2: UnAuth',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

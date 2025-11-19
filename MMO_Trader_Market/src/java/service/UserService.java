@@ -106,7 +106,7 @@ public class UserService {
         if (!hashed.equals(HashPassword.toSHA1(rawPassword))) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
-        if ((user.getStatus()) == 2) {
+        if ((user.getStatus()) == 2) { //Kiểm tra trạng thái tài khoản – chưa xác thực email
             if (isEmailVerificationPending(user)) {
                 throw new InactiveAccountException("Tài khoản của bạn chưa được xác thực email", user);
             }
@@ -478,7 +478,7 @@ public class UserService {
             return false;
         }
         try {
-            return emailVerificationTokenDAO.hasToken(user.getId());
+            return emailVerificationTokenDAO.hasToken(user.getId()); //Nếu có token → trả về true → đang chờ xác thực email.
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi kiểm tra mã xác thực email", e);
         }
