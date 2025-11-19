@@ -294,13 +294,12 @@ public class UserDAO extends BaseDAO {
      * @param email email Google trả về
      * @param name tên hiển thị
      * @param googleId mã liên kết Google
-     * @param hashedPassword mật khẩu dự phòng đã băm
      * @param roleId vai trò hệ thống
      * @return người dùng vừa tạo hoặc {@code null}
      * @throws SQLException khi thao tác chèn lỗi
      */
     public Users createUserWithGoogle(String email, String name, String googleId,
-            String hashedPassword, int roleId) throws SQLException {
+            int roleId) throws SQLException {
         final String sql = """
                 INSERT INTO users (role_id, email, name, hashed_password, google_id, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -309,7 +308,7 @@ public class UserDAO extends BaseDAO {
             ps.setInt(1, roleId);
             ps.setString(2, email);
             ps.setString(3, name);
-            ps.setString(4, hashedPassword);
+            ps.setNull(4, Types.VARCHAR);
             ps.setString(5, googleId);
             int affected = ps.executeUpdate();
             if (affected == 0) {
@@ -323,7 +322,7 @@ public class UserDAO extends BaseDAO {
                     created.setEmail(email);
                     created.setName(name);
                     created.setGoogleId(googleId);
-                    created.setHashedPassword(hashedPassword);
+                    created.setHashedPassword(null);
                     created.setStatus(1);
                     return created;
                 }
