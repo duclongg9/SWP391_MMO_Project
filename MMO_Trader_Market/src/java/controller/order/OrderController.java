@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,20 +33,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * 
+ *
  * Servlet điều phối toàn bộ luồng mua sản phẩm của người mua từ lúc gửi yêu cầu
- * "Mua ngay" tới khi người dùng truy cập lịch sử đơn và xem dữ liệu bàn
- * giao.
- * 
+ * "Mua ngay" tới khi người dùng truy cập lịch sử đơn và xem dữ liệu bàn giao.
+ *
  * Controller này chịu trách nhiệm:
- * 
- * Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử
- * lý nghiệp vụ.
- * Định tuyến tới đúng trang JSP, truyền dữ liệu view model (OrderRow,
- * OrderDetailView)
- * Gắn kết với hàng đợi xử lý bất đồng bộ thông qua
+ *
+ * Chuẩn hóa và xác thực tham số HTTP trước khi ủy quyền cho tầng dịch vụ xử lý
+ * nghiệp vụ. Định tuyến tới đúng trang JSP, truyền dữ liệu view model
+ * (OrderRow, OrderDetailView) Gắn kết với hàng đợi xử lý bất đồng bộ thông qua
  * {@link service.OrderService#placeOrderPending}
- * 
+ *
  *
  * @author longpdhe171902
  */
@@ -70,6 +68,13 @@ public class OrderController extends BaseController {
     private static final int ROLE_SELLER = 2;
     private static final int ROLE_BUYER = 3;
     /**
+     * Múi giờ mặc định sử dụng trong toàn bộ phần mua hàng để đảm bảo mọi thời
+     * điểm hiển thị theo giờ Việt Nam, tránh tình trạng lệch múi giờ giữa
+     * backend và frontend.
+     */
+    private static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    /**
      * Đường dẫn thư mục (relative) lưu trữ ảnh bằng chứng của khiếu nại.
      */
     private static final String DISPUTE_UPLOAD_DIR = "assets/images/disputes";
@@ -79,7 +84,8 @@ public class OrderController extends BaseController {
      */
     private static final int MAX_EVIDENCE_FILE_SIZE_MB = 5;
     /**
-     * Tổng dung lượng tối đa của toàn bộ minh chứng trong một lần gửi (đơn vị MB).
+     * Tổng dung lượng tối đa của toàn bộ minh chứng trong một lần gửi (đơn vị
+     * MB).
      */
     private static final int MAX_EVIDENCE_TOTAL_SIZE_MB = 30;
 
@@ -94,13 +100,12 @@ public class OrderController extends BaseController {
     /**
      * Xử lý các yêu cầu POST. Ở thời điểm hiện tại chỉ có một entry point duy
      * nhất là /order/buy-now. Dòng chảy cụ thể:
-     * 
-     * Đọc {@code servletPath} để xác định hành động.
-     * Nếu là "buy-now" thì chuyển cho
-     * {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}.
-     * Nếu không khớp, trả về HTTP 405 để thông báo phương thức không được
-     * hỗ trợ.
-     * 
+     *
+     * Đọc {@code servletPath} để xác định hành động. Nếu là "buy-now" thì
+     * chuyển cho
+     * {@link #handleBuyNow(HttpServletRequest, HttpServletResponse)}. Nếu không
+     * khớp, trả về HTTP 405 để thông báo phương thức không được hỗ trợ.
+     *
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -122,14 +127,12 @@ public class OrderController extends BaseController {
 
     /**
      * Xử lý các yêu cầu GET cho ba đường dẫn:
-     * 
-     * /orders: chuyển hướng 302 tới trang lịch sử cá nhân để
-     * tái sử dụng logic phân trang.
-     * /orders/my: tải danh sách đơn có lọc, gán vào request
-     * attribute để JSP dựng bảng.
-     * /orders/detail/&lt;token&gt;: hiển thị chi tiết kèm
-     * credential nếu đã bàn giao.
-     * 
+     *
+     * /orders: chuyển hướng 302 tới trang lịch sử cá nhân để tái sử dụng logic
+     * phân trang. /orders/my: tải danh sách đơn có lọc, gán vào request
+     * attribute để JSP dựng bảng. /orders/detail/&lt;token&gt;: hiển thị chi
+     * tiết kèm credential nếu đã bàn giao.
+     *
      * Nếu đường dẫn không khớp sẽ phản hồi HTTP 404.
      */
     @Override
@@ -177,19 +180,15 @@ public class OrderController extends BaseController {
     /**
      * Tiếp nhận yêu cầu mua ngay từ trang chi tiết sản phẩm. Hàm này xử lý toàn
      * bộ phần đầu luồng cho tới khi đơn được đưa vào hàng đợi:
-     * 
+     *
      * Kiểm tra người dùng đăng nhập và có vai trò buyer/seller để được phép
-     * mua.
-     * Đọc các tham số {@code productId}, {@code qty}, {@code variantCode}
-     * do form gửi lên.
-     * Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi thì sinh
-     * ngẫu nhiên) để chống double-submit.
-     * Ủy quyền cho
+     * mua. Đọc các tham số {@code productId}, {@code qty}, {@code variantCode}
+     * do form gửi lên. Chuẩn hóa khóa idempotent {@code idemKey} (nếu không gửi
+     * thì sinh ngẫu nhiên) để chống double-submit. Ủy quyền cho
      * {@link OrderService#placeOrderPending(int, int, int, String, String)}.
-     * Nếu thành công, redirect sang trang chi tiết đơn; 
-     * nếu lỗi nghiệp vụ
-     * -> HTTP 400/409.
-     * 
+     * Nếu thành công, redirect sang trang chi tiết đơn; nếu lỗi nghiệp vụ ->
+     * HTTP 400/409.
+     *
      */
     private void handleBuyNow(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -241,7 +240,7 @@ public class OrderController extends BaseController {
     }
 
     private boolean redirectBackWithError(HttpServletRequest request, HttpServletResponse response,
-                                          HttpSession session, int productId, String message) throws IOException {
+            HttpSession session, int productId, String message) throws IOException {
         if (session == null || productId <= 0) {
             return false;
         }
@@ -274,16 +273,13 @@ public class OrderController extends BaseController {
      * Hiển thị danh sách đơn hàng của người mua kèm phân trang và lọc trạng
      * thái. Tầng controller chịu trách nhiệm thu thập tham số và chuyển dữ liệu
      * xuống JSP:
-     * 
-     * Lấy trạng thái filter, số trang, kích thước trang từ query
-     * string.
-     * Gọi {@link OrderService#getMyOrders(int, String, int, int)} để truy
-     * vấn DB qua DAO.
-     * Đổ danh sách {@code OrderRow} và meta phân trang vào request
-     * attribute "items", "total", ...
-     * Forward tới view /WEB-INF/views/order/my.jsp để dựng
-     * giao diện.
-     * 
+     *
+     * Lấy trạng thái filter, số trang, kích thước trang từ query string. Gọi
+     * {@link OrderService#getMyOrders(int, String, int, int)} để truy vấn DB
+     * qua DAO. Đổ danh sách {@code OrderRow} và meta phân trang vào request
+     * attribute "items", "total", ... Forward tới view
+     * /WEB-INF/views/order/my.jsp để dựng giao diện.
+     *
      */
     private void showMyOrders(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -336,15 +332,13 @@ public class OrderController extends BaseController {
     /**
      * Hiển thị chi tiết một đơn hàng cụ thể nếu thuộc sở hữu người dùng. Sau
      * khi qua bước kiểm tra quyền truy cập, controller sẽ:
-     * 
-     * Đọc {@code id} của đơn từ query string và validate.
-     * Gọi {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và
-     * credential.
-     * Đưa các đối tượng domain vào request attribute cho JSP:
-     * {@code order}, {@code product}, {@code credentials}.
-     * Tính sẵn nhãn trạng thái tiếng Việt thông qua
-     * {@link OrderService#getStatusLabel(String)}.
-     * 
+     *
+     * Đọc {@code id} của đơn từ query string và validate. Gọi
+     * {@link OrderService#getDetail(int, int)} để load đơn, sản phẩm và
+     * credential. Đưa các đối tượng domain vào request attribute cho JSP:
+     * {@code order}, {@code product}, {@code credentials}. Tính sẵn nhãn trạng
+     * thái tiếng Việt thông qua {@link OrderService#getStatusLabel(String)}.
+     *
      */
     private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -464,7 +458,7 @@ public class OrderController extends BaseController {
     /**
      * Phản hồi JSON mô tả điều kiện còn hiệu lực để mở form báo cáo đơn hàng.
      *
-     * @param request  yêu cầu HTTP hiện tại
+     * @param request yêu cầu HTTP hiện tại
      * @param response phản hồi HTTP sẽ ghi JSON trả về front-end
      * @throws IOException nếu xảy ra lỗi ghi dữ liệu ra response stream
      */
@@ -508,7 +502,8 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Phản hồi JSON mô tả các sự kiện ví của đơn hàng để giao diện tải bằng AJAX.
+     * Phản hồi JSON mô tả các sự kiện ví của đơn hàng để giao diện tải bằng
+     * AJAX.
      */
     private void handleWalletEventsApi(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -581,9 +576,10 @@ public class OrderController extends BaseController {
     }
 
     /**
-     * Xây dựng thông điệp tiếng Việt giải thích lý do người mua không thể tiếp tục báo cáo.
+     * Xây dựng thông điệp tiếng Việt giải thích lý do người mua không thể tiếp
+     * tục báo cáo.
      *
-     * @param order      đối tượng đơn hàng đang xét
+     * @param order đối tượng đơn hàng đang xét
      * @param disputeOpt trạng thái dispute hiện tại của đơn
      * @return chuỗi mô tả lỗi thân thiện với người dùng cuối
      */
@@ -608,7 +604,7 @@ public class OrderController extends BaseController {
      * Tạo JSON trả về cho front-end khi kiểm tra điều kiện báo cáo.
      *
      * @param canReport trạng thái đủ điều kiện
-     * @param message   thông điệp lỗi (chuỗi rỗng nếu đủ điều kiện)
+     * @param message thông điệp lỗi (chuỗi rỗng nếu đủ điều kiện)
      * @return chuỗi JSON dạng {@code {"canReport":true,"message":"..."}}
      */
     private String buildReportEligibilityPayload(boolean canReport, String message) {
@@ -649,11 +645,16 @@ public class OrderController extends BaseController {
         for (int i = 0; i < input.length(); i++) {
             char ch = input.charAt(i);
             switch (ch) {
-                case '"' -> escaped.append("\\\"");
-                case '\\' -> escaped.append("\\\\");
-                case '\n' -> escaped.append("\\n");
-                case '\r' -> escaped.append("\\r");
-                case '\t' -> escaped.append("\\t");
+                case '"' ->
+                    escaped.append("\\\"");
+                case '\\' ->
+                    escaped.append("\\\\");
+                case '\n' ->
+                    escaped.append("\\n");
+                case '\r' ->
+                    escaped.append("\\r");
+                case '\t' ->
+                    escaped.append("\\t");
                 default -> {
                     if (ch < 0x20) {
                         escaped.append(String.format("\\u%04x", (int) ch));
@@ -670,7 +671,7 @@ public class OrderController extends BaseController {
         if (date == null) {
             return null;
         }
-        return java.time.ZonedDateTime.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault())
+        return java.time.ZonedDateTime.ofInstant(date.toInstant(), DEFAULT_TIME_ZONE)
                 .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
 

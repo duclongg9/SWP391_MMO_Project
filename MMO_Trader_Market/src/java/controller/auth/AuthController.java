@@ -16,16 +16,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Điều phối luồng "Đăng nhập" cho người dùng đã có tài khoản.
- * <p>
- * - Hỗ trợ đăng nhập nội bộ bằng email/mật khẩu. - Chuyển
- * hướng khách (Role Guest) sang trang đăng nhập của hệ thống khác (Google) khi
- * cần. - Cung cấp chức năng đăng xuất và dọn dẹp phiên đăng nhập.
- *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
- */
+
 @WebServlet(name = "AuthController", urlPatterns = {"/auth"})
 public class AuthController extends BaseController {
 
@@ -47,18 +38,18 @@ public class AuthController extends BaseController {
             throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
-            invalidateSession(request);
+            invalidateSession(request); // xóa ss hiện tại
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-
-        HttpSession session = request.getSession(false); 
-        Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser"); // đọc attibute và ép kiểu
+        // kiểm tra user đã login chưa
+        HttpSession session = request.getSession(false); // lấy ss hiện tại
+        Users currentUser = session == null ? null : (Users) session.getAttribute("currentUser"); // !null lấy object đã lưu trong session với key'curu'
         if (currentUser != null) {
-            response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(currentUser));
+            response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(currentUser)); //redirect về trang home theo role
             return;
         }
-        if (session != null) {
+        if (session != null) { // hiển thị flash message
             moveFlash(session, request, FLASH_SUCCESS, "success");
             moveFlash(session, request, FLASH_RESET_SUCCESS, "success");
             moveFlash(session, request, FLASH_VERIFICATION_SUCCESS, "success");
@@ -76,9 +67,9 @@ public class AuthController extends BaseController {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String email = request.getParameter("email");
-        String normalizedEmail = email == null ? null : email.trim();
+        String normalizedEmail = email == null ? null : email.trim(); // xóa khoảng trắng
         String password = request.getParameter("password");
-        if (normalizedEmail == null || normalizedEmail.isBlank() || password == null || password.isBlank()) {
+        if (normalizedEmail == null || normalizedEmail.isBlank() || password == null || password.isBlank()) { // thiếu 1 trg 2 thì báo lỗi
             request.setAttribute("error", "Vui lòng nhập đầy đủ email và mật khẩu");
             request.setAttribute("prefillEmail", normalizedEmail);
             forward(request, response, "auth/login");
@@ -86,8 +77,7 @@ public class AuthController extends BaseController {
         }
 
         try {
-            // Xác thực thông tin đăng nhập và lưu thông tin người dùng vào session mới.
-            Users user = userService.authenticate(normalizedEmail, password);
+            Users user = userService.authenticate(normalizedEmail, password); //kiểm tra thông tin đăng nhập.
             HttpSession session = renewSession(request);
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());

@@ -4,6 +4,7 @@
  */
 package controller.wallet;
 
+import dao.user.WalletTransactionDAO;
 import dao.user.WalletsDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -28,10 +29,11 @@ import java.sql.SQLException;
 @WebServlet(name = "WithdrawController", urlPatterns = {"/withdraw"})
 public class WithdrawController extends HttpServlet {
     
-    String ABSOLUTE_PATH = "D:/Chuyen_nganh/ky5/SWP391-2/SWP391_server/SWP391_MMO_Project/MMO_Trader_Market/web/assets/images/QRcode";
+    String ABSOLUTE_PATH = "D:\\DH_FPT\\Ky_7\\SWP391_MMO_Project\\MMO_Trader_Market\\web\\assets\\images\\QRcode";
     
     WithdrawService withdrawService = new WithdrawService();
     WalletsDAO wdao = new WalletsDAO();
+    WalletTransactionDAO wtdao = new WalletTransactionDAO();
     
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -147,6 +149,10 @@ public class WithdrawController extends HttpServlet {
         //Trừ tiền trong ví
         try {
             wdao.decreaseBalance(user, amount);
+            BigDecimal beforeAmount = wdao.getWalletBalanceByUserId(user);
+            BigDecimal afterAmount = beforeAmount.subtract(amount);
+            int walletId = wdao.getUserWallet(user).getId();
+            wtdao.insertWithdrawWalletTransaction(walletId, amount, beforeAmount, afterAmount);
             session.setAttribute("msg","Tạo yêu cầu thành công");
             response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (IllegalArgumentException e) {

@@ -34,7 +34,7 @@ public class ShopDAO extends BaseDAO {
      * @return danh sách shop hoạt động
      */
     public List<Shops> findActive(int limit) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE status = 'Active' ORDER BY created_at DESC LIMIT ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, limit);
@@ -125,7 +125,7 @@ public class ShopDAO extends BaseDAO {
      * @return shop nếu tìm thấy, null nếu không tìm thấy
      */
     public Shops findByOwnerId(int ownerId) {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at "
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at "
                 + "FROM shops WHERE owner_id = ? LIMIT 1";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, ownerId);
@@ -186,7 +186,12 @@ public class ShopDAO extends BaseDAO {
             shop.setCreatedAt(new java.util.Date(createdAt.getTime()));
         }
 
-        // Cột updated_at không tồn tại trong database
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (updatedAt != null) {
+            shop.setUpdatedAt(new java.util.Date(updatedAt.getTime()));
+        } else if (createdAt != null) {
+            shop.setUpdatedAt(new java.util.Date(createdAt.getTime()));
+        }
         return shop;
     }
 
@@ -214,6 +219,31 @@ public class ShopDAO extends BaseDAO {
     }
 
     /**
+     * Kiểm tra tên shop đã tồn tại hay chưa (không phân biệt hoa thường).
+     *
+     * @param name      tên shop cần kiểm tra
+     * @param excludeId ID shop cần loại trừ (dùng khi cập nhật), có thể null
+     * @return true nếu đã tồn tại tên trùng, false nếu chưa
+     * @throws SQLException nếu truy vấn thất bại
+     */
+    public boolean existsByName(String name, Integer excludeId) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT 1 FROM shops WHERE LOWER(name) = LOWER(?)");
+        if (excludeId != null) {
+            sql.append(" AND id <> ?");
+        }
+        sql.append(" LIMIT 1");
+        try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+            stmt.setString(1, name);
+            if (excludeId != null) {
+                stmt.setInt(2, excludeId);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /**
      * Tạo shop mới với trạng thái Active và thời điểm hiện tại. Shop được tạo
      * sẽ tự động có status = 'Active' và created_at = NOW().
      *
@@ -225,7 +255,7 @@ public class ShopDAO extends BaseDAO {
      * key
      */
     public Shops create(int ownerId, String name, String description) throws SQLException {
-        final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at) VALUES (?, ?, ?, 'Active', NOW())";
+        final String sql = "INSERT INTO shops (owner_id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, 'Active', NOW(), NOW())";
         try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, ownerId);
             stmt.setString(2, name);
@@ -248,6 +278,7 @@ public class ShopDAO extends BaseDAO {
             s.setStatus("Active");
             java.util.Date now = new java.util.Date();
             s.setCreatedAt(now);
+            s.setUpdatedAt(now);
             return s;
         }
     }
@@ -265,7 +296,7 @@ public class ShopDAO extends BaseDAO {
      * @throws SQLException nếu có lỗi khi truy vấn database
      */
     public boolean update(int id, int ownerId, String name, String description) throws SQLException {
-        final String sql = "UPDATE shops SET name = ?, description = ? WHERE id = ? AND owner_id = ?";
+        final String sql = "UPDATE shops SET name = ?, description = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
         try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, name);
             stmt.setString(2, description);
@@ -288,7 +319,7 @@ public class ShopDAO extends BaseDAO {
      * @throws SQLException nếu có lỗi khi truy vấn database
      */
     public boolean setStatus(int id, int ownerId, String status) throws SQLException {
-        final String sql = "UPDATE shops SET status = ? WHERE id = ? AND owner_id = ?";
+        final String sql = "UPDATE shops SET status = ?, updated_at = NOW() WHERE id = ? AND owner_id = ?";
         try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, status);
             stmt.setInt(2, id);
@@ -308,7 +339,7 @@ public class ShopDAO extends BaseDAO {
      * @throws SQLException nếu có lỗi khi truy vấn database
      */
     public Optional<Shops> findByIdAndOwner(int id, int ownerId) throws SQLException {
-        final String sql = "SELECT id, owner_id, name, description, status, created_at FROM shops WHERE id = ? AND owner_id = ?";
+        final String sql = "SELECT id, owner_id, name, description, status, created_at, updated_at FROM shops WHERE id = ? AND owner_id = ?";
         try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.setInt(2, ownerId);
@@ -333,7 +364,7 @@ public class ShopDAO extends BaseDAO {
      */
     public Optional<model.ShopStatsView> findDetailByIdAndOwner(int shopId, int ownerId) throws SQLException {
         final String sql = "SELECT\n"
-                + "  s.id, s.name, s.description, s.status, s.created_at,\n"
+                + "  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n"
                 + "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
                 + "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
                 + "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
@@ -352,8 +383,10 @@ public class ShopDAO extends BaseDAO {
                     v.setName(rs.getString("name"));
                     v.setDescription(rs.getString("description"));
                     v.setStatus(rs.getString("status"));
-                    v.setCreatedAt(rs.getTimestamp("created_at"));
-                    v.setUpdatedAt(null);
+                    Timestamp createdAt = rs.getTimestamp("created_at");
+                    Timestamp updatedAt = rs.getTimestamp("updated_at");
+                    v.setCreatedAt(createdAt);
+                    v.setUpdatedAt(updatedAt != null ? updatedAt : createdAt);
                     v.setProductCount(rs.getInt("product_count"));
                     v.setTotalSold(rs.getInt("total_sold"));
                     v.setTotalInventory(rs.getInt("total_inventory"));
@@ -379,7 +412,7 @@ public class ShopDAO extends BaseDAO {
      */
     public List<model.ShopStatsView> findByOwnerWithStats(int ownerId, String sortBy, String searchKeyword) throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT\n"
-                + "  s.id, s.name, s.description, s.status, s.created_at,\n"
+                + "  s.id, s.name, s.description, s.status, s.created_at, s.updated_at,\n"
                 + "  COALESCE(pcnt.product_count, 0) AS product_count,\n"
                 + "  COALESCE(sales.total_sold, 0)   AS total_sold,\n"
                 + "  COALESCE(inven.total_inventory, 0) AS total_inventory\n"
@@ -396,9 +429,9 @@ public class ShopDAO extends BaseDAO {
 
         sql.append("\nORDER BY\n")
                 .append("  CASE WHEN ? = 'sales_desc'   THEN sales.total_sold END DESC,\n")
-                .append("  CASE WHEN ? = 'created_desc' THEN s.created_at     END DESC,\n")
+                .append("  CASE WHEN ? = 'created_desc' THEN COALESCE(s.updated_at, s.created_at) END DESC,\n")
                 .append("  CASE WHEN ? = 'name_asc'     THEN s.name           END ASC,\n")
-                .append("  s.created_at DESC, s.id DESC");
+                .append("  COALESCE(s.updated_at, s.created_at) DESC, s.id DESC");
 
         try (Connection connection = getConnection(); PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
             int paramIndex = 1;
@@ -421,8 +454,10 @@ public class ShopDAO extends BaseDAO {
                     v.setName(rs.getString("name"));
                     v.setDescription(rs.getString("description"));
                     v.setStatus(rs.getString("status"));
-                    v.setCreatedAt(rs.getTimestamp("created_at"));
-                    v.setUpdatedAt(null);
+                    Timestamp createdAt = rs.getTimestamp("created_at");
+                    Timestamp updatedAt = rs.getTimestamp("updated_at");
+                    v.setCreatedAt(createdAt);
+                    v.setUpdatedAt(updatedAt != null ? updatedAt : createdAt);
                     v.setProductCount(rs.getInt("product_count"));
                     v.setTotalSold(rs.getInt("total_sold"));
                     v.setTotalInventory(rs.getInt("total_inventory"));

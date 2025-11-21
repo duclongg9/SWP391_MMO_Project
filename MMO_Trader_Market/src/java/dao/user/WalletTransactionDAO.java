@@ -326,6 +326,24 @@ public class WalletTransactionDAO {
         }
     }
     
+    public int insertWithdrawWalletTransaction(int walletId,
+            BigDecimal amount,
+            BigDecimal balanceBefore,
+            BigDecimal balanceAfter) throws SQLException {
+        String sql = """
+        INSERT INTO mmo_schema.wallet_transactions
+        (wallet_id, transaction_type, amount, balance_before, balance_after, note)
+        VALUES (?,'Withdraw',?,?,?,'Rut tien')
+    """;
+        try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, walletId);
+            ps.setBigDecimal(2, amount);
+            ps.setBigDecimal(3, balanceBefore);
+            ps.setBigDecimal(4, balanceAfter);
+            return ps.executeUpdate();
+        }
+    }
+    
     public static void main(String[] args) {
         WalletTransactionDAO wdao = new WalletTransactionDAO();
         
