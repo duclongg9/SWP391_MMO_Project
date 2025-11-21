@@ -80,7 +80,7 @@
                 </article>
             </div>
 
-            <c:if test="${not empty bestSeller}">
+            <c:if test="${not empty bestSeller and shop.productCount > 0}">
                 <article class="shop-detail__best-seller">
                     <div class="shop-detail__best-seller-thumb">
                         <c:choose>
@@ -100,18 +100,31 @@
                             <li><strong>${bestSeller.totalSold}</strong> lượt bán</li>
                             <li>Doanh thu: <strong><fmt:formatNumber value="${bestSeller.totalRevenue}" type="currency" /></strong></li>
                         </ul>
-                        <a class="button button--ghost" href="${cPath}/seller/products/edit?id=${bestSeller.productId}">Quản lý sản phẩm</a>
+                        <c:url var="editProductUrl" value="/seller/products/edit">
+                            <c:param name="id" value="${bestSeller.productId}" />
+                        </c:url>
+                        <a class="button button--ghost" href="${editProductUrl}">Quản lý sản phẩm</a>
                     </div>
                 </article>
             </c:if>
 
             <div class="shop-detail__actions">
-                <a class="button button--ghost" href="${cPath}/seller/shops/edit?id=${shop.id}">Chỉnh sửa shop</a>
-                <a class="button button--ghost" href="${cPath}/seller/products/create?shopId=${shop.id}">Thêm sản phẩm mới</a>
-                <form method="post" action="${cPath}/seller/credentials/generate">
+                <c:url var="editShopUrl" value="/seller/shops/edit">
+                    <c:param name="id" value="${shop.id}" />
+                </c:url>
+                <c:url var="createProductUrl" value="/seller/products/create">
+                    <c:param name="shopId" value="${shop.id}" />
+                </c:url>
+                <c:url var="generateCredentialsUrl" value="/seller/credentials/generate" />
+                <c:url var="inventoryUrl" value="/seller/inventory">
+                    <c:param name="shopId" value="${shop.id}" />
+                </c:url>
+                <a class="button button--ghost" href="${editShopUrl}">Chỉnh sửa shop</a>
+                <a class="button button--ghost" href="${createProductUrl}">Thêm sản phẩm mới</a>
+                <form method="post" action="${generateCredentialsUrl}">
                     <button type="submit" class="button button--primary">Cập nhật kho từ tồn hiện tại</button>
                 </form>
-                <a class="button" href="${cPath}/seller/inventory">Quản lý tồn kho</a>
+                <a class="button" href="${inventoryUrl}">Quản lý tồn kho</a>
             </div>
         </div>
     </section>
@@ -123,15 +136,15 @@
                 <p class="panel__subtitle">So sánh các quý gần đây để nắm bắt đà tăng trưởng.</p>
             </div>
             <div class="shop-detail__range">
-                <c:url var="range3Url" value="${cPath}/seller/shops/detail">
+                <c:url var="range3Url" value="/seller/shops/detail">
                     <c:param name="id" value="${shop.id}" />
                     <c:param name="range" value="3" />
                 </c:url>
-                <c:url var="range6Url" value="${cPath}/seller/shops/detail">
+                <c:url var="range6Url" value="/seller/shops/detail">
                     <c:param name="id" value="${shop.id}" />
                     <c:param name="range" value="6" />
                 </c:url>
-                <c:url var="range12Url" value="${cPath}/seller/shops/detail">
+                <c:url var="range12Url" value="/seller/shops/detail">
                     <c:param name="id" value="${shop.id}" />
                     <c:param name="range" value="12" />
                 </c:url>
@@ -220,13 +233,13 @@
                     <span>Trang ${page} / ${totalPages}</span>
                 </div>
                 <div class="shop-detail__pagination-actions">
-                    <c:url var="prevUrl" value="${cPath}/seller/shops/detail">
+                    <c:url var="prevUrl" value="/seller/shops/detail">
                         <c:param name="id" value="${shop.id}" />
                         <c:param name="range" value="${selectedRange}" />
                         <c:param name="page" value="${page - 1}" />
                         <c:param name="size" value="${pageSize}" />
                     </c:url>
-                    <c:url var="nextUrl" value="${cPath}/seller/shops/detail">
+                    <c:url var="nextUrl" value="/seller/shops/detail">
                         <c:param name="id" value="${shop.id}" />
                         <c:param name="range" value="${selectedRange}" />
                         <c:param name="page" value="${page + 1}" />

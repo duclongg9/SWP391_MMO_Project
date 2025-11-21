@@ -30,7 +30,12 @@
                             ➕ Thêm sản phẩm
                         </button>
                     </c:if>
-                    <a href="${pageContext.request.contextPath}/seller/inventory" 
+                    <c:url var="backUrl" value="/seller/inventory">
+                        <c:if test="${not empty param.shopId}">
+                            <c:param name="shopId" value="${param.shopId}" />
+                        </c:if>
+                    </c:url>
+                    <a href="${backUrl}" 
                        class="button" 
                        style="text-decoration: none; white-space: nowrap;">
                         ← Quay lại
@@ -91,13 +96,14 @@
 
                                     <c:choose>
                                         <c:when test="${not empty inventoryInfo.credentials && inventoryInfo.credentials.size() > 0}">
-                                            <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">Danh sách tài khoản/key:</h4>
-                                            <div style="overflow-x: auto;">
+                                            <%-- Bảng Tài khoản --%>
+                                            <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">📋 Danh sách tài khoản:</h4>
+                                            <div style="overflow-x: auto; margin-bottom: 2rem;">
                                                 <table class="table" style="width: 100%; border-collapse: collapse;">
                                                     <thead>
                                                         <tr style="background-color: #f5f5f5;">
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">ID</th>
-                                                            <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Tên đăng nhập / Key</th>
+                                                            <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Tên đăng nhập</th>
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Mật khẩu</th>
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Ngày tạo</th>
                                                             <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #ddd; font-weight: 600;">Thao tác</th>
@@ -114,7 +120,7 @@
                                                                 </td>
                                                                 <td style="padding: 0.75rem;">
                                                                     <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">
-                                                                        ${credential.password}
+                                                                        ${fn:escapeXml(credential.password)}
                                                                     </code>
                                                                 </td>
                                                                 <td style="padding: 0.75rem; color: #666; font-size: 0.875rem;">
@@ -134,6 +140,7 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            
                                         </c:when>
                                         <c:otherwise>
                                             <div style="padding: 2rem; text-align: center; color: #999; background: #f9f9f9; border-radius: 6px;">
@@ -184,13 +191,14 @@
 
                                     <c:choose>
                                         <c:when test="${not empty inventoryInfo.credentials && inventoryInfo.credentials.size() > 0}">
-                                            <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">Danh sách tài khoản/key:</h4>
-                                            <div style="overflow-x: auto;">
+                                            <%-- Bảng Tài khoản --%>
+                                            <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #333;">📋 Danh sách tài khoản:</h4>
+                                            <div style="overflow-x: auto; margin-bottom: 2rem;">
                                                 <table class="table" style="width: 100%; border-collapse: collapse;">
                                                     <thead>
                                                         <tr style="background-color: #f5f5f5;">
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">ID</th>
-                                                            <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Tên đăng nhập / Key</th>
+                                                            <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Tên đăng nhập</th>
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Mật khẩu</th>
                                                             <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Ngày tạo</th>
                                                             <th style="padding: 0.75rem; text-align: center; border-bottom: 2px solid #ddd; font-weight: 600;">Thao tác</th>
@@ -207,7 +215,7 @@
                                                                 </td>
                                                                 <td style="padding: 0.75rem;">
                                                                     <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">
-                                                                        ${credential.password}
+                                                                        ${fn:escapeXml(credential.password)}
                                                                     </code>
                                                                 </td>
                                                                 <td style="padding: 0.75rem; color: #666; font-size: 0.875rem;">
@@ -227,6 +235,7 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            
                                         </c:when>
                                         <c:otherwise>
                                             <div style="padding: 2rem; text-align: center; color: #999; background: #f9f9f9; border-radius: 6px;">
@@ -272,6 +281,9 @@
                 
                 <form id="addCredentialForm" action="${pageContext.request.contextPath}/seller/products/add-credential" method="post" style="display: flex; flex-direction: column; gap: 1.25rem;">
                     <input type="hidden" name="productId" value="${product.id}"/>
+                    <c:if test="${not empty param.shopId}">
+                        <input type="hidden" name="shopId" value="${param.shopId}"/>
+                    </c:if>
                     
                     <div>
                         <c:set var="isEmailType" value="${product.productType == 'EMAIL' || (product.productType == 'SOCIAL' && product.productSubtype == 'FACEBOOK')}" />
@@ -313,7 +325,7 @@
                             Mật khẩu <span style="color: red;">*</span>
                         </label>
                         <input class="form-input" 
-                               type="password" 
+                               type="text" 
                                id="modalPassword" 
                                name="password" 
                                placeholder="Nhập mật khẩu" 
@@ -416,6 +428,9 @@
                 <form id="editCredentialForm" action="${pageContext.request.contextPath}/seller/products/edit-credential" method="post" style="display: flex; flex-direction: column; gap: 1.25rem;">
                     <input type="hidden" name="credentialId" id="editCredentialIdInput"/>
                     <input type="hidden" name="productId" value="${product.id}"/>
+                    <c:if test="${not empty param.shopId}">
+                        <input type="hidden" name="shopId" value="${param.shopId}"/>
+                    </c:if>
                     
                     <div>
                         <c:set var="isEmailType" value="${product.productType == 'EMAIL' || (product.productType == 'SOCIAL' && product.productSubtype == 'FACEBOOK')}" />
@@ -457,7 +472,7 @@
                             Mật khẩu <span style="color: red;">*</span>
                         </label>
                         <input class="form-input" 
-                               type="password" 
+                               type="text" 
                                id="editModalPassword" 
                                name="password" 
                                placeholder="Nhập mật khẩu" 

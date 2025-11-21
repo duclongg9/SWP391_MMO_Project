@@ -103,9 +103,18 @@
                                     </div>
                                 </div>
                                 <div class="shop-card__actions">
-                                    <a class="button button--ghost" href="${cPath}/seller/inventory">Quản lý sản phẩm</a>
-                                    <a class="button button--ghost" href="${cPath}/seller/shops/edit?id=${shop.id}">Sửa shop</a>
-                                    <a class="button button--ghost" href="${cPath}/seller/products/create?shopId=${shop.id}">Tạo sản phẩm</a>
+                                    <c:url var="inventoryUrl" value="/seller/inventory">
+                                        <c:param name="shopId" value="${shop.id}" />
+                                    </c:url>
+                                    <c:url var="editShopUrl" value="/seller/shops/edit">
+                                        <c:param name="id" value="${shop.id}" />
+                                    </c:url>
+                                    <c:url var="createProductUrl" value="/seller/products/create">
+                                        <c:param name="shopId" value="${shop.id}" />
+                                    </c:url>
+                                    <a class="button button--ghost" href="${inventoryUrl}">Quản lý sản phẩm</a>
+                                    <a class="button button--ghost" href="${editShopUrl}">Sửa shop</a>
+                                    <a class="button button--ghost" href="${createProductUrl}">Tạo sản phẩm</a>
                                     <c:choose>
                                         <c:when test="${shop.status == 'Active'}">
                                             <form method="post" action="${cPath}/seller/shops/hide">

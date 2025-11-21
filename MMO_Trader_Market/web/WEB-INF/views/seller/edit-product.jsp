@@ -25,6 +25,12 @@
 
     <form id="edit-product-form" action="${pageContext.request.contextPath}/seller/products/edit" method="post" enctype="multipart/form-data">
         <input type="hidden" name="productId" value="${product.id}"/>
+        <c:if test="${not empty param.shopId}">
+            <input type="hidden" name="shopId" value="${param.shopId}"/>
+        </c:if>
+        <c:if test="${empty param.shopId && not empty shop}">
+            <input type="hidden" name="shopId" value="${shop.id}"/>
+        </c:if>
         <section class="panel">
             <div class="panel__header">
                 <h2 class="panel__title">Chỉnh sửa sản phẩm</h2>
@@ -76,7 +82,23 @@
                     <!-- Giá mặc định (nếu không dùng variants) - ẩn đi vì sẽ dùng variants -->
                     <input type="hidden" id="product-price" name="price" value="${product.price}">
                     
-            </div>
+                    <!-- Hiển thị ảnh chính của product -->
+                    <c:if test="${not empty product.primaryImageUrl}">
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
+                                Ảnh chính hiện tại
+                            </label>
+                            <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; max-width: 300px; aspect-ratio: 1;">
+                                <img src="${pageContext.request.contextPath}/${product.primaryImageUrl}" 
+                                     alt="Ảnh chính" 
+                                     style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                            </div>
+                            <small style="color: #666; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                                Ảnh chính được tự động lấy từ ảnh đầu tiên của biến thể đầu tiên
+                            </small>
+                        </div>
+                    </c:if>
+                </div>
                 
                 <!-- Phần Biến thể sản phẩm - full width -->
                 <div style="grid-column: 1 / -1; margin-bottom: 1.5rem;">

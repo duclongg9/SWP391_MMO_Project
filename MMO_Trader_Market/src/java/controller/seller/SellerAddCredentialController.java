@@ -144,8 +144,17 @@ public class SellerAddCredentialController extends SellerBaseController {
         }
         
         Products product = productOpt.get();
-        if (!product.getShopId().equals(shop.getId())) {
-            session.setAttribute("errorMessage", "Bạn không có quyền thêm sản phẩm cho sản phẩm này.");
+        
+        // Kiểm tra quyền sở hữu: shop của sản phẩm phải thuộc về user
+        Optional<Shops> shopOpt;
+        try {
+            shopOpt = shopDAO.findByIdAndOwner(product.getShopId(), userId);
+        } catch (SQLException e) {
+             throw new ServletException("Lỗi khi kiểm tra quyền sở hữu", e);
+        }
+        
+        if (shopOpt.isEmpty() || !"Active".equals(shopOpt.get().getStatus())) {
+            session.setAttribute("errorMessage", "Bạn không có quyền thêm sản phẩm cho sản phẩm này hoặc shop đã bị khóa.");
             response.sendRedirect(request.getContextPath() + "/seller/inventory");
             return;
         }
@@ -221,7 +230,10 @@ public class SellerAddCredentialController extends SellerBaseController {
                 
                 session.setAttribute("successMessage", "Đã thêm sản phẩm thành công! Số lượng tồn kho đã tăng lên 1.");
                 // Redirect về trang view inventory để xem kết quả
-                response.sendRedirect(request.getContextPath() + "/seller/inventory/view?productId=" + productId);
+                String redirectUrl = request.getContextPath() + "/seller/inventory/view?productId=" + productId;
+                String shopId = String.valueOf(product.getShopId());
+                redirectUrl += "&shopId=" + shopId;
+                response.sendRedirect(redirectUrl);
                 
             } catch (SQLException e) {
                 // Rollback nếu có lỗi

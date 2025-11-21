@@ -12,6 +12,7 @@ import model.Products;
 import model.Shops;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,28 +58,37 @@ public class SellerEditCredentialController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
-        // Kiểm tra shop
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null) {
-            session.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory/view?productId=" + productId);
-            return;
-        }
-        
         // Lấy sản phẩm
         Optional<Products> productOpt = productDAO.findById(productId);
         if (productOpt.isEmpty()) {
             session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            String redirectUrl = request.getContextPath() + "/seller/inventory";
+            if (shopIdParam != null && !shopIdParam.trim().isEmpty()) {
+                redirectUrl += "?shopId=" + shopIdParam;
+            }
+            response.sendRedirect(redirectUrl);
             return;
         }
         
         Products product = productOpt.get();
         
-        // Kiểm tra sản phẩm có thuộc shop của seller không
-        if (!product.getShopId().equals(shop.getId())) {
+        // Kiểm tra quyền sở hữu: shop của sản phẩm phải thuộc về user
+        Optional<Shops> shopOpt;
+        try {
+            shopOpt = shopDAO.findByIdAndOwner(product.getShopId(), userId);
+        } catch (java.sql.SQLException e) {
+             throw new ServletException("Lỗi khi kiểm tra quyền sở hữu", e);
+        }
+        
+        if (shopOpt.isEmpty()) {
             session.setAttribute("errorMessage", "Bạn không có quyền sửa credential của sản phẩm này.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            String redirectUrl = request.getContextPath() + "/seller/inventory";
+            if (shopIdParam != null && !shopIdParam.trim().isEmpty()) {
+                redirectUrl += "?shopId=" + shopIdParam;
+            }
+            response.sendRedirect(redirectUrl);
             return;
         }
         
@@ -117,7 +127,12 @@ public class SellerEditCredentialController extends SellerBaseController {
         
         if (!errors.isEmpty()) {
             session.setAttribute("errorMessage", String.join(", ", errors));
-            response.sendRedirect(request.getContextPath() + "/seller/inventory/view?productId=" + productId);
+            String shopIdParam = request.getParameter("shopId");
+            String redirectUrl = request.getContextPath() + "/seller/inventory/view?productId=" + productId;
+            if (shopIdParam != null && !shopIdParam.trim().isEmpty()) {
+                redirectUrl += "&shopId=" + shopIdParam;
+            }
+            response.sendRedirect(redirectUrl);
             return;
         }
         
@@ -130,7 +145,16 @@ public class SellerEditCredentialController extends SellerBaseController {
             session.setAttribute("errorMessage", "Không thể cập nhật sản phẩm. Có thể credential đã được bán hoặc không tồn tại.");
         }
         
-        response.sendRedirect(request.getContextPath() + "/seller/inventory/view?productId=" + productId);
+        // Redirect về view inventory với shopId
+        String shopIdParam = request.getParameter("shopId");
+        String redirectUrl = request.getContextPath() + "/seller/inventory/view?productId=" + productId;
+        if (shopIdParam != null && !shopIdParam.trim().isEmpty()) {
+            redirectUrl += "&shopId=" + shopIdParam;
+        } else {
+            // Nếu không có shopId từ request, lấy từ product
+            redirectUrl += "&shopId=" + product.getShopId();
+        }
+        response.sendRedirect(redirectUrl);
     }
     
     /**

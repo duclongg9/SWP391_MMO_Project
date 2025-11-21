@@ -39,6 +39,9 @@
             </c:if>
             <form method="post" action="${pageContext.request.contextPath}/seller/credentials/generate"
                   style="display:flex;flex-direction:column;gap:12px;max-width:560px;">
+                <c:if test="${not empty shopId}">
+                    <input type="hidden" name="shopId" value="${shopId}" />
+                </c:if>
                 <p class="text-muted" style="margin:0;">
                     Nhấn nút bên dưới để hệ thống sinh credential ảo cho <strong>toàn bộ sản phẩm</strong> và các biến thể
                     đã cấu hình tồn kho trong cơ sở dữ liệu. Mỗi SKU sẽ được bổ sung đủ số lượng theo tồn kho hiện tại.
@@ -56,7 +59,12 @@
                     <h2 class="panel__title">Tồn kho tổng quan</h2>
                     <p class="panel__subtitle">Dữ liệu mô phỏng phục vụ giao diện quản lý, sẽ kết nối với API thực tế trong giai đoạn kế tiếp.</p>
                 </div>
-                <a href="${pageContext.request.contextPath}/seller/products/create" 
+                <c:url var="createProductUrl" value="/seller/products/create">
+                    <c:if test="${not empty shopId}">
+                        <c:param name="shopId" value="${shopId}" />
+                    </c:if>
+                </c:url>
+                <a href="${createProductUrl}" 
                    class="button button--primary" 
                    style="text-decoration: none; white-space: nowrap;">
                     ➕ Tạo sản phẩm mới
@@ -67,13 +75,21 @@
             <div style="margin-bottom: 1rem;">
                 <form method="get" action="${pageContext.request.contextPath}/seller/inventory" 
                       style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <c:if test="${not empty shopId}">
+                        <input type="hidden" name="shopId" value="${shopId}" />
+                    </c:if>
                     <input type="text" name="keyword" 
                            placeholder="Tìm kiếm sản phẩm..." 
                            value="${keyword != null ? keyword : ''}"
                            style="flex: 1; min-width: 200px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                     <button type="submit" class="button button--primary">🔍 Tìm kiếm</button>
                     <c:if test="${not empty keyword}">
-                        <a href="${pageContext.request.contextPath}/seller/inventory" class="button">Xóa</a>
+                        <c:url var="clearUrl" value="${pageContext.request.contextPath}/seller/inventory">
+                            <c:if test="${not empty shopId}">
+                                <c:param name="shopId" value="${shopId}" />
+                            </c:if>
+                        </c:url>
+                        <a href="${clearUrl}" class="button">Xóa</a>
                     </c:if>
                 </form>
             </div>
@@ -82,14 +98,30 @@
                     <p style="text-align: center; padding: 2rem; color: #666;">
                         <c:choose>
                             <c:when test="${not empty keyword}">
-                                Chưa có sản phẩm trùng khớp với từ khóa>${fn:escapeXml(keyword)}</strong>".
+                                Chưa có sản phẩm trùng khớp với từ khóa "<strong>${fn:escapeXml(keyword)}</strong>".
                                 <br>
-                                <a href="${pageContext.request.contextPath}/seller/inventory" style="margin-top: 0.5rem; display: inline-block;">Xem tất cả sản phẩm</a>
+                                <c:url var="allProductsUrl" value="${pageContext.request.contextPath}/seller/inventory">
+                                    <c:if test="${not empty shopId}">
+                                        <c:param name="shopId" value="${shopId}" />
+                                    </c:if>
+                                </c:url>
+                                <a href="${allProductsUrl}" style="margin-top: 0.5rem; display: inline-block;">Xem tất cả sản phẩm</a>
                                 hoặc
-                                <a href="${pageContext.request.contextPath}/seller/products/create">Tạo sản phẩm mới</a>
+                                <c:url var="createProductUrl" value="/seller/products/create">
+                                    <c:if test="${not empty shopId}">
+                                        <c:param name="shopId" value="${shopId}" />
+                                    </c:if>
+                                </c:url>
+                                <a href="${createProductUrl}">Tạo sản phẩm mới</a>
                             </c:when>
                             <c:otherwise>
-                                Chưa có sản phẩm nào. <a href="${pageContext.request.contextPath}/seller/products/create">Thêm sản phẩm đầu tiên</a>
+                                Chưa có sản phẩm nào. 
+                                <c:url var="createProductUrl" value="/seller/products/create">
+                                    <c:if test="${not empty shopId}">
+                                        <c:param name="shopId" value="${shopId}" />
+                                    </c:if>
+                                </c:url>
+                                <a href="${createProductUrl}">Thêm sản phẩm đầu tiên</a>
                             </c:otherwise>
                         </c:choose>
                     </p>
@@ -138,11 +170,23 @@
                                     </td>
                                     <td style="text-align: center;">
                                         <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                                            <a href="${pageContext.request.contextPath}/seller/products/edit?id=${product.id}" 
+                                            <c:url var="editProductUrl" value="/seller/products/edit">
+                                                <c:param name="id" value="${product.id}" />
+                                                <c:if test="${not empty shopId}">
+                                                    <c:param name="shopId" value="${shopId}" />
+                                                </c:if>
+                                            </c:url>
+                                            <a href="${editProductUrl}" 
                                                style="padding: 0.25rem 0.75rem; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
                                                 Sửa
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/seller/inventory/view?productId=${product.id}" 
+                                            <c:url var="viewInventoryUrl" value="/seller/inventory/view">
+                                                <c:param name="productId" value="${product.id}" />
+                                                <c:if test="${not empty shopId}">
+                                                    <c:param name="shopId" value="${shopId}" />
+                                                </c:if>
+                                            </c:url>
+                                            <a href="${viewInventoryUrl}" 
                                                style="padding: 0.25rem 0.75rem; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; font-size: 0.875rem;">
                                                 📦 Hàng tồn kho
                                             </a>
@@ -152,6 +196,9 @@
                                                         <input type="hidden" name="action" value="stop"/>
                                                         <input type="hidden" name="productId" value="${product.id}"/>
                                                         <input type="hidden" name="page" value="${page}"/>
+                                                        <c:if test="${not empty shopId}">
+                                                            <input type="hidden" name="shopId" value="${shopId}"/>
+                                                        </c:if>
                                                         <c:if test="${not empty keyword}">
                                                             <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"/>
                                                         </c:if>
@@ -167,6 +214,9 @@
                                                         <input type="hidden" name="action" value="resume"/>
                                                         <input type="hidden" name="productId" value="${product.id}"/>
                                                         <input type="hidden" name="page" value="${page}"/>
+                                                        <c:if test="${not empty shopId}">
+                                                            <input type="hidden" name="shopId" value="${shopId}"/>
+                                                        </c:if>
                                                         <c:if test="${not empty keyword}">
                                                             <input type="hidden" name="keyword" value="${fn:escapeXml(keyword)}"/>
                                                         </c:if>
@@ -184,12 +234,18 @@
                 </tbody>
             </table>
             <c:if test="${totalPages > 1}">
-                <c:set var="keywordEncoded" value="${not empty keyword ? java.net.URLEncoder.encode(keyword, 'UTF-8') : ''}" />
-                <c:set var="keywordParam" value="${not empty keyword ? '&keyword=' : ''}${keywordEncoded}" />
                 <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2rem; padding: 1rem;">
                     <c:if test="${page > 1}">
-                        <a href="${pageContext.request.contextPath}/seller/inventory?page=${page - 1}${keywordParam}" 
-                           class="button">‹ Trước</a>
+                        <c:url var="prevUrl" value="${pageContext.request.contextPath}/seller/inventory">
+                            <c:if test="${not empty shopId}">
+                                <c:param name="shopId" value="${shopId}" />
+                            </c:if>
+                            <c:param name="page" value="${page - 1}" />
+                            <c:if test="${not empty keyword}">
+                                <c:param name="keyword" value="${keyword}" />
+                            </c:if>
+                        </c:url>
+                        <a href="${prevUrl}" class="button">‹ Trước</a>
                     </c:if>
                     <c:forEach var="i" begin="${page > 2 ? page - 2 : 1}" end="${page + 2 < totalPages ? page + 2 : totalPages}">
                         <c:choose>
@@ -197,14 +253,30 @@
                                 <span class="button button--primary" style="pointer-events: none;">${i}</span>
                             </c:when>
                             <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/seller/inventory?page=${i}${keywordParam}" 
-                                   class="button">${i}</a>
+                                <c:url var="pageUrl" value="${pageContext.request.contextPath}/seller/inventory">
+                                    <c:if test="${not empty shopId}">
+                                        <c:param name="shopId" value="${shopId}" />
+                                    </c:if>
+                                    <c:param name="page" value="${i}" />
+                                    <c:if test="${not empty keyword}">
+                                        <c:param name="keyword" value="${keyword}" />
+                                    </c:if>
+                                </c:url>
+                                <a href="${pageUrl}" class="button">${i}</a>
                             </c:otherwise>
                         </c:choose>
                     </c:forEach>
                     <c:if test="${page < totalPages}">
-                        <a href="${pageContext.request.contextPath}/seller/inventory?page=${page + 1}${keywordParam}" 
-                           class="button">Sau ›</a>
+                        <c:url var="nextUrl" value="${pageContext.request.contextPath}/seller/inventory">
+                            <c:if test="${not empty shopId}">
+                                <c:param name="shopId" value="${shopId}" />
+                            </c:if>
+                            <c:param name="page" value="${page + 1}" />
+                            <c:if test="${not empty keyword}">
+                                <c:param name="keyword" value="${keyword}" />
+                            </c:if>
+                        </c:url>
+                        <a href="${nextUrl}" class="button">Sau ›</a>
                     </c:if>
                 </div>
             </c:if>

@@ -85,16 +85,23 @@ public class SellerCreateProductController extends SellerBaseController {
         Integer userId = (Integer) session.getAttribute("userId");
         prepareLayout(request);
 
+        // Lấy shopId từ form - bắt buộc phải có
+        String shopIdParam = request.getParameter("shopId");
+        if (shopIdParam == null || shopIdParam.trim().isEmpty()) {
+            request.setAttribute("errorMessage", "Vui lòng chọn cửa hàng để đăng sản phẩm.");
+            forward(request, response, "seller/create-product");
+            return;
+        }
+
         Shops shop;
         try {
-            shop = resolveShopForOwner(userId, request.getParameter("shopId"));
+            shop = resolveShopForOwner(userId, shopIdParam);
         } catch (SQLException e) {
             throw new ServletException(e);
         }
 
         if (shop == null || !"Active".equals(shop.getStatus())) {
             request.setAttribute("errorMessage", "Cửa hàng không hợp lệ hoặc đang bị tạm dừng.");
-            request.setAttribute("shop", shop);
             forward(request, response, "seller/create-product");
             return;
         }
@@ -281,7 +288,7 @@ public class SellerCreateProductController extends SellerBaseController {
 
         if (success) {
             session.setAttribute("successMessage", "Đã đăng sản phẩm thành công!");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            response.sendRedirect(request.getContextPath() + "/seller/inventory?shopId=" + shop.getId());
         } else {
             request.setAttribute("errorMessage", "Không thể đăng sản phẩm. Vui lòng thử lại.");
             request.setAttribute("shop", shop);
@@ -302,11 +309,10 @@ public class SellerCreateProductController extends SellerBaseController {
     }
 
     /**
-     * Tìm shop thuộc sở hữu của seller dựa trên tham số truyền vào. Nếu không
-     * chỉ định, trả về shop đầu tiên.
-     *
+     * Tìm shop thuộc sở hữu của seller dựa trên tham số truyền vào.
+     * 
      * @param ownerId mã người dùng sở hữu shop
-     * @param shopIdParam tham số shopId từ request (có thể null)
+     * @param shopIdParam tham số shopId từ request (có thể null - chỉ dùng trong GET)
      * @return đối tượng Shops nếu tồn tại, null nếu không tìm thấy
      * @throws SQLException nếu xảy ra lỗi khi truy vấn cơ sở dữ liệu
      */
@@ -314,17 +320,25 @@ public class SellerCreateProductController extends SellerBaseController {
         if (ownerId == null) {
             return null;
         }
+        
+        // Nếu có shopIdParam, tìm shop theo ID
         if (shopIdParam != null && !shopIdParam.isBlank()) {
             try {
-                int shopId = Integer.parseInt(shopIdParam);
+                int shopId = Integer.parseInt(shopIdParam.trim());
                 Optional<Shops> shopOpt = shopDAO.findByIdAndOwner(shopId, ownerId);
                 if (shopOpt.isPresent()) {
                     return shopOpt.get();
                 }
-            } catch (NumberFormatException ignored) {
+                // Shop không tồn tại hoặc không thuộc về owner
+                return null;
+            } catch (NumberFormatException e) {
+                // shopId không hợp lệ
                 return null;
             }
         }
+        
+        // Nếu không có shopIdParam (chỉ trong GET), fallback về shop đầu tiên để hiển thị form
+        // Trong POST, shopIdParam phải được kiểm tra trước khi gọi hàm này
         return shopDAO.findByOwnerId(ownerId);
     }
 }

@@ -243,14 +243,15 @@ public class CredentialDAO extends BaseDAO {
      * Đối với sản phẩm có biến thể, tồn kho được đọc từ {@code variants_json}
      * và xử lý tương tự cho từng biến thể.</p>
      *
+     * @param shopId mã shop để filter sản phẩm (nếu null thì lấy tất cả sản phẩm)
      * @return thống kê số credential đã sinh và số SKU được bổ sung
      */
-    public BulkGenerationSummary seedAllProductsFromInventory() {
+    public BulkGenerationSummary seedAllProductsFromInventory(Integer shopId) {
         try (Connection connection = getConnection()) {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                List<ProductSeedRow> products = loadSeedableProducts(connection);
+                List<ProductSeedRow> products = loadSeedableProducts(connection, shopId);
                 int generated = 0;
                 int touchedSkus = 0;
                 for (ProductSeedRow product : products) {
@@ -516,16 +517,24 @@ public class CredentialDAO extends BaseDAO {
                 new Object[]{quantity, productId, normalized == null ? "" : " - biến thể " + normalized});
     }
 
-    private List<ProductSeedRow> loadSeedableProducts(Connection connection) throws SQLException {
-        final String sql = "SELECT id, inventory_count, variant_schema, variants_json FROM products";
+    private List<ProductSeedRow> loadSeedableProducts(Connection connection, Integer shopId) throws SQLException {
+        String sql = "SELECT id, inventory_count, variant_schema, variants_json FROM products";
+        if (shopId != null) {
+            sql += " WHERE shop_id = ?";
+        }
         List<ProductSeedRow> products = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
-            while (rs.next()) {
-                products.add(new ProductSeedRow(
-                        rs.getInt("id"),
-                        (Integer) rs.getObject("inventory_count"),
-                        rs.getString("variant_schema"),
-                        rs.getString("variants_json")));
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (shopId != null) {
+                statement.setInt(1, shopId);
+            }
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(new ProductSeedRow(
+                            rs.getInt("id"),
+                            (Integer) rs.getObject("inventory_count"),
+                            rs.getString("variant_schema"),
+                            rs.getString("variants_json")));
+                }
             }
         }
         return products;

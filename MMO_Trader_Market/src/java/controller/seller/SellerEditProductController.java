@@ -52,7 +52,8 @@ public class SellerEditProductController extends SellerBaseController {
         
         String productIdStr = request.getParameter("id");
         if (productIdStr == null || productIdStr.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), shopIdParam));
             return;
         }
         
@@ -60,30 +61,32 @@ public class SellerEditProductController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
-        // Kiểm tra shop
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null) {
-            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
-            return;
-        }
-        
         // Lấy sản phẩm
         Optional<Products> productOpt = productDAO.findById(productId);
         if (productOpt.isEmpty()) {
             session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), shopIdParam));
             return;
         }
         
         Products product = productOpt.get();
         
-        // Kiểm tra sản phẩm có thuộc shop của seller không
-        if (!product.getShopId().equals(shop.getId())) {
+        // Kiểm tra quyền sở hữu: shop của sản phẩm phải thuộc về user
+        Optional<Shops> shopOpt;
+        try {
+            shopOpt = shopDAO.findByIdAndOwner(product.getShopId(), userId);
+        } catch (java.sql.SQLException e) {
+             throw new ServletException("Lỗi khi kiểm tra quyền sở hữu", e);
+        }
+        
+        if (shopOpt.isEmpty()) {
             session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm này.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), String.valueOf(product.getShopId())));
             return;
         }
+        
+        Shops shop = shopOpt.get();
         
         // Parse variants từ product để hiển thị trong JSP
         List<ProductVariantOption> variants = ProductVariantUtils.parseVariants(
@@ -109,7 +112,8 @@ public class SellerEditProductController extends SellerBaseController {
         
         String productIdStr = request.getParameter("productId");
         if (productIdStr == null || productIdStr.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), shopIdParam));
             return;
         }
         
@@ -117,28 +121,32 @@ public class SellerEditProductController extends SellerBaseController {
         HttpSession session = request.getSession();
         Integer userId = (Integer) session.getAttribute("userId");
         
-        // Kiểm tra shop
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null || !"Active".equals(shop.getStatus())) {
-            request.setAttribute("errorMessage", "Cửa hàng không hợp lệ.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
-            return;
-        }
-        
         // Lấy sản phẩm hiện tại
         Optional<Products> productOpt = productDAO.findById(productId);
         if (productOpt.isEmpty()) {
             session.setAttribute("errorMessage", "Không tìm thấy sản phẩm.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), shopIdParam));
             return;
         }
         
         Products existingProduct = productOpt.get();
-        if (!existingProduct.getShopId().equals(shop.getId())) {
-            session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm này.");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+        
+        // Kiểm tra shop và quyền sở hữu
+        Optional<Shops> shopOpt;
+        try {
+            shopOpt = shopDAO.findByIdAndOwner(existingProduct.getShopId(), userId);
+        } catch (java.sql.SQLException e) {
+             throw new ServletException("Lỗi khi kiểm tra quyền sở hữu", e);
+        }
+
+        if (shopOpt.isEmpty() || !"Active".equals(shopOpt.get().getStatus())) {
+            session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm này hoặc shop đã bị khóa.");
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), String.valueOf(existingProduct.getShopId())));
             return;
         }
+        
+        Shops shop = shopOpt.get();
         
         // Lấy dữ liệu từ form
         String productName = request.getParameter("productName");
@@ -333,13 +341,28 @@ public class SellerEditProductController extends SellerBaseController {
         
         if (success) {
             session.setAttribute("successMessage", "Đã cập nhật sản phẩm thành công!");
-            response.sendRedirect(request.getContextPath() + "/seller/inventory");
+            String shopIdParam = request.getParameter("shopId");
+            if (shopIdParam == null || shopIdParam.trim().isEmpty()) {
+                shopIdParam = String.valueOf(existingProduct.getShopId());
+            }
+            response.sendRedirect(buildInventoryUrl(request.getContextPath(), shopIdParam));
         } else {
             request.setAttribute("errorMessage", "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
             request.setAttribute("product", existingProduct);
             request.setAttribute("shop", shop);
             doGet(request, response);
         }
+    }
+    
+    /**
+     * Helper method để build URL redirect về inventory với shopId
+     */
+    private String buildInventoryUrl(String contextPath, String shopId) {
+        String url = contextPath + "/seller/inventory";
+        if (shopId != null && !shopId.trim().isEmpty()) {
+            url += "?shopId=" + shopId;
+        }
+        return url;
     }
 }
 
