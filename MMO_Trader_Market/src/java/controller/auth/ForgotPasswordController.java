@@ -31,7 +31,7 @@ public class ForgotPasswordController extends BaseController {
             throws ServletException, IOException {
         String email = request.getParameter("email");
         try {
-            String resetBaseUrl = buildResetBaseUrl(request); // tạo dd
+            String resetBaseUrl = buildResetBaseUrl(request); // để tạo URL gốc cho trang reset
             boolean emailSent = userService.requestPasswordReset(email, resetBaseUrl); //tạo yêu cầu đặt lại mật khẩu
             if (emailSent) {
                 request.setAttribute("success", "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn");
@@ -49,20 +49,20 @@ public class ForgotPasswordController extends BaseController {
         forward(request, response, "auth/forgot-password");
     }
 
-//trả về chuỗi URL, lấy request để lấy thông tin host, cổng, context path hiện tại.
+//tạo ra phần đầu của URL dùng trong email reset mật khẩu
     private String buildResetBaseUrl(HttpServletRequest request) {
-        String scheme = request.getScheme();
-        String serverName = request.getServerName();
-        int port = request.getServerPort();
-        String contextPath = request.getContextPath();
-        StringBuilder builder = new StringBuilder();
+        String scheme = request.getScheme(); //http
+        String serverName = request.getServerName(); //localhost
+        int port = request.getServerPort(); //8080
+        String contextPath = request.getContextPath(); //tên app
+        //Tomcat lấy từ HTTP request
+        StringBuilder builder = new StringBuilder(); //Dùng StringBuilder để lắp thành URL
         builder.append(scheme).append("://").append(serverName); 
         if (("http".equalsIgnoreCase(scheme) && port != 80)
                 || ("https".equalsIgnoreCase(scheme) && port != 443)) {
-            // Bổ sung port nếu không sử dụng cổng mặc định của HTTP/HTTPS.
-            builder.append(":").append(port);
+            builder.append(":").append(port); // phải ghi :port
         }
-        builder.append(contextPath).append("/reset-password");
+        builder.append(contextPath).append("/reset-password"); //Thêm contextPath và path /reset-password
         return builder.toString();
     }
 }

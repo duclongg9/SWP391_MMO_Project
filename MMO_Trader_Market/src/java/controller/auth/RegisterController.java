@@ -15,16 +15,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Điều khiển luồng "Đăng ký tài khoản" cho khách truy cập chưa có tài khoản.
- * <p>
- * - Thu thập thông tin email, họ tên, mật khẩu và xác nhận điều khoản. - Tạo
- * mới tài khoản khách (Role Guest) để người dùng có thể đăng nhập vào hệ thống.
- * - Hiển thị thông báo thành công và chuyển hướng về trang đăng nhập.
- *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
- */
+
 @WebServlet(name = "RegisterController", urlPatterns = {"/register"})
 public class RegisterController extends BaseController {
     private static final long serialVersionUID = 1L;
@@ -61,7 +52,7 @@ public class RegisterController extends BaseController {
                     "Tạo tài khoản thành công! Vui lòng kiểm tra email để kích hoạt tài khoản."); //flash scope để mang thông điệp qua redirect
             session.setAttribute("newUserEmail", createdUser.getEmail());
             session.setAttribute("pendingVerificationEmail", createdUser.getEmail());
-            session.setAttribute("showVerificationModal", Boolean.TRUE);
+            session.setAttribute("showVerificationModal", Boolean.TRUE); //bật luôn modal xác thực email
             session.setAttribute("verificationNotice",
                     "Chúng tôi đã gửi mã xác thực đến " + createdUser.getEmail() + ". Vui lòng kiểm tra hộp thư.");
             response.sendRedirect(request.getContextPath() + "/auth");

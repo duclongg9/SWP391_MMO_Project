@@ -76,25 +76,25 @@ public class AuthController extends BaseController {
             return;
         }
 
-        try {
-            Users user = userService.authenticate(normalizedEmail, password); //kiểm tra thông tin đăng nhập.
+        try { 
+            Users user = userService.authenticate(normalizedEmail, password); //kiểm tra thông tin đăng nhập
             HttpSession session = renewSession(request);
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
             response.sendRedirect(request.getContextPath() + RoleHomeResolver.resolve(user));
-        } catch (InactiveAccountException e) { // tai khoan chua kich hoat
+        } catch (InactiveAccountException e) {  //Khi gặp account chưa active → auto resend mã + bật popup nhập mã.
             request.setAttribute("error", e.getMessage());
             request.setAttribute("prefillEmail", normalizedEmail);
-            request.setAttribute("showVerificationModal", true);
+            request.setAttribute("showVerificationModal", true); // bật pop-up
             request.setAttribute("verificationEmail", normalizedEmail);
             request.setAttribute("verificationNotice",
                     "Vui lòng nhập mã xác thực đã được gửi tới " + normalizedEmail + ".");
             try {
-                userService.resendVerificationCode(normalizedEmail);
+                userService.resendVerificationCode(normalizedEmail); // gửi lại mã
                 request.setAttribute("verificationNotice", "Chúng tôi đã gửi lại mã xác thực đến " + normalizedEmail + ".");
             } catch (IllegalArgumentException | IllegalStateException resendEx) {
-                request.setAttribute("verificationError", resendEx.getMessage()); //  lỗi nghiệp vụ
+                request.setAttribute("verificationError", resendEx.getMessage()); //  lỗi nghiệp vụ email k tt, 
             } catch (RuntimeException resendEx) {
                 LOGGER.log(Level.SEVERE, "Unable to resend verification code", resendEx); 
                 request.setAttribute("verificationError",
@@ -129,12 +129,12 @@ public class AuthController extends BaseController {
         }
     }
 
-    // Di chuyển dữ liệu dạng flash từ session xuống request và xóa khỏi session.
+    // Chuyển 1 giá trị từ session xuống request để hiển thị 1 lần
     private void moveFlash(HttpSession session, HttpServletRequest request, String sessionKey, String requestKey) {
-        Object value = session.getAttribute(sessionKey);
+        Object value = session.getAttribute(sessionKey); //Lấy giá trị đang nằm trong session với key
         if (value != null) {
-            request.setAttribute(requestKey, value);
-            session.removeAttribute(sessionKey);
+            request.setAttribute(requestKey, value);  //Đặt giá trị đó xuống request với tên mới
+            session.removeAttribute(sessionKey); //Xoá luôn khỏi session, để lần refresh sau không còn hiện lại nữa.
         }
     }
 

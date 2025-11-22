@@ -18,8 +18,8 @@ import model.view.shop.ShopPublicSummary;
  */
 public class ShopService {
 
-    private static final int NAME_MIN_LENGTH = 2;
-    private static final int NAME_MAX_LENGTH = 50;
+    private static final int NAME_MIN_LENGTH = 2; // tối thiểu 2 ký tự
+    private static final int NAME_MAX_LENGTH = 50; // tối đa 50
     private static final int DESCRIPTION_MIN_LENGTH = 8;
     private static final int DESCRIPTION_MAX_LENGTH = 50;
 
@@ -40,17 +40,7 @@ public class ShopService {
                 return shopDAO.findPublicSummaryById(shopId);
         }
 
-	/**
-	 * Tạo shop mới cho seller.
-         * Kiểm tra giới hạn tối đa 5 shop, validate tên shop (từ 2 đến 50 ký tự, không chỉ khoảng trắng),
-         * và tự động set status = 'Active', created_at = NOW().
-	 *
-	 * @param ownerId ID của seller (chủ sở hữu shop)
-	 * @param name Tên shop (sẽ được trim và validate)
-	 * @param description Mô tả shop (tùy chọn, có thể null)
-	 * @throws BusinessException nếu vượt quá 5 shop hoặc tên không hợp lệ
-	 * @throws SQLException nếu có lỗi khi truy vấn database
-	 */
+//tạo shop
         public void createShop(int ownerId, String name, String description) throws BusinessException, SQLException {
                 // Kiểm tra giới hạn tối đa 5 shop
                 if (shopDAO.countByOwner(ownerId) >= 5) {
@@ -58,10 +48,10 @@ public class ShopService {
                 }
                 // Chuẩn hóa và validate tên shop
                 String normalizedName = normalize(name);
-                ensureValidName(normalizedName);
-                ensureUniqueName(normalizedName, null);
+                ensureValidName(normalizedName); //validate tên
+                ensureUniqueName(normalizedName, null); // kiểm tra tên shop đã tồn tại chưa
                 String desc = normalize(description);
-                ensureValidDescription(desc);
+                ensureValidDescription(desc); // validate mô tả
                 // Gọi DAO để tạo shop (status = 'Active', created_at = NOW())
                 shopDAO.create(ownerId, normalizedName, desc);
         }
@@ -276,7 +266,7 @@ public class ShopService {
                         throw new BusinessException("Mô tả shop không được vượt quá " + DESCRIPTION_MAX_LENGTH + " ký tự.");
                 }
         }
-
+// kiểm tra tên shop đã tồn tại chưa
         private void ensureUniqueName(String value, Integer excludeId) throws BusinessException, SQLException {
                 if (shopDAO.existsByName(value, excludeId)) {
                         throw new BusinessException("Tên shop đã tồn tại. Vui lòng chọn tên khác.");
