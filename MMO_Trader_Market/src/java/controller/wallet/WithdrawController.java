@@ -100,67 +100,70 @@ public class WithdrawController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         HttpSession session = request.getSession();
         Integer user = (Integer) request.getSession().getAttribute("userId");
+
+        // 1. Bắt buộc đăng nhập
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
 
-        String accountName = request.getParameter("accountName");
+        // 2. Lấy tham số form
+        String accountName   = request.getParameter("accountName");
         String accountNumber = request.getParameter("accountNumber");
-        String bankCode = request.getParameter("bankCode");
-        String transferNote = request.getParameter("transferNote");
-        long amountParam = Long.parseLong(request.getParameter("amount"));
+        String bankCode      = request.getParameter("bankCode");
+        String transferNote  = request.getParameter("transferNote");
+        long amountParam     = Long.parseLong(request.getParameter("amount"));
 
         BigDecimal amount = BigDecimal.valueOf(amountParam);
 
-        // Kiểm tra số dư ví
-        if (amount.compareTo(wdao.getWalletBalanceByUserId(user)) > 0) {
-            session.setAttribute("emg", "Số dư không đủ vui lòng nạp thêm");
+        // 3. Kiểm tra số dư ví (chỉ check, chưa trừ ở đây)
+        BigDecimal currentBalance = wdao.getWalletBalanceByUserId(user);
+        if (amount.compareTo(currentBalance) > 0) {
+            session.setAttribute("emg", "Số dư không đủ, vui lòng nạp thêm.");
             response.sendRedirect(request.getContextPath() + "/withdraw");
             return;
         }
 
-        // Tạo URL QR cho việc rút tiền
-        String qrUrl = WithdrawService.buildUrl(bankCode, accountNumber, amountParam, transferNote, accountName);
+        // 4. Tạo URL VietQR cho yêu cầu rút tiền
+        String qrUrl = WithdrawService.buildUrl(
+                bankCode,
+                accountNumber,
+                amountParam,
+                transferNote,
+                accountName
+        );
 
-        // Lưu QR code vào thư mục
+        // 5. Tải và lưu ảnh QR về thư mục server
         Path folder = Paths.get(ABSOLUTE_PATH);
         String imagePath = null;
         try {
             imagePath = WithdrawService.downloadPng(qrUrl, folder);
         } catch (Exception ex) {
-            Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WithdrawController.class.getName())
+                    .log(Level.SEVERE, "Lỗi tải ảnh QR", ex);
+            session.setAttribute("emg", "Không tạo được mã QR, vui lòng thử lại.");
+            response.sendRedirect(request.getContextPath() + "/withdraw");
+            return;
         }
 
-        // Tạo yêu cầu rút tiền vào cơ sở dữ liệu
+        // 6. Tạo yêu cầu rút tiền (chỉ ghi vào bảng withdrawal_requests)
         try {
-            int result = withdrawService.createWithdrawRequest(user, amount, imagePath);  // Đã tạo yêu cầu rút tiền vào withdrawal_requests
+            withdrawService.createWithdrawRequest(user, amount, imagePath);
+            session.setAttribute(
+                    "msg",
+                    "Tạo yêu cầu rút tiền thành công, vui lòng chờ admin duyệt."
+            );
         } catch (IllegalArgumentException e) {
             session.setAttribute("emg", e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/withdraw");
+        } catch (RuntimeException e) {
+            session.setAttribute("emg", "Có lỗi hệ thống, vui lòng thử lại.");
         }
 
-        // Trừ tiền trong ví của người dùng và ghi nhận giao dịch rút tiền vào wallet_transactions
-        try {
-            wdao.decreaseBalance(user, amount);  // Giảm số dư ví của người dùng
-            BigDecimal beforeAmount = wdao.getWalletBalanceByUserId(user);  // Số dư trước khi giao dịch
-            BigDecimal afterAmount = beforeAmount.subtract(amount);  // Số dư sau khi giao dịch
-
-            int walletId = wdao.getUserWallet(user).getId();  // Lấy ID ví của người dùng
-
-            // Ghi nhận giao dịch rút tiền vào wallet_transactions
-            wtdao.insertWithdrawWalletTransaction(walletId, amount, beforeAmount, afterAmount);  // Đẩy giao dịch vào wallet_transactions
-
-            session.setAttribute("msg", "Tạo yêu cầu thành công");
-            response.sendRedirect(request.getContextPath() + "/withdraw");
-        } catch (IllegalArgumentException e) {
-            session.setAttribute("emg", e);
-            response.sendRedirect(request.getContextPath() + "/withdraw");
-        } catch (SQLException ex) {
-            Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        // 7. Quay lại trang rút tiền
+        response.sendRedirect(request.getContextPath() + "/withdraw");
     }
 
 
