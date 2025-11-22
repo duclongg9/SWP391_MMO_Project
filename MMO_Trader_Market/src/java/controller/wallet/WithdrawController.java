@@ -96,7 +96,7 @@ public class WithdrawController extends HttpServlet {
         }
         request.getRequestDispatcher("WEB-INF/views/wallet/withdraw.jsp").forward(request, response);
     }
-    
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -106,63 +106,64 @@ public class WithdrawController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-        
+
         String accountName = request.getParameter("accountName");
         String accountNumber = request.getParameter("accountNumber");
         String bankCode = request.getParameter("bankCode");
         String transferNote = request.getParameter("transferNote");
         long amountParam = Long.parseLong(request.getParameter("amount"));
-        
+
         BigDecimal amount = BigDecimal.valueOf(amountParam);
-        
-        if(amount.compareTo(wdao.getWalletBalanceByUserId(user)) > 0){
+
+        // Kiểm tra số dư ví
+        if (amount.compareTo(wdao.getWalletBalanceByUserId(user)) > 0) {
             session.setAttribute("emg", "Số dư không đủ vui lòng nạp thêm");
             response.sendRedirect(request.getContextPath() + "/withdraw");
             return;
         }
 
-        //tạo url chuẩn form VietQR
+        // Tạo URL QR cho việc rút tiền
         String qrUrl = WithdrawService.buildUrl(bankCode, accountNumber, amountParam, transferNote, accountName);
-        
+
+        // Lưu QR code vào thư mục
         Path folder = Paths.get(ABSOLUTE_PATH);
         String imagePath = null;
         try {
             imagePath = WithdrawService.downloadPng(qrUrl, folder);
-        } catch (IllegalArgumentException e) {
-            session.setAttribute("emg", e);
-            response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (Exception ex) {
             Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        //tạo bản ghi withdraw request vào database 
+        // Tạo yêu cầu rút tiền vào cơ sở dữ liệu
         try {
-            int result = withdrawService.createWithdrawRequest(user, amount, imagePath);
+            int result = withdrawService.createWithdrawRequest(user, amount, imagePath);  // Đã tạo yêu cầu rút tiền vào withdrawal_requests
         } catch (IllegalArgumentException e) {
             session.setAttribute("emg", e.getMessage());
             response.sendRedirect(request.getContextPath() + "/withdraw");
-        } catch (RuntimeException e) {
-            // Lỗi hệ thống: ghi nhận flash chung và quay lại trang hồ sơ.
-            response.sendRedirect(request.getContextPath() + "/withdraw");
         }
-        
-        //Trừ tiền trong ví
+
+        // Trừ tiền trong ví của người dùng và ghi nhận giao dịch rút tiền vào wallet_transactions
         try {
-            wdao.decreaseBalance(user, amount);
-            BigDecimal beforeAmount = wdao.getWalletBalanceByUserId(user);
-            BigDecimal afterAmount = beforeAmount.subtract(amount);
-            int walletId = wdao.getUserWallet(user).getId();
-            wtdao.insertWithdrawWalletTransaction(walletId, amount, beforeAmount, afterAmount);
-            session.setAttribute("msg","Tạo yêu cầu thành công");
+            wdao.decreaseBalance(user, amount);  // Giảm số dư ví của người dùng
+            BigDecimal beforeAmount = wdao.getWalletBalanceByUserId(user);  // Số dư trước khi giao dịch
+            BigDecimal afterAmount = beforeAmount.subtract(amount);  // Số dư sau khi giao dịch
+
+            int walletId = wdao.getUserWallet(user).getId();  // Lấy ID ví của người dùng
+
+            // Ghi nhận giao dịch rút tiền vào wallet_transactions
+            wtdao.insertWithdrawWalletTransaction(walletId, amount, beforeAmount, afterAmount);  // Đẩy giao dịch vào wallet_transactions
+
+            session.setAttribute("msg", "Tạo yêu cầu thành công");
             response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (IllegalArgumentException e) {
-            session.setAttribute("emg",e);
+            session.setAttribute("emg", e);
             response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (SQLException ex) {
             Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
     }
+
+
 
     /**
      * Returns a short description of the servlet.

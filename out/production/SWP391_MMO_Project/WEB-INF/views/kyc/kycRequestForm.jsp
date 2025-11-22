@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css" type="text/css">
 <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/image-preview.css"/>
+<link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/assets/css/components/notification.css"/>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
@@ -12,9 +13,6 @@
 
 <%
     request.setAttribute("pageTitle", "Bảng điều khiển - MMO Trader Market");
-    request.setAttribute("bodyClass", "layout");
-    request.setAttribute("headerTitle", "Menu");
-    request.setAttribute("headerSubtitle", "Tổng quan nhanh về thị trường của bạn");
     request.setAttribute("headerModifier", "layout__header--split");
 
     List<Map<String, String>> navItems = new ArrayList<>();
@@ -25,16 +23,7 @@
     homeLink.put("label", "Trở về trang chủ");
     navItems.add(homeLink);
 
-    Map<String, String> guideLink = new HashMap<>();
-    guideLink.put("href", contextPath + "/styleguide");
-    guideLink.put("label", "Thư viện giao diện");
-    navItems.add(guideLink);
-
-    Map<String, String> logoutLink = new HashMap<>();
-    logoutLink.put("href", contextPath + "/auth?action=logout");
-    logoutLink.put("label", "Đăng xuất");
-    logoutLink.put("modifier", "menu__item--danger");
-    navItems.add(logoutLink);
+   
 
     request.setAttribute("navItems", navItems);
 %>
@@ -127,6 +116,7 @@
                 </tbody>
               </table>            
             </form>
+                  <div id="toastBox"></div>
 </section>
 
                 <script>
@@ -140,6 +130,27 @@
                 </script>
                 
                 <script>
+                     document.addEventListener('DOMContentLoaded', () => {
+            const toastBox = document.getElementById('toastBox');
+
+            function showToast(msg, type = 'success') {
+                if (!toastBox) return;
+                const toast = document.createElement('div');
+                toast.classList.add('mm-toast');
+                if (type === 'error') toast.classList.add('error');
+                toast.innerHTML = msg;
+                toastBox.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            }
+
+            // Lấy message từ request
+            const okMsg = "${fn:escapeXml(msg)}";
+            const errMsg = "${fn:escapeXml(emg)}";
+
+            if(errMsg) showToast('<i class="fa fa-times-circle"></i> ' + errMsg, 'error');
+            if(okMsg) showToast('<i class="fa fa-check-circle"></i> ' + okMsg, 'success');
+        });
+                    
                 function previewImage(inputId, imgId) {
                   const input = document.getElementById(inputId);
                   const img = document.getElementById(imgId);
@@ -176,3 +187,15 @@
 </main>
 <%@ include file="/WEB-INF/views/shared/footer.jspf" %>
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
+<c:if test="${not empty sessionScope.flash}">
+    <script>
+        const msg = "${fn:escapeXml(sessionScope.flash)}";
+
+        const icon = msg.toLowerCase().includes("lỗi")
+            ? '<i class="fa fa-times-circle"></i>'
+            : '<i class="fa fa-check-circle"></i>';
+
+        showToast(icon + " " + msg, msg.toLowerCase().includes("lỗi") ? "error" : "success");
+    </script>
+    <c:remove var="flash" scope="session"/>
+</c:if>

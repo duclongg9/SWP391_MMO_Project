@@ -10,7 +10,7 @@
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerModifier", "layout__header--split");
 
-    // Header brand/home (nếu muốn tuỳ biến thêm logo, title, subtitle… set thêm các biến header*)
+    // Header brand/home
     request.setAttribute("headerHomeHref", request.getContextPath() + "/home");
 
     // Nav items (menu ngang trong header dùng chung)
@@ -139,12 +139,9 @@
 
                 <tbody>
                 <c:forEach var="t" items="${cashList}" varStatus="st">
-
-                    <%-- 1) Chuẩn hoá text để dùng an toàn trong attribute --%>
                     <fmt:formatNumber value="${t.amount}" type="number" var="amountText"/>
                     <fmt:formatDate value="${t.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" var="createdText"/>
 
-                    <%-- updated_at của bạn = processed_at → chỉ dùng processedAt --%>
                     <c:choose>
                         <c:when test="${t.processedAt != null}">
                             <fmt:formatDate value="${t.processedAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" var="processedText"/>
@@ -158,31 +155,24 @@
                     <c:set var="adminUrlText"  value="${empty t.adminProofUrl ? ''  : fn:escapeXml(t.adminProofUrl)}"/>
                     <c:set var="bankImgText"   value="${empty t.bankAccountInfo ? '' : fn:escapeXml(t.bankAccountInfo)}"/>
 
-                    <%-- 2) Hàng bảng --%>
                     <tr>
                         <td>${(page-1)*size + st.index + 1}</td>
-
                         <td>
                             <c:choose>
                                 <c:when test="${t.type eq 'Deposit'}"><span class="badge bg-primary">Nạp</span></c:when>
                                 <c:otherwise><span class="badge bg-warning text-dark">Rút</span></c:otherwise>
                             </c:choose>
                         </td>
-
                         <td>${amountText}</td>
-
                         <td>
                             <c:set var="statusClass"
                                    value="${t.status eq 'Completed' ? 'bg-success' :
-                         (t.status eq 'Pending'   ? 'bg-secondary' : 'bg-danger')}"/>
+                                           (t.status eq 'Pending'   ? 'bg-secondary' : 'bg-danger')}"/>
                             <span class="badge ${statusClass}">${t.status}</span>
                         </td>
-
                         <td>${createdText}</td>
                         <td>${processedText}</td>
-
                         <td>${adminNoteText}</td>
-
                         <td>
                             <button type="button"
                                     class="button button--secondary js-detail"
@@ -205,10 +195,30 @@
                 </tbody>
             </table>
         </div>
-        <div id="detailModal" class="modal" aria-hidden="true" style="display:none;">
+
+        <%-- ===== MODAL: Chi tiết giao dịch ===== --%>
+        <style>
+            .modal{position:fixed; inset:0; display:none; z-index:1000;}
+            .modal.is-open{display:block;}
+            .modal__backdrop{position:absolute; inset:0; background:rgba(0,0,0,.45);}
+            .modal__dialog{
+                position:relative; z-index:1001; max-width:720px; width:clamp(320px, 92vw, 720px);
+                margin:6vh auto; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.2);
+            }
+            .modal__header,.modal__footer{padding:14px 16px; border-bottom:1px solid #eee;}
+            .modal__footer{border-top:1px solid #eee; border-bottom:none;}
+            .modal__body{padding:16px;}
+            .modal__close{background:none;border:0;font-size:22px;cursor:pointer}
+            .body--lock{overflow:hidden}
+            .img-frame img{display:block; max-width:100%; height:auto; border-radius:8px;}
+        </style>
+
+        <div id="detailModal" class="modal" aria-hidden="true">
+            <div class="modal__backdrop" data-close="1"></div>
             <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
-                <div class="modal__header">
-                    <h3 id="detailTitle" class="modal__title">Chi tiết giao dịch</h3>
+                <div class="modal__header" style="display: flex;
+    justify-content: space-between;">
+                    <h3 id="detailTitle" class="modal__title" style="margin:0;">Chi tiết giao dịch</h3>
                     <button class="modal__close js-close-detail" aria-label="Đóng">×</button>
                 </div>
 
@@ -234,8 +244,7 @@
 
                     <div class="panel" style="padding:12px;margin-top:12px;">
                         <h4 class="panel__title" style="margin:0 0 8px;">QR / thông tin ngân hàng</h4>
-                        <div id="bankInfoWrap"
-                             class="img-frame"
+                        <div id="bankInfoWrap" class="img-frame"
                              style="min-height:120px;display:flex;align-items:center;justify-content:center;background:#f7f9fc;border:1px dashed #cfd8e3;border-radius:8px;">
                             <span class="text-muted">Chưa có ảnh</span>
                         </div>
@@ -247,6 +256,7 @@
                 </div>
             </div>
         </div>
+
         <%-- ===== Pagination đẹp + đủ nút ===== --%>
         <c:set var="current" value="${page}" />
         <c:set var="total" value="${pages}" />
@@ -381,20 +391,35 @@
 <%@ include file="/WEB-INF/views/shared/page-end.jspf" %>
 
 <script>
-    // Modal: open/close + fill data
-    (function(){
-        const $ = s => document.querySelector(s);
-        const $$ = s => Array.from(document.querySelectorAll(s));
+    document.addEventListener('DOMContentLoaded', function () {
+        const $  = s => document.querySelector(s);
         const modal = $('#detailModal');
+        const table = document.querySelector('.table.table--interactive');
 
-        const open = () => { modal.style.display = 'block'; modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); };
-        const close = () => { modal.style.display = 'none';  modal.setAttribute('aria-hidden','true');  document.body.classList.remove('modal-open'); };
+        const open = () => {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden','false');
+            document.body.classList.add('body--lock');
+        };
+        const close = () => {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden','true');
+            document.body.classList.remove('body--lock');
+        };
 
-        $$('.js-close-detail').forEach(b => b.addEventListener('click', close));
-        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+        // Đóng khi bấm nút ×, nút "Đóng" hoặc nền tối
+        modal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('js-close-detail') || e.target.dataset.close === '1') close();
+        });
+        // Esc để đóng
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 
-        $$('.js-detail').forEach(btn => {
-            btn.addEventListener('click', () => {
+        // Ủy quyền click cho các nút "Chi tiết"
+        if (table) {
+            table.addEventListener('click', (e) => {
+                const btn = e.target.closest('.js-detail');
+                if (!btn) return;
+
                 const type      = btn.dataset.type || '';
                 const status    = btn.dataset.status || '';
                 const amount    = btn.dataset.amount || '';
@@ -409,20 +434,18 @@
                 $('#dCreated').textContent   = created;
                 $('#dProcessed').textContent = processed;
 
-                // Admin URL
                 const adminWrap = $('#adminUrlWrap');
                 adminWrap.innerHTML = adminUrl
                     ? `<a href="${adminUrl}" target="_blank" rel="noopener">Mở admin URL</a>`
                     : `<span class="text-muted">—</span>`;
 
-                // Ảnh thông tin ngân hàng
                 const bankWrap = $('#bankInfoWrap');
                 bankWrap.innerHTML = bankImg
-                    ? `<img src="${bankImg}" alt="Bank account info" style="max-width:100%;max-height:260px;border-radius:8px;">`
+                    ? `<img src="${bankImg}" alt="Bank account info">`
                     : `<span class="text-muted">Chưa có ảnh</span>`;
 
                 open();
             });
-        });
-    })();
+        }
+    });
 </script>

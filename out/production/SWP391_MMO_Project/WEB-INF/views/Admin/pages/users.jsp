@@ -85,8 +85,8 @@
                 <th>Ngày tạo</th>
                 <th>Ngày cập nhật</th>
                 <th style="width:140px">Vai trò</th>
+                <!--<th style="width:140px">Avatar</th>-->
                 <th style="width:140px">Trạng thái</th>
-                <th style="width:140px">Avatar</th>
                 <th class="text-center" style="width:170px">Hành động</th>
             </tr>
             </thead>
@@ -100,8 +100,8 @@
                         <td><fmt:formatDate value="${u.createdAt}" pattern="dd-MM-yyyy"/></td>
                         <td><fmt:formatDate value="${u.updatedAt}" pattern="dd-MM-yyyy"/></td>
                         <td>${u.roleName}</td>
-                        <td><img src="${u.avatarUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"
-                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${u.avatarUrl}'"></td>
+                        <!--<td><img src="${u.avatarUrl}" class="img-fluid rounded shadow-sm kyc-thumb" alt="back"-->
+                                 <!--onerror="this.onerror=null;this.src='${pageContext.request.contextPath}${u.avatarUrl}'"></td>-->
                         <td>
                             <c:choose>
                                 <c:when test="${u.status eq 1}">
