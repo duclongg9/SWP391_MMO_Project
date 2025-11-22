@@ -13,7 +13,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
-tách trang chủ thành nhiều “mảnh” độc lập để truy vấn chậm ở một phần không làm chậm cả trang.
+ * tách trang chủ thành nhiều “mảnh” độc lập để truy vấn chậm ở một phần không
+ * làm chậm cả trang.
  */
 @WebServlet(name = "HomepageFragmentController", urlPatterns = {"/fragment/home/*"})
 public class HomepageFragmentController extends HttpServlet {
@@ -27,24 +28,28 @@ public class HomepageFragmentController extends HttpServlet {
             throws ServletException, IOException {
         response.setCharacterEncoding("UTF-8");
 
-        String path = request.getPathInfo();
+        String path = request.getPathInfo(); // "/summary", "/featured", "/system-notes"
         if (path == null || path.isBlank() || "/".equals(path)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
 
-        switch (path) {
-            case "/summary" -> handleSummary(request, response);
-            case "/featured" -> handleFeatured(request, response);
-            case "/system-notes" -> handleSystemNotes(request, response);
-            default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        switch (path) { //Tuỳ path mà gọi từng handler.
+            case "/summary" ->
+                handleSummary(request, response);
+            case "/featured" ->
+                handleFeatured(request, response);
+            case "/system-notes" ->
+                handleSystemNotes(request, response);
+            default ->
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
     private void handleSummary(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("summary", homepageService.loadMarketplaceSummary());
-        request.setAttribute("productCategories", homepageService.loadProductCategories());
+        request.setAttribute("summary", homepageService.loadMarketplaceSummary()); //tổng số shop, tổng số sản phẩm, số giao dịch
+        request.setAttribute("productCategories", homepageService.loadProductCategories()); //danh sách category
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "public, max-age=60");
         renderFragment(request, response, "product/fragments/home/summary");
@@ -52,20 +57,22 @@ public class HomepageFragmentController extends HttpServlet {
 
     private void handleFeatured(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+// Nếu hợp lệ >0 thì chỉ lấy bấy nhiêu sản phẩm.
+//Nếu không có/không hợp lệ thì lấy default.
         int limit = parsePositiveInt(request.getParameter("limit"));
         List<ProductSummaryView> featured = limit > 0
                 ? homepageService.loadFeaturedProducts(limit)
                 : homepageService.loadFeaturedProducts();
         request.setAttribute("featuredProducts", featured);
         response.setContentType("text/html;charset=UTF-8");
-        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); //Set header không cache (vì sản phẩm nổi bật có thể thay đổi liên tục).
         renderFragment(request, response, "product/fragments/home/featured");
     }
 
     private void handleSystemNotes(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setAttribute("systemNotes", homepageService.loadSystemNotes());
-response.setContentType("text/html;charset=UTF-8");
+        response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "public, max-age=300");
         renderFragment(request, response, "product/fragments/home/system-notes");
     }

@@ -16,9 +16,9 @@
             padding: 16px;
             z-index: 999;
         }
-
+/*hiện*/
         .verification-modal.is-visible {
-            display: flex;
+            display: flex;  
         }
 
         .verification-modal__backdrop {

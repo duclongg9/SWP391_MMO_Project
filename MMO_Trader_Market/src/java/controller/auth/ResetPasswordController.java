@@ -15,17 +15,7 @@ import model.Users;
 import service.UserService;
 import units.RoleHomeResolver;
 
-/**
- * Điều phối luồng "Đặt lại mật khẩu" khi người dùng truy cập từ email quên mật
- * khẩu.
- * <p>
- * - Hiển thị form đặt lại kèm kiểm tra token hợp lệ. - Xác thực mật khẩu mới,
- * cập nhật dữ liệu và thông báo thành công. - Ghi nhận lỗi tiếng Việt khi token
- * sai, mật khẩu không hợp lệ hoặc xảy ra sự cố.
- *
- * @version 1.0 27/05/2024
- * @author hoaltthe176867
- */
+
 @WebServlet(name = "ResetPasswordController", urlPatterns = {"/reset-password"})
 public class ResetPasswordController extends BaseController {
     private static final long serialVersionUID = 1L;
@@ -51,7 +41,7 @@ public class ResetPasswordController extends BaseController {
         String confirmPassword = request.getParameter("confirmPassword");
         try {
             Users user = userService.resetPassword(token, password, confirmPassword);
-            HttpSession session = renewSession(request);
+            HttpSession session = renewSession(request); // tạo ss mới, xóa ss cũ
             session.setAttribute("currentUser", user);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userRole", user.getRoleId());
@@ -69,13 +59,7 @@ public class ResetPasswordController extends BaseController {
         forward(request, response, "auth/reset-password");
     }
 
-    /**
-     * Tạo phiên đăng nhập mới để hoàn tất luồng đặt lại mật khẩu và giảm nguy
-     * cơ tấn công cố định phiên (session fixation).
-     *
-     * @param request yêu cầu hiện tại của người dùng
-     * @return phiên HTTP mới chứa thông tin đăng nhập
-     */
+
     private HttpSession renewSession(HttpServletRequest request) {
         HttpSession existing = request.getSession(false);
         if (existing != null) {

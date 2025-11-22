@@ -4,13 +4,13 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <fmt:setLocale value="vi_VN" scope="request" />
 <c:set var="cPath" value="${pageContext.request.contextPath}" />
-<c:set var="fragmentBase" value="${cPath}/fragment/home" />
+<c:set var="fragmentBase" value="${cPath}/fragment/home" /> <!--base URL để gọi các mảnh.-->
 <%@ include file="/WEB-INF/views/shared/page-start.jspf" %>
 <%@ include file="/WEB-INF/views/shared/header.jspf" %>
 <main class="layout__content landing">
 
 
-
+<!--placeholder-->
     <section class="panel landing__hero" id="home-summary" data-fragment-url="${fragmentBase}/summary">
         <div class="fragment fragment--loading">
             <p>Đang tải dữ liệu tổng quan...</p>

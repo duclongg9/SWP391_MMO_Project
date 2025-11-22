@@ -25,12 +25,19 @@ public class GoogleOAuthService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     // Gson phục vụ parse JSON phản hồi.
     private final Gson gson = new Gson();
-    // Tạo URL điều hướng người dùng sang màn hình đăng nhập Google.
+    // tạo ra URL cho bước login Google
     public String buildAuthorizationUrl(String state) {
-        String clientId = requireConfig("google.clientId");
-        String redirectUri = requireConfig("google.redirectUri"); // lấy cấu hình từ file .properties
-        String scope = urlEncode("openid email profile"); //chuyển từ OAuth2 sang OpenID Connect (cho phép lấy ID Token / danh tính).
-        return AUTH_ENDPOINT
+        String clientId = requireConfig("google.clientId"); // Lấy clientId từ file cấu hình (Google cấp  trên Google Cloud Console)
+        String redirectUri = requireConfig("google.redirectUri"); //Lấy redirectUri từ config. (địa chỉ callback) 
+//        Tạo chuỗi scope: "openid email profile".
+//
+//openid: kích hoạt OpenID Connect → cho phép nhận ID Token (chứa thông tin user).
+//
+//email: xin quyền truy cập email của user.
+//
+//profile: xin quyền truy cập thông tin cơ bản (tên, avatar,…).
+        String scope = urlEncode("openid email profile");
+        return AUTH_ENDPOINT //ghép đủ query string:
                 + "?response_type=code"
                 + "&client_id=" + urlEncode(clientId)
                 + "&redirect_uri=" + urlEncode(redirectUri)
@@ -39,12 +46,12 @@ public class GoogleOAuthService {
                 + "&prompt=select_account";
     } //Ghép URL đầy đủ tới Authorization Endpoint của Google
 
-    // Đổi mã ủy quyền(authorization code) lấy thông tin tài khoản Google.
+    // code → lấy token → gọi Google lấy thông tin user → trả về profile.
     public GoogleProfile fetchUserProfile(String code) {
-        JsonObject tokenResponse = exchangeCodeForTokens(code); //Gọi token endpoint của Google để đổi code lấy token
-        String accessToken = getRequiredField(tokenResponse, "access_token");
-        JsonObject userInfo = requestUserInfo(accessToken);
-        return mapProfile(userInfo);
+        JsonObject tokenResponse = exchangeCodeForTokens(code); //Đổi mã code → lấy access token
+        String accessToken = getRequiredField(tokenResponse, "access_token"); //Lấy access_token từ response
+        JsonObject userInfo = requestUserInfo(accessToken); //Gọi Google UserInfo Endpoint
+        return mapProfile(userInfo); //Map dữ liệu Google → đối tượng GoogleProfile
     }
 
     // Gửi yêu cầu POST với body x-www-form-urlencoded.
