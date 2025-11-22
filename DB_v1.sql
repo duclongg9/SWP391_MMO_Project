@@ -14,7 +14,7 @@ USE mmo_schema;
 -- =================================================================
 
 DROP TABLE IF EXISTS `roles`;
-CREATE TABLE `roles` (
+CREATE TABLE `roles` (users
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
