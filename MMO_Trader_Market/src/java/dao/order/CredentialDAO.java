@@ -263,19 +263,31 @@ public class CredentialDAO extends BaseDAO {
                             if (inventory == null || inventory <= 0) {
                                 continue;
                             }
-                            String normalizedCode = ProductVariantUtils.normalizeCode(variant.getVariantCode());
-                            if (normalizedCode == null) {
+                            String variantCode = variant.getVariantCode();
+                            if (variantCode == null || variantCode.trim().isEmpty()) {
                                 continue;
                             }
+                            // Normalize variant code để match với database
+                            String normalizedCode = ProductVariantUtils.normalizeCode(variantCode);
+                            if (normalizedCode == null || normalizedCode.isEmpty()) {
+                                continue;
+                            }
+                            // Query với variant code gốc (hàm sẽ normalize lại)
                             CredentialAvailability availability = fetchAvailabilityForVariant(connection,
-                                    product.id(), normalizedCode);
-                            int missing = inventory - availability.available();
+                                    product.id(), variantCode);
+                            int available = availability.available();
+                            int missing = inventory - available;
+                            LOGGER.log(Level.FINE, "Product {0}, variant {1}: inventory={2}, available={3}, missing={4}", 
+                                new Object[]{product.id(), variantCode, inventory, available, missing});
                             if (missing <= 0) {
                                 continue;
                             }
+                            // Sinh credentials với normalized code
                             generateFakeCredentials(connection, product.id(), normalizedCode, missing);
                             generated += missing;
                             touchedSkus++;
+                            LOGGER.log(Level.INFO, "Đã sinh {0} credential cho product {1}, variant {2}", 
+                                new Object[]{missing, product.id(), variantCode});
                         }
                     } else {
                         Integer inventory = product.inventoryCount();
@@ -293,6 +305,8 @@ public class CredentialDAO extends BaseDAO {
                     }
                 }
                 connection.commit();
+                LOGGER.log(Level.INFO, "Đã sinh {0} credential cho {1} SKU", 
+                    new Object[]{generated, touchedSkus});
                 return new BulkGenerationSummary(generated, touchedSkus);
             } catch (SQLException ex) {
                 try {
@@ -301,11 +315,12 @@ public class CredentialDAO extends BaseDAO {
                     LOGGER.log(Level.SEVERE, "Không thể rollback giao dịch credential", rollbackEx);
                 }
                 LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+                throw ex; // Re-throw để controller có thể xử lý
             } finally {
                 restoreAutoCommit(connection, previousAutoCommit);
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Không thể sinh credential ảo hàng loạt", ex);
+            LOGGER.log(Level.SEVERE, "Không thể kết nối database để sinh credential ảo hàng loạt", ex);
         }
         return new BulkGenerationSummary(0, 0);
     }
