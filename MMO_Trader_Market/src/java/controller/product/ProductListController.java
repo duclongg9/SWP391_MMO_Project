@@ -22,8 +22,8 @@ public class ProductListController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_SIZE = 4;
-    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(4, 8, 12, 16);
+    private static final int DEFAULT_SIZE = 4; //mỗi trang 4 sản phẩm nếu không chọn gì
+    private static final List<Integer> PAGE_SIZE_OPTIONS = List.of(4, 8, 12, 16); //chỉ cho phép các giá trị này (4/8/12/16).
     private static final String SORT_NEWEST = "newest";
     private static final String SORT_BEST_SELLER = "best_seller";
 
@@ -35,7 +35,7 @@ public class ProductListController extends BaseController {
         List<ProductTypeOption> typeOptions = productService.getTypeOptions(); //Lấy danh sách type khả dụng
         String requestedType = request.getParameter("type"); //Lấy type từ query, normalize về code hợp lệ
         String normalizedType = productService.normalizeTypeCode(requestedType);
-        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty();
+        boolean hasRawType = requestedType != null && !requestedType.trim().isEmpty(); //Chuyển về code chuẩn (lowercase, bỏ space, validate…)Nếu không hợp lệ → trả về null.
         if (normalizedType == null && hasRawType) {
             Optional<String> fallbackType = typeOptions.stream()
                     .map(ProductTypeOption::getCode)

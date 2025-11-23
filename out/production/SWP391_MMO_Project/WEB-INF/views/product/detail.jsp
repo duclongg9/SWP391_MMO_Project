@@ -126,7 +126,7 @@
                     <span class="badge">${product.productTypeLabel}</span>
                     <span class="badge badge--ghost">${product.productSubtypeLabel}</span>
                 </p>
-                <p class="product-detail__shop">Gian hàng: <strong><c:out value="${product.shopName}" /></strong></p>
+                <p class="product-detail__shop">Gian hàng: <strong><a class="product-card__shop" href="${cPath}/shops/${product.shopEncodedId}"><c:out value="${product.shopName}" /></a></strong></p>
             </header>
             <c:if test="${not empty purchaseError}">
                 <div class="alert alert--error" role="alert" aria-live="assertive">

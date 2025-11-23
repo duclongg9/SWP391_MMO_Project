@@ -27,7 +27,6 @@ public class CashDAO {
     /* Map ResultSet -> CashTxn (giữ như cũ) */
     private CashTxn mapCashTxn(ResultSet rs) throws SQLException {
         CashTxn t = new CashTxn();
-
         t.setType(rs.getString("type"));
         t.setId(rs.getInt("id"));
         t.setUserId(rs.getInt("user_id"));

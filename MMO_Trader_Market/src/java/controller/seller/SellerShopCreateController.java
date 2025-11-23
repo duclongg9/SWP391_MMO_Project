@@ -11,11 +11,7 @@ import model.Users;
 import service.BusinessException;
 import service.ShopService;
 
-/**
- * Controller xử lý yêu cầu tạo shop mới cho seller.
- * GET: Hiển thị form tạo shop
- * POST: Xử lý submit form, validate, tạo shop và redirect về danh sách
- */
+
 @WebServlet(name = "SellerShopCreateController", urlPatterns = {"/seller/shops/create"})
 public class SellerShopCreateController extends SellerBaseController {
 
@@ -40,11 +36,7 @@ public class SellerShopCreateController extends SellerBaseController {
 		forward(request, response, "seller/shops/form");
 	}
 
-	/**
-	 * Xử lý POST request: Submit form tạo shop.
-	 * Lấy thông tin từ form, validate qua ShopService, tạo shop và redirect về danh sách.
-	 * Nếu có lỗi validation, hiển thị lại form với thông báo lỗi và giữ lại giá trị đã nhập.
-	 */
+
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {

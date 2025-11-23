@@ -24,7 +24,7 @@ public class GoogleAuthController extends BaseController {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(GoogleAuthController.class.getName());
-    private static final String SESSION_STATE = "googleOauthState";
+    private static final String SESSION_STATE = "googleOauthState"; //key để lưu chuỗi state vào session (phòng chống CSRF trong OAuth).
     private final GoogleOAuthService googleOAuthService = new GoogleOAuthService();
     private final UserService userService = new UserService(new UserDAO());
 
@@ -54,16 +54,16 @@ public class GoogleAuthController extends BaseController {
         response.sendRedirect(authorizationUrl); 
     }
 
-   
+   //xử lý khi Google redirect về
     private void handleCallback(HttpServletRequest request, HttpServletResponse response, String code, String state)
             throws IOException, SQLException {
         HttpSession session = request.getSession(false);
-        String expectedState = session == null ? null : (String) session.getAttribute(SESSION_STATE);
-        if (expectedState == null || !expectedState.equals(state)) {
+        String expectedState = session == null ? null : (String) session.getAttribute(SESSION_STATE); //lấy từ session. Nếu session null hoặc không có state ⇒ null.
+        if (expectedState == null || !expectedState.equals(state)) { //Nếu expectedState là null hoặc không bằng state trong request:
             sendErrorFlash(request, response, "Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại.");
             return;
         }
-        session.removeAttribute(SESSION_STATE); 
+        session.removeAttribute(SESSION_STATE); //óa state sau khi dùng
         try {
             // Lấy thông tin hồ sơ từ Google và đăng nhập (hoặc tạo mới) tài khoản nội bộ.
             GoogleProfile profile = googleOAuthService.fetchUserProfile(code);

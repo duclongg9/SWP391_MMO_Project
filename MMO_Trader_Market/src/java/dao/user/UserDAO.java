@@ -330,7 +330,7 @@ public class UserDAO extends BaseDAO {
             return null;
         }
     }
-
+// kích hoạt tài khoản
     public int activateUser(int userId) throws SQLException {
         final String sql = """
                 UPDATE users
@@ -339,7 +339,7 @@ public class UserDAO extends BaseDAO {
                 """;
         try (Connection conn = DBConnect.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
-            return ps.executeUpdate();
+            return ps.executeUpdate();   // ← trả về số dòng bị ảnh hưởng
         }
     }
 

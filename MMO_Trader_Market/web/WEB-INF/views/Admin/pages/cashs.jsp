@@ -154,7 +154,9 @@
 
                             <td>
                                 <c:choose>
-                                    <c:when test="${t.processedAt != null}"><fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/></c:when>
+                                    <c:when test="${t.processedAt != null}">
+                                        <fmt:formatDate value="${t.processedAt}" pattern="dd-MM-yyyy HH:mm"/>
+                                    </c:when>
                                     <c:otherwise>—</c:otherwise>
                                 </c:choose>
                             </td>
@@ -254,18 +256,17 @@
                                             </div>
                                         </div>
 
-
+                                        <!-- ========= WITHDRAWAL ========= -->
                                         <c:if test="${t.type eq 'Withdrawal'}">
                                             <c:choose>
 
-                                                <c:when test="${t.type eq 'Withdrawal' && t.status eq 'Pending'}">
+                                                <c:when test="${t.status eq 'Pending'}">
                                                     <form id="cashForm_${t.id}"
                                                           action="${pageContext.request.contextPath}/admin/cashs/status"
                                                           method="post"
                                                           enctype="multipart/form-data"
                                                           class="d-flex flex-column gap-3 mt-2">
 
-                                                        <!-- BẮT BUỘC: name="id" -->
                                                         <input type="hidden" name="id" value="${t.id}"/>
                                                         <input type="hidden" name="txType" value="Withdrawal"/>
                                                         <input type="hidden" name="action" id="cashAction_${t.id}" value=""/>
@@ -280,8 +281,11 @@
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.bankAccountInfo}">
+                                                                        <c:set var="infoNorm"
+                                                                               value="${fn:replace(t.bankAccountInfo, '\\\\', '/')}" />
                                                                         <div class="js-proof-images"
-                                                                             data-urls="${fn:escapeXml(t.bankAccountInfo)}"></div>
+                                                                             data-ctx="${pageContext.request.contextPath}"
+                                                                             data-urls="${fn:escapeXml(infoNorm)}"></div>
                                                                     </c:when>
                                                                     <c:otherwise>
                                                                         <div class="text-muted fst-italic">Không có ảnh hợp lệ.</div>
@@ -294,16 +298,18 @@
                                                         <div class="border rounded-3 p-3 bg-light">
                                                             <div class="fw-semibold mb-1">Ảnh chuyển khoản của admin (bắt buộc khi DUYỆT)</div>
                                                             <div class="text-end mb-2">
-                <span id="adminStatus_${t.id}"
-                      class="badge ${not empty t.adminProofUrl ? 'bg-success' : 'bg-secondary'}">
-                        ${not empty t.adminProofUrl ? 'Đã upload' : 'Chưa có'}
-                </span>
+                                                                <span id="adminStatus_${t.id}"
+                                                                      class="badge ${not empty t.adminProofUrl ? 'bg-success' : 'bg-secondary'}">
+                                                                        ${not empty t.adminProofUrl ? 'Đã upload' : 'Chưa có'}
+                                                                </span>
                                                             </div>
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.adminProofUrl}">
+                                                                        <c:set var="adminNorm"
+                                                                               value="${fn:replace(t.adminProofUrl, '\\\\', '/')}" />
                                                                         <img id="adminPreview_${t.id}"
-                                                                             src="${fn:escapeXml(t.adminProofUrl)}"
+                                                                             src="${pageContext.request.contextPath}/assets/images/QRcode/${fn:escapeXml(adminNorm)}"
                                                                              alt="Admin proof"
                                                                              class="rounded border js-zoomable"
                                                                              style="max-width:280px;max-height:420px;object-fit:cover;">
@@ -354,7 +360,7 @@
                                                             </div>
                                                         </div>
 
-                                                        <!-- Buttons: ĐỀU type="button" -->
+                                                        <!-- Buttons -->
                                                         <div class="d-flex align-items- mt-3 gap-2">
                                                             <button type="button"
                                                                     class="btn btn-success"
@@ -378,8 +384,6 @@
                                                 </c:when>
 
 
-
-
                                                 <c:otherwise>
                                                     <div class="mt-3">
                                                         <div class="border rounded-3 p-3 mb-3">
@@ -387,8 +391,11 @@
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.bankAccountInfo}">
+                                                                        <c:set var="infoNorm"
+                                                                               value="${fn:replace(t.bankAccountInfo, '\\\\', '/')}" />
                                                                         <div class="js-proof-images"
-                                                                             data-urls="${fn:escapeXml(t.bankAccountInfo)}"></div>
+                                                                             data-ctx="${pageContext.request.contextPath}"
+                                                                             data-urls="${fn:escapeXml(infoNorm)}"></div>
                                                                     </c:when>
                                                                     <c:otherwise>
                                                                         <div class="text-muted fst-italic">Không có QR / ảnh từ khách.</div>
@@ -401,7 +408,9 @@
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.adminProofUrl}">
-                                                                        <img src="${fn:escapeXml(t.adminProofUrl)}"
+                                                                        <c:set var="adminNorm"
+                                                                               value="${fn:replace(t.adminProofUrl, '\\\\', '/')}" />
+                                                                        <img src="${pageContext.request.contextPath}/assets/images/QRcode/${fn:escapeXml(adminNorm)}"
                                                                              alt="Admin proof"
                                                                              class="rounded border js-zoomable"
                                                                              style="max-width:280px;max-height:420px;object-fit:cover;">
@@ -433,9 +442,9 @@
                                             </c:choose>
                                         </c:if>
 
+                                        <!-- ========= DEPOSIT ========= -->
                                         <c:if test="${t.type eq 'Deposit'}">
                                             <c:choose>
-
                                                 <c:when test="${t.status eq 'Pending'}">
                                                     <form id="cashForm_${t.id}"
                                                           action="${pageContext.request.contextPath}/admin/cashs/status"
@@ -458,8 +467,11 @@
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.qrContent}">
+                                                                        <c:set var="qrNorm"
+                                                                               value="${fn:replace(t.qrContent, '\\\\', '/')}" />
                                                                         <div class="js-proof-images"
-                                                                             data-urls="${fn:escapeXml(t.qrContent)}"></div>
+                                                                             data-ctx="${pageContext.request.contextPath}"
+                                                                             data-urls="${fn:escapeXml(qrNorm)}"></div>
                                                                     </c:when>
                                                                     <c:otherwise>
                                                                         <div class="text-muted fst-italic">Khách chưa gửi ảnh chứng từ.</div>
@@ -485,7 +497,6 @@
                                                             <button type="submit"
                                                                     class="btn btn-success px-4"
                                                                     onclick="document.getElementById('cashAction_${t.id}').value='accept'; return onSubmitCash(${t.id}, 'accept');">
-
                                                                 <i class="bi bi-check-circle me-1"></i>Accept
                                                             </button>
                                                             <button type="button"
@@ -494,8 +505,8 @@
                                                                 <i class="bi bi-x-circle me-1"></i>Reject
                                                             </button>
                                                             <button type="button"
-                                                                    class="btn btn-success"
-                                                                    onclick="onAcceptCash(${t.id}, 'Deposit')">
+                                                                    class="btn btn-outline-secondary ms-auto px-4"
+                                                                    data-bs-dismiss="modal">
                                                                 Đóng
                                                             </button>
                                                         </div>
@@ -513,8 +524,11 @@
                                                             <div class="proof-image-wrapper">
                                                                 <c:choose>
                                                                     <c:when test="${not empty t.qrContent}">
+                                                                        <c:set var="qrNorm"
+                                                                               value="${fn:replace(t.qrContent, '\\\\', '/')}" />
                                                                         <div class="js-proof-images"
-                                                                             data-urls="${fn:escapeXml(t.qrContent)}"></div>
+                                                                             data-ctx="${pageContext.request.contextPath}"
+                                                                             data-urls="${fn:escapeXml(qrNorm)}"></div>
                                                                     </c:when>
                                                                     <c:otherwise>
                                                                         <div class="text-muted fst-italic">Không có ảnh chứng từ.</div>
@@ -694,7 +708,6 @@
     function onFilterChange() {
         const form = document.getElementById('cashFilter');
         if (!form) return;
-        // luôn về trang 1 khi đổi filter
         let pageInput = document.getElementById('pageInput');
         if (!pageInput) {
             pageInput = document.createElement('input');
@@ -721,7 +734,6 @@
         const errNote    = document.getElementById('cashError_' + id);
         const errProof   = document.getElementById('adminProofError_' + id);
 
-        // reset lỗi
         if (errNote)  errNote.classList.add('d-none');
         if (errProof) errProof.classList.add('d-none');
         if (note)        note.classList.remove('is-invalid');
@@ -729,7 +741,6 @@
 
         const noteVal = note ? note.value.trim() : "";
 
-        // Deposit: bắt buộc có ghi chú
         if (txType === 'Deposit' && !noteVal) {
             if (errNote) {
                 errNote.textContent = "Vui lòng nhập ghi chú khi duyệt nạp tiền.";
@@ -740,7 +751,6 @@
             return false;
         }
 
-        // Withdrawal: bắt buộc có ảnh (file mới hoặc preview sẵn có)
         if (txType === 'Withdrawal') {
             const hasExisting = preview && !preview.classList.contains('d-none') && preview.src ? true : false;
             const hasFile     = proofInput && proofInput.files && proofInput.files.length > 0;
@@ -756,14 +766,12 @@
                     if (errNote) errNote.classList.remove('d-none');
                     if (note) note.classList.add('is-invalid');
                 }
-                // focus vào field đầu tiên bị thiếu
                 if (!hasNote && note) note.focus();
                 else if (!hasImage && proofInput) proofInput.focus();
                 return false;
             }
         }
 
-        // Confirm
         const msg = `Bạn có chắc chắn muốn DUYỆT giao dịch #${id} (${txType}) không?`;
         if (!confirm(msg)) return false;
 
@@ -799,7 +807,6 @@
         return true;
     }
 
-    // Clear lỗi khi admin gõ lại note
     document.addEventListener('input', function (e) {
         if (!e.target.id) return;
         const m = e.target.id.match(/^cashNote_(\d+)$/);
@@ -852,11 +859,15 @@
 
     function renderProofImages(container) {
         if (!container) return;
+
         const raw = htmlUnescape(container.getAttribute("data-urls") || "").trim();
         if (!raw) {
             container.innerHTML = '<span class="text-muted">Không có ảnh.</span>';
             return;
         }
+
+        const ctx = (container.getAttribute("data-ctx") || "").replace(/\/+$/, "");
+
         let urls = [];
         try {
             const parsed = JSON.parse(raw);
@@ -865,14 +876,24 @@
         } catch (e) {
             urls = raw.split(/[\s,]+/).filter(Boolean);
         }
+
         if (!urls.length) {
             container.innerHTML = '<span class="text-muted">Không có ảnh hợp lệ.</span>';
             return;
         }
+
         const frag = document.createDocumentFragment();
+
         urls.forEach(function (u) {
+            let url = (u || "").trim();
+            if (!url) return;
+
+            if (!/^https?:\/\//i.test(url) && url.charAt(0) !== '/') {
+                url = ctx + "/assets/images/QRcode/" + url;
+            }
+
             const img = document.createElement("img");
-            img.src = u;
+            img.src = url;
             img.alt = "Proof";
             img.className = "rounded border js-zoomable";
             img.style.maxWidth = "280px";
@@ -880,11 +901,11 @@
             img.style.objectFit = "cover";
             frag.appendChild(img);
         });
+
         container.innerHTML = "";
         container.appendChild(frag);
     }
 
-    /* ===== Init on DOM ready ===== */
     document.addEventListener('DOMContentLoaded', function () {
         const form      = document.getElementById('cashFilter');
         const qInput    = document.getElementById('q');
@@ -895,14 +916,12 @@
 
         const today = new Date(); today.setHours(0,0,0,0);
 
-        // Chặn Enter ngoài ô tìm tên
         if (form) {
             form.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && e.target !== qInput) e.preventDefault();
             });
         }
 
-        // Ô tìm tên: Enter sẽ về trang 1 (submit mặc định)
         if (qInput) {
             qInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
@@ -915,7 +934,6 @@
         if (selType)   selType.addEventListener('change', onFilterChange);
         if (selStatus) selStatus.addEventListener('change', onFilterChange);
 
-        // Không cho chọn ngày tương lai, và tự submit khi đổi ngày
         function notFuture(input) {
             if (!input.value) return true;
             const d = new Date(input.value);
@@ -933,7 +951,6 @@
             if (notFuture(this)) onFilterChange();
         });
 
-        // Render ảnh chứng từ ban đầu
         document.querySelectorAll('.js-proof-images').forEach(renderProofImages);
     });
 
@@ -955,9 +972,6 @@
         }
     });
 </script>
-
-
-
 
 <c:if test="${not empty sessionScope.flash}">
     <script>

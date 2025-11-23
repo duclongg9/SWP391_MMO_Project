@@ -5,6 +5,8 @@
 package dao.user;
 
 import dao.connect.DBConnect;
+import model.WithdrawalRequests;
+
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -71,5 +73,30 @@ public class WithdrawRequestDAO {
             }
         }
         return BigDecimal.ZERO;
+    }
+
+    public WithdrawalRequests findById(int id) throws SQLException {
+        String sql = """
+            SELECT id, user_id, amount, bank_account_info, status
+            FROM mmo_schema.withdrawal_requests
+            WHERE id = ?
+        """;
+        try (Connection con = DBConnect.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    WithdrawalRequests wr = new WithdrawalRequests();
+                    wr.setId(rs.getInt("id"));
+                    wr.setUserId(rs.getInt("user_id"));
+                    wr.setAmount(rs.getBigDecimal("amount"));
+                    wr.setBankAccountInfo(rs.getString("bank_account_info"));
+                    wr.setStatus(rs.getString("status"));
+                    return wr;
+                }
+            }
+        }
+        return null;
+
     }
 }

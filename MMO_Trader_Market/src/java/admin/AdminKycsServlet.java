@@ -163,7 +163,6 @@ public class AdminKycsServlet extends AbstractAdminServlet {
             throws IOException, ServletException {
 
         req.setCharacterEncoding("UTF-8");
-
         String action   = safe(req.getParameter("action"));   // approve | reject
         String idStr    = safe(req.getParameter("id"));
         String feedback = safe(req.getParameter("feedback"));

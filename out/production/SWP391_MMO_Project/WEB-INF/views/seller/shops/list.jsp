@@ -28,7 +28,7 @@
                     <div class="shop-toolbar__sort">
                         <label class="shop-toolbar__label" for="sortBy">Sắp xếp</label>
                         <select class="form-input shop-toolbar__select" id="sortBy" name="sortBy" onchange="this.form.submit()">
-                            <option value="sales_desc" ${sortBy == 'sales_desc' ? 'selected' : ''}>Lượng bán (cao → thấp)</option>
+                            <option value="sales_desc" ${sortBy == 'sales_desc' ? 'selected' : ''}>Lượt bán (cao → thấp)</option>
                             <option value="created_desc" ${sortBy == 'created_desc' ? 'selected' : ''}>Mới cập nhật</option>
                             <option value="name_asc" ${sortBy == 'name_asc' ? 'selected' : ''}>Tên (A → Z)</option>
                         </select>
@@ -83,7 +83,7 @@
                                         <span class="shop-card__stat-value"><c:out value="${shop.productCount}"/></span>
                                     </div>
                                     <div class="shop-card__stat">
-                                        <span class="shop-card__stat-label">Lượng bán</span>
+                                        <span class="shop-card__stat-label">Lượt bán</span>
                                         <span class="shop-card__stat-value"><c:out value="${shop.totalSold}"/></span>
                                     </div>
                                 </div>
@@ -103,8 +103,8 @@
                                     </div>
                                 </div>
                                 <div class="shop-card__actions">
-                                    <a class="button button--ghost" href="${cPath}/seller/shops/detail?id=${shop.id}">Xem chi tiết</a>
-                                    <a class="button button--ghost" href="${cPath}/seller/shops/edit?id=${shop.id}">Sửa</a>
+                                    <a class="button button--ghost" href="${cPath}/seller/inventory">Quản lý sản phẩm</a>
+                                    <a class="button button--ghost" href="${cPath}/seller/shops/edit?id=${shop.id}">Sửa shop</a>
                                     <a class="button button--ghost" href="${cPath}/seller/products/create?shopId=${shop.id}">Tạo sản phẩm</a>
                                     <c:choose>
                                         <c:when test="${shop.status == 'Active'}">

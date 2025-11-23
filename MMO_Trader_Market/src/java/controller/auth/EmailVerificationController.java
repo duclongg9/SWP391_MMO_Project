@@ -21,9 +21,9 @@ import java.util.logging.Logger;
 public class EmailVerificationController extends BaseController {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = Logger.getLogger(EmailVerificationController.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(EmailVerificationController.class.getName()); //để ghi log khi có lỗi bất ngờ
 
-    private final UserService userService = new UserService(new UserDAO()); //thực thi logic xác thực mã.
+    private final UserService userService = new UserService(new UserDAO()); 
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -34,7 +34,7 @@ public class EmailVerificationController extends BaseController {
 
         try {
             boolean activated = userService.verifyEmailCode(normalizedEmail, code);
-            HttpSession session = request.getSession();
+            HttpSession session = request.getSession(); // tạo lấy ss
             session.setAttribute("newUserEmail", normalizedEmail); //prefill ô email ở trang login
             session.setAttribute("verificationSuccess",
                     activated
@@ -56,18 +56,18 @@ public class EmailVerificationController extends BaseController {
             forward(request, response, "auth/login");
         }
     }
-// chuẩn bị state lỗi , giữ lại dữ liệu ng dùng vừa nhập
+//chuẩn bị dữ liệu lỗi + dữ liệu người dùng vừa nhập” để JSP mở lại modal xác thực và điền sẵn mọi thứ.
     private void prepareErrorState(HttpServletRequest request, String email, String message, String attributeOverride) {
-        String attribute = attributeOverride == null ? "verificationError" : attributeOverride; 
+        String attribute = attributeOverride == null ? "verificationError" : attributeOverride;  //Chọn tên biến lỗi để đẩy ra JSP
         request.setAttribute(attribute, message);
-        request.setAttribute("showVerificationModal", true);
-        request.setAttribute("verificationEmail", email); //JSP/FE mở modal xác thực
+        request.setAttribute("showVerificationModal", true); //mở lại cái modal verify
+        request.setAttribute("verificationEmail", email); //Gửi lại email để hiển thị trong modal
         String notice = (email == null || email.isBlank())
                 ? "Vui lòng nhập mã xác thực đã được gửi tới email của bạn."
                 : "Vui lòng nhập mã xác thực đã gửi tới " + email + ".";
         request.setAttribute("verificationNotice", notice);
         request.setAttribute("prefillEmail", email);
-        String codeValue = request.getParameter("verificationCode"); //Lấy lại mã xác thực người dùng
+        String codeValue = request.getParameter("verificationCode"); //Lấy lại giá trị từ form POST.
         if (codeValue != null) {
             request.setAttribute("enteredVerificationCode", codeValue.trim()); //Nếu có → giữ lại vào request,hiển thị lại trong ô mã
         }
