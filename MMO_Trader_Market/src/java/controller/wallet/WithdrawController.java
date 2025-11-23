@@ -96,73 +96,77 @@ public class WithdrawController extends HttpServlet {
         }
         request.getRequestDispatcher("WEB-INF/views/wallet/withdraw.jsp").forward(request, response);
     }
-    
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         HttpSession session = request.getSession();
         Integer user = (Integer) request.getSession().getAttribute("userId");
+
+        // 1. Bắt buộc đăng nhập
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/auth");
             return;
         }
-        
-        String accountName = request.getParameter("accountName");
+
+        // 2. Lấy tham số form
+        String accountName   = request.getParameter("accountName");
         String accountNumber = request.getParameter("accountNumber");
-        String bankCode = request.getParameter("bankCode");
-        String transferNote = request.getParameter("transferNote");
-        long amountParam = Long.parseLong(request.getParameter("amount"));
-        
+        String bankCode      = request.getParameter("bankCode");
+        String transferNote  = request.getParameter("transferNote");
+        long amountParam     = Long.parseLong(request.getParameter("amount"));
+
         BigDecimal amount = BigDecimal.valueOf(amountParam);
-        
-        if(amount.compareTo(wdao.getWalletBalanceByUserId(user)) > 0){
-            session.setAttribute("emg", "Số dư không đủ vui lòng nạp thêm");
+
+        // 3. Kiểm tra số dư ví (chỉ check, chưa trừ ở đây)
+        BigDecimal currentBalance = wdao.getWalletBalanceByUserId(user);
+        if (amount.compareTo(currentBalance) > 0) {
+            session.setAttribute("emg", "Số dư không đủ, vui lòng nạp thêm.");
             response.sendRedirect(request.getContextPath() + "/withdraw");
             return;
         }
 
-        //tạo url chuẩn form VietQR
-        String qrUrl = WithdrawService.buildUrl(bankCode, accountNumber, amountParam, transferNote, accountName);
-        
+        // 4. Tạo URL VietQR cho yêu cầu rút tiền
+        String qrUrl = WithdrawService.buildUrl(
+                bankCode,
+                accountNumber,
+                amountParam,
+                transferNote,
+                accountName
+        );
+
+        // 5. Tải và lưu ảnh QR về thư mục server
         Path folder = Paths.get(ABSOLUTE_PATH);
         String imagePath = null;
         try {
             imagePath = WithdrawService.downloadPng(qrUrl, folder);
-        } catch (IllegalArgumentException e) {
-            session.setAttribute("emg", e);
-            response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (Exception ex) {
-            Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WithdrawController.class.getName())
+                    .log(Level.SEVERE, "Lỗi tải ảnh QR", ex);
+            session.setAttribute("emg", "Không tạo được mã QR, vui lòng thử lại.");
+            response.sendRedirect(request.getContextPath() + "/withdraw");
+            return;
         }
 
-        //tạo bản ghi withdraw request vào database 
+        // 6. Tạo yêu cầu rút tiền (chỉ ghi vào bảng withdrawal_requests)
         try {
-            int result = withdrawService.createWithdrawRequest(user, amount, imagePath);
+            withdrawService.createWithdrawRequest(user, amount, imagePath);
+            session.setAttribute(
+                    "msg",
+                    "Tạo yêu cầu rút tiền thành công, vui lòng chờ admin duyệt."
+            );
         } catch (IllegalArgumentException e) {
             session.setAttribute("emg", e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/withdraw");
         } catch (RuntimeException e) {
-            // Lỗi hệ thống: ghi nhận flash chung và quay lại trang hồ sơ.
-            response.sendRedirect(request.getContextPath() + "/withdraw");
+            session.setAttribute("emg", "Có lỗi hệ thống, vui lòng thử lại.");
         }
-        
-        //Trừ tiền trong ví
-        try {
-            wdao.decreaseBalance(user, amount);
-            BigDecimal beforeAmount = wdao.getWalletBalanceByUserId(user);
-            BigDecimal afterAmount = beforeAmount.subtract(amount);
-            int walletId = wdao.getUserWallet(user).getId();
-            wtdao.insertWithdrawWalletTransaction(walletId, amount, beforeAmount, afterAmount);
-            session.setAttribute("msg","Tạo yêu cầu thành công");
-            response.sendRedirect(request.getContextPath() + "/withdraw");
-        } catch (IllegalArgumentException e) {
-            session.setAttribute("emg",e);
-            response.sendRedirect(request.getContextPath() + "/withdraw");
-        } catch (SQLException ex) {
-            Logger.getLogger(WithdrawController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+
+        // 7. Quay lại trang rút tiền
+        response.sendRedirect(request.getContextPath() + "/withdraw");
     }
+
+
 
     /**
      * Returns a short description of the servlet.

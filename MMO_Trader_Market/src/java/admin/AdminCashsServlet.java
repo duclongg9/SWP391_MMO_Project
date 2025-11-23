@@ -2,11 +2,15 @@ package admin;
 
 import dao.admin.CashDAO;
 import dao.connect.DBConnect;
+import dao.user.WalletTransactionDAO;
+import dao.user.WalletsDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import model.CashTxn;
+import model.TransactionType;
+import model.Wallets;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -282,8 +286,47 @@ public class AdminCashsServlet extends AbstractAdminServlet {
                             (rowsWal > 0 && rowsTx > 0)
                                     ? "Duyệt nạp tiền #" + txId + " thành công."
                                     : "Không có thay đổi khi duyệt nạp.");
-                } else { // Withdrawal
+                }else { // Withdrawal
                     rowsTx = dao.updateWithdrawalStatus(txId, "Completed", note, adminProofUrl);
+
+                    if (rowsTx > 0) {
+                        try {
+                            // DAO ví & transaction
+                            WalletsDAO wdao = new WalletsDAO();
+                            WalletTransactionDAO wtdao = new WalletTransactionDAO();
+
+                            // 1) Lấy ví của user
+                            Wallets wallet = wdao.getUserWallet(userId);
+                            int walletId = wallet.getId();
+
+                            // 2) Lấy số dư hiện tại của ví
+                            //    (đây là balance sau giao dịch, dùng để log)
+                            BigDecimal balanceAfter = wdao.getWalletBalanceByUserId(userId);
+
+                            // 3) Tính số dư trước giao dịch để ghi log
+                            BigDecimal balanceBefore = balanceAfter.add(amount);
+
+                            // 4) Số tiền log trong wallet_transactions
+                            //    bạn đang để Withdrawal là số âm, nên:
+                            BigDecimal txnAmount = amount.negate();
+
+                            // 5) Ghi 1 bản ghi sang wallet_transactions
+                            wtdao.insertTransaction(
+                                    con,                      // dùng luôn connection hiện tại
+                                    walletId,
+                                    txId,                     // related_entity_id = id bên cash/withdraw
+                                    TransactionType.WITHDRAWAL,
+                                    txnAmount,
+                                    balanceBefore,
+                                    balanceAfter,
+                                    "Rút tiền #" + txId      // note
+                            );
+                        } catch (Exception ex) {
+                            // log lỗi, nhưng không rollback việc duyệt rút
+                            ex.printStackTrace();
+                        }
+                    }
+
                     req.getSession().setAttribute("flash",
                             rowsTx > 0
                                     ? "Duyệt rút tiền #" + txId + " thành công."
@@ -330,4 +373,5 @@ public class AdminCashsServlet extends AbstractAdminServlet {
 
         resp.sendRedirect(req.getContextPath() + "/admin/cashs");
     }
+
 }

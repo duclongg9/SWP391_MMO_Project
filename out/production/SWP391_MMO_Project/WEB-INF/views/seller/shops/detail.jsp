@@ -199,7 +199,7 @@
                                         <td><fmt:formatNumber value="${order.totalAmount}" type="currency" /></td>
                                         <td>
                                             <c:if test="${not empty order.createdAt}">
-                                                <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" />
+                                                <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" />
                                             </c:if>
                                         </td>
                                         <td><span class="shop-detail__badge">${order.status}</span></td>

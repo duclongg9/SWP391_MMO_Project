@@ -231,8 +231,10 @@
                                                         <div class="small text-muted mb-1">Ảnh đính kèm</div>
                                                         <div class="d-flex flex-wrap gap-2">
                                                             <c:forEach var="att" items="${d.attachments}">
-                                                                <c:if test="${not empty att.filePath}">
-                                                                    <img src="${fn:escapeXml(att.filePath)}"
+                                                                <c:set var="attWebPath" value="${att.webPath}" />
+                                                                <c:if test="${not empty attWebPath}">
+                                                                    <c:url var="attUrl" value="${attWebPath}" />
+                                                                    <img src="${fn:escapeXml(attUrl)}"
                                                                          alt="Attachment"
                                                                          class="img-thumbnail js-zoomable"
                                                                          style="width:90px;height:90px;object-fit:cover;cursor:zoom-in;">

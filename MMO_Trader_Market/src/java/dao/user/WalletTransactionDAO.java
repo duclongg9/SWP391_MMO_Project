@@ -325,25 +325,23 @@ public class WalletTransactionDAO {
             return ps.executeUpdate();
         }
     }
-    
-    public int insertWithdrawWalletTransaction(int walletId,
-            BigDecimal amount,
-            BigDecimal balanceBefore,
-            BigDecimal balanceAfter) throws SQLException {
+
+    public int insertWithdrawWalletTransaction(int walletId, BigDecimal amount, BigDecimal balanceBefore, BigDecimal balanceAfter) throws SQLException {
         String sql = """
-        INSERT INTO mmo_schema.wallet_transactions
-        (wallet_id, transaction_type, amount, balance_before, balance_after, note)
-        VALUES (?,'Withdraw',?,?,?,'Rut tien')
+    INSERT INTO mmo_schema.wallet_transactions
+    (wallet_id, transaction_type, amount, balance_before, balance_after, note)
+    VALUES (?,'Withdrawal',?,?,?,'Rút tiền')
     """;
         try (Connection con = DBConnect.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, walletId);
             ps.setBigDecimal(2, amount);
             ps.setBigDecimal(3, balanceBefore);
             ps.setBigDecimal(4, balanceAfter);
-            return ps.executeUpdate();
+            return ps.executeUpdate();  // Trả về số bản ghi được cập nhật (thường là 1)
         }
     }
-    
+
+
     public static void main(String[] args) {
         WalletTransactionDAO wdao = new WalletTransactionDAO();
         

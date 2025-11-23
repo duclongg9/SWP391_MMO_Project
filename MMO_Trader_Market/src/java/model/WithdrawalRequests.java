@@ -29,6 +29,10 @@ public class WithdrawalRequests {
         this.bankAccountInfo = bankAccountInfo;
     }
 
+    public WithdrawalRequests() {
+
+    }
+
     public void setId(Integer id) {
         this.id = id;
     }
