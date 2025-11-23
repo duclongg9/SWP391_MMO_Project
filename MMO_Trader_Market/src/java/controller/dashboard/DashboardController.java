@@ -49,19 +49,6 @@ public class DashboardController extends SellerBaseController {
             return;
         }
 
-        // Lấy shop của seller
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null) {
-            request.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
-            request.setAttribute("products", productService.homepageHighlights());
-            request.setAttribute("totalProducts", 0);
-            request.setAttribute("monthlyRevenue", BigDecimal.ZERO);
-            request.setAttribute("completedOrders", 0);
-            request.setAttribute("totalInventory", 0);
-            forward(request, response, "dashboard/index");
-            return;
-        }
-
         // Lấy tham số tìm kiếm và phân trang
         String keyword = request.getParameter("keyword");
         if (keyword != null) {
@@ -74,8 +61,8 @@ public class DashboardController extends SellerBaseController {
         int page = parsePage(request.getParameter("page"));
         int pageSize = parsePageSize(request.getParameter("size"));
         
-        // Đếm tổng sản phẩm (có hoặc không có keyword)
-        int totalProducts = productDAO.countByShopId(shop.getId(), keyword);
+        // Đếm tổng sản phẩm của seller (từ tất cả shops) - có hoặc không có keyword
+        int totalProducts = productDAO.countByOwnerId(userId, keyword);
         
         // Tính tổng số trang
         int totalPages = (int) Math.ceil((double) totalProducts / pageSize);
@@ -85,7 +72,7 @@ public class DashboardController extends SellerBaseController {
         // Tính offset
         int offset = (page - 1) * pageSize;
 
-        // Tính doanh thu tháng hiện tại
+        // Tính doanh thu tháng hiện tại của seller (từ tất cả shops)
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.DAY_OF_MONTH, 1);
         cal.set(Calendar.HOUR_OF_DAY, 0);
@@ -97,16 +84,16 @@ public class DashboardController extends SellerBaseController {
         cal.add(Calendar.MONTH, 1);
         Timestamp thisMonthEnd = new Timestamp(cal.getTimeInMillis());
 
-        BigDecimal monthlyRevenue = orderDAO.getRevenueByShop(shop.getId(), thisMonthStart, thisMonthEnd);
+        BigDecimal monthlyRevenue = orderDAO.getRevenueByOwner(userId, thisMonthStart, thisMonthEnd);
 
-        // Đếm số đơn đã bán (Completed)
-        int completedOrders = orderDAO.countCompletedOrdersByShop(shop.getId());
+        // Đếm số đơn đã bán (Completed) của seller (từ tất cả shops)
+        int completedOrders = orderDAO.countCompletedOrdersByOwner(userId);
         
-        // Tính tổng tồn kho
-        int totalInventory = productDAO.getTotalInventoryByShopId(shop.getId());
+        // Tính tổng tồn kho của seller (từ tất cả shops)
+        int totalInventory = productDAO.getTotalInventoryByOwnerId(userId);
 
-        // Lấy sản phẩm của shop để hiển thị (có phân trang và tìm kiếm)
-        List<model.Products> products = productDAO.findByShopId(shop.getId(), keyword, pageSize, offset);
+        // Lấy sản phẩm của seller (từ tất cả shops) để hiển thị (có phân trang và tìm kiếm)
+        List<model.Products> products = productDAO.findByOwnerId(userId, keyword, pageSize, offset);
 
         // Pass dữ liệu vào request
         request.setAttribute("totalProducts", totalProducts);

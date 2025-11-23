@@ -1088,6 +1088,59 @@ public class OrderDAO extends BaseDAO {
      * @param shopId mã shop
      * @return số đơn đã bán (Completed)
      */
+    /**
+     * Tính tổng doanh thu của một seller (từ tất cả shops) trong khoảng thời gian.
+     *
+     * @param ownerId mã owner (seller)
+     * @param startDate ngày bắt đầu
+     * @param endDate ngày kết thúc
+     * @return tổng doanh thu
+     */
+    public BigDecimal getRevenueByOwner(int ownerId, Timestamp startDate, Timestamp endDate) {
+        final String sql = "SELECT COALESCE(SUM(o.total_amount), 0) FROM orders o "
+                + "INNER JOIN shops s ON s.id = o.shop_id "
+                + "WHERE s.owner_id = ? AND o.status = 'Completed' "
+                + "AND o.created_at >= ? AND o.created_at < ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            statement.setTimestamp(2, startDate);
+            statement.setTimestamp(3, endDate);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tính doanh thu theo owner_id=" + ownerId, ex);
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Đếm số đơn đã bán (Completed) của một seller (từ tất cả shops).
+     *
+     * @param ownerId mã owner (seller)
+     * @return số đơn đã bán
+     */
+    public int countCompletedOrdersByOwner(int ownerId) {
+        final String sql = "SELECT COUNT(*) FROM orders o "
+                + "INNER JOIN shops s ON s.id = o.shop_id "
+                + "WHERE s.owner_id = ? AND o.status = 'Completed'";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm đơn đã bán theo owner_id=" + ownerId, ex);
+        }
+        return 0;
+    }
+    
     public int countCompletedOrdersByShop(int shopId) {
         final String sql = "SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id "
                 + "WHERE p.shop_id = ? AND o.status = 'Completed'";

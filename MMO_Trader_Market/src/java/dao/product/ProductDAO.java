@@ -1049,6 +1049,93 @@ public class ProductDAO extends BaseDAO {
     }
     
     /**
+     * Đếm tổng số sản phẩm của một seller (từ tất cả shops của seller).
+     *
+     * @param ownerId mã owner (seller)
+     * @param keyword từ khóa tìm kiếm (có thể null)
+     * @return tổng số sản phẩm
+     */
+    public int countByOwnerId(int ownerId, String keyword) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products p ");
+        sql.append("INNER JOIN shops s ON s.id = p.shop_id ");
+        sql.append("WHERE s.owner_id = ?");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(ownerId);
+        
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(p.description) LIKE ?)");
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể đếm sản phẩm theo owner_id=" + ownerId, ex);
+        }
+        return 0;
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm của một seller (từ tất cả shops) với tìm kiếm và phân trang.
+     *
+     * @param ownerId mã owner (seller)
+     * @param keyword từ khóa tìm kiếm (có thể null)
+     * @param limit số bản ghi mỗi trang
+     * @param offset vị trí bắt đầu
+     * @return danh sách sản phẩm
+     */
+    public List<Products> findByOwnerId(int ownerId, String keyword, int limit, int offset) {
+        StringBuilder sql = new StringBuilder("SELECT p.id, p.shop_id, p.product_type, p.product_subtype, p.name, ");
+        sql.append("p.short_description, p.description, p.price, p.primary_image_url, ");
+        sql.append("p.gallery_json, p.inventory_count, COALESCE(ps.sold_count, 0) AS sold_count, p.status, ");
+        sql.append("p.variant_schema, p.variants_json, p.created_at, p.updated_at ");
+        sql.append("FROM products p ");
+        sql.append("INNER JOIN shops s ON s.id = p.shop_id ");
+        sql.append("LEFT JOIN product_sales_view ps ON ps.product_id = p.id ");
+        sql.append("WHERE s.owner_id = ?");
+        
+        List<Object> params = new ArrayList<>();
+        params.add(ownerId);
+        
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String pattern = buildLikePattern(keyword);
+            sql.append(" AND (LOWER(p.name) LIKE ? OR LOWER(p.short_description) LIKE ? OR LOWER(p.description) LIKE ?)");
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+        
+        sql.append(" ORDER BY p.created_at DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+        
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            setParameters(statement, params);
+            List<Products> products = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapRow(rs));
+                }
+            }
+            return products;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tải sản phẩm theo owner_id=" + ownerId + " với keyword=" + keyword, ex);
+            return List.of();
+        }
+    }
+    
+    /**
      * Tính tổng số lượng tồn kho của tất cả sản phẩm trong một shop.
      *
      * @param shopId mã shop
@@ -1066,6 +1153,29 @@ public class ProductDAO extends BaseDAO {
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Không thể tính tổng tồn kho theo shop_id=" + shopId, ex);
+        }
+        return 0;
+    }
+    
+    /**
+     * Tính tổng số lượng tồn kho của tất cả sản phẩm của một seller (từ tất cả shops).
+     *
+     * @param ownerId mã owner (seller)
+     * @return tổng số lượng tồn kho
+     */
+    public int getTotalInventoryByOwnerId(int ownerId) {
+        final String sql = "SELECT COALESCE(SUM(p.inventory_count), 0) FROM products p "
+                + "INNER JOIN shops s ON s.id = p.shop_id WHERE s.owner_id = ?";
+        try (Connection connection = getConnection(); 
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, ownerId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Không thể tính tổng tồn kho theo owner_id=" + ownerId, ex);
         }
         return 0;
     }
