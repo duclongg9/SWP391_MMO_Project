@@ -774,11 +774,12 @@ public class CredentialDAO extends BaseDAO {
                     String username = null;
                     String password = null;
                     
-                    // Parse JSON để lấy username và password
+                    // Parse để lấy username và password - hỗ trợ cả JSON và plain format (email|password)
                     if (encryptedValue != null && !encryptedValue.trim().isEmpty()) {
                         try {
-                            // Parse JSON: {"username":"...","password":"..."}
                             encryptedValue = encryptedValue.trim();
+                            
+                            // Format 1: JSON {"username":"...","password":"..."}
                             if (encryptedValue.startsWith("{") && encryptedValue.endsWith("}")) {
                                 JsonObject jsonObject = JsonParser.parseString(encryptedValue).getAsJsonObject();
                                 if (jsonObject.has("username")) {
@@ -787,9 +788,27 @@ public class CredentialDAO extends BaseDAO {
                                 if (jsonObject.has("password")) {
                                     password = jsonObject.get("password").getAsString();
                                 }
+                            } 
+                            // Format 2: Plain format email|password (từ file SQL)
+                            else if (encryptedValue.contains("|")) {
+                                String[] parts = encryptedValue.split("\\|", 2);
+                                if (parts.length >= 1) {
+                                    username = parts[0].trim();
+                                }
+                                if (parts.length >= 2) {
+                                    password = parts[1].trim();
+                                }
+                            }
+                            // Format 3: Chỉ có username (không có password)
+                            else {
+                                username = encryptedValue;
+                                password = "";
                             }
                         } catch (Exception e) {
-                            LOGGER.log(Level.WARNING, "Không thể parse credential JSON: " + encryptedValue, e);
+                            LOGGER.log(Level.WARNING, "Không thể parse credential: " + encryptedValue, e);
+                            // Fallback: coi toàn bộ là username
+                            username = encryptedValue;
+                            password = "";
                         }
                     }
                     

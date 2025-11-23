@@ -1,30 +1,40 @@
 package dao.connect;
 
+import conf.AppConfig;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnect {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/mmo_schema";
-    private static final String USER = "root";
-    private static final String PASSWORD = "123";
-
     // Ham lay ket noi moi moi lan duoc goi
-    public static Connection getConnection() {
-        Connection conn = null;
+    public static Connection getConnection() throws SQLException {
+        String driver = AppConfig.get("db.driver").trim();
+        if (!driver.isEmpty()) {
+            try {
+                Class.forName(driver);
+            } catch (ClassNotFoundException e) {
+                throw new SQLException("JDBC driver not found: " + driver, e);
+            }
+        }
+        String url = AppConfig.get("db.url");
+        String user = AppConfig.get("db.username");
+        String password = AppConfig.get("db.password");
+        
+        if (url.isEmpty() || user.isEmpty() || password.isEmpty()) {
+            throw new SQLException("Database configuration is incomplete. Check db.url, db.username, and db.password in database.properties");
+        }
+        
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+            Connection conn = DriverManager.getConnection(url, user, password);
             System.out.println("Ket noi thanh cong den database!");
-        } catch (ClassNotFoundException e) {
-            System.err.println("Loi: Khong tim thay driver JDBC!");
-            e.printStackTrace();
+            return conn;
         } catch (SQLException e) {
             System.err.println("Loi: Khong the ket noi den database!");
-            e.printStackTrace();
+            System.err.println("URL: " + url);
+            System.err.println("User: " + user);
+            throw new SQLException("Failed to connect to database. Check your database configuration and ensure MySQL is running.", e);
         }
-        return conn;
     }
 
     // Dong ket noi sau khi su dung
@@ -41,12 +51,17 @@ public class DBConnect {
     }
 
     public static void main(String[] args) {
-        Connection con = DBConnect.getConnection();
-        if (con != null) {
-            System.out.println("Database connection is active!");
-            DBConnect.closeConnection(con); // Dong ket noi sau khi kiem tra
-        } else {
-            System.out.println("Database connection failed!");
+        try {
+            Connection con = DBConnect.getConnection();
+            if (con != null) {
+                System.out.println("Database connection is active!");
+                DBConnect.closeConnection(con); // Dong ket noi sau khi kiem tra
+            } else {
+                System.out.println("Database connection failed!");
+            }
+        } catch (SQLException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

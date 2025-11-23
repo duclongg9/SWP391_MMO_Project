@@ -10,7 +10,10 @@ import model.view.product.ProductSummaryView;
 import service.HomepageService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * tách trang chủ thành nhiều “mảnh” độc lập để truy vấn chậm ở một phần không
@@ -20,6 +23,7 @@ import java.util.List;
 public class HomepageFragmentController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(HomepageFragmentController.class.getName());
 
     private final HomepageService homepageService = new HomepageService();
 
@@ -48,8 +52,15 @@ public class HomepageFragmentController extends HttpServlet {
 
     private void handleSummary(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("summary", homepageService.loadMarketplaceSummary()); //tổng số shop, tổng số sản phẩm, số giao dịch
-        request.setAttribute("productCategories", homepageService.loadProductCategories()); //danh sách category
+        try {
+            request.setAttribute("summary", homepageService.loadMarketplaceSummary()); //tổng số shop, tổng số sản phẩm, số giao dịch
+            request.setAttribute("productCategories", homepageService.loadProductCategories()); //danh sách category
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error loading homepage summary", e);
+            // Set empty data to avoid breaking the page
+            request.setAttribute("summary", null);
+            request.setAttribute("productCategories", new ArrayList<>());
+        }
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "public, max-age=60");
         renderFragment(request, response, "product/fragments/home/summary");
@@ -57,13 +68,19 @@ public class HomepageFragmentController extends HttpServlet {
 
     private void handleFeatured(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-// Nếu hợp lệ >0 thì chỉ lấy bấy nhiêu sản phẩm.
-//Nếu không có/không hợp lệ thì lấy default.
-        int limit = parsePositiveInt(request.getParameter("limit"));
-        List<ProductSummaryView> featured = limit > 0
-                ? homepageService.loadFeaturedProducts(limit)
-                : homepageService.loadFeaturedProducts();
-        request.setAttribute("featuredProducts", featured);
+        try {
+            // Nếu hợp lệ >0 thì chỉ lấy bấy nhiêu sản phẩm.
+            //Nếu không có/không hợp lệ thì lấy default.
+            int limit = parsePositiveInt(request.getParameter("limit"));
+            List<ProductSummaryView> featured = limit > 0
+                    ? homepageService.loadFeaturedProducts(limit)
+                    : homepageService.loadFeaturedProducts();
+            request.setAttribute("featuredProducts", featured);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error loading featured products", e);
+            // Set empty list to avoid breaking the page
+            request.setAttribute("featuredProducts", new ArrayList<>());
+        }
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); //Set header không cache (vì sản phẩm nổi bật có thể thay đổi liên tục).
         renderFragment(request, response, "product/fragments/home/featured");
@@ -71,7 +88,13 @@ public class HomepageFragmentController extends HttpServlet {
 
     private void handleSystemNotes(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("systemNotes", homepageService.loadSystemNotes());
+        try {
+            request.setAttribute("systemNotes", homepageService.loadSystemNotes());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error loading system notes", e);
+            // Set empty list to avoid breaking the page
+            request.setAttribute("systemNotes", new ArrayList<>());
+        }
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "public, max-age=300");
         renderFragment(request, response, "product/fragments/home/system-notes");
