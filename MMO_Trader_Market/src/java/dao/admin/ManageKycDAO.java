@@ -53,14 +53,6 @@ public class ManageKycDAO {
                 k.setUserEmail(rs.getString("user_email"));
                 k.setStatusName(rs.getString("status_name"));
                 list.add(k);
-
-                // ---- DEBUG: in 3 dòng đầu tiên ra console để chắc chắn dữ liệu đúng
-                if (i++ < 3) {
-                    System.out.printf("[KYC] id=%d, userName=%s, email=%s, idNumber=%s, status=%d%n",
-                            rs.getInt("id"), rs.getString("user_name"),
-                            rs.getString("user_email"), rs.getString("id_number"),
-                            rs.getInt("status_id"));
-                }
             }
         }
         return list;
