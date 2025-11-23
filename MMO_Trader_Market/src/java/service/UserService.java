@@ -75,13 +75,13 @@ public class UserService {
             String hashedPassword = HashPassword.toSHA1(rawPassword);
             Users created = userDAO.createUser(normalizedEmail, normalizedName, hashedPassword, DEFAULT_ROLE_ID,
                     2);
-            int result = wdao.createWallet(created.getId());
+//            int result = wdao.createWallet(created.getId());
             if (created == null) {
                 throw new IllegalStateException("Không thể tạo tài khoản mới.");
             }
-            if(result<1){
-                throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
-            }
+//            if(result<1){
+//                throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
+//            }
             String verificationCode = createAndStoreVerificationCode(created.getId()); //Tạo mã xác thực email duy nhất
             sendVerificationEmail(created.getEmail(), created.getName(), verificationCode); // gửi mail kèm code 
             return created;
@@ -213,6 +213,10 @@ public class UserService {
 //                throw new IllegalStateException("Không thể kích hoạt tài khoản lúc này. Vui lòng thử lại sau");
 //            }
             emailVerificationTokenDAO.deleteByUserId(user.getId()); // xóa userid
+            int result = wdao.createWallet(user.getId());
+             if(result<1){
+                throw new IllegalStateException("Tạo tài khoản thành công nhưng tạo ví thất bại");
+            }
             return true;
         } catch (SQLException e) {
             throw new RuntimeException("DB gặp sự cố khi xác thực email", e);
