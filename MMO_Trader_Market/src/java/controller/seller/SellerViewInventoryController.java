@@ -147,12 +147,6 @@ public class SellerViewInventoryController extends SellerBaseController {
                     String variantCode = variant.getVariantCode();
                     String normalizedCode = ProductVariantUtils.normalizeCode(variantCode);
                     
-                    // Lấy số lượng tồn kho từ variant
-                    Integer inventoryCount = variant.getInventoryCount();
-                    if (inventoryCount == null) {
-                        inventoryCount = 0;
-                    }
-                    
                     // Lấy credentials của variant này (chỉ lấy chưa bán)
                     List<CredentialDAO.CredentialInfo> credentials = credentialDAO.findAllCredentials(
                         productId, 
@@ -165,6 +159,19 @@ public class SellerViewInventoryController extends SellerBaseController {
                         productId, 
                         variantCode
                     );
+                    
+                    // Lấy số lượng tồn kho từ variant (cấu hình)
+                    Integer inventoryCount = variant.getInventoryCount();
+                    if (inventoryCount == null) {
+                        inventoryCount = 0;
+                    }
+                    
+                    // Nếu số credentials thực tế lớn hơn inventoryCount cấu hình,
+                    // thì hiển thị số credentials thực tế để phản ánh đúng tình trạng
+                    int actualCount = availability.available();
+                    if (actualCount > inventoryCount) {
+                        inventoryCount = actualCount;
+                    }
                     
                     variantInventoryMap.put(
                         normalizedCode != null ? normalizedCode : "",

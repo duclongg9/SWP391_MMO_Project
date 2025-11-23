@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%
     request.setAttribute("bodyClass", "layout");
     request.setAttribute("headerModifier", "layout__header--split");
@@ -141,7 +142,7 @@
                                             Giá (VNĐ) <span style="color: red;">*</span>
                                         </label>
                                         <input type="number" class="variant-price" 
-                                               value="${variant.price != null ? variant.price : 0}" 
+                                               value="<c:choose><c:when test="${variant.price != null}"><fmt:formatNumber value="${variant.price}" maxFractionDigits="0" groupingUsed="false" /></c:when><c:otherwise>0</c:otherwise></c:choose>" 
                                                required min="0" step="1000"
                                                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                                     </div>
