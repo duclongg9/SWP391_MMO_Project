@@ -14,7 +14,7 @@ USE mmo_schema;
 -- =================================================================
 
 DROP TABLE IF EXISTS `roles`;
-CREATE TABLE `roles` (users
+CREATE TABLE `roles` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL UNIQUE,
   PRIMARY KEY (`id`)
@@ -462,9 +462,9 @@ INSERT INTO `roles` (`id`,`name`) VALUES
 
 -- Users (hash minh hoạ)
 INSERT INTO `users` (`id`,`role_id`,`email`,`name`,`avatar_url`,`hashed_password`,`google_id`,`status`,`created_at`,`updated_at`) VALUES
- (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'mNy+OfwBVzPj9442CM86ANCQGd0=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00');
- -- (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','uiDM8xbTll23hMnK00khkszc0xk=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
---  (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','TgmCHMtVdyWoZp4cTH7vvEBfrQA=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
+ (1,1,'admin@mmo.local','Trung tâm điều hành MMO',NULL,'Omq9O4yodqYbjkdPv6rfzV8TYEs=',NULL,1,'2024-01-10 09:00:00','2024-01-10 09:00:00'),
+ (2,2,'seller@mmo.local','Người bán Cyber Gear','https://cdn.mmo.local/avatar/seller.png','Omq9O4yodqYbjkdPv6rfzV8TYEs=',NULL,1,'2024-01-12 08:00:00','2024-01-20 09:30:00'),
+ (3,3,'buyer@mmo.local','Người mua Pro Gamer','https://cdn.mmo.local/avatar/buyer.png','Omq9O4yodqYbjkdPv6rfzV8TYEs=',NULL,1,'2024-01-15 07:45:00','2024-01-27 07:45:00');
 
 -- KYC statuses
 INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
@@ -691,7 +691,8 @@ INSERT INTO `kyc_request_statuses` (`id`,`status_name`) VALUES
 
 -- Wallets
 INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_at`) VALUES
- (1,1,0.0000,1,'2024-01-11 09:00:00','2024-01-11 09:00:00');
+ (1,1,0.0000,1,'2024-01-11 09:00:00','2024-01-11 09:00:00'),
+ (2,3,100000000.0000,1,'2024-01-15 07:45:00','2024-01-15 07:45:00');
 
 -- INSERT INTO `deposit_requests` (`id`,`user_id`,`amount`,`qr_content`,`idempotency_key`,`status`,`expires_at`,`admin_note`,`created_at`) VALUES
 --  (1,3,300000.0000,'VietQR|MMO|INV-20240120','DEPOSIT-UUID-1','Completed','2024-01-20 12:00:00','Đối soát thành công','2024-01-20 10:15:00'),
@@ -753,14 +754,622 @@ INSERT INTO `wallets` (`id`,`user_id`,`balance`,`status`,`created_at`,`updated_a
 --  (2,1002,5002,-1,'Sale','2024-01-26 09:05:00'),
 --  (3,1002,NULL,5,'ManualRestock','2024-01-29 10:00:00'),
 --  (4,1002,5003,-1,'Sale','2024-01-31 09:05:00');
+INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`admin_note`,`status`,`created_at`,`updated_at`) VALUES
+ (1,2,'Email & MXH Store','Chuyên cung cấp tài khoản Email (Gmail, Yahoo, Outlook) và tài khoản mạng xã hội (Facebook, TikTok, X/Twitter)',NULL,'Active','2024-01-12 08:30:00','2024-01-12 08:30:00');
 
--- System configs
-INSERT INTO `system_configs` (`id`,`config_key`,`config_value`,`description`,`created_at`,`updated_at`) VALUES
- (1,'escrow.hold.default.seconds','259200','Thời lượng giữ tiền mặc định (giây) trước khi giải ngân auto','2024-01-10 09:00:00','2024-01-10 09:00:00'),
- (2,'support.email','support@mmo.local','Email bộ phận hỗ trợ khách hàng','2024-01-10 09:00:00','2024-01-10 09:00:00');
+-- Products cho Shop 1 (Email & MXH)
+INSERT INTO `products`
+(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
+VALUES
+-- Gmail
+(1001,1,'EMAIL','GMAIL',
+ 'Gmail Doanh nghiệp 50GB',
+ 'Email doanh nghiệp 50GB, bảo hành, hỗ trợ đổi mật khẩu.',
+ 'Tài khoản Gmail Doanh nghiệp 50GB. Bạn nhận được email và mật khẩu kèm hướng dẫn đổi bảo mật 2 lớp.',
+ 250000.0000,
+ 'gmail.png',
+ JSON_ARRAY('gmail2.jpg','mailedu.png'),
+ 35,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','gmail-basic-1m','attributes', JSON_OBJECT('service','gmail','plan','basic','duration','1m'),'price',250000.0000,'inventory_count',20,'image_url','gmail.png','status','Available'),
+   JSON_OBJECT('variant_code','gmail-premium-12m','attributes', JSON_OBJECT('service','gmail','plan','premium','duration','12m'),'price',1200000.0000,'inventory_count',15,'image_url','gmail2.jpg','status','Available')
+ ),
+ NOW(),NOW()),
 
+-- Yahoo Mail
+(1002,1,'EMAIL','YAHOO',
+ 'Yahoo Mail Premium 1TB',
+ 'Yahoo Mail Premium dung lượng 1TB, bảo hành đổi mật khẩu.',
+ 'Tài khoản Yahoo Mail Premium với dung lượng 1TB, hỗ trợ bảo mật và khôi phục tài khoản.',
+ 180000.0000,
+ 'yahoo.png',
+ JSON_ARRAY('yahoo2.jpg'),
+ 28,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','yahoo-1m','attributes', JSON_OBJECT('service','yahoo','plan','premium','duration','1m'),'price',180000.0000,'inventory_count',28,'image_url','yahoo.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- Outlook
+(1003,1,'EMAIL','OUTLOOK',
+ 'Outlook Business 100GB',
+ 'Outlook Business 100GB, hỗ trợ bảo mật và khôi phục.',
+ 'Tài khoản Outlook Business với dung lượng 100GB, kèm hướng dẫn bảo mật & khôi phục.',
+ 300000.0000,
+ 'outlook.png',
+ JSON_ARRAY('outlook2.jpg'),
+ 32,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','outlook-1m','attributes', JSON_OBJECT('service','outlook','plan','business','duration','1m'),'price',300000.0000,'inventory_count',20,'image_url','outlook.png','status','Available'),
+   JSON_OBJECT('variant_code','outlook-12m','attributes', JSON_OBJECT('service','outlook','plan','business','duration','12m'),'price',3200000.0000,'inventory_count',12,'image_url','outlook2.jpg','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- Facebook
+(1004,1,'SOCIAL','FACEBOOK',
+ 'Tài khoản Facebook cổ 2009+',
+ 'Facebook cổ năm 2009+, bảo hành đổi pass.',
+ 'Tài khoản Facebook cổ (năm tạo 2009–2012), có bảo hành đổi mật khẩu. Dùng cho chạy quảng cáo & seeding.',
+ 150000.0000,
+ 'facebook.png',
+ JSON_ARRAY('fb2.png'),
+ 42,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','fb-2009','attributes', JSON_OBJECT('age','2009'),'price',180000.0000,'inventory_count',15,'image_url','facebook.png','status','Available'),
+   JSON_OBJECT('variant_code','fb-2012','attributes', JSON_OBJECT('age','2012'),'price',150000.0000,'inventory_count',27,'image_url','fb2.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- TikTok
+(1005,1,'SOCIAL','TIKTOK',
+ 'Tài khoản TikTok Pro',
+ 'Tài khoản TikTok Pro, bảo hành đăng nhập.',
+ 'Tài khoản TikTok Pro, dùng quay và đăng video với analytics nâng cao.',
+ 99000.0000,
+ 'tiktok.png',
+ JSON_ARRAY('tiktok2.png','tiktoklive.png'),
+ 38,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','tt-pro','attributes', JSON_OBJECT('tier','pro'),'price',99000.0000,'inventory_count',38,'image_url','tiktok.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- X (Twitter)
+(1006,1,'SOCIAL','X',
+ 'Tài khoản X (Twitter) Verified',
+ 'Tài khoản X Verified, bảo hành đăng nhập.',
+ 'Tài khoản X (Twitter) đã được xác minh, hỗ trợ đầy đủ tính năng premium.',
+ 220000.0000,
+ 'x.png',
+ JSON_ARRAY('x2.png'),
+ 25,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','x-verified','attributes', JSON_OBJECT('tier','verified'),'price',220000.0000,'inventory_count',25,'image_url','x.png','status','Available')
+ ),
+ NOW(),NOW());
+
+-- ====================================================================================
+-- SHOP 2: Chuyên Software & Game
+-- ====================================================================================
+INSERT INTO `shops` (`id`,`owner_id`,`name`,`description`,`admin_note`,`status`,`created_at`,`updated_at`) VALUES
+ (2,2,'Software & Game Store','Chuyên cung cấp tài khoản phần mềm bản quyền (Canva, Office, Windows, ChatGPT) và tài khoản game (Valorant, League of Legends, CS2)',NULL,'Active','2024-01-12 08:30:00','2024-01-12 08:30:00');
+
+-- Products cho Shop 2 (Software & Game)
+INSERT INTO `products`
+(`id`,`shop_id`,`product_type`,`product_subtype`,`name`,`short_description`,`description`,`price`,`primary_image_url`,`gallery_json`,`inventory_count`,`sold_count`,`status`,`variant_schema`,`variants_json`,`created_at`,`updated_at`)
+VALUES
+-- Canva
+(2001,2,'SOFTWARE','CANVA',
+ 'Canva Pro chính chủ',
+ 'Canva Pro bản quyền 12 tháng, kích hoạt trực tiếp.',
+ 'Cung cấp tài khoản Canva Pro chính chủ, kích hoạt ngay sau khi thanh toán, bảo hành 30 ngày.',
+ 90000.0000,
+ 'canva.jpg',
+ JSON_ARRAY('canva2.png'),
+ 45,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','canva-1m','attributes',JSON_OBJECT('duration','1m'),'price',90000.0000,'inventory_count',25,'image_url','canva.jpg','status','Available'),
+   JSON_OBJECT('variant_code','canva-12m','attributes',JSON_OBJECT('duration','12m'),'price',750000.0000,'inventory_count',20,'image_url','canva2.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- Office
+(2002,2,'SOFTWARE','OFFICE',
+ 'Office 365 Family 12 tháng',
+ 'Office 365 Family 12 tháng cho 6 người, kích hoạt ngay.',
+ 'Gói Office 365 Family 12 tháng cho 6 tài khoản, hướng dẫn kích hoạt và sử dụng đầy đủ tính năng.',
+ 890000.0000,
+ 'office.jpg',
+ JSON_ARRAY('office2.jpg'),
+ 18,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','o365family-12m','attributes', JSON_OBJECT('seats',6,'duration','12m'),'price',890000.0000,'inventory_count',18,'image_url','office.jpg','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- Windows
+(2003,2,'SOFTWARE','WINDOWS',
+ 'Key Windows 11 Pro',
+ 'Key bản quyền Windows 11 Pro, kích hoạt online.',
+ 'Khóa bản quyền Windows 11 Pro, kích hoạt online trọn đời. Hỗ trợ kích hoạt ngay sau khi mua.',
+ 390000.0000,
+ 'win11.jpg',
+ JSON_ARRAY('office.jpg'),
+ 30,0,'Available','EDITION_LICENSE',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','win11pro-oem','attributes', JSON_OBJECT('edition','pro','license','oem'),'price',390000.0000,'inventory_count',20,'image_url','win11.jpg','status','Available'),
+   JSON_OBJECT('variant_code','win11pro-retail','attributes', JSON_OBJECT('edition','pro','license','retail'),'price',450000.0000,'inventory_count',10,'image_url','win11.jpg','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- ChatGPT
+(2004,2,'SOFTWARE','CHATGPT',
+ 'ChatGPT Plus 1 tháng',
+ 'ChatGPT Plus 1 tháng, truy cập GPT-4 và tính năng nâng cao.',
+ 'Tài khoản ChatGPT Plus với quyền truy cập GPT-4, tạo hình ảnh DALL-E và các tính năng premium khác.',
+ 250000.0000,
+ 'chatgpt.png',
+ JSON_ARRAY('chatgpt2.png'),
+ 22,0,'Available','DURATION_PLAN',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','chatgpt-1m','attributes', JSON_OBJECT('service','chatgpt','plan','plus','duration','1m'),'price',250000.0000,'inventory_count',15,'image_url','chatgpt.png','status','Available'),
+   JSON_OBJECT('variant_code','chatgpt-12m','attributes', JSON_OBJECT('service','chatgpt','plan','plus','duration','12m'),'price',2500000.0000,'inventory_count',7,'image_url','chatgpt2.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- Valorant
+(2005,2,'GAME','VALORANT',
+ 'Tài khoản Valorant Rank Gold',
+ 'Tài khoản Valorant rank Gold, vùng AP/SEA, bảo hành đăng nhập.',
+ 'Tài khoản Valorant rank Gold, vùng AP/SEA, đã có skin và agent mở khóa. Bảo hành đăng nhập 7 ngày.',
+ 400000.0000,
+ 'valorant.png',
+ JSON_ARRAY('varo.png'),
+ 15,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','valo-silver','attributes', JSON_OBJECT('rank','Silver','region','AP'),'price',350000.0000,'inventory_count',8,'image_url','valorant.png','status','Available'),
+   JSON_OBJECT('variant_code','valo-gold','attributes', JSON_OBJECT('rank','Gold','region','AP'),'price',400000.0000,'inventory_count',7,'image_url','varo.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- League of Legends
+(2006,2,'GAME','LEAGUE_OF_LEGENDS',
+ 'Tài khoản LoL Rank Platinum',
+ 'Tài khoản League of Legends rank Platinum, nhiều tướng và skin.',
+ 'Tài khoản LoL rank Platinum, đã có nhiều tướng và skin hiếm. Bảo hành đăng nhập và chuyển vùng.',
+ 350000.0000,
+ 'lol.png',
+ JSON_ARRAY('lol2.png'),
+ 12,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','lol-gold','attributes', JSON_OBJECT('rank','Gold','region','VN'),'price',280000.0000,'inventory_count',6,'image_url','lol.png','status','Available'),
+   JSON_OBJECT('variant_code','lol-plat','attributes', JSON_OBJECT('rank','Platinum','region','VN'),'price',350000.0000,'inventory_count',6,'image_url','lol2.png','status','Available')
+ ),
+ NOW(),NOW()),
+
+-- CS2
+(2007,2,'GAME','CS2',
+ 'Tài khoản CS2 Prime',
+ 'Tài khoản CS2 Prime, đã có skin và rank.',
+ 'Tài khoản CS2 Prime với nhiều skin và rank ổn định. Bảo hành đăng nhập và chuyển tài khoản.',
+ 320000.0000,
+ 'cs2.png',
+ JSON_ARRAY('cs2_2.png'),
+ 20,0,'Available','CUSTOM',
+ JSON_ARRAY(
+   JSON_OBJECT('variant_code','cs2-prime','attributes', JSON_OBJECT('type','prime','rank','Gold Nova'),'price',320000.0000,'inventory_count',12,'image_url','cs2.png','status','Available'),
+   JSON_OBJECT('variant_code','cs2-prime-mg','attributes', JSON_OBJECT('type','prime','rank','Master Guardian'),'price',450000.0000,'inventory_count',8,'image_url','cs2_2.png','status','Available')
+ ),
+ NOW(),NOW());
+
+-- ====================================================================================
+-- HÀNG TỒN KHO: Product Credentials
+-- Email và Facebook phải có định dạng email chuẩn
+-- ====================================================================================
+
+-- Credentials cho Gmail (1001) - 35 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1001,NULL,'gmail.account.001@gmail.com|Password123!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.002@gmail.com|SecurePass456!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.003@gmail.com|MyPass789!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.004@gmail.com|StrongPass2024!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.005@gmail.com|SafePass321!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.006@gmail.com|NewPass654!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.007@gmail.com|GoodPass987!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.008@gmail.com|BestPass147!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.009@gmail.com|TopPass258!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.010@gmail.com|SuperPass369!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.011@gmail.com|MegaPass741!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.012@gmail.com|UltraPass852!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.013@gmail.com|PowerPass963!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.014@gmail.com|MaxPass159!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.015@gmail.com|ProPass357!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.016@gmail.com|ElitePass468!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.017@gmail.com|PrimePass579!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.018@gmail.com|GoldPass680!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.019@gmail.com|SilverPass791!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.account.020@gmail.com|BronzePass802!','gmail-basic-1m',0,NOW()),
+(1001,NULL,'gmail.premium.001@gmail.com|PremiumPass123!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.002@gmail.com|PremiumPass456!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.003@gmail.com|PremiumPass789!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.004@gmail.com|PremiumPass012!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.005@gmail.com|PremiumPass345!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.006@gmail.com|PremiumPass678!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.007@gmail.com|PremiumPass901!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.008@gmail.com|PremiumPass234!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.009@gmail.com|PremiumPass567!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.010@gmail.com|PremiumPass890!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.011@gmail.com|PremiumPass123!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.012@gmail.com|PremiumPass456!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.013@gmail.com|PremiumPass789!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.014@gmail.com|PremiumPass012!','gmail-premium-12m',0,NOW()),
+(1001,NULL,'gmail.premium.015@gmail.com|PremiumPass345!','gmail-premium-12m',0,NOW());
+
+-- Credentials cho Yahoo (1002) - 28 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1002,NULL,'yahoo.account.001@yahoo.com|YahooPass123!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.002@yahoo.com|YahooPass456!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.003@yahoo.com|YahooPass789!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.004@yahoo.com|YahooPass012!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.005@yahoo.com|YahooPass345!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.006@yahoo.com|YahooPass678!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.007@yahoo.com|YahooPass901!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.008@yahoo.com|YahooPass234!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.009@yahoo.com|YahooPass567!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.010@yahoo.com|YahooPass890!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.011@yahoo.com|YahooPass123!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.012@yahoo.com|YahooPass456!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.013@yahoo.com|YahooPass789!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.014@yahoo.com|YahooPass012!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.015@yahoo.com|YahooPass345!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.016@yahoo.com|YahooPass678!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.017@yahoo.com|YahooPass901!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.018@yahoo.com|YahooPass234!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.019@yahoo.com|YahooPass567!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.020@yahoo.com|YahooPass890!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.021@yahoo.com|YahooPass123!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.022@yahoo.com|YahooPass456!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.023@yahoo.com|YahooPass789!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.024@yahoo.com|YahooPass012!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.025@yahoo.com|YahooPass345!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.026@yahoo.com|YahooPass678!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.027@yahoo.com|YahooPass901!','yahoo-1m',0,NOW()),
+(1002,NULL,'yahoo.account.028@yahoo.com|YahooPass234!','yahoo-1m',0,NOW());
+
+-- Credentials cho Outlook (1003) - 32 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1003,NULL,'outlook.account.001@outlook.com|OutlookPass123!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.002@outlook.com|OutlookPass456!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.003@outlook.com|OutlookPass789!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.004@outlook.com|OutlookPass012!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.005@outlook.com|OutlookPass345!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.006@outlook.com|OutlookPass678!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.007@outlook.com|OutlookPass901!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.008@outlook.com|OutlookPass234!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.009@outlook.com|OutlookPass567!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.010@outlook.com|OutlookPass890!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.011@outlook.com|OutlookPass123!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.012@outlook.com|OutlookPass456!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.013@outlook.com|OutlookPass789!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.014@outlook.com|OutlookPass012!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.015@outlook.com|OutlookPass345!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.016@outlook.com|OutlookPass678!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.017@outlook.com|OutlookPass901!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.018@outlook.com|OutlookPass234!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.019@outlook.com|OutlookPass567!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.account.020@outlook.com|OutlookPass890!','outlook-1m',0,NOW()),
+(1003,NULL,'outlook.business.001@outlook.com|BusinessPass123!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.002@outlook.com|BusinessPass456!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.003@outlook.com|BusinessPass789!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.004@outlook.com|BusinessPass012!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.005@outlook.com|BusinessPass345!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.006@outlook.com|BusinessPass678!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.007@outlook.com|BusinessPass901!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.008@outlook.com|BusinessPass234!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.009@outlook.com|BusinessPass567!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.010@outlook.com|BusinessPass890!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.011@outlook.com|BusinessPass123!','outlook-12m',0,NOW()),
+(1003,NULL,'outlook.business.012@outlook.com|BusinessPass456!','outlook-12m',0,NOW());
+
+-- Credentials cho Facebook (1004) - 42 credentials (email format)
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1004,NULL,'fb.account.001@gmail.com|FbPass123!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.002@gmail.com|FbPass456!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.003@gmail.com|FbPass789!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.004@gmail.com|FbPass012!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.005@gmail.com|FbPass345!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.006@gmail.com|FbPass678!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.007@gmail.com|FbPass901!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.008@gmail.com|FbPass234!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.009@gmail.com|FbPass567!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.010@gmail.com|FbPass890!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.011@gmail.com|FbPass123!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.012@gmail.com|FbPass456!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.013@gmail.com|FbPass789!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.014@gmail.com|FbPass012!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.015@gmail.com|FbPass345!','fb-2009',0,NOW()),
+(1004,NULL,'fb.account.016@yahoo.com|FbPass678!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.017@yahoo.com|FbPass901!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.018@yahoo.com|FbPass234!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.019@yahoo.com|FbPass567!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.020@yahoo.com|FbPass890!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.021@yahoo.com|FbPass123!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.022@yahoo.com|FbPass456!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.023@yahoo.com|FbPass789!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.024@yahoo.com|FbPass012!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.025@yahoo.com|FbPass345!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.026@yahoo.com|FbPass678!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.027@yahoo.com|FbPass901!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.028@yahoo.com|FbPass234!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.029@yahoo.com|FbPass567!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.030@yahoo.com|FbPass890!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.031@outlook.com|FbPass123!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.032@outlook.com|FbPass456!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.033@outlook.com|FbPass789!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.034@outlook.com|FbPass012!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.035@outlook.com|FbPass345!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.036@outlook.com|FbPass678!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.037@outlook.com|FbPass901!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.038@outlook.com|FbPass234!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.039@outlook.com|FbPass567!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.040@outlook.com|FbPass890!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.041@outlook.com|FbPass123!','fb-2012',0,NOW()),
+(1004,NULL,'fb.account.042@outlook.com|FbPass456!','fb-2012',0,NOW());
+
+-- Credentials cho TikTok (1005) - 38 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1005,NULL,'tiktok.account.001@gmail.com|TikTokPass123!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.002@gmail.com|TikTokPass456!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.003@gmail.com|TikTokPass789!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.004@gmail.com|TikTokPass012!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.005@gmail.com|TikTokPass345!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.006@gmail.com|TikTokPass678!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.007@gmail.com|TikTokPass901!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.008@gmail.com|TikTokPass234!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.009@gmail.com|TikTokPass567!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.010@gmail.com|TikTokPass890!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.011@gmail.com|TikTokPass123!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.012@gmail.com|TikTokPass456!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.013@gmail.com|TikTokPass789!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.014@gmail.com|TikTokPass012!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.015@gmail.com|TikTokPass345!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.016@gmail.com|TikTokPass678!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.017@gmail.com|TikTokPass901!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.018@gmail.com|TikTokPass234!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.019@gmail.com|TikTokPass567!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.020@gmail.com|TikTokPass890!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.021@gmail.com|TikTokPass123!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.022@gmail.com|TikTokPass456!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.023@gmail.com|TikTokPass789!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.024@gmail.com|TikTokPass012!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.025@gmail.com|TikTokPass345!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.026@gmail.com|TikTokPass678!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.027@gmail.com|TikTokPass901!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.028@gmail.com|TikTokPass234!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.029@gmail.com|TikTokPass567!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.030@gmail.com|TikTokPass890!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.031@gmail.com|TikTokPass123!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.032@gmail.com|TikTokPass456!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.033@gmail.com|TikTokPass789!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.034@gmail.com|TikTokPass012!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.035@gmail.com|TikTokPass345!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.036@gmail.com|TikTokPass678!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.037@gmail.com|TikTokPass901!','tt-pro',0,NOW()),
+(1005,NULL,'tiktok.account.038@gmail.com|TikTokPass234!','tt-pro',0,NOW());
+
+-- Credentials cho X/Twitter (1006) - 25 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(1006,NULL,'x.account.001@gmail.com|XPass123!','x-verified',0,NOW()),
+(1006,NULL,'x.account.002@gmail.com|XPass456!','x-verified',0,NOW()),
+(1006,NULL,'x.account.003@gmail.com|XPass789!','x-verified',0,NOW()),
+(1006,NULL,'x.account.004@gmail.com|XPass012!','x-verified',0,NOW()),
+(1006,NULL,'x.account.005@gmail.com|XPass345!','x-verified',0,NOW()),
+(1006,NULL,'x.account.006@gmail.com|XPass678!','x-verified',0,NOW()),
+(1006,NULL,'x.account.007@gmail.com|XPass901!','x-verified',0,NOW()),
+(1006,NULL,'x.account.008@gmail.com|XPass234!','x-verified',0,NOW()),
+(1006,NULL,'x.account.009@gmail.com|XPass567!','x-verified',0,NOW()),
+(1006,NULL,'x.account.010@gmail.com|XPass890!','x-verified',0,NOW()),
+(1006,NULL,'x.account.011@gmail.com|XPass123!','x-verified',0,NOW()),
+(1006,NULL,'x.account.012@gmail.com|XPass456!','x-verified',0,NOW()),
+(1006,NULL,'x.account.013@gmail.com|XPass789!','x-verified',0,NOW()),
+(1006,NULL,'x.account.014@gmail.com|XPass012!','x-verified',0,NOW()),
+(1006,NULL,'x.account.015@gmail.com|XPass345!','x-verified',0,NOW()),
+(1006,NULL,'x.account.016@gmail.com|XPass678!','x-verified',0,NOW()),
+(1006,NULL,'x.account.017@gmail.com|XPass901!','x-verified',0,NOW()),
+(1006,NULL,'x.account.018@gmail.com|XPass234!','x-verified',0,NOW()),
+(1006,NULL,'x.account.019@gmail.com|XPass567!','x-verified',0,NOW()),
+(1006,NULL,'x.account.020@gmail.com|XPass890!','x-verified',0,NOW()),
+(1006,NULL,'x.account.021@gmail.com|XPass123!','x-verified',0,NOW()),
+(1006,NULL,'x.account.022@gmail.com|XPass456!','x-verified',0,NOW()),
+(1006,NULL,'x.account.023@gmail.com|XPass789!','x-verified',0,NOW()),
+(1006,NULL,'x.account.024@gmail.com|XPass012!','x-verified',0,NOW()),
+(1006,NULL,'x.account.025@gmail.com|XPass345!','x-verified',0,NOW());
+
+-- Credentials cho Canva (2001) - 45 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2001,NULL,'canva.account.001@canva.com|CanvaPass123!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.002@canva.com|CanvaPass456!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.003@canva.com|CanvaPass789!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.004@canva.com|CanvaPass012!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.005@canva.com|CanvaPass345!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.006@canva.com|CanvaPass678!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.007@canva.com|CanvaPass901!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.008@canva.com|CanvaPass234!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.009@canva.com|CanvaPass567!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.010@canva.com|CanvaPass890!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.011@canva.com|CanvaPass123!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.012@canva.com|CanvaPass456!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.013@canva.com|CanvaPass789!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.014@canva.com|CanvaPass012!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.015@canva.com|CanvaPass345!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.016@canva.com|CanvaPass678!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.017@canva.com|CanvaPass901!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.018@canva.com|CanvaPass234!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.019@canva.com|CanvaPass567!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.020@canva.com|CanvaPass890!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.021@canva.com|CanvaPass123!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.022@canva.com|CanvaPass456!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.023@canva.com|CanvaPass789!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.024@canva.com|CanvaPass012!','canva-1m',0,NOW()),
+(2001,NULL,'canva.account.025@canva.com|CanvaPass345!','canva-1m',0,NOW()),
+(2001,NULL,'canva.premium.001@canva.com|PremiumPass123!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.002@canva.com|PremiumPass456!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.003@canva.com|PremiumPass789!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.004@canva.com|PremiumPass012!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.005@canva.com|PremiumPass345!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.006@canva.com|PremiumPass678!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.007@canva.com|PremiumPass901!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.008@canva.com|PremiumPass234!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.009@canva.com|PremiumPass567!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.010@canva.com|PremiumPass890!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.011@canva.com|PremiumPass123!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.012@canva.com|PremiumPass456!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.013@canva.com|PremiumPass789!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.014@canva.com|PremiumPass012!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.015@canva.com|PremiumPass345!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.016@canva.com|PremiumPass678!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.017@canva.com|PremiumPass901!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.018@canva.com|PremiumPass234!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.019@canva.com|PremiumPass567!','canva-12m',0,NOW()),
+(2001,NULL,'canva.premium.020@canva.com|PremiumPass890!','canva-12m',0,NOW());
+
+-- Credentials cho Office (2002) - 18 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2002,NULL,'office.account.001@outlook.com|OfficePass123!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.002@outlook.com|OfficePass456!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.003@outlook.com|OfficePass789!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.004@outlook.com|OfficePass012!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.005@outlook.com|OfficePass345!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.006@outlook.com|OfficePass678!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.007@outlook.com|OfficePass901!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.008@outlook.com|OfficePass234!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.009@outlook.com|OfficePass567!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.010@outlook.com|OfficePass890!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.011@outlook.com|OfficePass123!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.012@outlook.com|OfficePass456!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.013@outlook.com|OfficePass789!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.014@outlook.com|OfficePass012!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.015@outlook.com|OfficePass345!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.016@outlook.com|OfficePass678!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.017@outlook.com|OfficePass901!','o365family-12m',0,NOW()),
+(2002,NULL,'office.account.018@outlook.com|OfficePass234!','o365family-12m',0,NOW());
+
+-- Credentials cho Windows (2003) - 30 credentials (key format)
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2003,NULL,'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'YYYYY-YYYYY-YYYYY-YYYYY-YYYYY|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'AAAAA-AAAAA-AAAAA-AAAAA-AAAAA|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'BBBBB-BBBBB-BBBBB-BBBBB-BBBBB|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'CCCCC-CCCCC-CCCCC-CCCCC-CCCCC|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'DDDDD-DDDDD-DDDDD-DDDDD-DDDDD|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'EEEEE-EEEEE-EEEEE-EEEEE-EEEEE|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'FFFFF-FFFFF-FFFFF-FFFFF-FFFFF|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'GGGGG-GGGGG-GGGGG-GGGGG-GGGGG|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'HHHHH-HHHHH-HHHHH-HHHHH-HHHHH|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'IIIII-IIIII-IIIII-IIIII-IIIII|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'JJJJJ-JJJJJ-JJJJJ-JJJJJ-JJJJJ|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'KKKKK-KKKKK-KKKKK-KKKKK-KKKKK|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'LLLLL-LLLLL-LLLLL-LLLLL-LLLLL|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'MMMMM-MMMMM-MMMMM-MMMMM-MMMMM|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'NNNNN-NNNNN-NNNNN-NNNNN-NNNNN|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'OOOOO-OOOOO-OOOOO-OOOOO-OOOOO|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'PPPPP-PPPPP-PPPPP-PPPPP-PPPPP|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'QQQQQ-QQQQQ-QQQQQ-QQQQQ-QQQQQ|Win11ProOEM','win11pro-oem',0,NOW()),
+(2003,NULL,'RRRRR-RRRRR-RRRRR-RRRRR-RRRRR|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'SSSSS-SSSSS-SSSSS-SSSSS-SSSSS|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'TTTTT-TTTTT-TTTTT-TTTTT-TTTTT|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'UUUUU-UUUUU-UUUUU-UUUUU-UUUUU|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'VVVVV-VVVVV-VVVVV-VVVVV-VVVVV|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'WWWWW-WWWWW-WWWWW-WWWWW-WWWWW|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'XXXXX-XXXXX-XXXXX-XXXXX-XXXXX|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'YYYYY-YYYYY-YYYYY-YYYYY-YYYYY|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ|Win11ProRetail','win11pro-retail',0,NOW()),
+(2003,NULL,'AAAAA-AAAAA-AAAAA-AAAAA-AAAAA|Win11ProRetail','win11pro-retail',0,NOW());
+
+-- Credentials cho ChatGPT (2004) - 22 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2004,NULL,'chatgpt.account.001@gmail.com|ChatGPTPass123!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.002@gmail.com|ChatGPTPass456!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.003@gmail.com|ChatGPTPass789!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.004@gmail.com|ChatGPTPass012!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.005@gmail.com|ChatGPTPass345!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.006@gmail.com|ChatGPTPass678!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.007@gmail.com|ChatGPTPass901!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.008@gmail.com|ChatGPTPass234!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.009@gmail.com|ChatGPTPass567!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.010@gmail.com|ChatGPTPass890!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.011@gmail.com|ChatGPTPass123!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.012@gmail.com|ChatGPTPass456!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.013@gmail.com|ChatGPTPass789!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.014@gmail.com|ChatGPTPass012!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.account.015@gmail.com|ChatGPTPass345!','chatgpt-1m',0,NOW()),
+(2004,NULL,'chatgpt.premium.001@gmail.com|PremiumPass123!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.002@gmail.com|PremiumPass456!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.003@gmail.com|PremiumPass789!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.004@gmail.com|PremiumPass012!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.005@gmail.com|PremiumPass345!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.006@gmail.com|PremiumPass678!','chatgpt-12m',0,NOW()),
+(2004,NULL,'chatgpt.premium.007@gmail.com|PremiumPass901!','chatgpt-12m',0,NOW());
+
+-- Credentials cho Valorant (2005) - 15 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2005,NULL,'valorant.account.001@gmail.com|ValoPass123!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.002@gmail.com|ValoPass456!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.003@gmail.com|ValoPass789!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.004@gmail.com|ValoPass012!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.005@gmail.com|ValoPass345!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.006@gmail.com|ValoPass678!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.007@gmail.com|ValoPass901!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.008@gmail.com|ValoPass234!','valo-silver',0,NOW()),
+(2005,NULL,'valorant.account.009@gmail.com|ValoPass567!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.010@gmail.com|ValoPass890!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.011@gmail.com|ValoPass123!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.012@gmail.com|ValoPass456!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.013@gmail.com|ValoPass789!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.014@gmail.com|ValoPass012!','valo-gold',0,NOW()),
+(2005,NULL,'valorant.account.015@gmail.com|ValoPass345!','valo-gold',0,NOW());
+
+-- Credentials cho League of Legends (2006) - 12 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2006,NULL,'lol.account.001@gmail.com|LoLPass123!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.002@gmail.com|LoLPass456!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.003@gmail.com|LoLPass789!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.004@gmail.com|LoLPass012!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.005@gmail.com|LoLPass345!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.006@gmail.com|LoLPass678!','lol-gold',0,NOW()),
+(2006,NULL,'lol.account.007@gmail.com|LoLPass901!','lol-plat',0,NOW()),
+(2006,NULL,'lol.account.008@gmail.com|LoLPass234!','lol-plat',0,NOW()),
+(2006,NULL,'lol.account.009@gmail.com|LoLPass567!','lol-plat',0,NOW()),
+(2006,NULL,'lol.account.010@gmail.com|LoLPass890!','lol-plat',0,NOW()),
+(2006,NULL,'lol.account.011@gmail.com|LoLPass123!','lol-plat',0,NOW()),
+(2006,NULL,'lol.account.012@gmail.com|LoLPass456!','lol-plat',0,NOW());
+
+-- Credentials cho CS2 (2007) - 20 credentials
+INSERT INTO `product_credentials` (`product_id`,`order_id`,`encrypted_value`,`variant_code`,`is_sold`,`created_at`) VALUES
+(2007,NULL,'cs2.account.001@gmail.com|CS2Pass123!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.002@gmail.com|CS2Pass456!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.003@gmail.com|CS2Pass789!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.004@gmail.com|CS2Pass012!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.005@gmail.com|CS2Pass345!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.006@gmail.com|CS2Pass678!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.007@gmail.com|CS2Pass901!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.008@gmail.com|CS2Pass234!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.009@gmail.com|CS2Pass567!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.010@gmail.com|CS2Pass890!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.011@gmail.com|CS2Pass123!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.012@gmail.com|CS2Pass456!','cs2-prime',0,NOW()),
+(2007,NULL,'cs2.account.013@gmail.com|CS2Pass789!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.014@gmail.com|CS2Pass012!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.015@gmail.com|CS2Pass345!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.016@gmail.com|CS2Pass678!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.017@gmail.com|CS2Pass901!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.018@gmail.com|CS2Pass234!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.019@gmail.com|CS2Pass567!','cs2-prime-mg',0,NOW()),
+(2007,NULL,'cs2.account.020@gmail.com|CS2Pass890!','cs2-prime-mg',0,NOW());
 -- =================================================================
 SET FOREIGN_KEY_CHECKS = 1;
 -- ====================================================================================
 -- END OF FULL DB
 -- ====================================================================================
+
