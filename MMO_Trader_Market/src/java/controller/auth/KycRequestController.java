@@ -64,6 +64,7 @@ public class KycRequestController extends HttpServlet {
 
         try {
             boolean success = service.handleKycRequest(
+                    getServletContext(),
                     user,
                     request.getParameter("cccd_number"),
                     request.getPart("front"),
