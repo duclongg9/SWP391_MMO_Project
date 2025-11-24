@@ -93,8 +93,10 @@
                                 </c:forEach>
                             </c:if>
 
+                            <%-- Only show gallery images that are NOT in variant images --%>
                             <c:forEach var="image" items="${galleryImages}">
                                 <c:set var="thumbnailSource" value="${image}" />
+                                <c:set var="thumbnailUrl" value="" />
                                 <c:choose>
                                     <c:when test="${fn:startsWith(thumbnailSource, 'http://')
                                                     or fn:startsWith(thumbnailSource, 'https://')
@@ -107,12 +109,66 @@
                                         <c:url var="thumbnailUrl" value="${thumbnailSource}" />
                                     </c:otherwise>
                                 </c:choose>
-                                <li>
-                                    <button class="product-detail__thumbnail" type="button" data-image="${thumbnailUrl}"
-                                            <c:if test="${thumbnailUrl eq mainImageUrl}">aria-current="true"</c:if>>
-                                        <img src="${thumbnailUrl}" alt="Thumbnail sản phẩm" loading="lazy" />
-                                    </button>
-                                </li>
+                                <%-- Check if this image is already shown as variant image by comparing with each variant's imageUrl and images array --%>
+                                <c:set var="isDuplicate" value="false" />
+                                <c:if test="${variantThumbnailCount gt 0 and not empty thumbnailUrl}">
+                                    <c:forEach var="variant" items="${variantOptions}">
+                                        <c:if test="${not isDuplicate}">
+                                            <%-- Check variant.imageUrl --%>
+                                            <c:if test="${not empty variant.imageUrl}">
+                                                <c:set var="variantImageSource" value="${variant.imageUrl}" />
+                                                <c:set var="variantImageUrl" value="" />
+                                                <c:choose>
+                                                    <c:when test="${fn:startsWith(variantImageSource, 'http://')
+                                                                    or fn:startsWith(variantImageSource, 'https://')
+                                                                    or fn:startsWith(variantImageSource, '//')
+                                                                    or fn:startsWith(variantImageSource, 'data:')
+                                                                    or fn:startsWith(variantImageSource, cPath)}">
+                                                        <c:set var="variantImageUrl" value="${variantImageSource}" />
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <c:url var="variantImageUrl" value="${variantImageSource}" />
+                                                    </c:otherwise>
+                                                </c:choose>
+                                                <c:if test="${not empty variantImageUrl and thumbnailUrl eq variantImageUrl}">
+                                                    <c:set var="isDuplicate" value="true" />
+                                                </c:if>
+                                            </c:if>
+                                            <%-- Check variant.images array --%>
+                                            <c:if test="${not isDuplicate and not empty variant.images}">
+                                                <c:forEach var="variantImg" items="${variant.images}">
+                                                    <c:if test="${not isDuplicate and not empty variantImg}">
+                                                        <c:set var="variantImgSource" value="${variantImg}" />
+                                                        <c:set var="variantImgUrl" value="" />
+                                                        <c:choose>
+                                                            <c:when test="${fn:startsWith(variantImgSource, 'http://')
+                                                                            or fn:startsWith(variantImgSource, 'https://')
+                                                                            or fn:startsWith(variantImgSource, '//')
+                                                                            or fn:startsWith(variantImgSource, 'data:')
+                                                                            or fn:startsWith(variantImgSource, cPath)}">
+                                                                <c:set var="variantImgUrl" value="${variantImgSource}" />
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <c:url var="variantImgUrl" value="${variantImgSource}" />
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                        <c:if test="${not empty variantImgUrl and thumbnailUrl eq variantImgUrl}">
+                                                            <c:set var="isDuplicate" value="true" />
+                                                        </c:if>
+                                                    </c:if>
+                                                </c:forEach>
+                                            </c:if>
+                                        </c:if>
+                                    </c:forEach>
+                                </c:if>
+                                <c:if test="${not isDuplicate}">
+                                    <li>
+                                        <button class="product-detail__thumbnail" type="button" data-image="${thumbnailUrl}"
+                                                <c:if test="${thumbnailUrl eq mainImageUrl}">aria-current="true"</c:if>>
+                                            <img src="${thumbnailUrl}" alt="Thumbnail sản phẩm" loading="lazy" />
+                                        </button>
+                                    </li>
+                                </c:if>
                             </c:forEach>
                         </ul>
                     </c:if>

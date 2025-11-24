@@ -49,20 +49,6 @@
             </div>
         </article>
         <article class="stat-card">
-            <div class="icon icon--accent">💰</div>
-            <div>
-                <p class="stat-card__label">Doanh thu tháng</p>
-                <p class="stat-card__value"><%= formattedRevenue %> ₫</p>
-            </div>
-        </article>
-        <article class="stat-card">
-            <div class="icon icon--muted">✅</div>
-            <div>
-                <p class="stat-card__label">Đơn đã bán</p>
-                <p class="stat-card__value"><%= completedOrders %></p>
-            </div>
-        </article>
-        <article class="stat-card">
             <div class="icon icon--primary">📊</div>
             <div>
                 <p class="stat-card__label">Tổng tồn kho</p>

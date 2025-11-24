@@ -44,20 +44,6 @@
                     </p>
                 </div>
             </article>
-            <article class="stat-card">
-                <div class="icon icon--muted">⏱️</div>
-                <div>
-                    <p class="stat-card__label">Đơn chờ giải ngân</p>
-                    <p class="stat-card__value">
-                        <c:choose>
-                            <c:when test="${not empty pendingDisbursementCount}">
-                                <c:out value="${pendingDisbursementCount}" />
-                            </c:when>
-                            <c:otherwise>0</c:otherwise>
-                        </c:choose>
-                    </p>
-                </div>
-            </article>
         </div>
     </section>
     <section class="panel">
@@ -138,56 +124,75 @@
         </div>
         <div class="panel__body">
             <c:choose>
-                <c:when test="${not empty productStats && !empty productStats}">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Trạng thái</th>
-                                <th>Doanh thu</th>
-                                <th>Số đơn</th>
-                                <th>Số lượng bán</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <c:forEach var="stat" items="${productStats}" varStatus="loop">
-                                <tr>
-                                    <td>${loop.index + 1}</td>
-                                    <td><strong><c:out value="${stat.productName}" /></strong></td>
-                                    <td>
-                                        <c:choose>
-                                            <c:when test="${stat.status == 'Pending'}">
-                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.875rem;">
-                                                    Đơn đang chờ
-                                                </span>
-                                            </c:when>
-                                            <c:when test="${stat.status == 'Completed'}">
-                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.875rem;">
-                                                    Hoàn thành
-                                                </span>
-                                            </c:when>
-                                            <c:when test="${stat.status == 'Failed'}">
-                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.875rem;">
-                                                    Thất bại
-                                                </span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #e2e3e5; color: #383d41; border-radius: 4px; font-size: 0.875rem;">
-                                                    <c:out value="${stat.status}" />
-                                                </span>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </td>
-                                    <td>
-                                        <fmt:formatNumber value="${stat.revenue != null ? stat.revenue : 0}" type="number" minFractionDigits="0" maxFractionDigits="0" groupingUsed="true" /> đ
-                                    </td>
-                                    <td>${stat.orderCount != null ? stat.orderCount : 0}</td>
-                                    <td>${stat.quantitySold != null ? stat.quantitySold : 0}</td>
-                                </tr>
-                            </c:forEach>
-                        </tbody>
-                    </table>
+                <c:when test="${not empty shops && !empty shops}">
+                    <c:forEach var="shop" items="${shops}" varStatus="shopLoop">
+                        <c:set var="shopStats" value="${shopProductStatsMap[shop.id]}" />
+                        <c:if test="${not empty shopStats && !empty shopStats}">
+                            <div style="margin-bottom: 2rem;">
+                                <h3 style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e0e0e0; color: #333;">
+                                    <c:out value="${shop.name}" />
+                                </h3>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Tên sản phẩm</th>
+                                            <th>Trạng thái</th>
+                                            <th>Doanh thu</th>
+                                            <th>Số đơn</th>
+                                            <th>Số lượng bán</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="stat" items="${shopStats}" varStatus="loop">
+                                            <tr>
+                                                <td>${loop.index + 1}</td>
+                                                <td><strong><c:out value="${stat.productName}" /></strong></td>
+                                                <td>
+                                                    <c:choose>
+                                                        <c:when test="${stat.status == 'Pending'}">
+                                                            <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.875rem;">
+                                                                Đơn đang chờ
+                                                            </span>
+                                                        </c:when>
+                                                        <c:when test="${stat.status == 'Completed'}">
+                                                            <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #d4edda; color: #155724; border-radius: 4px; font-size: 0.875rem;">
+                                                                Hoàn thành
+                                                            </span>
+                                                        </c:when>
+                                                        <c:when test="${stat.status == 'Failed'}">
+                                                            <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.875rem;">
+                                                                Thất bại
+                                                            </span>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <span style="display: inline-block; padding: 0.25rem 0.5rem; background: #e2e3e5; color: #383d41; border-radius: 4px; font-size: 0.875rem;">
+                                                                <c:out value="${stat.status}" />
+                                                            </span>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </td>
+                                                <td>
+                                                    <fmt:formatNumber value="${stat.revenue != null ? stat.revenue : 0}" type="number" minFractionDigits="0" maxFractionDigits="0" groupingUsed="true" /> đ
+                                                </td>
+                                                <td>${stat.orderCount != null ? stat.orderCount : 0}</td>
+                                                <td>${stat.quantitySold != null ? stat.quantitySold : 0}</td>
+                                            </tr>
+                                        </c:forEach>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </c:if>
+                    </c:forEach>
+                    <c:set var="hasAnyStats" value="false" />
+                    <c:forEach var="shop" items="${shops}">
+                        <c:if test="${not empty shopProductStatsMap[shop.id] && !empty shopProductStatsMap[shop.id]}">
+                            <c:set var="hasAnyStats" value="true" />
+                        </c:if>
+                    </c:forEach>
+                    <c:if test="${not hasAnyStats}">
+                        <p class="empty">Chưa có dữ liệu thống kê.</p>
+                    </c:if>
                 </c:when>
                 <c:otherwise>
                     <p class="empty">Chưa có dữ liệu thống kê.</p>
@@ -202,7 +207,6 @@
         <div class="panel__body">
             <ul class="guide-list">
                 <li>Kích hoạt mã giảm giá cho nhóm khách hàng thân thiết.</li>
-                <li>Theo dõi đơn chờ giải ngân và xử lý tranh chấp kịp thời.</li>
                 <li>Đăng thêm sản phẩm hot theo mùa (game, dịch vụ streaming).</li>
             </ul>
         </div>

@@ -18,7 +18,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Trang thống kê thu nhập cho người bán.
@@ -48,9 +50,16 @@ public class SellerIncomeController extends SellerBaseController {
             return;
         }
         
-        // Lấy shop của seller
-        Shops shop = shopDAO.findByOwnerId(userId);
-        if (shop == null) {
+        // Lấy tất cả shops của seller
+        List<model.ShopStatsView> shops = new java.util.ArrayList<>();
+        try {
+            shops = shopDAO.findByOwnerWithStats(userId, null, null);
+        } catch (Exception e) {
+            System.err.println("Error getting shops: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        if (shops == null || shops.isEmpty()) {
             request.setAttribute("errorMessage", "Bạn chưa có cửa hàng.");
             request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
             request.setAttribute("bodyClass", "layout");
@@ -74,11 +83,19 @@ public class SellerIncomeController extends SellerBaseController {
         cal.add(Calendar.MONTH, -2);
         Timestamp lastMonthStart = new Timestamp(cal.getTimeInMillis());
         
-        // Tính doanh thu tháng này
-        BigDecimal thisMonthRevenue = orderDAO.getRevenueByShop(shop.getId(), thisMonthStart, thisMonthEnd);
-        
-        // Tính doanh thu tháng trước
-        BigDecimal lastMonthRevenue = orderDAO.getRevenueByShop(shop.getId(), lastMonthStart, thisMonthStart);
+        // Tính tổng doanh thu tháng này từ tất cả shops
+        BigDecimal thisMonthRevenue = BigDecimal.ZERO;
+        BigDecimal lastMonthRevenue = BigDecimal.ZERO;
+        for (model.ShopStatsView shop : shops) {
+            BigDecimal shopThisMonth = orderDAO.getRevenueByShop(shop.getId(), thisMonthStart, thisMonthEnd);
+            BigDecimal shopLastMonth = orderDAO.getRevenueByShop(shop.getId(), lastMonthStart, thisMonthStart);
+            if (shopThisMonth != null) {
+                thisMonthRevenue = thisMonthRevenue.add(shopThisMonth);
+            }
+            if (shopLastMonth != null) {
+                lastMonthRevenue = lastMonthRevenue.add(shopLastMonth);
+            }
+        }
         
         // Tính tăng trưởng (%)
         String growthText = "0% so với tháng trước";
@@ -90,9 +107,6 @@ public class SellerIncomeController extends SellerBaseController {
         } else if (thisMonthRevenue.compareTo(BigDecimal.ZERO) > 0) {
             growthText = "+100% so với tháng trước";
         }
-        
-        // Đếm đơn chờ giải ngân
-        int pendingDisbursementCount = orderDAO.countPendingDisbursementOrders(shop.getId());
         
         // Lấy wallet của seller để lấy transactions
         Wallets wallet = walletsDAO.getUserWallet(userId);
@@ -186,33 +200,40 @@ public class SellerIncomeController extends SellerBaseController {
                 break;
         }
         
-        // Lấy thống kê theo sản phẩm
-        java.util.List<model.statistics.ProductStatistics> productStats = new java.util.ArrayList<>();
-        try {
-            productStats = orderDAO.getProductStatistics(
-                    shop.getId(), statsStartDate, statsEndDate);
-        } catch (Exception e) {
-            System.err.println("Error getting product statistics: " + e.getMessage());
-            e.printStackTrace();
+        // Lấy thống kê theo sản phẩm cho từng shop
+        java.util.Map<Integer, java.util.List<model.statistics.ProductStatistics>> shopProductStatsMap = new java.util.HashMap<>();
+        for (model.ShopStatsView shop : shops) {
+            try {
+                java.util.List<model.statistics.ProductStatistics> productStats = orderDAO.getProductStatistics(
+                        shop.getId(), statsStartDate, statsEndDate);
+                if (productStats != null && !productStats.isEmpty()) {
+                    shopProductStatsMap.put(shop.getId(), productStats);
+                }
+            } catch (Exception e) {
+                System.err.println("Error getting product statistics for shop " + shop.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
         }
         
-        // Lấy thống kê theo thời gian
+        // Lấy thống kê theo thời gian (tổng hợp từ shop đầu tiên để giữ tương thích)
         java.util.List<model.statistics.TimeStatistics> timeStats = new java.util.ArrayList<>();
-        try {
-            timeStats = orderDAO.getTimeStatistics(
-                    shop.getId(), period, statsStartDate, statsEndDate);
-        } catch (Exception e) {
-            System.err.println("Error getting time statistics: " + e.getMessage());
-            e.printStackTrace();
+        if (!shops.isEmpty()) {
+            try {
+                timeStats = orderDAO.getTimeStatistics(
+                        shops.get(0).getId(), period, statsStartDate, statsEndDate);
+            } catch (Exception e) {
+                System.err.println("Error getting time statistics: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
         
         // Pass dữ liệu vào request
         request.setAttribute("thisMonthRevenue", thisMonthRevenue);
         request.setAttribute("growthText", growthText);
-        request.setAttribute("pendingDisbursementCount", pendingDisbursementCount);
         request.setAttribute("cashFlowTransactions", cashFlowTransactions);
         request.setAttribute("period", period);
-        request.setAttribute("productStats", productStats);
+        request.setAttribute("shops", shops);
+        request.setAttribute("shopProductStatsMap", shopProductStatsMap);
         request.setAttribute("timeStats", timeStats);
         request.setAttribute("pageTitle", "Thu nhập - Quản lý cửa hàng");
         request.setAttribute("bodyClass", "layout");
