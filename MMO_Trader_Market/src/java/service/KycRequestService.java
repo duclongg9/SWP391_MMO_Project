@@ -6,9 +6,12 @@ package service;
 
 import conf.AppConfig;
 import dao.user.KYCRequestDAO;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 import utils.ImageUtils;
 
@@ -18,15 +21,12 @@ import utils.ImageUtils;
  */
 public class KycRequestService {
 
-    private static final String RELATIVE_UPLOAD_DIR = "\\assets\\images\\kyc";
-    private static final String ABSOLUTE_UPLOAD_DIR = "D:\\DH_FPT\\Ky_7\\SWP391_MMO_Project\\MMO_Trader_Market\\web\\assets\\images\\kyc";
+    private static final String RELATIVE_UPLOAD_DIR = normalizeRelativeDir(AppConfig.get("upload.kyc.relative"));
+    private static final String ABSOLUTE_UPLOAD_DIR = AppConfig.get("upload.kyc.absolute");
     private static final KYCRequestDAO kdao = new KYCRequestDAO();
-    
-//    private static final String RELATIVE_UPLOAD_DIR = "/assets/images/kyc";
-//    private static final String ABSOLUTE_UPLOAD_DIR = "D:/Chuyen_nganh/ky5/SWP391-2/SWP391_server/SWP391_MMO_Project/MMO_Trader_Market/web/assets/images/kyc";
-            
 
-    public boolean handleKycRequest(int userId, String idNumber,
+
+    public boolean handleKycRequest(ServletContext context, int userId, String idNumber,
             Part front, Part back, Part selfie) throws IOException {
 
         // Validate MIME
@@ -41,7 +41,7 @@ public class KycRequestService {
             throw new IllegalStateException("Bạn đã gửi yêu cầu rồi, vui lòng chờ duyệt.");
         }
 
-        Path uploadDir = Paths.get(ABSOLUTE_UPLOAD_DIR);
+        Path uploadDir = resolveUploadDir(context);
         Files.createDirectories(uploadDir);
 
         // Tạo tên file duy nhất
@@ -77,8 +77,66 @@ public class KycRequestService {
 
         return true;
     }
-    public static void main(String[] args) {
-        System.out.println(AppConfig.get("upload.kyc.relative"));
+    /**
+     * Builds an absolute upload directory using configuration values, with a
+     * fallback to the servlet context's real path when the absolute path is
+     * not provided. Always returns a normalized path to ensure compatibility
+     * across operating systems.
+     *
+     * @param context current {@link ServletContext} from the controller
+     * @return normalized {@link Path} pointing to the upload directory
+     */
+    private static Path resolveUploadDir(ServletContext context) {
+        String configuredAbsolute = normalizePath(ABSOLUTE_UPLOAD_DIR);
+
+        if (configuredAbsolute != null && !configuredAbsolute.isBlank()) {
+            Path configuredPath = Paths.get(configuredAbsolute);
+            if (configuredPath.isAbsolute()) {
+                return configuredPath;
+            }
+        }
+
+        String realPath = context.getRealPath(RELATIVE_UPLOAD_DIR);
+        if (realPath == null || realPath.isBlank()) {
+            return Paths.get(RELATIVE_UPLOAD_DIR).toAbsolutePath();
+        }
+        return Paths.get(realPath).toAbsolutePath().normalize();
+    }
+
+    /**
+     * Normalizes relative directory values to use forward slashes and ensures
+     * a leading slash for predictable URL generation and filesystem access.
+     *
+     * @param path configured relative path
+     * @return normalized relative path beginning with '/'
+     */
+    private static String normalizeRelativeDir(String path) {
+        String normalized = normalizePath(path);
+        if (normalized == null || normalized.isBlank()) {
+            normalized = "/assets/images/kyc";
+        }
+        normalized = normalized.replaceAll("^/+", "/");
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        return normalized;
+    }
+
+    /**
+     * Normalizes path separators to forward slashes for consistency.
+     *
+     * @param path input path string
+     * @return normalized path or {@code null} when the input is blank
+     */
+    private static String normalizePath(String path) {
+        if (path == null) {
+            return null;
+        }
+        String trimmed = path.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.replace('\\', '/');
     }
    
 }
