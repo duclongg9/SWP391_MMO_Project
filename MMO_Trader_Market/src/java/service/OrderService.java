@@ -884,10 +884,28 @@ public class OrderService {
         boolean variantRequired = ProductVariantUtils.hasVariants(product.getVariantSchema());
         boolean variantValid = !variantRequired;
         if (normalizedVariant != null) {
-            if (selectedVariant == null || !selectedVariant.isAvailable()) {
+            if (selectedVariant == null) {
                 blockers.add("Biến thể sản phẩm không khả dụng.");
             } else {
-                variantValid = true;
+                // Kiểm tra variant available:
+                // 1. Nếu status = "Available" → OK
+                // 2. Nếu status = null hoặc empty → Cho phép (mặc định available)
+                // 3. Nếu status khác "Available" → Không cho phép
+                boolean variantAvailable = selectedVariant.isAvailable();
+                if (!variantAvailable) {
+                    // Nếu status không phải "Available", kiểm tra xem có phải null/empty không
+                    String variantStatus = selectedVariant.getStatus();
+                    if (variantStatus == null || variantStatus.trim().isEmpty()) {
+                        // Status null/empty → Mặc định cho phép (tương tự logic trong ProductDetailView)
+                        variantAvailable = true;
+                    }
+                }
+                
+                if (!variantAvailable) {
+                    blockers.add("Biến thể sản phẩm không khả dụng.");
+                } else {
+                    variantValid = true;
+                }
             }
         } else if (variantRequired) {
             blockers.add("Vui lòng chọn biến thể sản phẩm.");

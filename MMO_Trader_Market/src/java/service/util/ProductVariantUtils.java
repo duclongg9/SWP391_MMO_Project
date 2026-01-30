@@ -80,7 +80,9 @@ public final class ProductVariantUtils {
                     if (code == null) {
                         return false;
                     }
-                    return normalizedCode.equalsIgnoreCase(code.trim());
+                    // Normalize variant code from database before comparing
+                    String normalizedVariantCode = normalizeCode(code);
+                    return normalizedCode.equals(normalizedVariantCode);
                 })
                 .findFirst();
     }
